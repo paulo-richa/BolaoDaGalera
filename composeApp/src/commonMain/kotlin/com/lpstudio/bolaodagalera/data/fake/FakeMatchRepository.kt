@@ -60,7 +60,10 @@ class FakeMatchRepository : MatchRepository {
 
     override suspend fun updateMatchScore(matchId: String, homeScore: Int, awayScore: Int) {
         _matches.update { list ->
-            list.map { if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore) else it }
+            list.map { 
+                if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore, isManual = true) 
+                else it 
+            }
         }
     }
 
