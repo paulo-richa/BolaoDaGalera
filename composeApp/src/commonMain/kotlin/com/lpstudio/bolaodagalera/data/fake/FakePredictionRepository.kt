@@ -127,7 +127,7 @@ class FakePredictionRepository(
 
                 val points = calculatePointsUseCase(prediction, homeScore, awayScore)
                 val isExact = points == 3 
-                val isCorrect = points >= 1
+                val isCorrect = points == 1
 
                 val current = userStats[prediction.userId] ?: Triple(0, 0, 0)
                 userStats[prediction.userId] = Triple(
