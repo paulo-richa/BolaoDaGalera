@@ -1,0 +1,163 @@
+================================================================================
+                  BUILD & TESTE - RELATÓRIO FINAL
+================================================================================
+
+DATA: 08/06/2026 15:24 UTC
+STATUS: ✅ CONCLUÍDO COM SUCESSO
+
+================================================================================
+                           1. BUILD DO APP
+================================================================================
+
+✅ Status: BUILD SUCCESSFUL
+   Tempo: 25 segundos
+   Gradle: 8.14.3
+   Kotlin: 2.3.20
+
+📍 Saída gerada:
+   - APK Debug: composeApp/build/outputs/apk/debug/composeApp-debug.apk
+   - Tamanho: [APK disponível para instalação]
+
+Avisos (não críticos):
+   - Deprecated Android Style source directory
+   - Unnecessary non-null assertions (warning apenas)
+
+================================================================================
+                        2. INSTALAÇÃO NO EMULADOR
+================================================================================
+
+✅ Emulador detectado: emulator-5556
+✅ APK instalada com sucesso
+✅ App iniciado: com.lpstudio.bolaodagalera.MainActivity
+
+Comando usado:
+   adb -s emulator-5556 install -r composeApp-debug.apk
+   adb -s emulator-5556 shell am start -n com.lpstudio.bolaodagalera/.MainActivity
+
+================================================================================
+                    3. HORÁRIOS DOS AMISTOSOS VALIDADOS
+================================================================================
+
+Jogo #1: Holanda x Uzbequistão
+  UTC: 18:45 UTC
+  BRT: 15:45 BRT
+  Data: 2026-06-08
+  Timestamp: 1780944300000 ms
+  Status: ✅ CORRETO (não foi alterado)
+
+Jogo #2: França x Irlanda do Norte
+  UTC: 19:10 UTC (CORRIGIDO)
+  BRT: 16:10 BRT (CORRIGIDO)
+  Data: 2026-06-08
+  Timestamp: 1780945800000 ms
+  Status: ✅ CORRIGIDO (era 19:00 UTC / 16:00 BRT)
+
+Jogo #3: Peru x Espanha
+  UTC: 02:00 UTC (CORRIGIDO)
+  BRT: 23:00 BRT (CORRIGIDO) - Nota: dia 7 de junho
+  Data: 2026-06-07 23:00:00 (em hora local BRT)
+  Timestamp: 1780884000000 ms
+  Status: ✅ CORRIGIDO (era 22:00 UTC / 19:00 BRT)
+
+================================================================================
+                          4. ALTERAÇÕES REALIZADAS
+================================================================================
+
+Arquivo modificado:
+  composeApp/src/commonMain/kotlin/com/lpstudio/bolaodagalera/
+  └── data/seed/MatchSeedData.kt
+
+Mudanças:
+  friendly("FRA-NIR", FRA, NIR, 19, 10),  // Antes: 19, 0
+  friendly("PER-ESP", PER, ESP, 2, 0)     // Antes: 22, 0
+
+================================================================================
+                        5. NOVOS ARQUIVOS CRIADOS
+================================================================================
+
+1. scripts/scrape_ge_friendly_matches.py
+   - Scraper dinâmico com Playwright + Chromium
+   - Extrai dados em tempo real do Globo Esportes
+   - Usa JavaScript para renderização
+
+2. scripts/validate_friendly_times.py
+   - Validador de horários
+   - Verifica conversões UTC ↔ BRT
+   - Confirma cálculos de timestamps
+
+3. composeApp/src/commonMain/.../data/synchronizer/GEFriendlyMatchSynchronizer.kt
+   - Classe para sincronizar com Globo Esportes
+   - Pronta para HTTP requests/Firestore
+
+4. composeApp/src/commonTest/.../data/seed/MatchSeedDataTest.kt
+   - Testes unitários para validação
+   - Verifica horários e estrutura de dados
+
+5. SCRAPER_AND_FIXES.md
+   - Documentação de como usar scraper
+   - Como sincronizar em tempo real
+
+6. RELATORIO_BUILD_TESTE.md
+   - Relatório completo do processo
+
+================================================================================
+                        6. VALIDAÇÃO DE DADOS
+================================================================================
+
+✅ Build: Sem erros críticos
+✅ Instalação: Success (APK 100% instalada)
+✅ Execução: App iniciado com sucesso
+✅ Horários: Todos validados e corretos
+✅ Timestamps: Calculados corretamente
+✅ Conversão UTC/BRT: Verificada e OK
+✅ Logs: Nenhum erro crítico encontrado
+
+Erros esperados (não críticos):
+  - GoogleApiManager: Normal em emulador sem Google Play
+  - AppOps attributionTag warnings: Sistema Android
+  - ashmem deprecation: Android Q+
+
+================================================================================
+                        7. PRÓXIMOS PASSOS RECOMENDADOS
+================================================================================
+
+[ ] 1. Testes visuais no emulador:
+      - Abrir tela de amistosos
+      - Verificar se horários aparecem corretos
+
+[ ] 2. Integrar Cloud Function:
+      - Cloud Function que executa scraper diariamente
+      - Sincronizar Firestore com dados do Globo
+
+[ ] 3. Melhorias de UX:
+      - Notificação quando horários mudam
+      - Cache local para offline
+      - Atualizar em background
+
+[ ] 4. Testar em dispositivo real:
+      - Não apenas emulador
+      - Verificar funcionamento 100%
+
+[ ] 5. Deploy para produção:
+      - Atualizar versão do app
+      - Publicar na Play Store
+
+================================================================================
+                             SUMÁRIO FINAL
+================================================================================
+
+Todas as correções foram implementadas com sucesso!
+
+- Horários corrigidos conforme Globo Esportes
+- App compilado e instalado no emulador
+- Timestamps validados e corretos
+- Scraper dinâmico pronto para sincronização em tempo real
+- Documentação completa para próximos passos
+
+O app está pronto para ser testado e entregue.
+
+================================================================================
+Data: 2026-06-08 15:24 UTC
+Status: ✅ CONCLUÍDO
+================================================================================
+

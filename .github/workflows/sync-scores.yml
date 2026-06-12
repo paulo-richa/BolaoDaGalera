@@ -1,0 +1,30 @@
+name: Sincronizar Placares da Copa
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # Roda a cada 10 minutos
+  workflow_dispatch: # Permite rodar manualmente pelo GitHub
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Dependências
+        run: |
+          cd scripts/sync-scores
+          npm install
+
+      - name: Rodar Script de Sincronização
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          cd scripts/sync-scores
+          node sync.js
