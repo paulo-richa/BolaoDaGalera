@@ -37,13 +37,8 @@ const db = admin.firestore();
 async function syncScores() {
     try {
         console.log("🚀 Iniciando Sincronização Centralizada...");
-
-        // 1. Football-Data (Principal)
         await syncFromFootballData();
-
-        // 2. OpenFootball (Backup/Complemento)
         await syncFromOpenFootball();
-
         console.log("🏁 Sincronização concluída com sucesso.");
     } catch (error) {
         console.error("❌ Erro fatal na sincronização:", error.message);
@@ -89,38 +84,52 @@ async function updateMatchInFirestore(hCode, aCode, data, source) {
     if (!hCode || !aCode) return;
 
     const matchesRef = db.collection('matches');
-    const snapshot = await matchesRef
+
+    // Tenta encontrar o jogo na ordem direta (A x B)
+    let snapshot = await matchesRef
         .where('homeTeamCode', '==', hCode)
         .where('awayTeamCode', '==', aCode)
         .get();
+
+    // Se não encontrou, tenta na ordem invertida (B x A)
+    let isInverted = false;
+    if (snapshot.empty) {
+        snapshot = await matchesRef
+            .where('homeTeamCode', '==', aCode)
+            .where('awayTeamCode', '==', hCode)
+            .get();
+        isInverted = true;
+    }
 
     if (snapshot.empty) return;
 
     const matchDoc = snapshot.docs[0];
     const matchData = matchDoc.data();
 
-    // TRAVA: Se foi editado manualmente pelo administrador no App, não sobrescrevemos.
     if (matchData.isManual) return;
 
     let updateObj = {};
     let changed = false;
 
     // 1. Atualização de Placares
-    if (data.homeScore !== undefined && data.awayScore !== undefined && data.homeScore !== null) {
-        const apiTotal = data.homeScore + data.awayScore;
+    let apiHomeScore = isInverted ? data.awayScore : data.homeScore;
+    let apiAwayScore = isInverted ? data.homeScore : data.awayScore;
+
+    if (apiHomeScore !== undefined && apiAwayScore !== undefined && apiHomeScore !== null) {
+        const apiTotal = apiHomeScore + apiAwayScore;
         const currentTotal = (matchData.homeScore || 0) + (matchData.awayScore || 0);
 
-        // Só atualiza se o placar for novo e a soma de gols for >= a atual (evita resets da API para 0x0)
-        if (apiTotal >= currentTotal && (data.homeScore !== matchData.homeScore || data.awayScore !== matchData.awayScore)) {
-            updateObj.homeScore = data.homeScore;
-            updateObj.awayScore = data.awayScore;
+        if (apiTotal >= currentTotal && (apiHomeScore !== matchData.homeScore || apiAwayScore !== matchData.awayScore)) {
+            updateObj.homeScore = apiHomeScore;
+            updateObj.awayScore = apiAwayScore;
             changed = true;
         }
     }
 
-    // 2. Atualização de Horários (Opcional, vindo do Football-Data)
+    // 2. Atualização de Horários
     if (data.utcDate) {
         const newDateMillis = new Date(data.utcDate).getTime();
+        // Se a diferença for maior que 1 minuto, atualizamos para o horário oficial da FIFA
         if (newDateMillis && Math.abs(newDateMillis - (matchData.matchDateMillis || 0)) > 60000) {
             updateObj.matchDateMillis = newDateMillis;
             changed = true;
@@ -129,7 +138,7 @@ async function updateMatchInFirestore(hCode, aCode, data, source) {
 
     if (changed) {
         await matchDoc.ref.update(updateObj);
-        console.log(`🔥 [${hCode} x ${aCode}] Atualizado via ${source}: ${updateObj.homeScore || matchData.homeScore}x${updateObj.awayScore || matchData.awayScore}`);
+        console.log(`🔥 [${hCode} x ${aCode}] Sincronizado via ${source}`);
     }
 }
 
