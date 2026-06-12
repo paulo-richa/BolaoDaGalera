@@ -87,8 +87,6 @@ private val GHA = Team("Gana",           "GHA", "🇬🇭")
 private val BEL = Team("Bélgica",        "BEL", "🇧🇪")
 private val AUT = Team("Áustria",        "AUT", "🇦🇹")
 
-val friendlyMatches: List<Match> = emptyList()
-
 // ──────────────────────────── FASE DE GRUPOS ─────────────────────────────────
 
 private fun g(group: String, n: Int, home: Team, away: Team, time: Long) =
@@ -187,4 +185,4 @@ val knockoutMatches = listOf(
     k("FINAL", "Venc. Semi 1", "Venc. Semi 2", Phase.FINAL, 38, 18)
 )
 
-val allMatches: List<Match> = friendlyMatches + groupStageMatches + knockoutMatches
+val allMatches: List<Match> = groupStageMatches + knockoutMatches
