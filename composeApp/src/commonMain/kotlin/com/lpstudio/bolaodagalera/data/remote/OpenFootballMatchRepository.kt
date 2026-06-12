@@ -42,77 +42,56 @@ private data class WcScore(
 // Nome em inglês (openfootball) → código de 3 letras usado no seed data
 
 private val NAME_TO_CODE = mapOf(
-    // Grupo A
-    "Mexico"                        to "MEX",
-    "South Africa"                  to "RSA",
-    "Korea Republic"                to "KOR",
-    "South Korea"                   to "KOR",
-    "Czech Republic"                to "CZE",
-    "Czechia"                       to "CZE",
-    // Grupo B
-    "Canada"                        to "CAN",
-    "Switzerland"                   to "SUI",
-    "Qatar"                         to "QAT",
-    "Bosnia and Herzegovina"        to "BIH",
-    "Bosnia & Herzegovina"          to "BIH",
-    // Grupo C
-    "Brazil"                        to "BRA",
-    "Morocco"                       to "MAR",
-    "Scotland"                      to "SCO",
+    "Mexico"                        to "MEX", "México"                        to "MEX",
+    "South Africa"                  to "RSA", "África do Sul"                 to "RSA",
+    "Korea Republic"                to "KOR", "South Korea"                   to "KOR", "Coreia do Sul"                 to "KOR",
+    "Czech Republic"                to "CZE", "Czechia"                       to "CZE", "República Tcheca"              to "CZE", "Rep. Tcheca"                   to "CZE",
+    "Canada"                        to "CAN", "Canadá"                        to "CAN",
+    "Switzerland"                   to "SUI", "Suíça"                         to "SUI",
+    "Qatar"                         to "QAT", "Catar"                         to "QAT",
+    "Bosnia and Herzegovina"        to "BIH", "Bosnia & Herzegovina"          to "BIH", "Bosnia-Herzegovina"            to "BIH", "Bosnia"                        to "BIH", "Bósnia"                        to "BIH",
+    "Brazil"                        to "BRA", "Brasil"                        to "BRA",
+    "Morocco"                       to "MAR", "Marrocos"                      to "MAR",
+    "Scotland"                      to "SCO", "Escócia"                       to "SCO",
     "Haiti"                         to "HAI",
-    // Grupo D
-    "United States"                 to "USA",
-    "USA"                           to "USA",
-    "Australia"                     to "AUS",
-    "Paraguay"                      to "PAR",
-    "Turkey"                        to "TUR",
-    "Türkiye"                       to "TUR",
-    // Grupo E
-    "Germany"                       to "GER",
-    "Ecuador"                       to "ECU",
-    "Ivory Coast"                   to "CIV",
-    "Côte d'Ivoire"                 to "CIV",
-    "Cote d'Ivoire"                 to "CIV",
-    "Curaçao"                       to "CUW",
-    "Curacao"                       to "CUW",
-    // Grupo F
-    "Netherlands"                   to "NED",
-    "Japan"                         to "JPN",
-    "Tunisia"                       to "TUN",
-    "Sweden"                        to "SWE",
-    // Grupo G
-    "Belgium"                       to "BEL",
-    "Iran"                          to "IRN",
-    "Egypt"                         to "EGY",
-    "New Zealand"                   to "NZL",
-    // Grupo H
-    "Spain"                         to "ESP",
-    "Uruguay"                       to "URU",
-    "Saudi Arabia"                  to "KSA",
-    "Cape Verde"                    to "CPV",
-    // Grupo I
-    "France"                        to "FRA",
+    "United States"                 to "USA", "USA"                           to "USA", "EUA"                           to "USA",
+    "Australia"                     to "AUS", "Austrália"                     to "AUS",
+    "Paraguay"                      to "PAR", "Paraguai"                      to "PAR",
+    "Turkey"                        to "TUR", "Türkiye"                       to "TUR", "Turquia"                       to "TUR",
+    "Germany"                       to "GER", "Alemanha"                      to "GER",
+    "Ecuador"                       to "ECU", "Equador"                       to "ECU",
+    "Ivory Coast"                   to "CIV", "Côte d'Ivoire"                 to "CIV", "Cote d'Ivoire"                 to "CIV", "Costa do Marfim"                to "CIV",
+    "Curaçao"                       to "CUW", "Curacao"                       to "CUW",
+    "Netherlands"                   to "NED", "Holland"                       to "NED", "Holanda"                       to "NED", "Países Baixos"                 to "NED",
+    "Japan"                         to "JPN", "Japão"                         to "JPN",
+    "Tunisia"                       to "TUN", "Tunísia"                       to "TUN",
+    "Sweden"                        to "SWE", "Suécia"                        to "SWE",
+    "Belgium"                       to "BEL", "Bélgica"                       to "BEL",
+    "Egypt"                         to "EGY", "Egito"                         to "EGY",
+    "Iran"                          to "IRN", "Irã"                           to "IRN",
+    "New Zealand"                   to "NZL", "Nova Zelândia"                 to "NZL",
+    "Spain"                         to "ESP", "Espanha"                       to "ESP",
+    "Uruguay"                       to "URU", "Uruguai"                       to "URU",
+    "Saudi Arabia"                  to "KSA", "Arábia Saudita"                to "KSA",
+    "Cape Verde"                    to "CPV", "Cabo Verde"                    to "CPV",
+    "France"                        to "FRA", "França"                        to "FRA",
     "Senegal"                       to "SEN",
-    "Norway"                        to "NOR",
-    "Iraq"                          to "IRQ",
-    // Grupo J
+    "Norway"                        to "NOR", "Noruega"                       to "NOR",
+    "Iraq"                          to "IRQ", "Iraque"                        to "IRQ",
     "Argentina"                     to "ARG",
-    "Austria"                       to "AUT",
-    "Algeria"                       to "ALG",
-    "Jordan"                        to "JOR",
-    // Grupo K
+    "Austria"                       to "AUT", "Áustria"                       to "AUT",
+    "Algeria"                       to "ALG", "Argélia"                       to "ALG",
+    "Jordan"                        to "JOR", "Jordânia"                      to "JOR",
     "Portugal"                      to "POR",
-    "Colombia"                      to "COL",
-    "Uzbekistan"                    to "UZB",
-    "DR Congo"                      to "COD",
-    "Congo DR"                      to "COD",
-    "Democratic Republic of Congo"  to "COD",
-    "Congo, DR"                     to "COD",
-    // Grupo L
-    "England"                       to "ENG",
-    "Croatia"                       to "CRO",
-    "Panama"                        to "PAN",
-    "Ghana"                         to "GHA",
+    "Colombia"                      to "COL", "Colômbia"                      to "COL",
+    "Uzbekistan"                    to "UZB", "Uzbequistão"                   to "UZB",
+    "DR Congo"                      to "COD", "Congo DR"                      to "COD", "Democratic Republic of Congo"  to "COD", "Congo, DR"                     to "COD", "Rep. Congo"                    to "COD",
+    "Chile"                         to "CHI",
+    "Iceland"                       to "ISL", "Islândia"                      to "ISL",
+    "England"                       to "ENG", "Inglaterra"                    to "ENG",
+    "Croatia"                       to "CRO", "Croácia"                       to "CRO",
+    "Panama"                        to "PAN", "Panamá"                        to "PAN",
+    "Ghana"                         to "GHA", "Gana"                          to "GHA"
 )
 
 // Índice estático: "HOMECODE|AWAYCODE" → Match.id  (construído uma vez)
@@ -166,7 +145,10 @@ class OpenFootballMatchRepository : MatchRepository {
 
     override suspend fun updateMatchScore(matchId: String, homeScore: Int, awayScore: Int) {
         _matches.update { list ->
-            list.map { if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore) else it }
+            list.map { 
+                if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore, isManual = true) 
+                else it 
+            }
         }
     }
 
@@ -184,6 +166,8 @@ class OpenFootballMatchRepository : MatchRepository {
 
             _matches.update { current ->
                 current.map { match ->
+                    if (match.isManual) return@map match // Respeita a "trava" manual
+
                     scoreOverrides[match.id]?.let { (home, away) ->
                         match.copy(homeScore = home, awayScore = away)
                     } ?: match

@@ -1,14 +1,17 @@
 package com.lpstudio.bolaodagalera.presentation.match
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,17 +19,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.getInitials
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
-import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.UserAvatar
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import org.koin.compose.koinInject
@@ -42,6 +44,10 @@ fun MatchPredictionsScreen(
     val viewModel: BolaoViewModel = koinInject(parameters = { parametersOf(bolaoId) })
     val uiState by viewModel.uiState.collectAsState()
     
+    val authRepository: com.lpstudio.bolaodagalera.domain.repository.AuthRepository = koinInject()
+    val currentUserId = authRepository.currentUser?.id ?: ""
+    val isOwner = uiState.bolao?.ownerId == currentUserId
+
     val match = uiState.matches.find { it.id == matchId }
     val predictions = uiState.allPredictions.filter { it.matchId == matchId }
     val participants = uiState.participants
@@ -78,19 +84,31 @@ fun MatchPredictionsScreen(
             val matchEnd = match.matchDateMillis + 7200_000L // 2 horas de duração
             
             val isActuallyFinished = isFinished && now > matchEnd
+            val hasStarted = now >= match.matchDateMillis
 
-            val statusLabel = if (isActuallyFinished) "Jogo encerrado" else "Jogo em andamento"
+            // Cenário Admin: Se o admin entrar antes do jogo, ele vê os palpites mas sem score/pontos/status de andamento
+            val isAdminViewingBeforeStart = isOwner && !hasStarted
 
-            val itemsList = remember(predictions, participants, hReal, aReal) {
+            val statusLabel = when {
+                isAdminViewingBeforeStart -> "Visualização Admin"
+                isActuallyFinished -> "Jogo encerrado"
+                else -> "Jogo em andamento"
+            }
+
+            val itemsList = remember(predictions, participants, hReal, aReal, isAdminViewingBeforeStart) {
                 participants.map { participant ->
                     val pred = predictions.find { it.userId == participant.userId }
-                    val pts = if (pred != null) {
+                    val pts = if (pred != null && !isAdminViewingBeforeStart) {
                         calculatePointsUseCase(pred, hReal, aReal)
                     } else 0
                     Triple(participant, pred, pts)
                 }.sortedWith(
-                    compareByDescending<Triple<RankingEntry, Prediction?, Int>> { it.third } // 1. Pontos no jogo (3 para exato, 1 para resultado)
-                        .thenBy { it.first.userName.lowercase() } // 2. Ordem alfabética
+                    if (isAdminViewingBeforeStart) {
+                        compareBy { it.first.userName.lowercase() }
+                    } else {
+                        compareByDescending<Triple<RankingEntry, Prediction?, Int>> { it.third }
+                            .thenBy { it.first.userName.lowercase() }
+                    }
                 )
             }
 
@@ -134,7 +152,7 @@ fun MatchPredictionsScreen(
                             )
                         }
 
-                        // Placar Real Central
+                        // Placar Real Central (Escondido para Admin antes do jogo)
                         Column(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -143,31 +161,42 @@ fun MatchPredictionsScreen(
                                 statusLabel,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextMuted,
+                                color = if (isAdminViewingBeforeStart) Gold else TextMuted,
                                 letterSpacing = 0.5.sp
                             )
                             Spacer(Modifier.height(10.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    "$hReal",
-                                    fontSize = 36.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Neon
-                                )
-                                Text(
-                                    "×",
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextMuted
-                                )
-                                Text(
-                                    "$aReal",
-                                    fontSize = 36.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Neon
+                            
+                            if (!isAdminViewingBeforeStart) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text(
+                                        "$hReal",
+                                        fontSize = 36.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Neon
+                                    )
+                                    Text(
+                                        "×",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextMuted
+                                    )
+                                    Text(
+                                        "$aReal",
+                                        fontSize = 36.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Neon
+                                    )
+                                }
+                            } else {
+                                // Mostra um ícone de cadeado informativo para o admin
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = TextMuted.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(32.dp)
                                 )
                             }
                         }
@@ -202,7 +231,19 @@ fun MatchPredictionsScreen(
                 HorizontalDivider(color = GlassBorder, thickness = 1.dp, modifier = Modifier.padding(horizontal = 24.dp))
                 
                 Box(modifier = Modifier.weight(1f)) {
+                    val listState = rememberLazyListState()
+                    val showTopShadow by remember {
+                        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
+                    }
+                    val showBottomShadow by remember {
+                        derivedStateOf { listState.canScrollForward }
+                    }
+                    
+                    val topShadowAlpha by animateFloatAsState(targetValue = if (showTopShadow) 1f else 0f)
+                    val bottomShadowAlpha by animateFloatAsState(targetValue = if (showBottomShadow) 1f else 0f)
+
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 40.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -273,27 +314,29 @@ fun MatchPredictionsScreen(
                                                 )
                                             }
                                             
-                                            // Pontos ganhos nesse jogo
-                                            val pointsColor = when (pts) {
-                                                3 -> Neon
-                                                1 -> Gold
-                                                else -> TextMuted.copy(alpha = 0.4f)
-                                            }
-                                            Box(
-                                                modifier = Modifier
-                                                    .width(44.dp)
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .background(pointsColor.copy(alpha = 0.12f))
-                                                    .border(1.dp, pointsColor.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
-                                                    .padding(vertical = 6.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    text = if (pts > 0) "+$pts" else "0",
-                                                    color = pointsColor,
-                                                    fontSize = 15.sp,
-                                                    fontWeight = FontWeight.Black
-                                                )
+                                            // Pontos ganhos nesse jogo (Escondido para Admin antes do jogo)
+                                            if (!isAdminViewingBeforeStart) {
+                                                val pointsColor = when (pts) {
+                                                    3 -> Neon
+                                                    1 -> Gold
+                                                    else -> TextMuted.copy(alpha = 0.4f)
+                                                }
+                                                Box(
+                                                    modifier = Modifier
+                                                        .width(44.dp)
+                                                        .clip(RoundedCornerShape(10.dp))
+                                                        .background(pointsColor.copy(alpha = 0.12f))
+                                                        .border(1.dp, pointsColor.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                                        .padding(vertical = 6.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        text = if (pts > 0) "+$pts" else "0",
+                                                        color = pointsColor,
+                                                        fontSize = 15.sp,
+                                                        fontWeight = FontWeight.Black
+                                                    )
+                                                }
                                             }
                                         }
                                     } else {
@@ -313,7 +356,8 @@ fun MatchPredictionsScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(20.dp)
+                            .height(30.dp)
+                            .graphicsLayer { alpha = topShadowAlpha }
                             .background(
                                 Brush.verticalGradient(
                                     listOf(DeepNavy, Color.Transparent)
@@ -326,7 +370,8 @@ fun MatchPredictionsScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(40.dp)
+                            .height(50.dp)
+                            .graphicsLayer { alpha = bottomShadowAlpha }
                             .background(
                                 Brush.verticalGradient(
                                     listOf(Color.Transparent, DeepNavy)

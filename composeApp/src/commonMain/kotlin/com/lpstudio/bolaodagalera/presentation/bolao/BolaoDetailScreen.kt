@@ -705,7 +705,11 @@ private fun GroupStageTab(
                         enter = expandVertically(),
                         exit = shrinkVertically()
                     ) {
-                        Column {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp) // Recuo para diferenciar do cabeçalho do grupo
+                        ) {
                             MatchCard(
                                 match = match,
                                 prediction = predictions[match.id],
