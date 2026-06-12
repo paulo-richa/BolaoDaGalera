@@ -17,3 +17,7 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+serviceAccountKey.json
+scripts/sync-scores/*.json
+!scripts/sync-scores/package.json
+!scripts/sync-scores/package-lock.json
