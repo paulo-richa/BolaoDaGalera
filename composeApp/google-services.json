@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "254672592094",
+    "project_id": "bolaodagalera-bb002",
+    "storage_bucket": "bolaodagalera-bb002.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:254672592094:android:432e51c0bcc8e75a92f64f",
+        "android_client_info": {
+          "package_name": "com.lpstudio.bolaodagalera"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7QLGabEgvmpWUNzFjGKvWmqua1bsWn3o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
