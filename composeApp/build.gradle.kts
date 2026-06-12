@@ -117,7 +117,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com" 
-                releaseNotes = "v1.3: Novo layout de convites minimalista, sincronização reativa do bolão (tempo real), remoção de amistosos e foco na Copa 2026, correções de perfil e limpeza completa ao sair de bolões."
+                releaseNotes = "v2.0 (Build 6): Filtro dinâmico 'HOJE' para jogos, correção na lógica de pontos do ranking (alvo vs check), proteção contra regressão de placares (0x0) e navegação inteligente entre rodadas."
             }
         }
         getByName("debug") {
