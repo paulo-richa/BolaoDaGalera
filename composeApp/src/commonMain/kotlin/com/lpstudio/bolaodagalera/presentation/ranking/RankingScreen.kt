@@ -91,14 +91,13 @@ fun RankingScreen(bolaoId: String) {
                 }
 
                 // ── List Section ─────────────────────────────────────────────────
-                val startIndex = if (uiState.entries.size >= 3) 3 else 0
                 itemsIndexed(
-                    items = uiState.entries.drop(startIndex),
+                    items = uiState.entries,
                     key = { _, entry -> "rank-${entry.userId}" },
                     contentType = { _, _ -> "ranking-row" }
                 ) { index, entry ->
                     RankingRow(
-                        position = startIndex + index + 1,
+                        position = index + 1,
                         entry = entry,
                         isCurrentUser = entry.userId == uiState.currentUserId
                     )

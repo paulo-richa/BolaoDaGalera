@@ -44,7 +44,6 @@ class GetRankingUseCase(
                     
                     if (pts == bolao.pointsExactScore) {
                         exactScores++
-                        correctResults++ // If exact, it's also a correct result
                     } else if (pts == bolao.pointsWinnerOrDraw) {
                         correctResults++
                     }

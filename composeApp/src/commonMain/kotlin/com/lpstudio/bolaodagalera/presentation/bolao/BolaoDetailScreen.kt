@@ -154,8 +154,8 @@ fun BolaoDetailContent(
         )
     }
 
-    var selectedRound by rememberSaveable { mutableIntStateOf(1) }
-    var selectedPhase by rememberSaveable { mutableStateOf<Phase?>(null) }
+    var selectedRound by rememberSaveable { mutableIntStateOf(0) } // 0 = HOJE
+    var selectedPhase by rememberSaveable { mutableStateOf<Phase?>(Phase.FRIENDLIES) } // FRIENDLIES como marker para HOJE
 
     if (showLeaveDialog) {
         AlertDialog(
@@ -609,11 +609,20 @@ private fun GroupStageTab(
 ) {
     val unlocked = remember(matches) { unlockedRounds(matches) }
     
-    val roundMatches = remember(matches, selectedRound, showRoundSelector) {
-        if (showRoundSelector) {
-            matches.filter { it.groupRound() == selectedRound }
-        } else {
-            matches
+    val tz = TimeZone.currentSystemDefault()
+    val now = TimeSource.nowMillis()
+    val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+
+    val roundMatches = remember(matches, selectedRound, showRoundSelector, todayDate) {
+        when {
+            selectedRound == 0 -> {
+                matches.filter { m ->
+                    val mDate = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz).date
+                    mDate == todayDate || (now in m.matchDateMillis..(m.matchDateMillis + 3 * 3600_000L))
+                }
+            }
+            showRoundSelector -> matches.filter { it.groupRound() == selectedRound }
+            else -> matches
         }
     }
     val byGroup = remember(roundMatches) {
@@ -677,9 +686,17 @@ private fun GroupStageTab(
                     RodadaSelector(
                         selected = selectedRound,
                         unlocked = unlocked,
-                        onSelect = { if (it in unlocked) onRoundChange(it) }
+                        onSelect = { if (it == 0 || it in unlocked) onRoundChange(it) }
                     )
                     Spacer(Modifier.height(12.dp))
+                }
+            }
+
+            if (roundMatches.isEmpty() && selectedRound == 0) {
+                item {
+                    Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                        Text("Nenhum jogo programado para hoje.", color = TextMuted, fontSize = 14.sp)
+                    }
                 }
             }
 
@@ -744,7 +761,7 @@ private fun KnockoutTab(
     isLoading: Boolean,
     isAdmin: Boolean,
     selectedPhase: Phase?,
-    onPhaseChange: (Phase) -> Unit,
+    onPhaseChange: (Phase?) -> Unit,
     listState: LazyListState,
     onMatchClick: (String) -> Unit,
     onShowAllPredictions: (Match) -> Unit,
@@ -764,48 +781,45 @@ private fun KnockoutTab(
         ).filter { phase -> matches.any { it.phase == phase } }
     }
 
-    // Auto-selecionar fase com jogos hoje ou próximos
+    val tz = TimeZone.currentSystemDefault()
+    val now = TimeSource.nowMillis()
+    val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+
+    // Auto-selecionar HOJE se houver jogos, senão a próxima fase
     LaunchedEffect(matches) {
-        if (selectedPhase != null) return@LaunchedEffect
+        if (selectedPhase != Phase.FRIENDLIES && selectedPhase != null) return@LaunchedEffect
         
         val knockoutMatches = matches.filter { it.phase != Phase.GROUP_STAGE }
-        if (knockoutMatches.isEmpty()) return@LaunchedEffect
-        
-        val timezone = TimeZone.currentSystemDefault()
-        val todayStart = Instant.fromEpochMilliseconds(TimeSource.nowMillis()).toLocalDateTime(timezone).date.atStartOfDayIn(timezone).toEpochMilliseconds()
-        val todayEnd = todayStart + (24 * 60 * 60 * 1000)
+        val hasMatchToday = knockoutMatches.any { 
+            val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
+            mDate == todayDate 
+        }
 
-        // 1. Tenta achar fase com jogo HOJE
-        val todayPhase = knockoutMatches.find { 
-            it.matchDateMillis in todayStart..todayEnd 
-        }?.phase
-
-        if (todayPhase != null) {
-            onPhaseChange(todayPhase)
+        if (hasMatchToday) {
+            onPhaseChange(Phase.FRIENDLIES) // Marker para HOJE
         } else {
-            // 2. Tenta achar a próxima fase com jogos não finalizados
-            val nextPhase = phaseOrder.find { phase ->
-                knockoutMatches.any { it.phase == phase && !it.isFinished }
-            }
+            val nextPhase = phaseOrder.find { p -> knockoutMatches.any { it.phase == p && !it.isFinished } }
             if (nextPhase != null) onPhaseChange(nextPhase)
         }
     }
 
-    val timezone = TimeZone.currentSystemDefault()
-    val now = TimeSource.nowMillis()
+    val phaseMatches = remember(matches, selectedPhase, todayDate) {
+        if (selectedPhase == Phase.FRIENDLIES) {
+            matches.filter { it.phase != Phase.GROUP_STAGE }.filter { m ->
+                val mDate = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz).date
+                mDate == todayDate || (now in m.matchDateMillis..(m.matchDateMillis + 3 * 3600_000L))
+            }
+        } else {
+            val currentPhase = selectedPhase ?: phaseOrder.firstOrNull()
+            matches.filter { it.phase == currentPhase }
+        }
+    }
 
-    // O Mata-mata libera no início do dia do último jogo da Fase de Grupos
-    val groupStageLastMatchDay = matches
-        .filter { it.phase == Phase.GROUP_STAGE }
-        .maxOfOrNull { it.matchDateMillis }
-        ?.let { millis ->
-            Instant.fromEpochMilliseconds(millis)
-                .toLocalDateTime(timezone)
-                .date
-                .atStartOfDayIn(timezone)
-                .toEpochMilliseconds()
-        } ?: 0L
-
+    val groupStageLastMatchDay = remember(matches) {
+        matches.filter { it.phase == Phase.GROUP_STAGE }
+            .maxOfOrNull { it.matchDateMillis }
+            ?.let { Instant.fromEpochMilliseconds(it).toLocalDateTime(tz).date.atStartOfDayIn(tz).toEpochMilliseconds() } ?: 0L
+    }
     val isKnockoutUnlocked = now >= groupStageLastMatchDay
 
     Box(Modifier.fillMaxSize()) {
@@ -817,22 +831,24 @@ private fun KnockoutTab(
         ) {
             if (phaseOrder.isNotEmpty()) {
                 item {
-                    val currentPhase = selectedPhase ?: phaseOrder.first()
                     KnockoutPhaseSelector(
                         phases = phaseOrder,
-                        selected = currentPhase,
+                        selected = selectedPhase,
                         isUnlocked = isKnockoutUnlocked,
-                        onSelect = { if (isKnockoutUnlocked) onPhaseChange(it) }
+                        onSelect = { onPhaseChange(it) }
                     )
                     Spacer(Modifier.height(8.dp))
                 }
 
-                val currentPhase = selectedPhase ?: phaseOrder.first()
-                val phaseMatches = matches.filter { it.phase == currentPhase }
-                
-                // Agrupa as partidas em pares para desenhar a conexão do chaveamento
+                if (phaseMatches.isEmpty() && selectedPhase == Phase.FRIENDLIES) {
+                    item {
+                        Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                            Text("Nenhum jogo de mata-mata hoje.", color = TextMuted, fontSize = 14.sp)
+                        }
+                    }
+                }
+
                 val pairs = phaseMatches.chunked(2)
-                
                 items(pairs.size) { index ->
                     val pair = pairs[index]
                     val m1 = pair[0]
@@ -957,9 +973,9 @@ private fun KnockoutBracketPair(
 @Composable
 private fun KnockoutPhaseSelector(
     phases: List<Phase>,
-    selected: Phase,
+    selected: Phase?,
     isUnlocked: Boolean,
-    onSelect: (Phase) -> Unit
+    onSelect: (Phase?) -> Unit
 ) {
     androidx.compose.foundation.lazy.LazyRow(
         modifier = Modifier
@@ -968,60 +984,23 @@ private fun KnockoutPhaseSelector(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(horizontal = 2.dp)
     ) {
+        item {
+            val isSelected = selected == Phase.FRIENDLIES
+            FilterChip(
+                label = "⚽️ HOJE",
+                isSelected = isSelected,
+                isUnlocked = true,
+                onClick = { onSelect(Phase.FRIENDLIES) }
+            )
+        }
         items(phases) { phase ->
             val isSelected = selected == phase
-
-            val borderColor by animateColorAsState(
-                when {
-                    isSelected && isUnlocked -> Neon
-                    isUnlocked -> GlassBorder
-                    else -> Color.Transparent
-                },
-                label = "border_${phase.name}"
+            FilterChip(
+                label = phase.label,
+                isSelected = isSelected,
+                isUnlocked = isUnlocked,
+                onClick = { onSelect(phase) }
             )
-
-            val containerColor by animateColorAsState(
-                when {
-                    isSelected && isUnlocked -> Neon.copy(alpha = 0.12f)
-                    isUnlocked -> NavyElevated
-                    else -> NavyCard.copy(alpha = 0.5f)
-                },
-                label = "bg_${phase.name}"
-            )
-
-            val textColor by animateColorAsState(
-                when {
-                    isSelected && isUnlocked -> Neon
-                    isUnlocked -> Color.White
-                    else -> TextMuted.copy(alpha = 0.4f)
-                },
-                label = "text_${phase.name}"
-            )
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(containerColor)
-                    .border(1.dp, borderColor, RoundedCornerShape(14.dp))
-                    .then(if (isUnlocked) Modifier.clickable { onSelect(phase) } else Modifier)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (!isUnlocked) {
-                        Text("🔒", fontSize = 10.sp)
-                    }
-                    Text(
-                        phase.label,
-                        color = textColor,
-                        fontSize = 12.sp,
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold
-                    )
-                }
-            }
         }
     }
 }
@@ -1032,69 +1011,81 @@ private fun RodadaSelector(selected: Int, unlocked: Set<Int>, onSelect: (Int) ->
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // Opção HOJE
+        Box(modifier = Modifier.weight(1f)) {
+            FilterChip(
+                label = "⚽️ HOJE",
+                isSelected = selected == 0,
+                isUnlocked = true,
+                onClick = { onSelect(0) }
+            )
+        }
         listOf(1, 2, 3).forEach { round ->
-            val isSelected = selected == round
-            val isUnlocked = round in unlocked
-            
-            val borderColor by animateColorAsState(
-                when {
-                    isSelected -> Neon
-                    isUnlocked -> GlassBorder
-                    else -> Color.Transparent
-                },
-                label = "border_$round"
-            )
-
-            val containerColor by animateColorAsState(
-                when {
-                    isSelected -> Neon.copy(alpha = 0.12f)
-                    isUnlocked -> NavyElevated
-                    else -> NavyCard.copy(alpha = 0.5f)
-                },
-                label = "bg_$round"
-            )
-
-            val textColor by animateColorAsState(
-                when {
-                    isSelected -> Neon
-                    isUnlocked -> Color.White
-                    else -> TextMuted.copy(alpha = 0.4f)
-                },
-                label = "text_$round"
-            )
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(containerColor)
-                    .border(1.dp, borderColor, RoundedCornerShape(14.dp))
-                    .then(if (isUnlocked) Modifier.clickable { onSelect(round) } else Modifier)
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (!isUnlocked) {
-                        Text(
-                            "🔒",
-                            fontSize = 10.sp,
-                            modifier = Modifier.padding(bottom = 1.dp)
-                        )
-                    }
-                    Text(
-                        "Rodada $round",
-                        color = textColor,
-                        fontSize = 12.sp,
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold
-                    )
-                }
+            Box(modifier = Modifier.weight(1f)) {
+                FilterChip(
+                    label = "Rodada $round",
+                    isSelected = selected == round,
+                    isUnlocked = round in unlocked,
+                    onClick = { onSelect(round) }
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun FilterChip(
+    label: String,
+    isSelected: Boolean,
+    isUnlocked: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor by animateColorAsState(
+        when {
+            isSelected && isUnlocked -> Neon
+            isUnlocked -> GlassBorder
+            else -> Color.Transparent
+        },
+        label = "border_$label"
+    )
+
+    val containerColor by animateColorAsState(
+        when {
+            isSelected && isUnlocked -> Neon.copy(alpha = 0.12f)
+            isUnlocked -> NavyElevated
+            else -> NavyCard.copy(alpha = 0.5f)
+        },
+        label = "bg_$label"
+    )
+
+    val textColor by animateColorAsState(
+        when {
+            isSelected && isUnlocked -> Neon
+            isUnlocked -> Color.White
+            else -> TextMuted.copy(alpha = 0.4f)
+        },
+        label = "text_$label"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(containerColor)
+            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
+            .then(if (isUnlocked) Modifier.clickable { onClick() } else Modifier)
+            .padding(vertical = 12.dp, horizontal = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            label,
+            color = textColor,
+            fontSize = 11.sp,
+            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+            maxLines = 1
+        )
     }
 }
 

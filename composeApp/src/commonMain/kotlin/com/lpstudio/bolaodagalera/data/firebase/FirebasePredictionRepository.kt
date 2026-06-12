@@ -142,7 +142,7 @@ class FirebasePredictionRepository(
 
                 val points = calculatePointsUseCase(prediction, homeScore, awayScore)
                 val isExact = points == 3 
-                val isCorrectResult = points >= 1
+                val isCorrectResult = points == 1 // Apenas resultado, sem placar exato
 
                 val current = userStats[prediction.userId] ?: Triple(0, 0, 0)
                 userStats[prediction.userId] = Triple(
