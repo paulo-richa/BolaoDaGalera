@@ -1,15 +1,9 @@
 package com.lpstudio.bolaodagalera.di
 
-import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
-import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
-import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
-import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
+import com.lpstudio.bolaodagalera.data.firebase.*
 import com.lpstudio.bolaodagalera.data.remote.OpenFootballMatchRepository
-import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
-import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
-import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
-import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
-import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
+import com.lpstudio.bolaodagalera.domain.repository.*
+import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
@@ -20,16 +14,22 @@ import org.koin.dsl.module
 
 // Módulo híbrido:
 //   • Jogos (placares) → openfootball JSON (gratuito, sem chave)
-//   • Auth / Bolões / Palpites → fake in-memory
-//     (substitua por Firebase quando configurado)
+//   • Auth / Bolões / Palpites → FIREBASE (Produção)
 
 val openFootballAppModule = module {
+    // Repositório de Jogos via OpenFootball (Remoto/Memória)
     single<MatchRepository>     { OpenFootballMatchRepository() }
-    single<AuthRepository>      { FakeAuthRepository() }
-    single<BolaoRepository>     { FakeBolaoRepository() }
-    single<InvitationRepository>{ FakeInvitationRepository() }
-    single<PredictionRepository>{ FakePredictionRepository(get()) }
+    
+    // Repositórios de Auth e Dados via Firebase (Persistência)
+    single<AuthRepository>      { FirebaseAuthRepository() }
+    single<BolaoRepository>     { FirebaseBolaoRepository() }
+    single<InvitationRepository>{ FirebaseInvitationRepository(get()) }
+    single<PredictionRepository>{ FirebasePredictionRepository(get()) }
 
+    // UseCases
+    single { CalculatePointsUseCase() }
+
+    // ViewModels
     viewModel { AuthViewModel(get()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
     viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId) }
