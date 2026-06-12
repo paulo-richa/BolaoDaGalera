@@ -157,6 +157,29 @@ fun BolaoDetailContent(
     var selectedRound by rememberSaveable { mutableIntStateOf(0) } // 0 = HOJE
     var selectedPhase by rememberSaveable { mutableStateOf<Phase?>(Phase.FRIENDLIES) } // FRIENDLIES como marker para HOJE
 
+    // Auto-selecionar HOJE se houver jogos, senão a rodada atual (para a aba de Grupos)
+    LaunchedEffect(uiState.matches) {
+        if (selectedRound != 0 || uiState.matches.isEmpty()) return@LaunchedEffect
+        
+        val tz = TimeZone.currentSystemDefault()
+        val now = TimeSource.nowMillis()
+        val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+        
+        val hasMatchToday = uiState.matches.filter { it.phase == Phase.GROUP_STAGE }.any { 
+            val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
+            mDate == todayDate 
+        }
+
+        if (!hasMatchToday) {
+            val currentRound = uiState.matches
+                .filter { it.phase == Phase.GROUP_STAGE && !it.isFinished }
+                .minByOrNull { it.matchDateMillis }
+                ?.groupRound() ?: 1
+            
+            selectedRound = currentRound
+        }
+    }
+
     if (showLeaveDialog) {
         AlertDialog(
             onDismissRequest = { showLeaveDialog = false },
