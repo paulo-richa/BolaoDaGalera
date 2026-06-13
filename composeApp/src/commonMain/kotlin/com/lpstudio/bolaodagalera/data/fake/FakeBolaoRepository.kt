@@ -1,6 +1,7 @@
 package com.lpstudio.bolaodagalera.data.fake
 
 import com.lpstudio.bolaodagalera.domain.model.Bolao
+import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +40,8 @@ class FakeBolaoRepository : BolaoRepository {
         description: String, 
         ownerId: String, 
         championshipId: String,
+        scope: BolaoScope,
+        specificMatchId: String?,
         pointsExactScore: Int,
         pointsWinnerOrDraw: Int
     ): Bolao {
@@ -53,6 +56,8 @@ class FakeBolaoRepository : BolaoRepository {
             ownerId = ownerId,
             participants = listOf(ownerId),
             championshipId = championshipId,
+            scope = scope,
+            specificMatchId = specificMatchId,
             createdAtMillis = 1781136000000L
         )
         _boloes.update { it + newBolao }
@@ -111,12 +116,13 @@ class FakeBolaoRepository : BolaoRepository {
         }
     }
 
-    override suspend fun updateBolao(bolaoId: String, name: String, description: String, pointsExactScore: Int, pointsWinnerOrDraw: Int) {
+    override suspend fun updateBolao(bolaoId: String, name: String, description: String, scope: BolaoScope, pointsExactScore: Int, pointsWinnerOrDraw: Int) {
         _boloes.update { list ->
             list.map { 
                 if (it.id == bolaoId) it.copy(
                     name = name, 
                     description = description,
+                    scope = scope,
                     pointsExactScore = pointsExactScore,
                     pointsWinnerOrDraw = pointsWinnerOrDraw
                 ) else it 
