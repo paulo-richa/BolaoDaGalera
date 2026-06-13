@@ -112,7 +112,12 @@ android {
     }
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             firebaseAppDistribution {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
