@@ -15,5 +15,14 @@ data class Bolao(
     val participants: List<String> = emptyList(),
     val pendingParticipants: List<String> = emptyList(), // Usuários aguardando aprovação
     val championshipId: String = "COPA_2026", // "COPA_2026" ou "AMISTOSOS"
+    val scope: BolaoScope = BolaoScope.FULL,
+    val specificMatchId: String? = null,
     val createdAtMillis: Long = 0L
 )
+
+enum class BolaoScope(val label: String) {
+    FULL("Grupos + Mata-mata"),
+    ONLY_GROUPS("Apenas Grupos"),
+    ONLY_KNOCKOUT("Apenas Mata-mata"),
+    ONLY_BRAZIL("Apenas Jogos do Brasil")
+}

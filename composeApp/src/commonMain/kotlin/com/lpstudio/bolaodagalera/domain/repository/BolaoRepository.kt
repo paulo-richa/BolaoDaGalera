@@ -1,6 +1,7 @@
 package com.lpstudio.bolaodagalera.domain.repository
 
 import com.lpstudio.bolaodagalera.domain.model.Bolao
+import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import kotlinx.coroutines.flow.Flow
 
 interface BolaoRepository {
@@ -12,6 +13,8 @@ interface BolaoRepository {
         description: String, 
         ownerId: String, 
         championshipId: String = "COPA_2026",
+        scope: BolaoScope = BolaoScope.FULL,
+        specificMatchId: String? = null,
         pointsExactScore: Int = 3,
         pointsWinnerOrDraw: Int = 1
     ): Bolao
@@ -24,6 +27,7 @@ interface BolaoRepository {
         bolaoId: String, 
         name: String, 
         description: String, 
+        scope: BolaoScope,
         pointsExactScore: Int, 
         pointsWinnerOrDraw: Int
     )

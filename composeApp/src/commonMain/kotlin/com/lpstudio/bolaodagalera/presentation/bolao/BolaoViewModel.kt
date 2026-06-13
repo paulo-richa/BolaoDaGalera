@@ -2,10 +2,7 @@ package com.lpstudio.bolaodagalera.presentation.bolao
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lpstudio.bolaodagalera.domain.model.Bolao
-import com.lpstudio.bolaodagalera.domain.model.Match
-import com.lpstudio.bolaodagalera.domain.model.Prediction
-import com.lpstudio.bolaodagalera.domain.model.RankingEntry
+import com.lpstudio.bolaodagalera.domain.model.*
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
@@ -73,9 +70,18 @@ class BolaoViewModel(
                         predictionRepository.getRanking(bolaoId, participants)
                     }
                 ) { matches, predictions, allPredictions, ranking ->
+                    val bolao = _uiState.value.bolao
+                    val filteredMatches = when {
+                        bolao?.specificMatchId != null -> matches.filter { it.id == bolao.specificMatchId }
+                        bolao?.scope == BolaoScope.ONLY_GROUPS -> matches.filter { it.phase == Phase.GROUP_STAGE }
+                        bolao?.scope == BolaoScope.ONLY_KNOCKOUT -> matches.filter { it.phase != Phase.GROUP_STAGE }
+                        bolao?.scope == BolaoScope.ONLY_BRAZIL -> matches.filter { it.homeTeamCode == "BRA" || it.awayTeamCode == "BRA" }
+                        else -> matches
+                    }
+
                     val predictionMap = predictions.associateBy { it.matchId }
                     _uiState.update { it.copy(
-                        matches = matches, 
+                        matches = filteredMatches,
                         userPredictions = predictionMap,
                         allPredictions = allPredictions,
                         participants = ranking,

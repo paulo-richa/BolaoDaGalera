@@ -158,17 +158,22 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     private fun friendlyError(e: Exception): String {
         val msg = e.message?.lowercase() ?: ""
+        println("Auth Error Debug: $msg") // Log para debug interno
         return when {
-            msg.contains("incorrect") || msg.contains("invalid-credential") || msg.contains("password") -> 
+            msg.contains("incorrect") || msg.contains("invalid-credential") || msg.contains("password") || msg.contains("wrong") ->
                 "E-mail ou senha incorretos. Verifique os dados e tente novamente."
             msg.contains("user-not-found") || msg.contains("no user") -> 
                 "Usuário não encontrado. Crie uma conta para acessar."
-            msg.contains("email-already") || msg.contains("email já") -> 
+            msg.contains("email-already") || msg.contains("email já") || msg.contains("collision") || msg.contains("already-in-use") -> 
                 "Este e-mail já está sendo usado em outra conta."
-            msg.contains("network") || msg.contains("connection") -> 
-                "Sem conexão com a internet. Tente novamente em instantes."
+            msg.contains("network") || msg.contains("connection") || msg.contains("timeout") -> 
+                "Erro de conexão. Verifique sua internet e tente novamente."
             msg.contains("too many requests") || msg.contains("blocked") ->
                 "Muitas tentativas falhas. Sua conta foi temporariamente bloqueada por segurança."
+            msg.contains("weak-password") ->
+                "A senha é muito fraca. Use pelo menos 6 caracteres."
+            msg.contains("invalid-email") ->
+                "O formato do e-mail é inválido."
             else -> "Ocorreu um erro inesperado. Por favor, tente novamente."
         }
     }

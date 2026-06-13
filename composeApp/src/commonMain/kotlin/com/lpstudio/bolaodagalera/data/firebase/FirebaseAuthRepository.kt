@@ -57,12 +57,38 @@ class FirebaseAuthRepository : AuthRepository {
     }
 
     override suspend fun register(email: String, password: String, name: String, phone: String, nickname: String, username: String): User {
-        val result = auth.createUserWithEmailAndPassword(email, password)
+        val result = try {
+            auth.createUserWithEmailAndPassword(email, password)
+        } catch (e: Exception) {
+            val msg = e.message?.lowercase() ?: ""
+            // Verifica múltiplos padrões de erro de e-mail já em uso
+            val isEmailInUse = msg.contains("already-in-use") || 
+                              msg.contains("already in use") || 
+                              msg.contains("email-already") || 
+                              msg.contains("collision")
+            
+            if (isEmailInUse) {
+                // Tenta fazer o login. Se a senha estiver errada, o erro será capturado pelo ViewModel
+                auth.signInWithEmailAndPassword(email, password)
+            } else {
+                throw e
+            }
+        }
+        
         val user = result.user ?: error("Cadastro falhou")
-        user.updateProfile(displayName = name)
-        // Save user profile in Firestore for ranking display
-        usersCollection.document(user.uid).set(UserDto(name = name, email = user.email ?: "", phone = phone, nickname = nickname, username = username))
-        return User(user.uid, name, user.email ?: "", phone, nickname, username)
+        try {
+            user.updateProfile(displayName = name)
+        } catch (e: Exception) { }
+
+        // Salva ou atualiza o perfil no Firestore
+        usersCollection.document(user.uid).set(
+            UserDto(name = name, email = user.email ?: "", phone = phone, nickname = nickname, username = username),
+            merge = true
+        )
+        
+        val finalUser = User(user.uid, name, user.email ?: "", phone, nickname, username)
+        _cachedUser = finalUser
+        return finalUser
     }
 
     override suspend fun signOut() {
