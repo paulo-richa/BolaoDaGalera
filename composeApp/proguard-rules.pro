@@ -16,3 +16,10 @@
     @kotlinx.serialization.Serializable *;
 }
 -keep class kotlinx.serialization.json.** { *; }
+
+# Suprimir avisos de classes ausentes (R8)
+-dontwarn java.lang.management.ManagementFactory
+-dontwarn java.lang.management.RuntimeMXBean
+-dontwarn io.ktor.**
+-dontwarn kotlinx.coroutines.debug.**
+-dontwarn javax.naming.**
