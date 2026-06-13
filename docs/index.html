@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bolão da Galera - Copa 2026</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0B1019;
+            color: #FFFFFF;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .hero {
+            padding: 40px 20px;
+        }
+        .logo {
+            width: 180px;
+            height: 180px;
+            margin-bottom: 24px;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 178, 0.3));
+        }
+        h1 {
+            font-size: 2.5em;
+            margin: 10px 0;
+            background: linear-gradient(90deg, #00FFB2, #00D1FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p {
+            color: #B0BCC7;
+            font-size: 1.2em;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        .btn {
+            background: linear-gradient(135deg, #00FFB2 0%, #00D1FF 100%);
+            color: #0B1019;
+            padding: 16px 32px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-block;
+            margin-top: 30px;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 178, 0.4);
+        }
+        .links {
+            margin-top: 60px;
+        }
+        .links a {
+            color: #5B6B79;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 0.9em;
+        }
+        .links a:hover {
+            color: #00FFB2;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <!-- O logo será carregado via caminho relativo do repositório -->
+        <img src="../composeApp/src/commonMain/composeResources/drawable/logo_oficial.png" alt="Bolão da Galera" class="logo">
+        <h1>Bolão da Galera</h1>
+        <p>A forma mais épica de organizar seus palpites para a Copa 2026 com seus amigos.</p>
+
+        <a href="#" class="btn">Em breve na Google Play</a>
+
+        <div class="links">
+            <a href="privacy-policy.html">Política de Privacidade</a>
+            <a href="mailto:paulo.richa@hotmail.com">Suporte</a>
+        </div>
+    </div>
+</body>
+</html>
