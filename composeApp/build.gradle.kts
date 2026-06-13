@@ -102,8 +102,8 @@ android {
         applicationId = "com.lpstudio.bolaodagalera"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 8
-        versionName = "2.2"
+        versionCode = 9
+        versionName = "2.3"
     }
     packaging {
         resources {
@@ -122,7 +122,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com" 
-                releaseNotes = "v2.2 (Build 8): Lançamento oficial com permissão de ID de publicidade e correções no fluxo de cadastro."
+                releaseNotes = "v2.3 (Build 9): Inclusão da permissão de ID de publicidade obrigatória pela Google Play e ajustes finais de estabilidade."
             }
         }
         getByName("debug") {
