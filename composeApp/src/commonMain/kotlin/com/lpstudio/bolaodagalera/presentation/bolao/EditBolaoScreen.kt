@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.presentation.bolao
 import androidx.compose.runtime.Immutable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -28,8 +29,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.Bolao
+import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
+import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.theme.*
@@ -53,15 +56,34 @@ data class EditBolaoUiState(
 class EditBolaoViewModel(
     private val bolaoRepository: BolaoRepository,
     private val authRepository: AuthRepository,
+    private val matchRepository: MatchRepository,
     private val bolaoId: String
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EditBolaoUiState())
     val uiState: StateFlow<EditBolaoUiState> = _uiState.asStateFlow()
 
+    private val _isKnockoutStarted = MutableStateFlow(false)
+    val isKnockoutStarted: StateFlow<Boolean> = _isKnockoutStarted.asStateFlow()
+
     val currentUserId = authRepository.currentUser?.id
 
     init {
         loadBolao()
+        checkKnockoutStatus()
+    }
+
+    private fun checkKnockoutStatus() {
+        viewModelScope.launch {
+            matchRepository.getMatches().collect { matches ->
+                val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
+                val knockoutStarted = matches.any { 
+                    it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.GROUP_STAGE && 
+                    it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES &&
+                    (it.isFinished || now >= it.matchDateMillis)
+                }
+                _isKnockoutStarted.value = knockoutStarted
+            }
+        }
     }
 
     private fun loadBolao() {
@@ -76,11 +98,11 @@ class EditBolaoViewModel(
         }
     }
 
-    fun update(name: String, description: String, pointsExact: Int, pointsWinner: Int) {
+    fun update(name: String, description: String, scope: BolaoScope, pointsExact: Int, pointsWinner: Int) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                bolaoRepository.updateBolao(bolaoId, name, description, pointsExact, pointsWinner)
+                bolaoRepository.updateBolao(bolaoId, name, description, scope, pointsExact, pointsWinner)
                 val updatedBolao = bolaoRepository.getBolao(bolaoId)
                 _uiState.update { it.copy(bolao = updatedBolao, isLoading = false, showSuccessMessage = true) }
                 kotlinx.coroutines.delay(3000)
@@ -128,12 +150,15 @@ fun EditBolaoScreen(
 ) {
     val bolaoRepository = koinInject<BolaoRepository>()
     val authRepository = koinInject<AuthRepository>()
-    val viewModel = remember(bolaoId) { EditBolaoViewModel(bolaoRepository, authRepository, bolaoId) }
+    val matchRepository = koinInject<MatchRepository>()
+    val viewModel = remember(bolaoId) { EditBolaoViewModel(bolaoRepository, authRepository, matchRepository, bolaoId) }
     val uiState by viewModel.uiState.collectAsState()
+    val isKnockoutStarted by viewModel.isKnockoutStarted.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var selectedScope by remember { mutableStateOf(BolaoScope.FULL) }
     var pointsExact by remember { mutableIntStateOf(3) }
     var pointsWinner by remember { mutableIntStateOf(1) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -157,6 +182,7 @@ fun EditBolaoScreen(
         uiState.bolao?.let {
             name = it.name
             description = it.description
+            selectedScope = it.scope
             pointsExact = it.pointsExactScore
             pointsWinner = it.pointsWinnerOrDraw
         }
@@ -278,6 +304,86 @@ fun EditBolaoScreen(
                             textAlign = TextAlign.End
                         )
                     }
+
+                    // Scope Section
+                    uiState.bolao?.let { originalBolao ->
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("TIPO DO BOLÃO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
+                            
+                            val isOnlyGroups = originalBolao.scope == BolaoScope.ONLY_GROUPS
+                            val isFull = originalBolao.scope == BolaoScope.FULL
+                            val canEditScope = isOnlyGroups || (isFull && !isKnockoutStarted)
+                            
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(1.dp, if (canEditScope) Neon.copy(alpha = 0.5f) else GlassBorder.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                                color = NavyCard
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Text(
+                                            when(selectedScope) {
+                                                BolaoScope.FULL -> "🏆"
+                                                BolaoScope.ONLY_GROUPS -> "⚽"
+                                                BolaoScope.ONLY_KNOCKOUT -> "⚔️"
+                                                BolaoScope.ONLY_BRAZIL -> "🇧🇷"
+                                            },
+                                            fontSize = 18.sp
+                                        )
+                                        Text(
+                                            selectedScope.label,
+                                            color = Color.White,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    if (canEditScope) {
+                                        Spacer(Modifier.height(12.dp))
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(Neon.copy(alpha = 0.1f))
+                                                .clickable { 
+                                                    selectedScope = if (selectedScope == BolaoScope.ONLY_GROUPS) BolaoScope.FULL else BolaoScope.ONLY_GROUPS
+                                                }
+                                                .padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                "Incluir fase de Mata-Mata",
+                                                color = Neon,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Switch(
+                                                checked = selectedScope == BolaoScope.FULL,
+                                                onCheckedChange = { 
+                                                    selectedScope = if (it) BolaoScope.FULL else BolaoScope.ONLY_GROUPS 
+                                                },
+                                                colors = SwitchDefaults.colors(checkedThumbColor = Neon, checkedTrackColor = Neon.copy(alpha = 0.3f))
+                                            )
+                                        }
+                                    } else {
+                                        Text(
+                                            if (isFull && isKnockoutStarted) "O Mata-Mata já está em andamento e não pode ser removido." 
+                                            else "O tipo deste bolão não pode ser alterado.",
+                                            fontSize = 10.sp,
+                                            color = TextSubtle,
+                                            modifier = Modifier.padding(top = 8.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // Scoring System Section
@@ -306,7 +412,7 @@ fun EditBolaoScreen(
                         text = "Salvar Alterações",
                         isLoading = uiState.isLoading,
                         enabled = isFormValid && !uiState.isLoading,
-                        onClick = { viewModel.update(name, description, pointsExact, pointsWinner) }
+                        onClick = { viewModel.update(name, description, selectedScope, pointsExact, pointsWinner) }
                     )
                 }
 

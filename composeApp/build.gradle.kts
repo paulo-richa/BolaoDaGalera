@@ -102,8 +102,8 @@ android {
         applicationId = "com.lpstudio.bolaodagalera"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 6
-        versionName = "2.0"
+        versionCode = 8
+        versionName = "2.2"
     }
     packaging {
         resources {
@@ -122,7 +122,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com" 
-                releaseNotes = "v2.0 (Build 6): Filtro dinâmico 'HOJE' para jogos, correção na lógica de pontos do ranking (alvo vs check), proteção contra regressão de placares (0x0) e navegação inteligente entre rodadas."
+                releaseNotes = "v2.2 (Build 8): Lançamento oficial com permissão de ID de publicidade e correções no fluxo de cadastro."
             }
         }
         getByName("debug") {

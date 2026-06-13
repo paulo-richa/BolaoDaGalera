@@ -29,8 +29,11 @@ import androidx.compose.ui.text.style.TextAlign
 import com.lpstudio.bolaodagalera.LauncherProvider
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
 import com.lpstudio.bolaodagalera.domain.model.Bolao
+import com.lpstudio.bolaodagalera.domain.model.BolaoScope
+import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
+import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
@@ -52,12 +55,36 @@ data class CreateBolaoUiState(
 
 class CreateBolaoViewModel(
     private val bolaoRepository: BolaoRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val matchRepository: MatchRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CreateBolaoUiState())
     val uiState: StateFlow<CreateBolaoUiState> = _uiState.asStateFlow()
 
-    fun create(name: String, description: String, championshipId: String, pointsExact: Int, pointsWinner: Int) {
+    private val _brazilMatches = MutableStateFlow<List<Match>>(emptyList())
+    val brazilMatches: StateFlow<List<Match>> = _brazilMatches.asStateFlow()
+
+    init {
+        loadBrazilMatches()
+    }
+
+    private fun loadBrazilMatches() {
+        viewModelScope.launch {
+            matchRepository.getMatches().collect { matches ->
+                _brazilMatches.value = matches.filter { it.homeTeamCode == "BRA" || it.awayTeamCode == "BRA" }
+            }
+        }
+    }
+
+    fun create(
+        name: String, 
+        description: String, 
+        championshipId: String, 
+        scope: BolaoScope, 
+        specificMatchId: String?,
+        pointsExact: Int, 
+        pointsWinner: Int
+    ) {
         val userId = authRepository.currentUser?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -67,6 +94,8 @@ class CreateBolaoViewModel(
                     description.trim(), 
                     userId, 
                     championshipId,
+                    scope = scope,
+                    specificMatchId = specificMatchId,
                     pointsExactScore = pointsExact,
                     pointsWinnerOrDraw = pointsWinner
                 )
@@ -87,11 +116,17 @@ fun CreateBolaoScreen(
 ) {
     val bolaoRepository = koinInject<BolaoRepository>()
     val authRepository = koinInject<AuthRepository>()
-    val viewModel = remember { CreateBolaoViewModel(bolaoRepository, authRepository) }
+    val matchRepository = koinInject<MatchRepository>()
+    val viewModel = remember { CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository) }
     val uiState by viewModel.uiState.collectAsState()
+    val brazilMatches by viewModel.brazilMatches.collectAsState()
+
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedChampionshipId by remember { mutableStateOf("COPA_2026") }
+    var selectedScope by remember { mutableStateOf(BolaoScope.FULL) }
+    var selectedMatchId by remember { mutableStateOf<String?>(null) }
+
     var pointsExact by remember { mutableIntStateOf(3) }
     var pointsWinner by remember { mutableIntStateOf(1) }
     
@@ -299,40 +334,153 @@ fun CreateBolaoScreen(
                             val (label, emoji) = data
                             val isSelected = selectedChampionshipId == id
                             
-                            Row(
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(if (isSelected) NavyElevated else NavyCard)
                                     .border(
                                         width = 1.dp,
                                         color = if (isSelected) Neon else GlassBorder,
                                         shape = RoundedCornerShape(12.dp)
                                     )
-                                    .clickable { selectedChampionshipId = id }
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                    .clickable { selectedChampionshipId = id },
+                                color = if (isSelected) NavyElevated else NavyCard
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Text(emoji, fontSize = 18.sp)
-                                    Text(
-                                        label,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (isSelected) Color.White else TextMuted
-                                    )
-                                }
-                                if (isSelected) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = Neon,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Text(emoji, fontSize = 18.sp)
+                                            Text(
+                                                label,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (isSelected) Color.White else TextMuted
+                                            )
+                                        }
+                                        if (isSelected) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = Neon,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+
+                                    if (isSelected && id == "COPA_2026") {
+                                        Spacer(Modifier.height(16.dp))
+                                        HorizontalDivider(color = GlassBorder, thickness = 0.5.dp)
+                                        Spacer(Modifier.height(16.dp))
+                                        
+                                        Text(
+                                            "Jogos incluídos:",
+                                            fontSize = 11.sp,
+                                            color = TextMuted,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
+                                        )
+                                        
+                                        Spacer(Modifier.height(12.dp))
+                                        
+                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            BolaoScope.entries.forEach { scope ->
+                                                val isScopeSelected = selectedScope == scope
+                                                val scopeEmoji = when(scope) {
+                                                    BolaoScope.FULL -> "🏆"
+                                                    BolaoScope.ONLY_GROUPS -> "⚽"
+                                                    BolaoScope.ONLY_KNOCKOUT -> "⚔️"
+                                                    BolaoScope.ONLY_BRAZIL -> "🇧🇷"
+                                                }
+                                                
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(10.dp))
+                                                        .background(if (isScopeSelected) Neon.copy(alpha = 0.1f) else Color.Transparent)
+                                                        .border(1.dp, if (isScopeSelected) Neon.copy(alpha = 0.5f) else GlassBorder.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                                                        .clickable { 
+                                                            selectedScope = scope
+                                                            if (scope != BolaoScope.ONLY_BRAZIL) selectedMatchId = null
+                                                        }
+                                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(scopeEmoji, fontSize = 14.sp)
+                                                    Spacer(Modifier.width(10.dp))
+                                                    Text(
+                                                        scope.label,
+                                                        fontSize = 13.sp,
+                                                        color = if (isScopeSelected) Color.White else TextMuted,
+                                                        fontWeight = if (isScopeSelected) FontWeight.Bold else FontWeight.Normal
+                                                    )
+                                                    Spacer(Modifier.weight(1f))
+                                                    RadioButton(
+                                                        selected = isScopeSelected,
+                                                        onClick = { selectedScope = scope },
+                                                        colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+
+                                                // Se "Apenas Jogos do Brasil" for selecionado, mostra seletor de jogo
+                                                if (isScopeSelected && scope == BolaoScope.ONLY_BRAZIL && brazilMatches.isNotEmpty()) {
+                                                    Column(
+                                                        modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        // Opção: Todos
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .clickable { selectedMatchId = null }
+                                                                .padding(vertical = 4.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            RadioButton(
+                                                                selected = selectedMatchId == null,
+                                                                onClick = { selectedMatchId = null },
+                                                                colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                            Spacer(Modifier.width(8.dp))
+                                                            Text("Todos os jogos do Brasil", fontSize = 12.sp, color = if(selectedMatchId == null) Color.White else TextMuted)
+                                                        }
+
+                                                        brazilMatches.forEach { match ->
+                                                            Row(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .clickable { selectedMatchId = match.id }
+                                                                    .padding(vertical = 4.dp),
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                RadioButton(
+                                                                    selected = selectedMatchId == match.id,
+                                                                    onClick = { selectedMatchId = match.id },
+                                                                    colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
+                                                                    modifier = Modifier.size(16.dp)
+                                                                )
+                                                                Spacer(Modifier.width(8.dp))
+                                                                Text(
+                                                                    "${match.homeTeam} x ${match.awayTeam}",
+                                                                    fontSize = 12.sp,
+                                                                    color = if(selectedMatchId == match.id) Color.White else TextMuted,
+                                                                    maxLines = 1
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -458,7 +606,7 @@ fun CreateBolaoScreen(
                     text = "Criar Bolão",
                     isLoading = uiState.isLoading,
                     enabled = isFormValid && !uiState.isLoading,
-                    onClick = { viewModel.create(name, description, selectedChampionshipId, pointsExact, pointsWinner) }
+                    onClick = { viewModel.create(name, description, selectedChampionshipId, selectedScope, selectedMatchId, pointsExact, pointsWinner) }
                 )
 
                 Spacer(Modifier.height(32.dp))

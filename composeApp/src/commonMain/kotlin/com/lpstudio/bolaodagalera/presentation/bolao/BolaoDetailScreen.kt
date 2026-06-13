@@ -130,6 +130,15 @@ fun BolaoDetailContent(
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     
+    val tabs = remember(uiState.bolao?.scope) {
+        when (uiState.bolao?.scope) {
+            com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_GROUPS -> listOf("Grupos", "Ranking")
+            com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_KNOCKOUT -> listOf("Mata-Mata", "Ranking")
+            com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_BRAZIL -> listOf("Jogos", "Ranking")
+            else -> listOf("Grupos", "Mata-Mata", "Ranking")
+        }
+    }
+
     // Estados persistentes no nível da tela, agora vinculados ao bolaoId para resetar ao trocar de bolão
     val groupsListState = rememberLazyListState()
     val knockoutListState = rememberLazyListState()
@@ -519,8 +528,6 @@ fun BolaoDetailContent(
                         Spacer(Modifier.height(12.dp))
 
                         // Pill tabs
-                        val tabs = listOf("Grupos", "Mata-Mata", "Ranking")
-                        
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
@@ -571,33 +578,41 @@ fun BolaoDetailContent(
                     filteredMatches.filter { it.phase == Phase.GROUP_STAGE } 
                 }
 
-                when (selectedTab) {
-                    0 -> GroupStageTab(
-                        matches = groupMatches,
+                val isSocialEnabled = uiState.bolao?.scope == com.lpstudio.bolaodagalera.domain.model.BolaoScope.FULL
+                val currentTab = tabs.getOrNull(selectedTab) ?: "Grupos"
+
+                when (currentTab) {
+                    "Grupos", "Jogos" -> GroupStageTab(
+                        matches = groupMatches.ifEmpty { filteredMatches },
                         predictions = uiState.userPredictions,
                         isLoading = uiState.isLoading,
                         isAdmin = isOwner,
+                        bolaoCreatedAt = uiState.bolao?.createdAtMillis ?: 0L,
                         selectedRound = selectedRound,
+                        showSocialBadge = isSocialEnabled,
                         onRoundChange = { selectedRound = it },
                         listState = groupsListState,
                         expandedGroups = expandedGroups,
                         onMatchClick = { onNavigateToPrediction(it) },
                         onShowAllPredictions = { onNavigateToAllPredictions(it.id) },
-                        onAdminUpdateScore = { matchToUpdate = it }
+                        onAdminUpdateScore = { matchToUpdate = it },
+                        showRoundSelector = uiState.bolao?.scope != com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_BRAZIL
                     )
-                    1 -> KnockoutTab(
+                    "Mata-Mata" -> KnockoutTab(
                         matches = filteredMatches,
                         predictions = uiState.userPredictions,
                         isLoading = uiState.isLoading,
                         isAdmin = isOwner,
+                        bolaoCreatedAt = uiState.bolao?.createdAtMillis ?: 0L,
                         selectedPhase = selectedPhase,
+                        showSocialBadge = isSocialEnabled,
                         onPhaseChange = { selectedPhase = it },
                         listState = knockoutListState,
                         onMatchClick = { onNavigateToPrediction(it) },
                         onShowAllPredictions = { onNavigateToAllPredictions(it.id) },
                         onAdminUpdateScore = { matchToUpdate = it }
                     )
-                    2 -> RankingScreen(bolaoId = bolaoId)
+                    "Ranking" -> RankingScreen(bolaoId = bolaoId)
                 }
             }
         }
@@ -621,7 +636,9 @@ private fun GroupStageTab(
     predictions: Map<String, Prediction>,
     isLoading: Boolean,
     isAdmin: Boolean,
+    bolaoCreatedAt: Long,
     selectedRound: Int,
+    showSocialBadge: Boolean = true,
     onRoundChange: (Int) -> Unit,
     listState: LazyListState,
     expandedGroups: SnapshotStateList<String>,
@@ -638,14 +655,14 @@ private fun GroupStageTab(
 
     val roundMatches = remember(matches, selectedRound, showRoundSelector, todayDate) {
         when {
+            !showRoundSelector -> matches // Se não tem seletor (ex: Bolão do Brasil), mostra todos os jogos filtrados
             selectedRound == 0 -> {
                 matches.filter { m ->
                     val mDate = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz).date
                     mDate == todayDate || (now in m.matchDateMillis..(m.matchDateMillis + 3 * 3600_000L))
                 }
             }
-            showRoundSelector -> matches.filter { it.groupRound() == selectedRound }
-            else -> matches
+            else -> matches.filter { it.groupRound() == selectedRound }
         }
     }
     val byGroup = remember(roundMatches) {
@@ -754,6 +771,8 @@ private fun GroupStageTab(
                                 match = match,
                                 prediction = predictions[match.id],
                                 isAdmin = isAdmin,
+                                bolaoCreatedAt = bolaoCreatedAt,
+                                showSocialBadge = showSocialBadge,
                                 onClick = { onMatchClick(match.id) },
                                 onShowAllPredictions = { onShowAllPredictions(match) },
                                 onAdminUpdateScore = { onAdminUpdateScore(match) }
@@ -783,7 +802,9 @@ private fun KnockoutTab(
     predictions: Map<String, Prediction>,
     isLoading: Boolean,
     isAdmin: Boolean,
+    bolaoCreatedAt: Long,
     selectedPhase: Phase?,
+    showSocialBadge: Boolean = true,
     onPhaseChange: (Phase?) -> Unit,
     listState: LazyListState,
     onMatchClick: (String) -> Unit,
@@ -883,7 +904,9 @@ private fun KnockoutTab(
                         prediction1 = predictions[m1.id],
                         prediction2 = m2?.let { predictions[it.id] },
                         isAdmin = isAdmin,
+                        bolaoCreatedAt = bolaoCreatedAt,
                         forceLocked = !isKnockoutUnlocked,
+                        showSocialBadge = showSocialBadge,
                         onMatchClick = onMatchClick,
                         onShowAllPredictions = onShowAllPredictions,
                         onAdminUpdateScore = onAdminUpdateScore
@@ -913,7 +936,9 @@ private fun KnockoutBracketPair(
     prediction1: Prediction?,
     prediction2: Prediction?,
     isAdmin: Boolean,
+    bolaoCreatedAt: Long,
     forceLocked: Boolean,
+    showSocialBadge: Boolean = true,
     onMatchClick: (String) -> Unit,
     onShowAllPredictions: (Match) -> Unit,
     onAdminUpdateScore: (Match) -> Unit
@@ -927,7 +952,9 @@ private fun KnockoutBracketPair(
                 match = match1,
                 prediction = prediction1,
                 isAdmin = isAdmin,
+                bolaoCreatedAt = bolaoCreatedAt,
                 forceLocked = forceLocked,
+                showSocialBadge = showSocialBadge,
                 onClick = { onMatchClick(match1.id) },
                 onShowAllPredictions = { onShowAllPredictions(match1) },
                 onAdminUpdateScore = { onAdminUpdateScore(match1) }
@@ -939,7 +966,9 @@ private fun KnockoutBracketPair(
                     match = match2,
                     prediction = prediction2,
                     isAdmin = isAdmin,
+                    bolaoCreatedAt = bolaoCreatedAt,
                     forceLocked = forceLocked,
+                    showSocialBadge = showSocialBadge,
                     onClick = { onMatchClick(match2.id) },
                     onShowAllPredictions = { onShowAllPredictions(match2) },
                     onAdminUpdateScore = { onAdminUpdateScore(match2) }
@@ -1229,7 +1258,9 @@ fun MatchCard(
     match: Match,
     prediction: Prediction?,
     isAdmin: Boolean = false,
+    bolaoCreatedAt: Long = 0L,
     forceLocked: Boolean = false,
+    showSocialBadge: Boolean = true,
     onShowAllPredictions: () -> Unit = {},
     onAdminUpdateScore: () -> Unit = {},
     onClick: () -> Unit
@@ -1243,11 +1274,17 @@ fun MatchCard(
     // Um jogo está em andamento se tem placar MAS o tempo atual ainda está dentro da janela de 2h do início
     val isLive = isFinished && now in matchStart..matchEnd
     val isActuallyFinished = isFinished && now > matchEnd
+    
+    // Novo: Um jogo "fantasma" é aquele que aconteceu antes do bolão ser criado.
+    // Ninguém poderia ter palpitado nele, então ele deve ser travado.
+    val isGhostMatch = matchStart < bolaoCreatedAt
 
-    val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked
+    val isTbd = match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD"
+
+    val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isGhostMatch && !isTbd
 
     val borderColor = when {
-        isLive -> GlassBorder // Borda neutra idêntica ao card de palpite futuro
+        isLive -> GlassBorder
         isActuallyFinished && hasPrediction -> {
             val hReal = match.homeScore ?: 0
             val aReal = match.awayScore ?: 0
@@ -1270,9 +1307,8 @@ fun MatchCard(
         else -> GlassBorder
     }
 
-    val isTbd = match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD"
     val isExpired = now >= (match.matchDateMillis - 60_000) || isFinished
-    val isLocked = isExpired || forceLocked
+    val isLocked = isExpired || forceLocked || isGhostMatch || isTbd
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1284,16 +1320,22 @@ fun MatchCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
-                    enabled = canPredict || isLocked,
+                    enabled = when {
+                        isGhostMatch -> isAdmin // Fantasmas só abrem para Admin ajustar placar
+                        canPredict -> true
+                        isActuallyFinished -> isAdmin
+                        isExpired -> isAdmin || showSocialBadge
+                        else -> false
+                    },
                     onClick = { 
                         if (canPredict) onClick() 
-                        else if (isExpired || isAdmin) onShowAllPredictions() 
+                        else if ((isExpired || isAdmin) && (showSocialBadge || isAdmin)) onShowAllPredictions() 
                     }
                 )
         ) {
             // 1. VER PALPITES DA GALERA (Grudado no teto)
-            // Só mostra se o tempo expirou, o jogo acabou ou se for Admin (desde que os times estejam definidos)
-            val showGaleraBadge = (isExpired || isAdmin) && !isTbd
+            // Não mostra para jogos fantasmas (antes da criação do bolão)
+            val showGaleraBadge = showSocialBadge && (isExpired || isAdmin) && !isTbd && !isGhostMatch
             if (showGaleraBadge) {
                 Surface(
                     onClick = onShowAllPredictions,
@@ -1333,8 +1375,8 @@ fun MatchCard(
                     fontSize = 9.sp,
                     color = Color.White,
                     modifier = Modifier
-                        .align(if (canPredict && !showGaleraBadge) Alignment.TopCenter else Alignment.TopEnd)
-                        .padding(top = 10.dp, end = if (canPredict && !showGaleraBadge) 0.dp else 12.dp),
+                        .align(if (!showGaleraBadge) Alignment.TopCenter else Alignment.TopEnd)
+                        .padding(top = 10.dp, end = if (!showGaleraBadge) 0.dp else 12.dp),
                     letterSpacing = 0.2.sp
                 )
             }
@@ -1482,8 +1524,7 @@ fun MatchCard(
                     Spacer(Modifier.height(14.dp))
                     HorizontalDivider(color = dividerColor, thickness = 0.5.dp)
                     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        val isTbd = match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD"
-                        val showEmBreve = forceLocked && isTbd && !match.isFinished
+                        val showEmBreve = (forceLocked || isTbd) && !match.isFinished
                         if (showEmBreve) {
                             Text(text = "EM BREVE VOCÊ PODERÁ PALPITAR", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Neon.copy(alpha = 0.6f), letterSpacing = 0.5.sp, modifier = Modifier.padding(top = 8.dp))
                         } else {

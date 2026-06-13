@@ -1,6 +1,7 @@
 package com.lpstudio.bolaodagalera.data.firebase
 
 import com.lpstudio.bolaodagalera.domain.model.Bolao
+import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
@@ -21,6 +22,8 @@ private data class BolaoDto(
     val participants: List<String> = emptyList(),
     val pendingParticipants: List<String> = emptyList(),
     val championshipId: String = "COPA_2026",
+    val scope: String = "FULL",
+    val specificMatchId: String? = null,
     val createdAtMillis: Long = 0L
 )
 
@@ -35,6 +38,8 @@ private fun BolaoDto.toDomain(id: String) = Bolao(
     participants = participants,
     pendingParticipants = pendingParticipants,
     championshipId = championshipId,
+    scope = try { BolaoScope.valueOf(scope) } catch (e: Exception) { BolaoScope.FULL },
+    specificMatchId = specificMatchId,
     createdAtMillis = createdAtMillis
 )
 
@@ -56,13 +61,21 @@ class FirebaseBolaoRepository : BolaoRepository {
 
     override fun getBolaoFlow(bolaoId: String): Flow<Bolao> {
         return collection.document(bolaoId).snapshots.map { doc ->
-            doc.data<BolaoDto>().toDomain(doc.id)
+            if (doc.exists) {
+                doc.data<BolaoDto>().toDomain(doc.id)
+            } else {
+                Bolao() // Retorna um objeto vazio em vez de crashar se deletado
+            }
         }
     }
 
     override suspend fun getBolao(bolaoId: String): Bolao {
         val doc = collection.document(bolaoId).get()
-        return doc.data<BolaoDto>().toDomain(doc.id)
+        return if (doc.exists) {
+            doc.data<BolaoDto>().toDomain(doc.id)
+        } else {
+            Bolao()
+        }
     }
 
     override suspend fun createBolao(
@@ -70,6 +83,8 @@ class FirebaseBolaoRepository : BolaoRepository {
         description: String, 
         ownerId: String, 
         championshipId: String,
+        scope: BolaoScope,
+        specificMatchId: String?,
         pointsExactScore: Int,
         pointsWinnerOrDraw: Int
     ): Bolao {
@@ -83,6 +98,8 @@ class FirebaseBolaoRepository : BolaoRepository {
             ownerId = ownerId,
             participants = listOf(ownerId),
             championshipId = championshipId,
+            scope = scope.name,
+            specificMatchId = specificMatchId,
             createdAtMillis = TimeSource.nowMillis()
         )
         val ref = collection.add(dto)
@@ -236,17 +253,41 @@ class FirebaseBolaoRepository : BolaoRepository {
         } catch (e: Exception) { }
     }
 
-    override suspend fun updateBolao(bolaoId: String, name: String, description: String, pointsExactScore: Int, pointsWinnerOrDraw: Int) {
+    override suspend fun updateBolao(bolaoId: String, name: String, description: String, scope: BolaoScope, pointsExactScore: Int, pointsWinnerOrDraw: Int) {
         collection.document(bolaoId).update(
             "name" to name,
             "description" to description,
+            "scope" to scope.name,
             "pointsExactScore" to pointsExactScore,
             "pointsWinnerOrDraw" to pointsWinnerOrDraw
         )
     }
 
     override suspend fun deleteBolao(bolaoId: String) {
+        // 1. Deleta o bolão
         collection.document(bolaoId).delete()
+
+        // 2. Deleta todos os palpites deste bolão (Limpeza)
+        try {
+            val predictionsSnapshot = db.collection("predictions")
+                .where { "bolaoId" equalTo bolaoId }
+                .get()
+            
+            predictionsSnapshot.documents.forEach { doc ->
+                db.collection("predictions").document(doc.id).delete()
+            }
+        } catch (e: Exception) { }
+        
+        // 3. Deleta convites deste bolão
+        try {
+            val invitesSnapshot = db.collection("invitations")
+                .where { "bolaoId" equalTo bolaoId }
+                .get()
+            
+            invitesSnapshot.documents.forEach { doc ->
+                db.collection("invitations").document(doc.id).delete()
+            }
+        } catch (e: Exception) { }
     }
 
     override suspend fun removeParticipant(bolaoId: String, userId: String) {
