@@ -226,19 +226,11 @@ class FirebaseBolaoRepository : BolaoRepository {
         val updatedParticipants = bolao.participants - userId
         collection.document(bolaoId).update("participants" to updatedParticipants)
 
-        // 2. Apaga todos os palpites desse usuário NESTE bolão
-        try {
-            val predictionsSnapshot = db.collection("predictions")
-                .where { "userId" equalTo userId }
-                .where { "bolaoId" equalTo bolaoId }
-                .get()
-            
-            predictionsSnapshot.documents.forEach { predictionDoc ->
-                db.collection("predictions").document(predictionDoc.id).delete()
-            }
-        } catch (e: Exception) { }
+        // Nota: NÃO apagamos os palpites (predictions) do usuário.
+        // Isso permite que ele volte ao bolão sem perder seu histórico.
+        // O ranking já filtra apenas por participantes ativos, então ele sumirá do ranking automaticamente.
 
-        // 3. Apaga qualquer convite pendente para este usuário neste bolão
+        // 2. Apaga qualquer convite pendente para este usuário neste bolão
         try {
             val invitesSnapshot = db.collection("invitations")
                 .where { "bolaoId" equalTo bolaoId }
