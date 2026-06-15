@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.presentation.ranking
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -14,22 +15,57 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import com.lpstudio.bolaodagalera.presentation.components.UserAvatar
 import com.lpstudio.bolaodagalera.util.getInitials
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RankingScreen(bolaoId: String) {
     val viewModel: RankingViewModel = koinInject(parameters = { parametersOf(bolaoId) })
     val uiState by viewModel.uiState.collectAsState()
+    
+    var showHitsDialog by remember { mutableStateOf(false) }
+
+    if (showHitsDialog) {
+        Dialog(
+            onDismissRequest = { 
+                showHitsDialog = false 
+                viewModel.clearSelectedParticipant()
+            },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(28.dp),
+                color = DeepNavy,
+                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+            ) {
+                ParticipantHitsContent(
+                    name = uiState.selectedParticipantName,
+                    hits = uiState.selectedParticipantHits,
+                    onClose = {
+                        showHitsDialog = false
+                        viewModel.clearSelectedParticipant()
+                    }
+                )
+            }
+        }
+    }
 
     when {
         uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -57,7 +93,11 @@ fun RankingScreen(bolaoId: String) {
                             first = uiState.entries[0],
                             second = uiState.entries[1],
                             third = uiState.entries[2],
-                            currentUserId = uiState.currentUserId
+                            currentUserId = uiState.currentUserId,
+                            onEntryClick = { 
+                                viewModel.selectParticipant(it)
+                                showHitsDialog = true
+                            }
                         )
                         Spacer(Modifier.height(20.dp))
                     }
@@ -99,7 +139,11 @@ fun RankingScreen(bolaoId: String) {
                     RankingRow(
                         position = index + 1,
                         entry = entry,
-                        isCurrentUser = entry.userId == uiState.currentUserId
+                        isCurrentUser = entry.userId == uiState.currentUserId,
+                        onClick = {
+                            viewModel.selectParticipant(entry)
+                            showHitsDialog = true
+                        }
                     )
                 }
 
@@ -169,7 +213,8 @@ private fun Podium(
     first: RankingEntry,
     second: RankingEntry,
     third: RankingEntry,
-    currentUserId: String
+    currentUserId: String,
+    onEntryClick: (RankingEntry) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -187,21 +232,21 @@ private fun Podium(
                 position = 2,
                 isCurrentUser = second.userId == currentUserId,
                 height = 100.dp,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).clickable { onEntryClick(second) }
             )
             PodiumPillar(
                 entry = first,
                 position = 1,
                 isCurrentUser = first.userId == currentUserId,
                 height = 140.dp,
-                modifier = Modifier.weight(1.1f)
+                modifier = Modifier.weight(1.1f).clickable { onEntryClick(first) }
             )
             PodiumPillar(
                 entry = third,
                 position = 3,
                 isCurrentUser = third.userId == currentUserId,
                 height = 85.dp,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).clickable { onEntryClick(third) }
             )
         }
     }
@@ -294,7 +339,7 @@ private fun PodiumPillar(
 }
 
 @Composable
-private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolean) {
+private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolean, onClick: () -> Unit) {
     val surfaceColor = if (isCurrentUser) NavyElevated else NavyCard
     val borderColor = if (isCurrentUser) Neon.copy(alpha = 0.5f) else GlassBorder
 
@@ -302,7 +347,7 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
         color = surfaceColor,
         shape = RoundedCornerShape(16.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
         Row(
             modifier = Modifier
@@ -372,6 +417,149 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
                     color = TextMuted,
                     textAlign = TextAlign.Center
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParticipantHitsContent(
+    name: String,
+    hits: List<ParticipantHit>,
+    onClose: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 24.dp)
+    ) {
+        Spacer(Modifier.height(8.dp))
+        
+        Text(
+            text = "Acertos de $name",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Black,
+            color = Color.White
+        )
+        
+        val totalPoints = hits.sumOf { it.points }
+        Text(
+            text = "$totalPoints pontos ganhos em ${hits.size} palpites",
+            fontSize = 13.sp,
+            color = TextMuted
+        )
+        
+        Spacer(Modifier.height(24.dp))
+        
+        if (hits.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Nenhum acerto registrado ainda.", color = TextMuted, fontSize = 14.sp)
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp)
+            ) {
+                items(hits.size) { index ->
+                    val hit = hits[index]
+                    HitItem(hit)
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(16.dp))
+        
+        TextButton(
+            onClick = onClose,
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text("Fechar", color = Neon, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun HitItem(hit: ParticipantHit) {
+    val date = remember(hit.match.matchDateMillis) {
+        val dt = Instant.fromEpochMilliseconds(hit.match.matchDateMillis)
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+        val d = dt.dayOfMonth.toString().padStart(2, '0')
+        val m = dt.monthNumber.toString().padStart(2, '0')
+        "$d/$m"
+    }
+
+    val accentColor = if (hit.points == 3) Neon else Gold
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = accentColor.copy(alpha = 0.08f),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(hit.match.homeTeamFlag, fontSize = 16.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "${hit.match.homeTeam} x ${hit.match.awayTeam}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(hit.match.awayTeamFlag, fontSize = 16.sp)
+                }
+                
+                val groupText = hit.match.group?.let { "Grupo $it • " } ?: ""
+                Text(
+                    text = "$groupText$date • Placar: ${hit.match.homeScore}x${hit.match.awayScore}",
+                    fontSize = 11.sp,
+                    color = TextMuted
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Palpite
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "PALPITE",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Black,
+                        color = TextMuted,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = "${hit.prediction.homeScore}x${hit.prediction.awayScore}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                // Pontos Pill
+                Surface(
+                    color = accentColor.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.4f))
+                ) {
+                    Text(
+                        text = "+${hit.points}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = accentColor,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
     }

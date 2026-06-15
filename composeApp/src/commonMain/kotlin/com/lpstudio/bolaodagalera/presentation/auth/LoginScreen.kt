@@ -76,7 +76,8 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(GradientBg)
-            .windowInsetsPadding(WindowInsets.ime) // Adiciona padding dinâmico quando o teclado abre
+            .systemBarsPadding()
+            .windowInsetsPadding(WindowInsets.ime)
     ) {
         // Decorative glow
         Box(

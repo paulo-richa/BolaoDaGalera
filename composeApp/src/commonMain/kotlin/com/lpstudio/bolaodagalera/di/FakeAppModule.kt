@@ -10,6 +10,7 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
+import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
@@ -26,10 +27,22 @@ val fakeAppModule = module {
     single<InvitationRepository> { FakeInvitationRepository() }
     single<PredictionRepository> { FakePredictionRepository(get()) }
 
+    // UseCases
+    single { CalculatePointsUseCase() }
+
     // ViewModels (idênticos ao appModule)
-    viewModel { AuthViewModel(get()) }
-    viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
-    viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId) }
-    viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), bolaoId, matchId) }
-    viewModel { (bolaoId: String) -> RankingViewModel(get(), get(), get(), bolaoId) }
+    viewModel { AuthViewModel(get<AuthRepository>()) }
+    viewModel { HomeViewModel(get<AuthRepository>(), get<BolaoRepository>(), get<MatchRepository>(), get<InvitationRepository>(), get<PredictionRepository>()) }
+    viewModel { (bolaoId: String) -> BolaoViewModel(get<BolaoRepository>(), get<MatchRepository>(), get<PredictionRepository>(), get<AuthRepository>(), bolaoId) }
+    viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get<MatchRepository>(), get<PredictionRepository>(), get<BolaoRepository>(), bolaoId, matchId) }
+    viewModel { (bolaoId: String) -> 
+        RankingViewModel(
+            predictionRepository = get<PredictionRepository>(),
+            bolaoRepository = get<BolaoRepository>(),
+            matchRepository = get<MatchRepository>(),
+            authRepository = get<AuthRepository>(),
+            calculatePointsUseCase = get<CalculatePointsUseCase>(),
+            bolaoId = bolaoId
+        )
+    }
 }
