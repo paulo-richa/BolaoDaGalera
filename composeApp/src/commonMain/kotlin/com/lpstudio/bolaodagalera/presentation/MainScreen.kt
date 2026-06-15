@@ -68,7 +68,7 @@ fun MainScreen(
         },
         floatingActionButtonPosition = FabPosition.Center
     ) { padding ->
-        Box(modifier = Modifier.padding(bottom = 0.dp)) { // Padding manual para evitar cortes
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when (selectedTab) {
                 0 -> HomeScreen(
                     onNavigateToBolao = onNavigateToBolao,

@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -58,6 +60,7 @@ fun PredictionScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(DeepNavy)
+            .systemBarsPadding()
     ) {
         when {
             uiState.isLoading && uiState.match == null -> {
@@ -68,9 +71,12 @@ fun PredictionScreen(
 
             uiState.match != null -> {
                 val match = uiState.match!!
+                val scrollState = rememberScrollState()
 
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // ── Stadium header ────────────────────────────────────────
@@ -179,7 +185,7 @@ fun PredictionScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(32.dp))
 
                     // ── Points info ───────────────────────────────────────────
                     Box(
@@ -220,13 +226,14 @@ fun PredictionScreen(
                         Text(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp))
                     }
 
-                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.height(40.dp))
 
                     // ── Save button ───────────────────────────────────────────
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 32.dp)
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 32.dp)
                     ) {
                         GradientSaveButton(
                             text = if (uiState.existingPrediction != null) "Atualizar palpite" else "Salvar palpite",
