@@ -207,9 +207,16 @@ async function updateMatchInFirestore(hCode, aCode, data, source) {
         }
     }
 
+    if (data.status) {
+        updateObj.status = data.status;
+        if (data.status === 'FINISHED' || data.status === 'IN_PLAY') {
+            changed = true;
+        }
+    }
+
     if (changed) {
         await matchDoc.ref.update(updateObj);
-        console.log(`🔥 [${hCode} x ${aCode}] Sincronizado via ${source}: ${apiHomeScore}x${apiAwayScore}`);
+        console.log(`🔥 [${hCode} x ${aCode}] Sincronizado via ${source}: ${apiHomeScore}x${apiAwayScore} (${data.status || 'N/A'})`);
     }
 }
 
