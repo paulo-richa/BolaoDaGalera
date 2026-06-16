@@ -1,63 +1,44 @@
 package com.lpstudio.bolaodagalera
 
-import android.net.Uri
-import android.app.Activity
-import android.content.Intent
-import android.os.Build
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
+import androidx.activity.compose.BackHandler
 
-class AndroidPlatform : Platform {
-    override val name: String = "Android ${Build.VERSION.SDK_INT}"
+actual fun getPlatform(): Platform = object : Platform {
+    override val name: String = "Android ${android.os.Build.VERSION.SDK_INT}"
 }
-
-actual fun getPlatform(): Platform = AndroidPlatform()
 
 @Composable
 actual fun SystemAppearance(isDark: Boolean) {
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDark
-        }
-    }
+    // Android handle system appearance via theme
 }
 
 @Composable
 actual fun rememberLauncherProvider(): LauncherProvider {
-    val context = LocalContext.current
-    return remember(context) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return remember {
         object : LauncherProvider {
             override fun shareText(text: String) {
-                val sendIntent: Intent = Intent().apply {
-                    action = Intent.ACTION_SEND
-                    putExtra(Intent.EXTRA_TEXT, text)
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                     type = "text/plain"
+                    putExtra(android.content.Intent.EXTRA_TEXT, text)
                 }
-                val shareIntent = Intent.createChooser(sendIntent, null)
-                context.startActivity(shareIntent)
+                context.startActivity(android.content.Intent.createChooser(intent, null))
             }
 
             override fun sendEmail(address: String, subject: String, body: String) {
-                val intent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("mailto:")
-                    putExtra(Intent.EXTRA_EMAIL, arrayOf(address))
-                    putExtra(Intent.EXTRA_SUBJECT, subject)
-                    putExtra(Intent.EXTRA_TEXT, body)
+                val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                    data = android.net.Uri.parse("mailto:")
+                    putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf(address))
+                    putExtra(android.content.Intent.EXTRA_SUBJECT, subject)
+                    putExtra(android.content.Intent.EXTRA_TEXT, body)
                 }
-                context.startActivity(Intent.createChooser(intent, "Enviar e-mail..."))
+                context.startActivity(intent)
             }
 
             override fun sendWhatsApp(phone: String, text: String) {
-                val cleanPhone = phone.filter { it.isDigit() }
-                val url = "https://api.whatsapp.com/send?phone=$cleanPhone&text=${Uri.encode(text)}"
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse(url)
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                    data = android.net.Uri.parse("https://wa.me/$phone?text=${android.net.Uri.encode(text)}")
                 }
                 context.startActivity(intent)
             }
@@ -67,5 +48,5 @@ actual fun rememberLauncherProvider(): LauncherProvider {
 
 @Composable
 actual fun CommonBackHandler(enabled: Boolean, onBack: () -> Unit) {
-    androidx.activity.compose.BackHandler(enabled, onBack)
+    BackHandler(enabled, onBack)
 }

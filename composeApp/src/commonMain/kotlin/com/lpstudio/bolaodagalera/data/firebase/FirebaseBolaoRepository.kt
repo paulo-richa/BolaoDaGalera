@@ -21,6 +21,7 @@ private data class BolaoDto(
     val ownerId: String = "",
     val participants: List<String> = emptyList(),
     val pendingParticipants: List<String> = emptyList(),
+    val pendingExits: List<String> = emptyList(),
     val championshipId: String = "COPA_2026",
     val scope: String = "FULL",
     val specificMatchId: String? = null,
@@ -37,6 +38,7 @@ private fun BolaoDto.toDomain(id: String) = Bolao(
     ownerId = ownerId,
     participants = participants,
     pendingParticipants = pendingParticipants,
+    pendingExits = pendingExits,
     championshipId = championshipId,
     scope = try { BolaoScope.valueOf(scope) } catch (e: Exception) { BolaoScope.FULL },
     specificMatchId = specificMatchId,
@@ -104,6 +106,32 @@ class FirebaseBolaoRepository : BolaoRepository {
         )
         val ref = collection.add(dto)
         return dto.toDomain(ref.id)
+    }
+
+    override suspend fun requestLeaveBolao(bolaoId: String, userId: String) {
+        val doc = collection.document(bolaoId).get()
+        val dto = doc.data<BolaoDto>()
+        
+        if (userId !in dto.pendingExits) {
+            val updatedPendingExits = dto.pendingExits + userId
+            collection.document(bolaoId).update("pendingExits" to updatedPendingExits)
+        }
+    }
+
+    override suspend fun approveLeaveRequest(bolaoId: String, userId: String, approve: Boolean) {
+        val doc = collection.document(bolaoId).get()
+        val dto = doc.data<BolaoDto>()
+        
+        val newPendingExits = dto.pendingExits - userId
+        if (approve) {
+            val newParticipants = dto.participants - userId
+            collection.document(bolaoId).update(
+                "participants" to newParticipants,
+                "pendingExits" to newPendingExits
+            )
+        } else {
+            collection.document(bolaoId).update("pendingExits" to newPendingExits)
+        }
     }
 
     override suspend fun joinBolao(code: String, userId: String): Bolao {

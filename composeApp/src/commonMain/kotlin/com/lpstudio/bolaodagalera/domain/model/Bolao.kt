@@ -13,7 +13,8 @@ data class Bolao(
     val code: String = "",
     val ownerId: String = "",
     val participants: List<String> = emptyList(),
-    val pendingParticipants: List<String> = emptyList(), // Usuários aguardando aprovação
+    val pendingParticipants: List<String> = emptyList(), // Usuários aguardando aprovação para entrar
+    val pendingExits: List<String> = emptyList(),        // Usuários aguardando aprovação para sair
     val championshipId: String = "COPA_2026", // "COPA_2026" ou "AMISTOSOS"
     val scope: BolaoScope = BolaoScope.FULL,
     val specificMatchId: String? = null,

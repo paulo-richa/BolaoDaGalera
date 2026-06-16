@@ -300,20 +300,29 @@ fun MatchPredictionsScreen(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
-                                            // Placar palpitado
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(DeepNavy.copy(alpha = 0.6f))
-                                                    .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
-                                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                                            ) {
+                                            // Placar palpitado (Escondido para Admin antes do jogo)
+                                            if (isAdminViewingBeforeStart) {
                                                 Text(
-                                                    "${pred.homeScore} × ${pred.awayScore}",
-                                                    color = Color.White,
-                                                    fontSize = 14.sp,
+                                                    "Palpitou",
+                                                    color = Neon,
+                                                    fontSize = 13.sp,
                                                     fontWeight = FontWeight.Bold
                                                 )
+                                            } else {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(DeepNavy.copy(alpha = 0.6f))
+                                                        .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
+                                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                                ) {
+                                                    Text(
+                                                        "${pred.homeScore} × ${pred.awayScore}",
+                                                        color = Color.White,
+                                                        fontSize = 14.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
                                             }
                                             
                                             // Pontos ganhos nesse jogo (Escondido para Admin antes do jogo)

@@ -6,6 +6,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import com.lpstudio.bolaodagalera.util.TimeSource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -42,6 +46,35 @@ fun NavGraph() {
     // Definimos a rota inicial apenas uma vez quando o estado de auth é verificado.
     // Isso evita que o NavHost reinicie do zero ao fazer logout.
     val startDestination = remember { if (authUiState.user != null) Home else Login }
+
+    // --- Lógica de Reset ao voltar do Background ---
+    var lastBackgroundTime by remember { mutableStateOf<Long?>(null) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                lastBackgroundTime = TimeSource.nowMillis()
+            } else if (event == Lifecycle.Event.ON_RESUME) {
+                lastBackgroundTime?.let { bgTime ->
+                    val now = TimeSource.nowMillis()
+                    val diffMillis = now - bgTime
+                    
+                    // Se ficou mais de 10 minutos (600.000 ms) fora, volta para a Home
+                    if (diffMillis >= 600_000 && authUiState.user != null) {
+                        navController.navigate(Home) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
+                lastBackgroundTime = null
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(authUiState.user) {
         if (authUiState.user == null && authUiState.isAuthChecked) {

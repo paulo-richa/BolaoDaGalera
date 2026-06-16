@@ -147,4 +147,17 @@ class FirebaseAuthRepository : AuthRepository {
     override suspend fun sendPasswordResetEmail(email: String) {
         auth.sendPasswordResetEmail(email.trim())
     }
+
+    override suspend fun getUser(userId: String): User? {
+        val doc = usersCollection.document(userId).get()
+        return if (doc.exists) {
+            val dto = doc.data<UserDto>()
+            User(userId, dto.name, dto.email, dto.phone, dto.nickname, dto.username)
+        } else null
+    }
+
+    override suspend fun getUsers(userIds: List<String>): List<User> {
+        if (userIds.isEmpty()) return emptyList()
+        return userIds.mapNotNull { getUser(it) }
+    }
 }

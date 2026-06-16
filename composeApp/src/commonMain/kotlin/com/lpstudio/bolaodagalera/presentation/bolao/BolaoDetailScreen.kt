@@ -1,11 +1,8 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
@@ -29,6 +27,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
@@ -65,8 +64,14 @@ import kotlinx.datetime.toLocalDateTime
 import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BolaoDetailScreen(
     bolaoId: String,
@@ -98,6 +103,8 @@ fun BolaoDetailScreen(
         isOwner = uiState.bolao?.ownerId == userId,
         launcherProvider = launcherProvider,
         onLeaveBolao = { viewModel.leaveBolao() },
+        onApproveJoin = { userId, approve -> viewModel.approveParticipant(userId, approve) },
+        onApproveLeave = { userId, approve -> viewModel.approveLeaveRequest(userId, approve) },
         onNavigateToPrediction = onNavigateToPrediction,
         onNavigateToAllPredictions = onNavigateToAllPredictions,
         onNavigateToEdit = onNavigateToEdit,
@@ -118,6 +125,8 @@ fun BolaoDetailContent(
     isOwner: Boolean,
     launcherProvider: com.lpstudio.bolaodagalera.LauncherProvider,
     onLeaveBolao: () -> Unit,
+    onApproveJoin: (String, Boolean) -> Unit,
+    onApproveLeave: (String, Boolean) -> Unit,
     onNavigateToPrediction: (matchId: String) -> Unit,
     onNavigateToAllPredictions: (matchId: String) -> Unit,
     onNavigateToEdit: (bolaoId: String) -> Unit,
@@ -127,6 +136,9 @@ fun BolaoDetailContent(
 ) {
     var showLeaveDialog by remember { mutableStateOf(false) }
     var showParticipantsSheet by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+
+    var lastInteractedMatchId by rememberSaveable { mutableStateOf<String?>(null) }
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     
@@ -138,6 +150,9 @@ fun BolaoDetailContent(
             else -> listOf("Grupos", "Mata-Mata", "Ranking")
         }
     }
+
+    var selectedRound by rememberSaveable { mutableIntStateOf(0) } // 0 = HOJE
+    var selectedPhase by rememberSaveable { mutableStateOf<Phase?>(Phase.FRIENDLIES) } // FRIENDLIES como marker para HOJE
 
     // Estados persistentes no nível da tela, agora vinculados ao bolaoId para resetar ao trocar de bolão
     val groupsListState = rememberLazyListState()
@@ -163,8 +178,22 @@ fun BolaoDetailContent(
         )
     }
 
-    var selectedRound by rememberSaveable { mutableIntStateOf(0) } // 0 = HOJE
-    var selectedPhase by rememberSaveable { mutableStateOf<Phase?>(Phase.FRIENDLIES) } // FRIENDLIES como marker para HOJE
+    // Lógica para interceptar o botão voltar do sistema
+    val currentTabName = tabs.getOrNull(selectedTab) ?: "Grupos"
+    val isMainTab = (currentTabName == "Grupos" || currentTabName == "Jogos") && selectedRound == 0
+    
+    com.lpstudio.bolaodagalera.CommonBackHandler(enabled = !isMainTab) {
+        if (currentTabName != "Grupos" && currentTabName != "Jogos") {
+            // Se não estiver na aba de Grupos/Jogos, volta para ela
+            val groupsIdx = tabs.indexOfFirst { it == "Grupos" || it == "Jogos" }
+            if (groupsIdx != -1) selectedTab = groupsIdx
+        }
+        
+        // Se estiver na aba de Grupos mas não no HOJE, volta para HOJE
+        if ((currentTabName == "Grupos" || currentTabName == "Jogos") && selectedRound != 0) {
+            selectedRound = 0
+        }
+    }
 
     // Auto-selecionar HOJE se houver jogos, senão a rodada atual (para a aba de Grupos)
     LaunchedEffect(uiState.matches) {
@@ -194,13 +223,19 @@ fun BolaoDetailContent(
             onDismissRequest = { showLeaveDialog = false },
             containerColor = NavyCard,
             title = { Text("Sair do Bolão?", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = { Text("Você perderá seus palpites e sua posição no ranking deste bolão.", color = TextMuted) },
+            text = { 
+                Text(
+                    if (isOwner) "Você é o dono deste bolão. Se sair, o bolão continuará existindo mas ficará sem administrador."
+                    else "O administrador precisará confirmar sua saída para que você seja removido do ranking.", 
+                    color = TextMuted
+                ) 
+            },
             confirmButton = {
                 TextButton(onClick = { 
                     showLeaveDialog = false
                     onLeaveBolao()
                 }) {
-                    Text("Sair", color = ErrorRed, fontWeight = FontWeight.Bold)
+                    Text(if (isOwner) "Sair" else "Pedir para sair", color = ErrorRed, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -248,6 +283,37 @@ fun BolaoDetailContent(
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                             contentPadding = PaddingValues(vertical = 8.dp)
                         ) {
+                            // --- SEÇÃO DE SOLICITAÇÕES (Apenas para Admin) ---
+                            if (isOwner && (uiState.pendingJoinUsers.isNotEmpty() || uiState.pendingExitUsers.isNotEmpty())) {
+                                item {
+                                    Text("Solicitações Pendentes", color = Gold, fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(vertical = 8.dp))
+                                }
+                                
+                                items(uiState.pendingJoinUsers) { user ->
+                                    PendingRequestItem(
+                                        user = user,
+                                        label = "Quer entrar",
+                                        onApprove = { onApproveJoin(user.id, true) },
+                                        onDeny = { onApproveJoin(user.id, false) }
+                                    )
+                                }
+                                
+                                items(uiState.pendingExitUsers) { user ->
+                                    PendingRequestItem(
+                                        user = user,
+                                        label = "Quer sair",
+                                        accentColor = ErrorRed,
+                                        onApprove = { onApproveLeave(user.id, true) },
+                                        onDeny = { onApproveLeave(user.id, false) }
+                                    )
+                                }
+
+                                item {
+                                    Spacer(Modifier.height(16.dp))
+                                    Text("Participantes", color = TextMuted, fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(vertical = 8.dp))
+                                }
+                            }
+
                             items(sortedParticipants) { participant ->
                                 val isOwnerParticipant = participant.userId == uiState.bolao?.ownerId
 
@@ -364,19 +430,18 @@ fun BolaoDetailContent(
                                 color = Color.White,
                                 modifier = Modifier.weight(1f)
                             )
-                            IconButton(
-                                onClick = {
-                                    uiState.bolao?.let { bolao ->
-                                        val inviteUrl = "https://bolaodagalera.app/invite?code=${bolao.code}"
-                                        launcherProvider.shareText("Entre no meu bolão '${bolao.name}'! 🏆\n\nLink: $inviteUrl\n\nCódigo: ${bolao.code}")
-                                    }
-                                }, 
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = TextMuted, modifier = Modifier.size(20.dp))
-                            }
-                            
                             if (isOwner) {
+                                IconButton(
+                                    onClick = {
+                                        uiState.bolao?.let { bolao ->
+                                            val inviteUrl = "https://bolaodagalera.app/invite?code=${bolao.code}"
+                                            launcherProvider.shareText("Entre no meu bolão '${bolao.name}'! 🏆\n\nLink: $inviteUrl\n\nCódigo: ${bolao.code}")
+                                        }
+                                    }, 
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = TextMuted, modifier = Modifier.size(20.dp))
+                                }
                                 IconButton(
                                     onClick = { onNavigateToAddParticipants(bolaoId) },
                                     modifier = Modifier.size(36.dp)
@@ -399,19 +464,36 @@ fun BolaoDetailContent(
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
-                            }
-
-                            if (!isOwner) {
-                                IconButton(
-                                    onClick = { showLeaveDialog = true },
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.ExitToApp,
-                                        contentDescription = "Sair do Bolão",
-                                        tint = ErrorRed,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                            } else {
+                                Box {
+                                    IconButton(onClick = { showMenu = true }, modifier = Modifier.size(36.dp)) {
+                                        Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = Color.White, modifier = Modifier.size(22.dp))
+                                    }
+                                    DropdownMenu(
+                                        expanded = showMenu,
+                                        onDismissRequest = { showMenu = false },
+                                        modifier = Modifier.background(NavyCard).border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Compartilhar", color = Color.White) },
+                                            leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp)) },
+                                            onClick = {
+                                                showMenu = false
+                                                uiState.bolao?.let { bolao ->
+                                                    val inviteUrl = "https://bolaodagalera.app/invite?code=${bolao.code}"
+                                                    launcherProvider.shareText("Entre no meu bolão '${bolao.name}'! 🏆\n\nLink: $inviteUrl\n\nCódigo: ${bolao.code}")
+                                                }
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Sair do Bolão", color = ErrorRed) },
+                                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = ErrorRed, modifier = Modifier.size(18.dp)) },
+                                            onClick = {
+                                                showMenu = false
+                                                showLeaveDialog = true
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -431,13 +513,14 @@ fun BolaoDetailContent(
                             }
 
                             // Alerta de Pedidos Pendentes para o Admin
-                            if (isOwner && bolao.pendingParticipants.isNotEmpty()) {
+                            if (isOwner && (bolao.pendingParticipants.isNotEmpty() || bolao.pendingExits.isNotEmpty())) {
                                 Spacer(Modifier.height(12.dp))
+                                val pendingCount = bolao.pendingParticipants.size + bolao.pendingExits.size
                                 Surface(
                                     color = Gold.copy(alpha = 0.1f),
                                     shape = RoundedCornerShape(12.dp),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Gold.copy(alpha = 0.3f)),
-                                    modifier = Modifier.fillMaxWidth().clickable { /* Abrir lista de aprovação */ }
+                                    modifier = Modifier.fillMaxWidth().clickable { showParticipantsSheet = true }
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(12.dp),
@@ -446,7 +529,7 @@ fun BolaoDetailContent(
                                     ) {
                                         Text("⚠️", fontSize = 16.sp)
                                         Text(
-                                            "${bolao.pendingParticipants.size} pessoas pediram para entrar no bolão.",
+                                            "$pendingCount solicitações pendentes (Entrada/Saída).",
                                             color = Gold,
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
@@ -578,7 +661,7 @@ fun BolaoDetailContent(
                     filteredMatches.filter { it.phase == Phase.GROUP_STAGE } 
                 }
 
-                val isSocialEnabled = uiState.bolao?.scope == com.lpstudio.bolaodagalera.domain.model.BolaoScope.FULL
+                val isSocialEnabled = uiState.bolao?.scope != com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_BRAZIL
                 val currentTab = tabs.getOrNull(selectedTab) ?: "Grupos"
 
                 when (currentTab) {
@@ -593,7 +676,12 @@ fun BolaoDetailContent(
                         onRoundChange = { selectedRound = it },
                         listState = groupsListState,
                         expandedGroups = expandedGroups,
-                        onMatchClick = { onNavigateToPrediction(it) },
+                        lastInteractedMatchId = lastInteractedMatchId,
+                        onClearLastMatchId = { lastInteractedMatchId = null },
+                        onMatchClick = { 
+                            lastInteractedMatchId = it
+                            onNavigateToPrediction(it) 
+                        },
                         onShowAllPredictions = { onNavigateToAllPredictions(it.id) },
                         onAdminUpdateScore = { matchToUpdate = it },
                         showRoundSelector = uiState.bolao?.scope != com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_BRAZIL
@@ -608,7 +696,12 @@ fun BolaoDetailContent(
                         showSocialBadge = isSocialEnabled,
                         onPhaseChange = { selectedPhase = it },
                         listState = knockoutListState,
-                        onMatchClick = { onNavigateToPrediction(it) },
+                        lastInteractedMatchId = lastInteractedMatchId,
+                        onClearLastMatchId = { lastInteractedMatchId = null },
+                        onMatchClick = { 
+                            lastInteractedMatchId = it
+                            onNavigateToPrediction(it) 
+                        },
                         onShowAllPredictions = { onNavigateToAllPredictions(it.id) },
                         onAdminUpdateScore = { matchToUpdate = it }
                     )
@@ -642,6 +735,8 @@ private fun GroupStageTab(
     onRoundChange: (Int) -> Unit,
     listState: LazyListState,
     expandedGroups: SnapshotStateList<String>,
+    lastInteractedMatchId: String?,
+    onClearLastMatchId: () -> Unit,
     onMatchClick: (String) -> Unit,
     onShowAllPredictions: (Match) -> Unit,
     onAdminUpdateScore: (Match) -> Unit,
@@ -653,15 +748,24 @@ private fun GroupStageTab(
     val now = TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
 
-    val roundMatches = remember(matches, selectedRound, showRoundSelector, todayDate) {
+    val hasMatchToday = remember(matches, todayDate) {
+        matches.any { 
+            val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
+            mDate == todayDate 
+        }
+    }
+
+    val roundMatches = remember(matches, selectedRound, showRoundSelector, todayDate, now) {
         when {
-            !showRoundSelector -> matches // Se não tem seletor (ex: Bolão do Brasil), mostra todos os jogos filtrados
+            !showRoundSelector -> matches 
             selectedRound == 0 -> {
                 matches.filter { m ->
                     val mDate = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz).date
+                    // Na aba HOJE, mantém apenas jogos de hoje (mesmo encerrados, para visualização de resultados)
                     mDate == todayDate || (now in m.matchDateMillis..(m.matchDateMillis + 3 * 3600_000L))
                 }
             }
+            // Nas Rodadas 1, 2 e 3, mostramos TODOS os jogos da rodada novamente
             else -> matches.filter { it.groupRound() == selectedRound }
         }
     }
@@ -669,127 +773,216 @@ private fun GroupStageTab(
         roundMatches.groupBy { it.group ?: "" }
     }
 
-    // Auto-expandir inteligente: Sempre os próximos jogos a acontecer ou jogos AO VIVO
-    LaunchedEffect(selectedRound, matches.isNotEmpty(), byGroup.keys) {
-        if (matches.isEmpty()) return@LaunchedEffect
-        
-        val timezone = TimeZone.currentSystemDefault()
-        val now = TimeSource.nowMillis()
-        val twoHours = 2 * 60 * 60 * 1000L
-        
-        // Limpa expansões antigas ao trocar de rodada
-        expandedGroups.clear()
+    val showShadow by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
+    }
 
-        // 1. Identifica grupos com jogos AO VIVO (Iniciados há menos de 2h)
-        val liveGroups = byGroup.filter { (_, gMatches) ->
-            gMatches.any { now in it.matchDateMillis..(it.matchDateMillis + twoHours) }
-        }.keys
+    // Flag para controlar se já fizemos o scroll inicial desta rodada
+    var hasHandledInitialScroll by rememberSaveable(selectedRound) { mutableStateOf(false) }
+
+    LaunchedEffect(selectedRound, matches.isNotEmpty(), byGroup, lastInteractedMatchId) {
+        if (matches.isEmpty() || byGroup.isEmpty()) return@LaunchedEffect
         
-        if (liveGroups.isNotEmpty()) {
-            expandedGroups.addAll(liveGroups)
+        val sortedEntries = byGroup.entries.sortedBy { it.key }
+
+        // 1. PRIORIDADE TOTAL: Se o usuário acabou de voltar de um palpite
+        if (lastInteractedMatchId != null) {
+            val targetMatch = matches.find { it.id == lastInteractedMatchId }
+            if (targetMatch != null) {
+                val groupOfMatch = targetMatch.group ?: ""
+                
+                // Abre o grupo se estiver fechado
+                if (!expandedGroups.contains(groupOfMatch)) {
+                    expandedGroups.add(groupOfMatch)
+                    kotlinx.coroutines.delay(200) // Tempo para o Compose processar a abertura
+                }
+
+                var targetIndex = 0
+                for (entry in sortedEntries) {
+                    if (entry.key == groupOfMatch) {
+                        val matchIdx = entry.value.indexOfFirst { it.id == lastInteractedMatchId }
+                        targetIndex += 1 + (if (matchIdx != -1) matchIdx else 0)
+                        break
+                    }
+                    targetIndex += 1 + entry.value.size + 1
+                }
+                
+                listState.scrollToItem(targetIndex)
+                hasHandledInitialScroll = true // Marca como resolvido para não rodar a lógica de "Hoje"
+                onClearLastMatchId()
+                return@LaunchedEffect
+            }
         }
 
-        // 2. Encontra a data do próximo jogo que ainda não começou (ou o primeiro do dia se todos acabaram)
-        val nextMatchDate = matches
-            .filter { now < it.matchDateMillis }
-            .minOfOrNull { it.matchDateMillis }
+        // 2. LÓGICA DE NAVEGAÇÃO INICIAL: Só roda se for a primeira vez carregando a rodada
+        if (!hasHandledInitialScroll) {
+            expandedGroups.clear()
 
-        if (nextMatchDate != null) {
-            // Define o início do dia desse próximo jogo
-            val nextMatchDayStart = Instant.fromEpochMilliseconds(nextMatchDate)
-                .toLocalDateTime(timezone).date.atStartOfDayIn(timezone).toEpochMilliseconds()
+            // 1. Encontrar o jogo "Foco": Em andamento > Próximo hoje > Próximo geral
+            val matchWindow = 2 * 60 * 60 * 1000L + (30 * 60 * 1000L) // Janela de jogo em andamento
             
-            // Define o fim do dia seguinte (D+1) para pegar todos os jogos dessa "rodada diária"
-            val windowEnd = nextMatchDayStart + (48 * 60 * 60 * 1000)
+            val focusMatch = matches.filter { it.phase == Phase.GROUP_STAGE }.let { allGroupMatches ->
+                // Prioridade 1: Em andamento
+                allGroupMatches.find { now in it.matchDateMillis..(it.matchDateMillis + matchWindow) }
+                    ?: // Prioridade 2: Próximo hoje
+                    allGroupMatches.filter { 
+                        val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
+                        mDate == todayDate && it.matchDateMillis > now 
+                    }.minByOrNull { it.matchDateMillis }
+                    ?: // Prioridade 3: Próximo geral (amanhã ou depois)
+                    allGroupMatches.filter { it.matchDateMillis > now }.minByOrNull { it.matchDateMillis }
+            }
 
-            // Abre todos os grupos que possuem jogos nesse intervalo (dia do próximo jogo + dia seguinte)
-            val nextGroups = byGroup.filter { (_, gMatches) ->
-                gMatches.any { it.matchDateMillis in nextMatchDayStart until windowEnd }
-            }.keys
-            
-            nextGroups.forEach { if (!expandedGroups.contains(it)) expandedGroups.add(it) }
-        } else if (expandedGroups.isEmpty()) {
-            // Se não tem nada ao vivo nem no futuro, expande todos os grupos que têm jogos na rodada atual
-            expandedGroups.addAll(byGroup.keys)
+            if (focusMatch != null) {
+                val groupOfFocus = focusMatch.group ?: ""
+                val roundOfFocus = focusMatch.groupRound()
+
+                // Aba HOJE: Abre TODOS os grupos que têm jogo hoje
+                if (selectedRound == 0) {
+                    expandedGroups.addAll(byGroup.keys)
+                    listState.scrollToItem(0)
+                } 
+                // Abas de Rodada: Lógica inteligente de abertura
+                else {
+                    // Identifica se a rodada selecionada tem o jogo em foco
+                    if (selectedRound == roundOfFocus) {
+                        // 1. Abre o grupo do jogo foco
+                        expandedGroups.add(groupOfFocus)
+                        
+                        // 2. Abre também outros grupos desta rodada que têm jogos HOJE e NÃO encerraram
+                        val otherGroupsToday = matches.filter { 
+                            it.groupRound() == selectedRound && 
+                            Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == todayDate &&
+                            it.matchDateMillis + matchWindow >= now &&
+                            !it.isFinished
+                        }.mapNotNull { it.group }
+                        expandedGroups.addAll(otherGroupsToday)
+                        
+                        // 3. Cálculo de scroll para abas de Rodada
+                        var targetIndex = 0
+                        for (entry in sortedEntries) {
+                            if (entry.key == groupOfFocus) break
+                            targetIndex += 1 + entry.value.size + 1
+                        }
+                        listState.scrollToItem(targetIndex)
+                    } else {
+                        // Se estiver em uma rodada sem jogo foco (ex: rodada futura), abre apenas o primeiro grupo
+                        sortedEntries.firstOrNull()?.key?.let { expandedGroups.add(it) }
+                        listState.scrollToItem(0)
+                    }
+                }
+            } else {
+                // Caso não encontre nenhum jogo futuro (fim da fase de grupos), abre o primeiro
+                if (selectedRound == 0) expandedGroups.addAll(byGroup.keys)
+                else sortedEntries.firstOrNull()?.key?.let { expandedGroups.add(it) }
+
+                listState.scrollToItem(0)
+            }
+            hasHandledInitialScroll = true
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
-            if (showRoundSelector) {
-                item(key = "round-selector", contentType = "selector") {
-                    RodadaSelector(
-                        selected = selectedRound,
-                        unlocked = unlocked,
-                        onSelect = { if (it == 0 || it in unlocked) onRoundChange(it) }
-                    )
-                    Spacer(Modifier.height(12.dp))
-                }
-            }
-
-            if (roundMatches.isEmpty() && selectedRound == 0) {
-                item {
-                    Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                        Text("Nenhum jogo programado para hoje.", color = TextMuted, fontSize = 14.sp)
-                    }
-                }
-            }
-
-            byGroup.entries.sortedBy { it.key }.forEach { (group, groupMatches) ->
-                val isExpanded = expandedGroups.contains(group)
-                val isCompleted = groupMatches.all { predictions.containsKey(it.id) }
-                
-                item(key = "header-$group", contentType = "header") {
-                    GroupHeader(
-                        group = group,
-                        isExpanded = isExpanded,
-                        isCompleted = isCompleted,
-                        enabled = true, // Sempre liberado para abrir
-                        onToggle = { 
-                            if (isExpanded) expandedGroups.remove(group) else expandedGroups.add(group)
-                        }
-                    )
-                }
-
-                items(groupMatches, key = { it.id }, contentType = { "match" }) { match ->
-                    AnimatedVisibility(
-                        visible = isExpanded,
-                        enter = expandVertically(),
-                        exit = shrinkVertically()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp) // Recuo para diferenciar do cabeçalho do grupo
-                        ) {
-                            MatchCard(
-                                match = match,
-                                prediction = predictions[match.id],
-                                isAdmin = isAdmin,
-                                bolaoCreatedAt = bolaoCreatedAt,
-                                showSocialBadge = showSocialBadge,
-                                onClick = { onMatchClick(match.id) },
-                                onShowAllPredictions = { onShowAllPredictions(match) },
-                                onAdminUpdateScore = { onAdminUpdateScore(match) }
-                            )
-                            Spacer(Modifier.height(8.dp))
-                        }
-                    }
-                }
-                item(key = "spacer-$group", contentType = "spacer") { Spacer(Modifier.height(4.dp)) }
+    Column(Modifier.fillMaxSize()) {
+        if (showRoundSelector) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(DeepNavy)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                RodadaSelector(
+                    selected = selectedRound,
+                    unlocked = unlocked,
+                    showHoje = hasMatchToday,
+                    onSelect = { if (it == 0 || it in unlocked) onRoundChange(it) }
+                )
             }
         }
-        
-        if (isLoading) {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
-                color = Neon, trackColor = Color.Transparent
-            )
+
+        Box(Modifier.weight(1f)) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                if (roundMatches.isEmpty() && selectedRound == 0) {
+                    item {
+                        Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                            Text("Nenhum jogo programado para hoje.", color = TextMuted, fontSize = 14.sp)
+                        }
+                    }
+                }
+
+                byGroup.entries.sortedBy { it.key }.forEach { (group, groupMatches) ->
+                    val isExpanded = expandedGroups.contains(group)
+                    val isCompleted = groupMatches.all { predictions.containsKey(it.id) }
+                    
+                    item(key = "header-$group", contentType = "header") {
+                        GroupHeader(
+                            group = group,
+                            isExpanded = isExpanded,
+                            isCompleted = isCompleted,
+                            enabled = true, // Sempre liberado para abrir
+                            onToggle = { 
+                                if (isExpanded) expandedGroups.remove(group) else expandedGroups.add(group)
+                            }
+                        )
+                    }
+
+                    items(groupMatches, key = { it.id }, contentType = { "match" }) { match ->
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = isExpanded,
+                            enter = expandVertically(),
+                            exit = shrinkVertically()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp) // Recuo para diferenciar do cabeçalho do grupo
+                            ) {
+                                MatchCard(
+                                    match = match,
+                                    prediction = predictions[match.id],
+                                    isAdmin = isAdmin,
+                                    bolaoCreatedAt = bolaoCreatedAt,
+                                    showSocialBadge = showSocialBadge,
+                                    onClick = { onMatchClick(match.id) },
+                                    onShowAllPredictions = { onShowAllPredictions(match) },
+                                    onAdminUpdateScore = { onAdminUpdateScore(match) }
+                                )
+                                Spacer(Modifier.height(8.dp))
+                            }
+                        }
+                    }
+                    item(key = "spacer-$group", contentType = "spacer") { Spacer(Modifier.height(4.dp)) }
+                }
+            }
+
+            // Sombra de Scroll
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showShadow,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Black.copy(alpha = 0.3f), Color.Transparent)
+                            )
+                        )
+                )
+            }
+            
+            if (isLoading) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                    color = Neon, trackColor = Color.Transparent
+                )
+            }
         }
     }
 }
@@ -807,6 +1000,8 @@ private fun KnockoutTab(
     showSocialBadge: Boolean = true,
     onPhaseChange: (Phase?) -> Unit,
     listState: LazyListState,
+    lastInteractedMatchId: String?,
+    onClearLastMatchId: () -> Unit,
     onMatchClick: (String) -> Unit,
     onShowAllPredictions: (Match) -> Unit,
     onAdminUpdateScore: (Match) -> Unit
@@ -830,7 +1025,27 @@ private fun KnockoutTab(
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
 
     // Auto-selecionar HOJE se houver jogos, senão a próxima fase
-    LaunchedEffect(matches) {
+    LaunchedEffect(matches, lastInteractedMatchId) {
+        if (lastInteractedMatchId != null) {
+            val targetMatch = matches.find { it.id == lastInteractedMatchId }
+            if (targetMatch != null && targetMatch.phase != Phase.GROUP_STAGE) {
+                // Se a partida clicada for de mata-mata, garante que a fase certa esteja selecionada
+                onPhaseChange(targetMatch.phase)
+                
+                // Espera o seletor atualizar a lista
+                kotlinx.coroutines.delay(100)
+                
+                val pairs = matches.filter { it.phase == targetMatch.phase }.chunked(2)
+                val pairIndex = pairs.indexOfFirst { pair -> pair.any { it.id == lastInteractedMatchId } }
+                
+                if (pairIndex != -1) {
+                    listState.scrollToItem(pairIndex)
+                }
+                onClearLastMatchId()
+                return@LaunchedEffect
+            }
+        }
+
         if (selectedPhase != Phase.FRIENDLIES && selectedPhase != null) return@LaunchedEffect
         
         val knockoutMatches = matches.filter { it.phase != Phase.GROUP_STAGE }
@@ -844,6 +1059,13 @@ private fun KnockoutTab(
         } else {
             val nextPhase = phaseOrder.find { p -> knockoutMatches.any { it.phase == p && !it.isFinished } }
             if (nextPhase != null) onPhaseChange(nextPhase)
+        }
+    }
+
+    val hasMatchToday = remember(matches, todayDate) {
+        matches.filter { it.phase != Phase.GROUP_STAGE }.any { 
+            val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
+            mDate == todayDate 
         }
     }
 
@@ -866,65 +1088,96 @@ private fun KnockoutTab(
     }
     val isKnockoutUnlocked = now >= groupStageLastMatchDay
 
-    Box(Modifier.fillMaxSize()) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            if (phaseOrder.isNotEmpty()) {
-                item {
-                    KnockoutPhaseSelector(
-                        phases = phaseOrder,
-                        selected = selectedPhase,
-                        isUnlocked = isKnockoutUnlocked,
-                        onSelect = { onPhaseChange(it) }
-                    )
-                    Spacer(Modifier.height(8.dp))
-                }
+    val showShadow by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
+    }
 
-                if (phaseMatches.isEmpty() && selectedPhase == Phase.FRIENDLIES) {
-                    item {
-                        Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                            Text("Nenhum jogo de mata-mata hoje.", color = TextMuted, fontSize = 14.sp)
+    Column(Modifier.fillMaxSize()) {
+        if (phaseOrder.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(DeepNavy)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                KnockoutPhaseSelector(
+                    phases = phaseOrder,
+                    selected = selectedPhase,
+                    isUnlocked = isKnockoutUnlocked,
+                    showHoje = hasMatchToday,
+                    onSelect = { onPhaseChange(it) }
+                )
+            }
+        }
+
+        Box(Modifier.weight(1f)) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp) // Duplicado de 8 para 16
+            ) {
+                if (phaseOrder.isNotEmpty()) {
+                    if (phaseMatches.isEmpty() && selectedPhase == Phase.FRIENDLIES) {
+                        item {
+                            Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                                Text("Nenhum jogo de mata-mata hoje.", color = TextMuted, fontSize = 14.sp)
+                            }
+                        }
+                    }
+
+                    val pairs = phaseMatches.chunked(2)
+                    items(pairs.size) { index ->
+                        val pair = pairs[index]
+                        val m1 = pair[0]
+                        val m2 = pair.getOrNull(1)
+                        
+                        KnockoutBracketPair(
+                            match1 = m1,
+                            match2 = m2,
+                            prediction1 = predictions[m1.id],
+                            prediction2 = m2?.let { predictions[it.id] },
+                            isAdmin = isAdmin,
+                            bolaoCreatedAt = bolaoCreatedAt,
+                            forceLocked = !isKnockoutUnlocked,
+                            showSocialBadge = showSocialBadge,
+                            onMatchClick = onMatchClick,
+                            onShowAllPredictions = onShowAllPredictions,
+                            onAdminUpdateScore = onAdminUpdateScore
+                        )
+                        
+                        if (index < pairs.size - 1) {
+                            Spacer(Modifier.height(16.dp))
                         }
                     }
                 }
-
-                val pairs = phaseMatches.chunked(2)
-                items(pairs.size) { index ->
-                    val pair = pairs[index]
-                    val m1 = pair[0]
-                    val m2 = pair.getOrNull(1)
-                    
-                    KnockoutBracketPair(
-                        match1 = m1,
-                        match2 = m2,
-                        prediction1 = predictions[m1.id],
-                        prediction2 = m2?.let { predictions[it.id] },
-                        isAdmin = isAdmin,
-                        bolaoCreatedAt = bolaoCreatedAt,
-                        forceLocked = !isKnockoutUnlocked,
-                        showSocialBadge = showSocialBadge,
-                        onMatchClick = onMatchClick,
-                        onShowAllPredictions = onShowAllPredictions,
-                        onAdminUpdateScore = onAdminUpdateScore
-                    )
-                    
-                    if (index < pairs.size - 1) {
-                        Spacer(Modifier.height(16.dp))
-                    }
-                }
             }
-        }
-        
-        if (isLoading) {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
-                color = Neon,
-                trackColor = Color.Transparent
-            )
+
+            // Sombra de Scroll
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showShadow,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Black.copy(alpha = 0.3f), Color.Transparent)
+                            )
+                        )
+                )
+            }
+            
+            if (isLoading) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                    color = Neon,
+                    trackColor = Color.Transparent
+                )
+            }
         }
     }
 }
@@ -1027,29 +1280,27 @@ private fun KnockoutPhaseSelector(
     phases: List<Phase>,
     selected: Phase?,
     isUnlocked: Boolean,
+    showHoje: Boolean,
     onSelect: (Phase?) -> Unit
 ) {
     androidx.compose.foundation.lazy.LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        contentPadding = PaddingValues(horizontal = 2.dp)
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item {
-            val isSelected = selected == Phase.FRIENDLIES
-            FilterChip(
-                label = "⚽️ HOJE",
-                isSelected = isSelected,
-                isUnlocked = true,
-                onClick = { onSelect(Phase.FRIENDLIES) }
-            )
+        if (showHoje) {
+            item {
+                FilterChip(
+                    label = "⚽️ HOJE",
+                    isSelected = selected == Phase.FRIENDLIES,
+                    isUnlocked = true,
+                    onClick = { onSelect(Phase.FRIENDLIES) }
+                )
+            }
         }
         items(phases) { phase ->
-            val isSelected = selected == phase
             FilterChip(
                 label = phase.label,
-                isSelected = isSelected,
+                isSelected = selected == phase,
                 isUnlocked = isUnlocked,
                 onClick = { onSelect(phase) }
             )
@@ -1058,29 +1309,38 @@ private fun KnockoutPhaseSelector(
 }
 
 @Composable
-private fun RodadaSelector(selected: Int, unlocked: Set<Int>, onSelect: (Int) -> Unit) {
+private fun RodadaSelector(
+    selected: Int, 
+    unlocked: Set<Int>, 
+    showHoje: Boolean,
+    onSelect: (Int) -> Unit
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        val rounds = listOf(1, 2, 3)
+
         // Opção HOJE
-        Box(modifier = Modifier.weight(1f)) {
-            FilterChip(
-                label = "⚽️ HOJE",
-                isSelected = selected == 0,
-                isUnlocked = true,
-                onClick = { onSelect(0) }
-            )
+        if (showHoje) {
+            Box(modifier = Modifier.weight(1f)) {
+                FilterChip(
+                    label = "⚽️ HOJE",
+                    isSelected = selected == 0,
+                    isUnlocked = true,
+                    onClick = { onSelect(0) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
-        listOf(1, 2, 3).forEach { round ->
+        rounds.forEach { round ->
             Box(modifier = Modifier.weight(1f)) {
                 FilterChip(
                     label = "Rodada $round",
                     isSelected = selected == round,
                     isUnlocked = round in unlocked,
-                    onClick = { onSelect(round) }
+                    onClick = { onSelect(round) },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -1092,6 +1352,7 @@ private fun FilterChip(
     label: String,
     isSelected: Boolean,
     isUnlocked: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val borderColor by animateColorAsState(
@@ -1122,21 +1383,21 @@ private fun FilterChip(
     )
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .background(containerColor)
             .border(1.dp, borderColor, RoundedCornerShape(14.dp))
             .then(if (isUnlocked) Modifier.clickable { onClick() } else Modifier)
-            .padding(vertical = 12.dp, horizontal = 8.dp),
+            .padding(vertical = 12.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             label,
             color = textColor,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
-            maxLines = 1
+            maxLines = 1,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -1321,21 +1582,23 @@ fun MatchCard(
                 .fillMaxWidth()
                 .clickable(
                     enabled = when {
-                        isGhostMatch -> isAdmin // Fantasmas só abrem para Admin ajustar placar
+                        isGhostMatch -> isAdmin 
                         canPredict -> true
                         isActuallyFinished -> isAdmin
-                        isExpired -> isAdmin || showSocialBadge
+                        isExpired -> (!isAdmin && showSocialBadge) || isAdmin
                         else -> false
                     },
                     onClick = { 
                         if (canPredict) onClick() 
-                        else if ((isExpired || isAdmin) && (showSocialBadge || isAdmin)) onShowAllPredictions() 
+                        else if (isAdmin) onAdminUpdateScore()
+                        else if (isExpired && showSocialBadge) onShowAllPredictions()
                     }
                 )
         ) {
             // 1. VER PALPITES DA GALERA (Grudado no teto)
-            // Não mostra para jogos fantasmas (antes da criação do bolão)
-            val showGaleraBadge = showSocialBadge && (isExpired || isAdmin) && !isTbd && !isGhostMatch
+            // Para Admin, mostramos sempre (mas com restrição de visualização se não começou)
+            // Para os demais, apenas após o jogo travar/começar
+            val showGaleraBadge = showSocialBadge && (isAdmin || isExpired) && !isTbd && !isGhostMatch
             if (showGaleraBadge) {
                 Surface(
                     onClick = onShowAllPredictions,
@@ -1625,6 +1888,61 @@ fun AdminScoreDialog(
     )
 }
 
+@Composable
+private fun PendingRequestItem(
+    user: com.lpstudio.bolaodagalera.domain.model.User,
+    label: String,
+    accentColor: Color = Neon,
+    onApprove: () -> Unit,
+    onDeny: () -> Unit
+) {
+    Surface(
+        color = NavyElevated,
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UserAvatar(
+                initials = user.name.getInitials(),
+                size = 40.dp,
+                fontSize = 14.sp,
+                borderColor = accentColor.copy(alpha = 0.5f)
+            )
+            
+            Spacer(Modifier.width(14.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = user.name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Text(
+                    text = label,
+                    color = accentColor,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            IconButton(onClick = onDeny, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.Close, contentDescription = "Negar", tint = ErrorRed, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(8.dp))
+            IconButton(onClick = onApprove, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.Check, contentDescription = "Aprovar", tint = Neon, modifier = Modifier.size(20.dp))
+            }
+        }
+    }
+}
+
 @Preview
 @Composable
 fun BolaoDetailScreenPreview() {
@@ -1649,19 +1967,28 @@ fun BolaoDetailScreenPreview() {
         Match(
             id = "GS-A-1", homeTeam = "Canadá", awayTeam = "Bósnia",
             homeTeamCode = "CAN", awayTeamCode = "BIH", homeTeamFlag = "🇨🇦", awayTeamFlag = "🇧🇦",
-            matchDateMillis = now - (24 * 60 * 60 * 1000), phase = Phase.GROUP_STAGE, group = "A",
+            matchDateMillis = now - (2 * 60 * 60 * 1000), phase = Phase.GROUP_STAGE, group = "A",
             homeScore = 1, awayScore = 0
         ),
         Match(
             id = "GS-A-2", homeTeam = "Brasil", awayTeam = "Espanha",
             homeTeamCode = "BRA", awayTeamCode = "ESP", homeTeamFlag = "🇧🇷", awayTeamFlag = "🇪🇸",
-            matchDateMillis = now + 172800000, phase = Phase.GROUP_STAGE, group = "A"
+            matchDateMillis = now + (30 * 60 * 1000), phase = Phase.GROUP_STAGE, group = "A"
+        ),
+        Match(
+            id = "GS-B-1", homeTeam = "Argentina", awayTeam = "França",
+            homeTeamCode = "ARG", awayTeamCode = "FRA", homeTeamFlag = "🇦🇷", awayTeamFlag = "🇫🇷",
+            matchDateMillis = now + (24 * 60 * 60 * 1000), phase = Phase.GROUP_STAGE, group = "B"
+        ),
+        Match(
+            id = "KO-1", homeTeam = "Portugal", awayTeam = "Itália",
+            homeTeamCode = "POR", awayTeamCode = "ITA", homeTeamFlag = "🇵🇹", awayTeamFlag = "🇮🇹",
+            matchDateMillis = now + (25 * 60 * 60 * 1000), phase = Phase.ROUND_OF_16
         )
     )
 
     val mockPredictions = mapOf(
-        "GS-A-1" to Prediction(userId = myUserId, matchId = "GS-A-1", homeScore = 1, awayScore = 0),
-        "GS-A-2" to Prediction(userId = myUserId, matchId = "GS-A-2", homeScore = 2, awayScore = 1)
+        "GS-A-1" to Prediction(userId = myUserId, matchId = "GS-A-1", homeScore = 1, awayScore = 0)
     )
 
     val uiState = BolaoUiState(
@@ -1684,6 +2011,8 @@ fun BolaoDetailScreenPreview() {
                 override fun sendWhatsApp(phone: String, text: String) {}
             },
             onLeaveBolao = {},
+            onApproveJoin = { _, _ -> },
+            onApproveLeave = { _, _ -> },
             onNavigateToPrediction = {},
             onNavigateToAllPredictions = {},
             onNavigateToEdit = {},

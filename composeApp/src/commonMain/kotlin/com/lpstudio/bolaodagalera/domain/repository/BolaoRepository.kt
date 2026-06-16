@@ -20,6 +20,8 @@ interface BolaoRepository {
     ): Bolao
     suspend fun requestJoinBolao(code: String, userId: String): Bolao
     suspend fun approveJoinRequest(bolaoId: String, userId: String, approve: Boolean)
+    suspend fun requestLeaveBolao(bolaoId: String, userId: String)
+    suspend fun approveLeaveRequest(bolaoId: String, userId: String, approve: Boolean)
     suspend fun joinBolao(code: String, userId: String): Bolao
     suspend fun addParticipantDirectly(bolaoId: String, userId: String)
     suspend fun leaveBolao(bolaoId: String, userId: String)

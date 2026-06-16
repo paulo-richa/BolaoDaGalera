@@ -99,6 +99,40 @@ class HomeViewModel(
                     )
                 )
             }
+
+            // 1.1 Notificações de Solicitações (Admin)
+            boloes.filter { it.ownerId == user.id }.forEach { bolao ->
+                bolao.pendingParticipants.forEach { pUserId ->
+                    val id = "join_req_${bolao.id}_$pUserId"
+                    allGenerated.add(
+                        Notification(
+                            id = id,
+                            title = "Pedido para entrar 👤",
+                            message = "Alguém quer entrar no seu bolão '${bolao.name}'.",
+                            timestamp = TimeSource.nowMillis(),
+                            type = NotificationType.JOIN_REQUEST,
+                            isRead = readIds.contains(id),
+                            bolaoId = bolao.id,
+                            matchId = pUserId // Reuso matchId para guardar o userId do solicitante
+                        )
+                    )
+                }
+                bolao.pendingExits.forEach { pUserId ->
+                    val id = "exit_req_${bolao.id}_$pUserId"
+                    allGenerated.add(
+                        Notification(
+                            id = id,
+                            title = "Pedido para sair 🚩",
+                            message = "Alguém quer sair do seu bolão '${bolao.name}'.",
+                            timestamp = TimeSource.nowMillis(),
+                            type = NotificationType.EXIT_REQUEST,
+                            isRead = readIds.contains(id),
+                            bolaoId = bolao.id,
+                            matchId = pUserId // Reuso matchId para guardar o userId do solicitante
+                        )
+                    )
+                }
+            }
             
             // 2. Notificações de Lembrete de Jogos
             val today = Instant.fromEpochMilliseconds(TimeSource.nowMillis()).toLocalDateTime(TimeZone.currentSystemDefault()).date
@@ -163,6 +197,26 @@ class HomeViewModel(
                     invitationRepository.respondToInvitation(inv.id, accept)
                 }
 
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    fun respondToJoinRequest(bolaoId: String, userId: String, approve: Boolean) {
+        viewModelScope.launch {
+            try {
+                bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    fun respondToExitRequest(bolaoId: String, userId: String, approve: Boolean) {
+        viewModelScope.launch {
+            try {
+                bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }

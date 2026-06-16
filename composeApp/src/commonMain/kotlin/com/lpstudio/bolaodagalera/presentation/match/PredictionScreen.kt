@@ -11,12 +11,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlin.random.Random
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -27,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.presentation.theme.*
+import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
@@ -43,8 +50,16 @@ fun PredictionScreen(
     val authRepository = koinInject<AuthRepository>()
     val userId = authRepository.currentUser?.id ?: ""
 
+    var showSuccess by remember { mutableStateOf(false) }
+
     LaunchedEffect(userId) { viewModel.load(userId) }
-    LaunchedEffect(uiState.isSaved) { if (uiState.isSaved) onSaved() }
+    LaunchedEffect(uiState.isSaved) {
+        if (uiState.isSaved) {
+            showSuccess = true
+            delay(1000)
+            onSaved()
+        }
+    }
 
     var homeScore by remember { mutableIntStateOf(0) }
     var awayScore by remember { mutableIntStateOf(0) }
@@ -73,167 +88,169 @@ fun PredictionScreen(
                 val match = uiState.match!!
                 val scrollState = rememberScrollState()
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // ── Stadium header ────────────────────────────────────────
-                    Box(
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(GradientHero)
-                            .padding(top = 16.dp, bottom = 24.dp, start = 8.dp, end = 20.dp)
+                            .weight(1f)
+                            .verticalScroll(scrollState),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(onClick = onNavigateBack, modifier = Modifier.size(44.dp)) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Voltar",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                                Spacer(Modifier.weight(1f))
-                                match.group?.let { group ->
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(NavyElevated)
-                                            .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                                    ) {
-                                        Text(
-                                            "Grupo $group • ${match.phase.label}",
-                                            fontSize = 11.sp,
-                                            color = TextMuted,
-                                            fontWeight = FontWeight.Bold
+                        // ── Stadium header ────────────────────────────────────────
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(GradientHero)
+                                .padding(top = 16.dp, bottom = 24.dp, start = 8.dp, end = 20.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(onClick = onNavigateBack, modifier = Modifier.size(44.dp)) {
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Voltar",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     }
+                                    Spacer(Modifier.weight(1f))
+                                    match.group?.let { group ->
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(NavyElevated)
+                                                .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
+                                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        ) {
+                                            Text(
+                                                "Grupo $group • ${match.phase.label}",
+                                                fontSize = 11.sp,
+                                                color = TextMuted,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(Modifier.height(24.dp))
+
+                                // Teams display
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    TeamHero(flag = match.homeTeamFlag, name = match.homeTeam)
+
+                                    Text(
+                                        "VS",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = TextMuted.copy(alpha = 0.4f),
+                                        modifier = Modifier.padding(bottom = 36.dp),
+                                        letterSpacing = 2.sp
+                                    )
+
+                                    TeamHero(flag = match.awayTeamFlag, name = match.awayTeam)
                                 }
                             }
+                        }
 
-                            Spacer(Modifier.height(24.dp))
+                        Spacer(Modifier.height(32.dp))
 
-                            // Teams display
+                        // ── Score picker ──────────────────────────────────────────
+                        Text(
+                            "Qual será o placar?",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(Modifier.height(24.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 40.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            ScoreStepper(
+                                value = homeScore,
+                                onIncrement = { homeScore++ },
+                                onDecrement = { if (homeScore > 0) homeScore-- },
+                                teamName = match.homeTeam.take(10)
+                            )
+
+                            Text(
+                                "×",
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMuted
+                            )
+
+                            ScoreStepper(
+                                value = awayScore,
+                                onIncrement = { awayScore++ },
+                                onDecrement = { if (awayScore > 0) awayScore-- },
+                                teamName = match.awayTeam.take(10)
+                            )
+                        }
+
+                        Spacer(Modifier.height(32.dp))
+
+                        // ── Points info ───────────────────────────────────────────
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(NavyCard)
+                                .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
+                                .padding(16.dp)
+                        ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.CenterVertically
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
-                                TeamHero(flag = match.homeTeamFlag, name = match.homeTeam)
-
-                                Text(
-                                    "VS",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = TextMuted.copy(alpha = 0.4f),
-                                    modifier = Modifier.padding(bottom = 36.dp),
-                                    letterSpacing = 2.sp
+                                PointBadge(
+                                    emoji = "🎯", 
+                                    pts = (uiState.bolao?.pointsExactScore ?: 3).toString(), 
+                                    label = "Placar exato"
                                 )
-
-                                TeamHero(flag = match.awayTeamFlag, name = match.awayTeam)
+                                VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
+                                PointBadge(
+                                    emoji = "✅", 
+                                    pts = (uiState.bolao?.pointsWinnerOrDraw ?: 1).toString(), 
+                                    label = "Resultado certo"
+                                )
+                                VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
+                                PointBadge(
+                                    emoji = "❌", 
+                                    pts = "0", 
+                                    label = "Errou"
+                                )
                             }
                         }
-                    }
 
-                    Spacer(Modifier.height(32.dp))
-
-                    // ── Score picker ──────────────────────────────────────────
-                    Text(
-                        "Qual será o placar?",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White,
-                        letterSpacing = 0.5.sp
-                    )
-                    Spacer(Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 40.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        ScoreStepper(
-                            value = homeScore,
-                            onIncrement = { homeScore++ },
-                            onDecrement = { if (homeScore > 0) homeScore-- },
-                            teamName = match.homeTeam.take(10)
-                        )
-
-                        Text(
-                            "×",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextMuted
-                        )
-
-                        ScoreStepper(
-                            value = awayScore,
-                            onIncrement = { awayScore++ },
-                            onDecrement = { if (awayScore > 0) awayScore-- },
-                            teamName = match.awayTeam.take(10)
-                        )
-                    }
-
-                    Spacer(Modifier.height(32.dp))
-
-                    // ── Points info ───────────────────────────────────────────
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(NavyCard)
-                            .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            PointBadge(
-                                emoji = "🎯", 
-                                pts = (uiState.bolao?.pointsExactScore ?: 3).toString(), 
-                                label = "Placar exato"
-                            )
-                            VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
-                            PointBadge(
-                                emoji = "✅", 
-                                pts = (uiState.bolao?.pointsWinnerOrDraw ?: 1).toString(), 
-                                label = "Resultado certo"
-                            )
-                            VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
-                            PointBadge(
-                                emoji = "❌", 
-                                pts = "0", 
-                                label = "Errou"
-                            )
+                        uiState.error?.let {
+                            Spacer(Modifier.height(12.dp))
+                            Text(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp))
                         }
+
+                        Spacer(Modifier.height(24.dp))
                     }
 
-                    uiState.error?.let {
-                        Spacer(Modifier.height(12.dp))
-                        Text(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp))
-                    }
-
-                    Spacer(Modifier.height(40.dp))
-
-                    // ── Save button ───────────────────────────────────────────
+                    // ── Save button (Sticky) ──────────────────────────────────
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
-                            .padding(bottom = 32.dp)
+                            .padding(bottom = 24.dp, top = 8.dp)
                     ) {
                         GradientSaveButton(
                             text = if (uiState.existingPrediction != null) "Atualizar palpite" else "Salvar palpite",
@@ -244,8 +261,132 @@ fun PredictionScreen(
                 }
             }
         }
+
+        if (showSuccess) {
+            SuccessOverlay()
+        }
     }
 }
+
+@Composable
+private fun SuccessOverlay() {
+    var startAnim by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (startAnim) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+
+    val confettiParticles = remember {
+        List(30) {
+            ConfettiState(
+                color = listOf(Neon, Gold, Color.Cyan, PinkNeon).random(),
+                angle = Random.nextFloat() * 360f,
+                speed = Random.nextFloat() * 15f + 10f,
+                rotationSpeed = Random.nextFloat() * 10f - 5f
+            )
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        startAnim = true
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.8f))
+            .clickable(enabled = false) {},
+        contentAlignment = Alignment.Center
+    ) {
+        // Confetti
+        if (startAnim) {
+            confettiParticles.forEach { particle ->
+                ConfettiPiece(particle)
+            }
+        }
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .scale(scale)
+                    .drawBehind {
+                        drawCircle(
+                            color = Neon,
+                            style = Stroke(width = 4.dp.toPx())
+                        )
+                    }
+                    .padding(12.dp)
+                    .clip(CircleShape)
+                    .background(Neon.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = null,
+                    tint = Neon,
+                    modifier = Modifier.size(72.dp)
+                )
+            }
+            Spacer(Modifier.height(32.dp))
+            Text(
+                "PALPITE SALVO!",
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 2.sp
+            )
+            Text(
+                "Boa sorte na torcida!",
+                color = TextMuted,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+private data class ConfettiState(
+    val color: Color,
+    val angle: Float,
+    val speed: Float,
+    val rotationSpeed: Float
+)
+
+@Composable
+private fun ConfettiPiece(state: ConfettiState) {
+    val infiniteTransition = rememberInfiniteTransition()
+    val progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
+    )
+
+    val xOffset = remember(progress) { (kotlin.math.cos(state.angle) * state.speed * progress * 100) }
+    val yOffset = remember(progress) { (kotlin.math.sin(state.angle) * state.speed * progress * 100) }
+    val rotation = remember(progress) { state.rotationSpeed * progress * 360f }
+
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                translationX = xOffset
+                translationY = yOffset
+                rotationZ = rotation
+                alpha = 1f - progress
+                scaleX = 1f - progress
+                scaleY = 1f - progress
+            }
+            .size(8.dp)
+            .background(state.color, RoundedCornerShape(2.dp))
+    )
+}
+
 
 @Composable
 private fun TeamHero(flag: String, name: String) {
