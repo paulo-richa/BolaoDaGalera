@@ -1525,14 +1525,13 @@ fun MatchCard(
     onClick: () -> Unit
 ) {
     val hasPrediction = prediction != null
-    val isFinished = match.homeScore != null && match.awayScore != null
+    val isFinished = match.isFinished
     val now = TimeSource.nowMillis()
     val matchStart = match.matchDateMillis
-    val matchEnd = matchStart + 7200_000L // 2 horas de duração
     
-    // Um jogo está em andamento se tem placar MAS o tempo atual ainda está dentro da janela de 2h do início
-    val isLive = isFinished && now in matchStart..matchEnd
-    val isActuallyFinished = isFinished && now > matchEnd
+    // Agora usamos o status real vindo da API
+    val isLive = match.status == "IN_PLAY"
+    val isActuallyFinished = match.status == "FINISHED" || (isFinished && now > (matchStart + 7200_000L))
     
     // Novo: Um jogo "fantasma" é aquele que aconteceu antes do bolão ser criado.
     // Ninguém poderia ter palpitado nele, então ele deve ser travado.

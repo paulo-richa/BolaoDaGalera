@@ -16,8 +16,9 @@ data class Match(
     val group: String? = null,
     val homeScore: Int? = null,
     val awayScore: Int? = null,
+    val status: String? = null,
     val isManual: Boolean = false
 ) {
-    val isFinished: Boolean get() = homeScore != null && awayScore != null
-    val isUpcoming: Boolean get() = !isFinished
+    val isFinished: Boolean get() = status == "FINISHED" || (homeScore != null && awayScore != null && status != "IN_PLAY")
+    val isUpcoming: Boolean get() = status == "TIMED" || (!isFinished && status != "IN_PLAY")
 }
