@@ -1317,32 +1317,29 @@ private fun RodadaSelector(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         val rounds = listOf(1, 2, 3)
 
         // Opção HOJE
         if (showHoje) {
-            Box(modifier = Modifier.weight(1f)) {
-                FilterChip(
-                    label = "⚽️ HOJE",
-                    isSelected = selected == 0,
-                    isUnlocked = true,
-                    onClick = { onSelect(0) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            FilterChip(
+                label = "⚽️ HOJE",
+                isSelected = selected == 0,
+                isUnlocked = true,
+                onClick = { onSelect(0) },
+                modifier = Modifier.weight(1f)
+            )
         }
+        
         rounds.forEach { round ->
-            Box(modifier = Modifier.weight(1f)) {
-                FilterChip(
-                    label = "Rodada $round",
-                    isSelected = selected == round,
-                    isUnlocked = round in unlocked,
-                    onClick = { onSelect(round) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            FilterChip(
+                label = "Rodada $round",
+                isSelected = selected == round,
+                isUnlocked = round in unlocked,
+                onClick = { onSelect(round) },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -1388,16 +1385,17 @@ private fun FilterChip(
             .background(containerColor)
             .border(1.dp, borderColor, RoundedCornerShape(14.dp))
             .then(if (isUnlocked) Modifier.clickable { onClick() } else Modifier)
-            .padding(vertical = 12.dp, horizontal = 16.dp),
+            .padding(vertical = 12.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             label,
             color = textColor,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
             maxLines = 1,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            softWrap = false
         )
     }
 }
