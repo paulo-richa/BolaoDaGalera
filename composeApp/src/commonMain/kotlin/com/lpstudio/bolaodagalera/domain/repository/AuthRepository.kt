@@ -15,4 +15,6 @@ interface AuthRepository {
     suspend fun isNicknameInUse(nickname: String): Boolean
     suspend fun isUsernameInUse(username: String): Boolean
     suspend fun sendPasswordResetEmail(email: String)
+    suspend fun getUser(userId: String): User?
+    suspend fun getUsers(userIds: List<String>): List<User>
 }

@@ -64,6 +64,30 @@ class FakeBolaoRepository : BolaoRepository {
         return newBolao
     }
 
+    override suspend fun requestLeaveBolao(bolaoId: String, userId: String) {
+        _boloes.update { list ->
+            list.map { if (it.id == bolaoId) it.copy(pendingExits = it.pendingExits + userId) else it }
+        }
+    }
+
+    override suspend fun approveLeaveRequest(bolaoId: String, userId: String, approve: Boolean) {
+        _boloes.update { list ->
+            list.map { bolao ->
+                if (bolao.id == bolaoId) {
+                    val newPending = bolao.pendingExits - userId
+                    if (approve) {
+                        bolao.copy(
+                            participants = bolao.participants - userId,
+                            pendingExits = newPending
+                        )
+                    } else {
+                        bolao.copy(pendingExits = newPending)
+                    }
+                } else bolao
+            }
+        }
+    }
+
     override suspend fun joinBolao(code: String, userId: String): Bolao {
         return requestJoinBolao(code, userId)
     }

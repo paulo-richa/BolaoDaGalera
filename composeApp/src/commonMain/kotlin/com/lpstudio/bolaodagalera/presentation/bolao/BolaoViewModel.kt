@@ -15,6 +15,8 @@ data class BolaoUiState(
     val matches: List<Match> = emptyList(),
     val userPredictions: Map<String, Prediction> = emptyMap(), // matchId -> prediction
     val participants: List<RankingEntry> = emptyList(),
+    val pendingJoinUsers: List<User> = emptyList(),
+    val pendingExitUsers: List<User> = emptyMap<String, User>().values.toList(), // apenas inicialização
     val allPredictions: List<Prediction> = emptyList(),
     val isLoading: Boolean = true,
     val isLeaveSuccess: Boolean = false,
@@ -57,6 +59,16 @@ class BolaoViewModel(
             .onEach { bolao -> _uiState.update { it.copy(bolao = bolao) } }
 
         val participantsFlow = bolaoFlow
+            .onEach { bolao ->
+                viewModelScope.launch {
+                    val pendingJoin = authRepository.getUsers(bolao.pendingParticipants)
+                    val pendingExit = authRepository.getUsers(bolao.pendingExits)
+                    _uiState.update { it.copy(
+                        pendingJoinUsers = pendingJoin,
+                        pendingExitUsers = pendingExit
+                    ) }
+                }
+            }
             .map { it.participants }
             .distinctUntilChanged()
         
@@ -109,7 +121,16 @@ class BolaoViewModel(
         viewModelScope.launch {
             try {
                 bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
-                loadBolao() // Atualiza os dados locais
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    fun approveLeaveRequest(userId: String, approve: Boolean) {
+        viewModelScope.launch {
+            try {
+                bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
@@ -122,7 +143,14 @@ class BolaoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                bolaoRepository.leaveBolao(bolaoId, currentUserId)
+                val bolao = _uiState.value.bolao
+                if (bolao?.ownerId == currentUserId) {
+                    // Se for o dono, sai direto (ou deleta, dependendo da regra, mas vamos manter o leave direto por enquanto)
+                    bolaoRepository.leaveBolao(bolaoId, currentUserId)
+                } else {
+                    // Se não for o dono, apenas solicita a saída
+                    bolaoRepository.requestLeaveBolao(bolaoId, currentUserId)
+                }
                 _uiState.update { it.copy(isLeaveSuccess = true, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }

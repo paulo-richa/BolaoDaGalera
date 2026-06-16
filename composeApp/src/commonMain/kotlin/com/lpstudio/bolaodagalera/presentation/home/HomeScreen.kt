@@ -488,12 +488,17 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.Top, // Alinhado ao topo para nomes multi-linha
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text(
                         bolao.name,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color.White,
+                        modifier = Modifier.weight(1f) // Ocupa o máximo de espaço, empurrando o ADMIN
                     )
                     if (isAdmin) {
                         Text(
@@ -502,6 +507,7 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                             fontWeight = FontWeight.Black,
                             color = DeepNavy,
                             modifier = Modifier
+                                .padding(top = 4.dp) // Pequeno ajuste para alinhar com a primeira linha do texto
                                 .clip(RoundedCornerShape(4.dp))
                                 .background(Neon)
                                 .padding(horizontal = 6.dp, vertical = 2.dp)

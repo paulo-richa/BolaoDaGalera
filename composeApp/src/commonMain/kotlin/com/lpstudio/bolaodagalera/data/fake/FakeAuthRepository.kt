@@ -84,4 +84,12 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun sendPasswordResetEmail(email: String) {
         // No-op for fake
     }
+
+    override suspend fun getUser(userId: String): User? {
+        return allUsers.find { it.id == userId }
+    }
+
+    override suspend fun getUsers(userIds: List<String>): List<User> {
+        return allUsers.filter { it.id in userIds }
+    }
 }

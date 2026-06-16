@@ -102,8 +102,8 @@ android {
         applicationId = "com.lpstudio.bolaodagalera"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 10
-        versionName = "2.4"
+        versionCode = 11
+        versionName = "2.4.1"
     }
     packaging {
         resources {
@@ -130,7 +130,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com"
-                releaseNotes = "v1.1: Deep Links de convite, saída de bolão, notificações pulsantes e correções na Home."
+                releaseNotes = "v2.4.1 (Build 11): Correção do botão de salvar palpite (sticky footer) e ajuste de scroll."
             }
         }
     }

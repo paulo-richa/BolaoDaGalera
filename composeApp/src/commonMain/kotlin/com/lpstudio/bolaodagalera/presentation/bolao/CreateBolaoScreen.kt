@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -71,7 +72,12 @@ class CreateBolaoViewModel(
     private fun loadBrazilMatches() {
         viewModelScope.launch {
             matchRepository.getMatches().collect { matches ->
-                _brazilMatches.value = matches.filter { it.homeTeamCode == "BRA" || it.awayTeamCode == "BRA" }
+                val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
+                _brazilMatches.value = matches.filter { 
+                    (it.homeTeamCode == "BRA" || it.awayTeamCode == "BRA") &&
+                    !it.isFinished &&
+                    it.matchDateMillis > (now + 60_000)
+                }
             }
         }
     }
@@ -138,7 +144,8 @@ fun CreateBolaoScreen(
 
     // Helpers de Validação
     val nameError = if (nameTouched && name.trim().length < 10) "Nome muito curto (mín. 10)" else null
-    val isFormValid = name.trim().length in 10..35
+    val isScopeValid = if (selectedScope == BolaoScope.ONLY_BRAZIL) brazilMatches.isNotEmpty() else true
+    val isFormValid = name.trim().length in 10..35 && isScopeValid
 
     LaunchedEffect(uiState.createdBolao) {
         if (uiState.createdBolao != null) {
@@ -391,7 +398,8 @@ fun CreateBolaoScreen(
                                         
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                             BolaoScope.entries.forEach { scope ->
-                                                val isScopeSelected = selectedScope == scope
+                                                val isScopeEnabled = scope != BolaoScope.ONLY_BRAZIL || brazilMatches.isNotEmpty()
+                                                val isScopeSelected = selectedScope == scope && isScopeEnabled
                                                 val scopeEmoji = when(scope) {
                                                     BolaoScope.FULL -> "🏆"
                                                     BolaoScope.ONLY_GROUPS -> "⚽"
@@ -405,25 +413,38 @@ fun CreateBolaoScreen(
                                                         .clip(RoundedCornerShape(10.dp))
                                                         .background(if (isScopeSelected) Neon.copy(alpha = 0.1f) else Color.Transparent)
                                                         .border(1.dp, if (isScopeSelected) Neon.copy(alpha = 0.5f) else GlassBorder.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                                                        .clickable { 
+                                                        .clickable(enabled = isScopeEnabled) { 
                                                             selectedScope = scope
                                                             if (scope != BolaoScope.ONLY_BRAZIL) selectedMatchId = null
                                                         }
                                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Text(scopeEmoji, fontSize = 14.sp)
+                                                    Text(scopeEmoji, fontSize = 14.sp, modifier = Modifier.alpha(if (isScopeEnabled) 1f else 0.3f))
                                                     Spacer(Modifier.width(10.dp))
                                                     Text(
                                                         scope.label,
                                                         fontSize = 13.sp,
                                                         color = if (isScopeSelected) Color.White else TextMuted,
-                                                        fontWeight = if (isScopeSelected) FontWeight.Bold else FontWeight.Normal
+                                                        fontWeight = if (isScopeSelected) FontWeight.Bold else FontWeight.Normal,
+                                                        modifier = Modifier.alpha(if (isScopeEnabled) 1f else 0.3f)
                                                     )
+                                                    
+                                                    if (scope == BolaoScope.ONLY_BRAZIL && !isScopeEnabled) {
+                                                        Spacer(Modifier.width(8.dp))
+                                                        Text("(Nenhum jogo futuro)", fontSize = 10.sp, color = ErrorRed.copy(alpha = 0.7f))
+                                                    }
+
                                                     Spacer(Modifier.weight(1f))
                                                     RadioButton(
+                                                        enabled = isScopeEnabled,
                                                         selected = isScopeSelected,
-                                                        onClick = { selectedScope = scope },
+                                                        onClick = { 
+                                                            if (isScopeEnabled) {
+                                                                selectedScope = scope
+                                                                if (scope != BolaoScope.ONLY_BRAZIL) selectedMatchId = null
+                                                            }
+                                                        },
                                                         colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
                                                         modifier = Modifier.size(20.dp)
                                                     )

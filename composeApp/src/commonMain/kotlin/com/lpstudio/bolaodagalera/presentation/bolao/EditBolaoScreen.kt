@@ -47,6 +47,7 @@ import org.koin.compose.koinInject
 @Immutable
 data class EditBolaoUiState(
     val bolao: Bolao? = null,
+    val participants: List<com.lpstudio.bolaodagalera.domain.model.User> = emptyList(),
     val isLoading: Boolean = false,
     val isDeleted: Boolean = false,
     val showSuccessMessage: Boolean = false,
@@ -91,7 +92,12 @@ class EditBolaoViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val bolao = bolaoRepository.getBolao(bolaoId)
-                _uiState.update { it.copy(bolao = bolao, isLoading = false) }
+                val participants = authRepository.getUsers(bolao.participants)
+                _uiState.update { it.copy(
+                    bolao = bolao,
+                    participants = participants,
+                    isLoading = false
+                ) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
@@ -434,9 +440,11 @@ fun EditBolaoScreen(
                         }
                     }
 
-                    uiState.bolao?.participants?.forEach { participantId ->
-                        val isOwner = participantId == uiState.bolao?.ownerId
-                        val isSelf = participantId == viewModel.currentUserId
+                    val sortedParticipants = uiState.participants.sortedBy { it.name.lowercase() }
+
+                    sortedParticipants.forEach { participant ->
+                        val isOwner = participant.id == uiState.bolao?.ownerId
+                        val isSelf = participant.id == viewModel.currentUserId
                         
                         Surface(
                             color = NavyCard,
@@ -454,19 +462,28 @@ fun EditBolaoScreen(
                                     Text(if(isOwner) "👑" else "👤", fontSize = 14.sp)
                                 }
                                 Spacer(Modifier.width(12.dp))
-                                Text(
-                                    when {
-                                        isOwner && isSelf -> "Você (Dono)"
-                                        isOwner -> "Dono"
-                                        isSelf -> "Você"
-                                        else -> "ID: $participantId"
-                                    },
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.weight(1f)
-                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = when {
+                                            isOwner && isSelf -> "${participant.name} (Você/Dono)"
+                                            isSelf -> "${participant.name} (Você)"
+                                            else -> participant.name
+                                        },
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (participant.nickname.isNotBlank()) {
+                                        Text(
+                                            text = "@${participant.nickname.lowercase()}",
+                                            color = TextMuted,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                                
                                 if (!isOwner && viewModel.currentUserId == uiState.bolao?.ownerId) {
-                                    IconButton(onClick = { viewModel.removeParticipant(participantId) }) {
+                                    IconButton(onClick = { viewModel.removeParticipant(participant.id) }) {
                                         Icon(Icons.Default.RemoveCircleOutline, "Remover", tint = ErrorRed.copy(alpha = 0.7f))
                                     }
                                 }
