@@ -818,6 +818,16 @@ private fun GroupStageTab(
         if (!hasHandledInitialScroll) {
             expandedGroups.clear()
 
+            // Verifica se todos os jogos desta rodada já terminaram
+            val isRoundFinished = roundMatches.isNotEmpty() && roundMatches.all { it.isFinished }
+
+            // Se a rodada já acabou (e não é a aba "Hoje"), mantém tudo fechado por padrão
+            if (isRoundFinished && selectedRound != 0) {
+                listState.scrollToItem(0)
+                hasHandledInitialScroll = true
+                return@LaunchedEffect
+            }
+
             // 1. Encontrar o jogo "Foco": Em andamento > Próximo hoje > Próximo geral
             val matchWindow = 2 * 60 * 60 * 1000L + (30 * 60 * 1000L) // Janela de jogo em andamento
             
