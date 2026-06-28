@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import com.lpstudio.bolaodagalera.domain.model.*
 import com.lpstudio.bolaodagalera.domain.repository.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withTimeout
 import com.lpstudio.bolaodagalera.util.TimeSource
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -63,10 +64,10 @@ class HomeViewModel(
 
     private fun loadUserData(user: User) {
         val invitationsFlow = combine(
-            invitationRepository.getInvitationsForUser(user.email),
+            invitationRepository.getInvitationsForUser(user.email.trim().lowercase()),
             invitationRepository.getInvitationsForUser(user.id),
-            invitationRepository.getInvitationsForUser(user.username),
-            invitationRepository.getInvitationsForUser(user.phone)
+            invitationRepository.getInvitationsForUser(user.username.trim().lowercase()),
+            invitationRepository.getInvitationsForUser(user.phone.filter { it.isDigit() })
         ) { list1, list2, list3, list4 ->
             (list1 + list2 + list3 + list4)
                 .filter { it.id.isNotBlank() }
@@ -193,8 +194,10 @@ class HomeViewModel(
                 // Encontra todos os convites pendentes para este mesmo bolão e responde a todos
                 // Isso garante que duplicados (e-mail/ID/telefone) sumam de uma vez só
                 val relatedInvitations = currentInvitations.filter { it.bolaoId == bolaoId }
-                relatedInvitations.forEach { inv ->
-                    invitationRepository.respondToInvitation(inv.id, accept)
+                withTimeout(5000) {
+                    relatedInvitations.forEach { inv ->
+                        invitationRepository.respondToInvitation(inv.id, accept)
+                    }
                 }
 
             } catch (e: Exception) {

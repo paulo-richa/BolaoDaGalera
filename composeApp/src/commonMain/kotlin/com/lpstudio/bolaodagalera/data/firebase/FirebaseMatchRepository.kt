@@ -51,9 +51,27 @@ class FirebaseMatchRepository : MatchRepository {
     private val db by lazy { Firebase.firestore }
     private val collection by lazy { db.collection("matches") }
 
+    private fun List<Match>.sortedForUi(): List<Match> = sortedWith { a, b ->
+        if (a.phase == Phase.GROUP_STAGE && b.phase == Phase.GROUP_STAGE) {
+            a.matchDateMillis.compareTo(b.matchDateMillis)
+        } else if (a.phase != Phase.GROUP_STAGE && b.phase != Phase.GROUP_STAGE && a.phase == b.phase) {
+            // Se for a mesma fase de mata-mata, mantém a ordem do ID (Bracket Order)
+            val numA = a.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
+            val numB = b.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
+            if (numA != numB) numA.compareTo(numB) else a.matchDateMillis.compareTo(b.matchDateMillis)
+        } else {
+            // Fases diferentes: segue a ordem cronológica ou a ordem do enum Phase
+            if (a.matchDateMillis != b.matchDateMillis) {
+                a.matchDateMillis.compareTo(b.matchDateMillis)
+            } else {
+                a.phase.ordinal.compareTo(b.phase.ordinal)
+            }
+        }
+    }
+
     override fun getMatches(): Flow<List<Match>> = collection.snapshots.map { snap ->
         try {
-            snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedBy { it.matchDateMillis }
+            snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
         } catch (e: Exception) {
             emptyList()
         }
@@ -64,7 +82,7 @@ class FirebaseMatchRepository : MatchRepository {
         .snapshots
         .map { snap ->
             try {
-                snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedBy { it.matchDateMillis }
+                snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
             } catch (e: Exception) {
                 emptyList()
             }
@@ -86,6 +104,32 @@ class FirebaseMatchRepository : MatchRepository {
             ),
             merge = true
         )
+    }
+
+    override suspend fun updateMatchTeams(
+        matchId: String,
+        homeTeam: String,
+        homeTeamCode: String,
+        homeTeamFlag: String,
+        awayTeam: String,
+        awayTeamCode: String,
+        awayTeamFlag: String,
+        dateMillis: Long?,
+        status: String?
+    ) {
+        val updates = mutableMapOf<String, Any>(
+            "homeTeam" to homeTeam,
+            "homeTeamCode" to homeTeamCode,
+            "homeTeamFlag" to homeTeamFlag,
+            "awayTeam" to awayTeam,
+            "awayTeamCode" to awayTeamCode,
+            "awayTeamFlag" to awayTeamFlag,
+            "isManual" to true
+        )
+        dateMillis?.let { updates["matchDateMillis"] = it }
+        status?.let { updates["status"] = it }
+
+        collection.document(matchId).set(updates, merge = true)
     }
 
     override suspend fun seedMatchesIfNeeded() {

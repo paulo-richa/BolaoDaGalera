@@ -35,7 +35,7 @@ private data class FdMatch(
 
 @Serializable
 private data class FdTeam(
-    val name: String = "",
+    val name: String? = null,
     val tla: String? = null
 )
 
@@ -135,57 +135,81 @@ class FootballDataMatchRepository : MatchRepository {
     }
 
     override suspend fun updateMatchScore(matchId: String, homeScore: Int, awayScore: Int) {}
-    override suspend fun updateMatchTeams(matchId: String, hT: String, hC: String, hF: String, aT: String, aC: String, aF: String) {}
+    override suspend fun updateMatchTeams(
+        matchId: String,
+        homeTeam: String,
+        homeTeamCode: String,
+        homeTeamFlag: String,
+        awayTeam: String,
+        awayTeamCode: String,
+        awayTeamFlag: String,
+        dateMillis: Long?,
+        status: String?
+    ) {}
     override suspend fun seedMatchesIfNeeded() {}
 
     private suspend fun fetchAndMapUpdates(): List<Match> {
-        try {
-            val response: FdResponse = client.get(API_URL) {
-                header("X-Auth-Token", API_KEY)
-            }.body()
-            
-            if (response.matches.isEmpty()) return emptyList()
+        val responseText = client.get(API_URL) {
+            header("X-Auth-Token", API_KEY)
+        }.bodyAsText()
+        
+        val jsonParser = Json { 
+            ignoreUnknownKeys = true 
+            coerceInputValues = true
+        }
+        val response: FdResponse = jsonParser.decodeFromString(responseText)
+        
+        if (response.matches.isEmpty()) return emptyList()
 
-            return allMatches.map { localMatch ->
-                val apiMatch = findMatchInApi(localMatch, response.matches) ?: return@map localMatch
-                
-                var updated = localMatch
-                
-                // 1. Atualizar Placar
-                val hScore = apiMatch.score?.fullTime?.home
-                val aScore = apiMatch.score?.fullTime?.away
-                
-                if (hScore != null && aScore != null) {
-                    updated = updated.copy(homeScore = hScore, awayScore = aScore)
-                }
-                
-                // 2. Atualizar Times (Mata-mata)
-                if (localMatch.phase != Phase.GROUP_STAGE) {
-                    val hName = apiMatch.homeTeam?.name ?: ""
-                    val aName = apiMatch.awayTeam?.name ?: ""
-                    
-                    val hCode = apiMatch.homeTeam?.tla ?: NAME_TO_CODE[hName] ?: "TBD"
-                    val aCode = apiMatch.awayTeam?.tla ?: NAME_TO_CODE[aName] ?: "TBD"
-                    
-                    val hInfo = CODE_TO_TEAM_INFO[hCode]
-                    val aInfo = CODE_TO_TEAM_INFO[aCode]
-                    
-                    if (hCode != "TBD" && (hCode != localMatch.homeTeamCode || aCode != localMatch.awayTeamCode)) {
-                        updated = updated.copy(
-                            homeTeam = hInfo?.first ?: hName,
-                            homeTeamCode = hCode,
-                            homeTeamFlag = hInfo?.second ?: "🏳️",
-                            awayTeam = aInfo?.first ?: aName,
-                            awayTeamCode = aCode,
-                            awayTeamFlag = aInfo?.second ?: "🏳️"
-                        )
-                    }
-                }
-                
-                updated
+        return allMatches.map { localMatch ->
+            val apiMatch = findMatchInApi(localMatch, response.matches) ?: return@map localMatch
+            
+            var updated = localMatch
+            
+            val hScore = apiMatch.score?.fullTime?.home
+            val aScore = apiMatch.score?.fullTime?.away
+            
+            if (hScore != null && aScore != null && (hScore != localMatch.homeScore || aScore != localMatch.awayScore)) {
+                updated = updated.copy(homeScore = hScore, awayScore = aScore)
             }
-        } catch (e: Exception) {
-            return emptyList()
+
+            val apiDateMillis = try {
+                kotlinx.datetime.Instant.parse(apiMatch.utcDate).toEpochMilliseconds()
+            } catch (e: Exception) {
+                0L
+            }
+
+            if (apiDateMillis > 0 && apiDateMillis != localMatch.matchDateMillis) {
+                updated = updated.copy(matchDateMillis = apiDateMillis)
+            }
+            
+            if (apiMatch.status != localMatch.status) {
+                updated = updated.copy(status = apiMatch.status)
+            }
+            
+            if (localMatch.phase != Phase.GROUP_STAGE) {
+                val hName = apiMatch.homeTeam?.name ?: ""
+                val aName = apiMatch.awayTeam?.name ?: ""
+                
+                val hCode = apiMatch.homeTeam?.tla ?: NAME_TO_CODE[hName] ?: "TBD"
+                val aCode = apiMatch.awayTeam?.tla ?: NAME_TO_CODE[aName] ?: "TBD"
+                
+                val hInfo = CODE_TO_TEAM_INFO[hCode]
+                val aInfo = CODE_TO_TEAM_INFO[aCode]
+                
+                if (hCode != "TBD" && (hCode != localMatch.homeTeamCode || aCode != localMatch.awayTeamCode)) {
+                    updated = updated.copy(
+                        homeTeam = hInfo?.first ?: hName,
+                        homeTeamCode = hCode,
+                        homeTeamFlag = hInfo?.second ?: "🏳️",
+                        awayTeam = aInfo?.first ?: aName,
+                        awayTeamCode = aCode,
+                        awayTeamFlag = aInfo?.second ?: "🏳️"
+                    )
+                }
+            }
+            
+            updated
         }
     }
 
@@ -210,12 +234,12 @@ class FootballDataMatchRepository : MatchRepository {
             
             val apiPhaseMatches = apiMatches.filter { it.stage == apiStage }
             
+            // Priorizamos a ordem do Bracket (ID da API) para garantir o chaveamento correto
+            val sortedApiMatches = apiPhaseMatches.sortedBy { it.id }
             val phaseMatchesInSeed = allMatches.filter { it.phase == match.phase }
-                .sortedBy { it.matchDateMillis }
             
             val indexInPhase = phaseMatchesInSeed.indexOfFirst { it.id == match.id }
-            
-            return apiPhaseMatches.getOrNull(indexInPhase)
+            return sortedApiMatches.getOrNull(indexInPhase)
         }
     }
 }
