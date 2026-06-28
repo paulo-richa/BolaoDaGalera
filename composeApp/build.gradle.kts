@@ -102,8 +102,8 @@ android {
         applicationId = "com.lpstudio.bolaodagalera"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 14
-        versionName = "2.4.4"
+        versionCode = 15
+        versionName = "2.5.0"
     }
     packaging {
         resources {
@@ -122,7 +122,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com" 
-                releaseNotes = "v2.4 (Build 10): Detalhes de acertos no ranking, correção de scroll em telas pequenas e melhorias de UI."
+                releaseNotes = "v2.5.0 (Build 15): Exibição de confrontos mata-mata com bandeiras 'ou', sombras nas abas de fase e redirecionamento automático para o Ranking final."
             }
         }
         getByName("debug") {
@@ -130,7 +130,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com"
-                releaseNotes = "v2.4.1 (Build 11): Correção do botão de salvar palpite (sticky footer) e ajuste de scroll."
+                releaseNotes = "v2.5.0 (Build 15): Exibição de confrontos mata-mata com bandeiras 'ou', sombras nas abas de fase e redirecionamento automático para o Ranking final."
             }
         }
     }
