@@ -2,8 +2,8 @@ package com.lpstudio.bolaodagalera
 
 /**
  * iOS configuration overrides
- * iOS uses fake data to avoid Koin compatibility issues with lifecycle-viewmodel-compose
+ * Set to false for production Firebase integration
  */
-actual val USE_FAKE_DATA: Boolean = true
+actual val USE_FAKE_DATA: Boolean = false
 actual val USE_OPEN_FOOTBALL: Boolean = false
 

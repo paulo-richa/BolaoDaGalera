@@ -24,7 +24,7 @@ kotlin {
     cocoapods {
         summary = "Bolão da Galera Shared Module"
         homepage = "https://github.com/lpstudio"
-        version = "1.0"
+        version = "2.5.0"
         ios.deploymentTarget = "16.0"
         podfile = project.file("../iosApp/Podfile")
         framework {
