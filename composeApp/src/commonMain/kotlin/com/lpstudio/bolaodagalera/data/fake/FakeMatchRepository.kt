@@ -67,5 +67,34 @@ class FakeMatchRepository : MatchRepository {
         }
     }
 
+    override suspend fun updateMatchTeams(
+        matchId: String,
+        homeTeam: String,
+        homeTeamCode: String,
+        homeTeamFlag: String,
+        awayTeam: String,
+        awayTeamCode: String,
+        awayTeamFlag: String,
+        dateMillis: Long?,
+        status: String?
+    ) {
+        _matches.update { list ->
+            list.map {
+                if (it.id == matchId) it.copy(
+                    homeTeam = homeTeam,
+                    homeTeamCode = homeTeamCode,
+                    homeTeamFlag = homeTeamFlag,
+                    awayTeam = awayTeam,
+                    awayTeamCode = awayTeamCode,
+                    awayTeamFlag = awayTeamFlag,
+                    matchDateMillis = dateMillis ?: it.matchDateMillis,
+                    status = status ?: it.status,
+                    isManual = true
+                )
+                else it
+            }
+        }
+    }
+
     override suspend fun seedMatchesIfNeeded() { /* no-op para fake */ }
 }

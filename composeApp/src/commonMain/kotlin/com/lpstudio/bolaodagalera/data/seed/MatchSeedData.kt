@@ -142,23 +142,23 @@ private fun k(id: String, home: String, away: String, phase: Phase, offset: Int,
     match("KO-$id", Team(home, "TBD", "🏳️"), Team(away, "TBD", "🏳️"), day(offset, hourBrt, min), phase, phase.label)
 
 val knockoutMatches = listOf(
-    // 16-avos de Final
-    k("32-1",  "1º Grupo A", "3º Gr. C/E/F", Phase.ROUND_OF_32, 17, 16), 
-    k("32-2",  "2º Grupo A", "2º Grupo B",   Phase.ROUND_OF_32, 18, 19, 30),
-    k("32-3",  "1º Grupo B", "3º Gr. A/C/D", Phase.ROUND_OF_32, 18, 22), 
-    k("32-4",  "1º Grupo C", "3º Gr. A/B/F", Phase.ROUND_OF_32, 18, 14),
-    k("32-5",  "1º Grupo E", "3º Gr. A/B/C", Phase.ROUND_OF_32, 19, 20), 
-    k("32-6",  "1º Grupo F", "2º Grupo C",   Phase.ROUND_OF_32, 19, 14),
-    k("32-7",  "2º Grupo E", "2º Grupo I",   Phase.ROUND_OF_32, 19, 22), 
-    k("32-8",  "1º Grupo D", "3º Gr. B/E/F", Phase.ROUND_OF_32, 20, 13),
-    k("32-9",  "1º Grupo G", "3º Gr. A/E/H", Phase.ROUND_OF_32, 20, 21), 
-    k("32-10", "2º Grupo G", "2º Grupo H",   Phase.ROUND_OF_32, 20, 17),
-    k("32-11", "1º Grupo H", "2º Grupo J",   Phase.ROUND_OF_32, 21, 20), 
-    k("32-12", "1º Grupo I", "3º Gr. D/G/J", Phase.ROUND_OF_32, 21, 16),
-    k("32-13", "2º Grupo I", "2º Grupo K",   Phase.ROUND_OF_32, 22, 0), 
-    k("32-14", "1º Grupo J", "2º Grupo L",   Phase.ROUND_OF_32, 22, 19),
-    k("32-15", "1º Grupo K", "3º Gr. I/L",   Phase.ROUND_OF_32, 22, 22, 30), 
-    k("32-16", "1º Grupo L", "3º Gr. G/H/K", Phase.ROUND_OF_32, 22, 15),
+    // 16-avos de Final (Ordenado pelo Chaveamento FIFA - Bracket Order)
+    k("32-1",  "1º Grupo E", "3º Gr. A/B/C", Phase.ROUND_OF_32, 18, 20, 30), // 29/06 20:30 (GER)
+    k("32-2",  "1º Grupo I", "3º Gr. D/G/J", Phase.ROUND_OF_32, 19, 21), // 30/06 21:00 (FRA)
+    k("32-3",  "1º Grupo A", "3º Gr. C/E/F", Phase.ROUND_OF_32, 17, 19), // 28/06 19:00 (RSA)
+    k("32-4",  "1º Grupo F", "2º Grupo C",   Phase.ROUND_OF_32, 20, 1), // 30/06 01:00 (NED)
+    k("32-5",  "1º Grupo K", "3º Gr. I/L",   Phase.ROUND_OF_32, 22, 23), // 02/07 23:00 (POR)
+    k("32-6",  "1º Grupo H", "2º Grupo J",   Phase.ROUND_OF_32, 21, 19), // 02/07 19:00 (ESP)
+    k("32-7",  "1º Grupo D", "3º Gr. B/E/F", Phase.ROUND_OF_32, 22, 0), // 02/07 00:00 (USA)
+    k("32-8",  "1º Grupo G", "3º Gr. A/E/H", Phase.ROUND_OF_32, 20, 20), // 01/07 20:00 (BEL)
+    k("32-9",  "1º Grupo C", "3º Gr. A/B/F", Phase.ROUND_OF_32, 18, 17), // 29/06 17:00 (BRA)
+    k("32-10", "1º Grupo B", "3º Gr. A/C/D", Phase.ROUND_OF_32, 19, 17), // 30/06 17:00 (CIV)
+    k("32-11", "2º Grupo E", "2º Grupo I",   Phase.ROUND_OF_32, 21, 1), // 01/07 01:00 (MEX)
+    k("32-12", "1º Grupo J", "2º Grupo L",   Phase.ROUND_OF_32, 20, 16), // 01/07 16:00 (ENG)
+    k("32-13", "1º Grupo L", "3º Gr. G/H/K", Phase.ROUND_OF_32, 22, 22), // 03/07 22:00 (ARG)
+    k("32-14", "2º Grupo G", "2º Grupo H",   Phase.ROUND_OF_32, 22, 18), // 03/07 18:00 (AUS)
+    k("32-15", "2º Grupo A", "2º Grupo B",   Phase.ROUND_OF_32, 23, 3), // 03/07 03:00 (SUI)
+    k("32-16", "2º Grupo I", "2º Grupo K",   Phase.ROUND_OF_32, 24, 1, 30), // 04/07 01:30 (COL)
 
     // Oitavas de Final
     k("16-1", "Venc. J32-1",  "Venc. J32-2",  Phase.ROUND_OF_16, 23, 20), 

@@ -9,5 +9,16 @@ interface MatchRepository {
     fun getMatchesByPhase(phase: Phase): Flow<List<Match>>
     suspend fun getMatch(matchId: String): Match
     suspend fun updateMatchScore(matchId: String, homeScore: Int, awayScore: Int)
+    suspend fun updateMatchTeams(
+        matchId: String,
+        homeTeam: String,
+        homeTeamCode: String,
+        homeTeamFlag: String,
+        awayTeam: String,
+        awayTeamCode: String,
+        awayTeamFlag: String,
+        dateMillis: Long? = null,
+        status: String? = null
+    )
     suspend fun seedMatchesIfNeeded()
 }
