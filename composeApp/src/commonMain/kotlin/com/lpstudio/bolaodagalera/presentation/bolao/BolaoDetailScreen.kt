@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -54,6 +55,7 @@ import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.UserAvatar
 import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.getInitials
+import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.Instant
@@ -112,6 +114,7 @@ fun BolaoDetailScreen(
         onAdminUpdateScore = { matchId, home, away ->
             viewModel.updateMatchScore(matchId, home, away)
         },
+        onSyncMatches = { viewModel.syncKnockoutWithApi() },
         onNavigateBack = onNavigateBack
     )
 }
@@ -132,6 +135,7 @@ fun BolaoDetailContent(
     onNavigateToEdit: (bolaoId: String) -> Unit,
     onNavigateToAddParticipants: (bolaoId: String) -> Unit,
     onAdminUpdateScore: (matchId: String, home: Int, away: Int) -> Unit,
+    onSyncMatches: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
     var showLeaveDialog by remember { mutableStateOf(false) }
@@ -449,6 +453,17 @@ fun BolaoDetailContent(
                                     Icon(
                                         Icons.Default.PersonAdd,
                                         contentDescription = "Adicionar Participantes",
+                                        tint = Neon,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = onSyncMatches,
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = "Sincronizar",
                                         tint = Neon,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -789,6 +804,13 @@ private fun GroupStageTab(
         if (lastInteractedMatchId != null) {
             val targetMatch = matches.find { it.id == lastInteractedMatchId }
             if (targetMatch != null) {
+                // Se estamos na aba HOJE, não expandimos grupos nem scrollamos
+                // para manter a visualização simplificada do "Hoje"
+                if (selectedRound == 0) {
+                    onClearLastMatchId()
+                    return@LaunchedEffect
+                }
+
                 val groupOfMatch = targetMatch.group ?: ""
                 
                 // Abre o grupo se estiver fechado
@@ -898,7 +920,7 @@ private fun GroupStageTab(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(DeepNavy)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(vertical = 8.dp)
             ) {
                 RodadaSelector(
                     selected = selectedRound,
@@ -949,7 +971,7 @@ private fun GroupStageTab(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 8.dp) // Recuo para diferenciar do cabeçalho do grupo
+                                    .padding(bottom = 8.dp) // Removido horizontal = 8.dp para alinhar com abas
                             ) {
                                 MatchCard(
                                     match = match,
@@ -957,6 +979,7 @@ private fun GroupStageTab(
                                     isAdmin = isAdmin,
                                     bolaoCreatedAt = bolaoCreatedAt,
                                     showSocialBadge = showSocialBadge,
+                                    allMatches = matches,
                                     onClick = { onMatchClick(match.id) },
                                     onShowAllPredictions = { onShowAllPredictions(match) },
                                     onAdminUpdateScore = { onAdminUpdateScore(match) }
@@ -1031,23 +1054,35 @@ private fun KnockoutTab(
     }
 
     val tz = TimeZone.currentSystemDefault()
-    val now = TimeSource.nowMillis()
+    val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+
+    val hasMatchToday = remember(matches, todayDate) {
+        matches.filter { it.phase != Phase.GROUP_STAGE }.any { 
+            val mTime = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz)
+            val mDate = mTime.date
+            val isStrictlyToday = mDate == todayDate
+            val isEarlyTomorrow = (mDate.toEpochDays() == todayDate.toEpochDays() + 1) && mTime.hour < 4
+            isStrictlyToday || isEarlyTomorrow || (now in it.matchDateMillis..(it.matchDateMillis + 3 * 3600_000L))
+        }
+    }
 
     // Auto-selecionar HOJE se houver jogos, senão a próxima fase
     LaunchedEffect(matches, lastInteractedMatchId) {
         if (lastInteractedMatchId != null) {
             val targetMatch = matches.find { it.id == lastInteractedMatchId }
             if (targetMatch != null && targetMatch.phase != Phase.GROUP_STAGE) {
-                // Se a partida clicada for de mata-mata, garante que a fase certa esteja selecionada
+                // Se estamos na aba HOJE, não redirecionamos nem scrollamos
+                // para manter a visualização simplificada do "Hoje"
+                if (selectedPhase == Phase.FRIENDLIES) {
+                    onClearLastMatchId()
+                    return@LaunchedEffect
+                }
+
                 onPhaseChange(targetMatch.phase)
-                
-                // Espera o seletor atualizar a lista
                 kotlinx.coroutines.delay(100)
-                
                 val pairs = matches.filter { it.phase == targetMatch.phase }.chunked(2)
                 val pairIndex = pairs.indexOfFirst { pair -> pair.any { it.id == lastInteractedMatchId } }
-                
                 if (pairIndex != -1) {
                     listState.scrollToItem(pairIndex)
                 }
@@ -1058,36 +1093,11 @@ private fun KnockoutTab(
 
         if (selectedPhase != Phase.FRIENDLIES && selectedPhase != null) return@LaunchedEffect
         
-        val knockoutMatches = matches.filter { it.phase != Phase.GROUP_STAGE }
-        val hasMatchToday = knockoutMatches.any { 
-            val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
-            mDate == todayDate 
-        }
-
         if (hasMatchToday) {
-            onPhaseChange(Phase.FRIENDLIES) // Marker para HOJE
+            onPhaseChange(Phase.FRIENDLIES)
         } else {
-            val nextPhase = phaseOrder.find { p -> knockoutMatches.any { it.phase == p && !it.isFinished } }
+            val nextPhase = phaseOrder.find { p -> matches.any { it.phase == p && !it.isFinished } }
             if (nextPhase != null) onPhaseChange(nextPhase)
-        }
-    }
-
-    val hasMatchToday = remember(matches, todayDate) {
-        matches.filter { it.phase != Phase.GROUP_STAGE }.any { 
-            val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
-            mDate == todayDate 
-        }
-    }
-
-    val phaseMatches = remember(matches, selectedPhase, todayDate) {
-        if (selectedPhase == Phase.FRIENDLIES) {
-            matches.filter { it.phase != Phase.GROUP_STAGE }.filter { m ->
-                val mDate = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz).date
-                mDate == todayDate || (now in m.matchDateMillis..(m.matchDateMillis + 3 * 3600_000L))
-            }
-        } else {
-            val currentPhase = selectedPhase ?: phaseOrder.firstOrNull()
-            matches.filter { it.phase == currentPhase }
         }
     }
 
@@ -1108,7 +1118,7 @@ private fun KnockoutTab(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(DeepNavy)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(vertical = 8.dp)
             ) {
                 KnockoutPhaseSelector(
                     phases = phaseOrder,
@@ -1121,44 +1131,57 @@ private fun KnockoutTab(
         }
 
         Box(Modifier.weight(1f)) {
+            val phaseMatches = remember(matches, selectedPhase, todayDate, now) {
+                if (selectedPhase == Phase.FRIENDLIES) {
+                    matches.filter { it.phase != Phase.GROUP_STAGE }.filter { m ->
+                        val mTime = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz)
+                        val mDate = mTime.date
+                        val isStrictlyToday = mDate == todayDate
+                        val isEarlyTomorrow = (mDate.toEpochDays() == todayDate.toEpochDays() + 1) && mTime.hour < 4
+                        isStrictlyToday || isEarlyTomorrow || (now in m.matchDateMillis..(m.matchDateMillis + 3 * 3600_000L))
+                    }
+                } else {
+                    matches.filter { it.phase == selectedPhase }
+                }
+            }
+
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp) // Duplicado de 8 para 16
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (phaseOrder.isNotEmpty()) {
-                    if (phaseMatches.isEmpty() && selectedPhase == Phase.FRIENDLIES) {
-                        item {
-                            Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                                Text("Nenhum jogo de mata-mata hoje.", color = TextMuted, fontSize = 14.sp)
-                            }
+                if (phaseMatches.isEmpty() && selectedPhase == Phase.FRIENDLIES) {
+                    item {
+                        Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                            Text("Nenhum jogo de mata-mata hoje.", color = TextMuted, fontSize = 14.sp)
                         }
                     }
+                }
 
-                    val pairs = phaseMatches.chunked(2)
-                    items(pairs.size) { index ->
-                        val pair = pairs[index]
-                        val m1 = pair[0]
-                        val m2 = pair.getOrNull(1)
-                        
-                        KnockoutBracketPair(
-                            match1 = m1,
-                            match2 = m2,
-                            prediction1 = predictions[m1.id],
-                            prediction2 = m2?.let { predictions[it.id] },
-                            isAdmin = isAdmin,
-                            bolaoCreatedAt = bolaoCreatedAt,
-                            forceLocked = !isKnockoutUnlocked,
-                            showSocialBadge = showSocialBadge,
-                            onMatchClick = onMatchClick,
-                            onShowAllPredictions = onShowAllPredictions,
-                            onAdminUpdateScore = onAdminUpdateScore
-                        )
-                        
-                        if (index < pairs.size - 1) {
-                            Spacer(Modifier.height(16.dp))
-                        }
+                val pairs = phaseMatches.chunked(2)
+                items(pairs.size) { index ->
+                    val pair = pairs[index]
+                    val m1 = pair[0]
+                    val m2 = pair.getOrNull(1)
+                    
+                    KnockoutBracketPair(
+                        match1 = m1,
+                        match2 = m2,
+                        prediction1 = predictions[m1.id],
+                        prediction2 = m2?.let { predictions[it.id] },
+                        isAdmin = isAdmin,
+                        bolaoCreatedAt = bolaoCreatedAt,
+                        forceLocked = !isKnockoutUnlocked,
+                        showSocialBadge = showSocialBadge,
+                        allMatches = matches,
+                        onMatchClick = onMatchClick,
+                        onShowAllPredictions = onShowAllPredictions,
+                        onAdminUpdateScore = onAdminUpdateScore
+                    )
+                    
+                    if (index < pairs.size - 1) {
+                        Spacer(Modifier.height(16.dp))
                     }
                 }
             }
@@ -1202,6 +1225,7 @@ private fun KnockoutBracketPair(
     bolaoCreatedAt: Long,
     forceLocked: Boolean,
     showSocialBadge: Boolean = true,
+    allMatches: List<Match> = emptyList(),
     onMatchClick: (String) -> Unit,
     onShowAllPredictions: (Match) -> Unit,
     onAdminUpdateScore: (Match) -> Unit
@@ -1218,6 +1242,7 @@ private fun KnockoutBracketPair(
                 bolaoCreatedAt = bolaoCreatedAt,
                 forceLocked = forceLocked,
                 showSocialBadge = showSocialBadge,
+                allMatches = allMatches,
                 onClick = { onMatchClick(match1.id) },
                 onShowAllPredictions = { onShowAllPredictions(match1) },
                 onAdminUpdateScore = { onAdminUpdateScore(match1) }
@@ -1232,6 +1257,7 @@ private fun KnockoutBracketPair(
                     bolaoCreatedAt = bolaoCreatedAt,
                     forceLocked = forceLocked,
                     showSocialBadge = showSocialBadge,
+                    allMatches = allMatches,
                     onClick = { onMatchClick(match2.id) },
                     onShowAllPredictions = { onShowAllPredictions(match2) },
                     onAdminUpdateScore = { onAdminUpdateScore(match2) }
@@ -1293,26 +1319,67 @@ private fun KnockoutPhaseSelector(
     showHoje: Boolean,
     onSelect: (Phase?) -> Unit
 ) {
-    androidx.compose.foundation.lazy.LazyRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        if (showHoje) {
-            item {
+    val listState = rememberLazyListState()
+    
+    // Verifica se há conteúdo para scrollar para a esquerda ou direita
+    val canScrollBackward by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
+    }
+    val canScrollForward by remember {
+        derivedStateOf {
+            val lastItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            if (lastItem == null) false
+            else lastItem.index < listState.layoutInfo.totalItemsCount - 1 || 
+                 (lastItem.offset + lastItem.size) > listState.layoutInfo.viewportEndOffset
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        androidx.compose.foundation.lazy.LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) {
+            if (showHoje) {
+                item {
+                    FilterChip(
+                        label = "⚽️ HOJE",
+                        isSelected = selected == Phase.FRIENDLIES,
+                        isUnlocked = true,
+                        onClick = { onSelect(Phase.FRIENDLIES) }
+                    )
+                }
+            }
+            items(phases) { phase ->
                 FilterChip(
-                    label = "⚽️ HOJE",
-                    isSelected = selected == Phase.FRIENDLIES,
-                    isUnlocked = true,
-                    onClick = { onSelect(Phase.FRIENDLIES) }
+                    label = phase.label,
+                    isSelected = selected == phase,
+                    isUnlocked = isUnlocked,
+                    onClick = { onSelect(phase) }
                 )
             }
         }
-        items(phases) { phase ->
-            FilterChip(
-                label = phase.label,
-                isSelected = selected == phase,
-                isUnlocked = isUnlocked,
-                onClick = { onSelect(phase) }
+
+        // Gradiente de sombra à esquerda (apenas se houver scroll para trás)
+        if (canScrollBackward) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .width(40.dp)
+                    .matchParentSize()
+                    .background(Brush.horizontalGradient(listOf(DeepNavy, Color.Transparent)))
+            )
+        }
+
+        // Gradiente de sombra à direita (apenas se houver scroll para frente)
+        if (canScrollForward) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .width(40.dp)
+                    .matchParentSize()
+                    .background(Brush.horizontalGradient(listOf(Color.Transparent, DeepNavy)))
             )
         }
     }
@@ -1326,8 +1393,10 @@ private fun RodadaSelector(
     onSelect: (Int) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         val rounds = listOf(1, 2, 3)
 
@@ -1395,7 +1464,7 @@ private fun FilterChip(
             .background(containerColor)
             .border(1.dp, borderColor, RoundedCornerShape(14.dp))
             .then(if (isUnlocked) Modifier.clickable { onClick() } else Modifier)
-            .padding(vertical = 12.dp, horizontal = 4.dp),
+            .padding(vertical = 12.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -1530,6 +1599,7 @@ fun MatchCard(
     bolaoCreatedAt: Long = 0L,
     forceLocked: Boolean = false,
     showSocialBadge: Boolean = true,
+    allMatches: List<Match> = emptyList(),
     onShowAllPredictions: () -> Unit = {},
     onAdminUpdateScore: () -> Unit = {},
     onClick: () -> Unit
@@ -1539,6 +1609,14 @@ fun MatchCard(
     val now = TimeSource.nowMillis()
     val matchStart = match.matchDateMillis
     
+    // Resolve nomes e bandeiras para mata-mata TBD
+    val (homeDisplayName, homeDisplayFlag) = remember(match.homeTeam, match.homeTeamFlag, allMatches) {
+        resolveDisplayName(match.homeTeam, match.homeTeamFlag, allMatches)
+    }
+    val (awayDisplayName, awayDisplayFlag) = remember(match.awayTeam, match.awayTeamFlag, allMatches) {
+        resolveDisplayName(match.awayTeam, match.awayTeamFlag, allMatches)
+    }
+
     // Agora usamos o status real vindo da API
     val isLive = match.status == "IN_PLAY"
     val isActuallyFinished = match.status == "FINISHED" || (isFinished && now > (matchStart + 7200_000L))
@@ -1702,17 +1780,24 @@ fun MatchCard(
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = if (homeDisplayName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(match.homeTeamFlag, fontSize = 26.sp)
                         Text(
-                            match.homeTeam,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White,
-                            maxLines = 2,
-                            lineHeight = 16.sp
+                            homeDisplayFlag, 
+                            fontSize = if (homeDisplayFlag.contains(" ou ")) 18.sp else 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.9f)
                         )
+                        if (homeDisplayName.isNotEmpty()) {
+                            Text(
+                                homeDisplayName,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                                maxLines = 2,
+                                lineHeight = 16.sp
+                            )
+                        }
                     }
 
                     Column(
@@ -1770,10 +1855,25 @@ fun MatchCard(
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                        horizontalArrangement = if (awayDisplayName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(8.dp, Alignment.End)
                     ) {
-                        Text(match.awayTeam, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 2, lineHeight = 16.sp)
-                        Text(match.awayTeamFlag, fontSize = 26.sp)
+                        if (awayDisplayName.isNotEmpty()) {
+                            Text(
+                                awayDisplayName, 
+                                fontSize = 13.sp, 
+                                fontWeight = FontWeight.SemiBold, 
+                                color = Color.White, 
+                                maxLines = 2, 
+                                lineHeight = 16.sp,
+                                textAlign = TextAlign.End
+                            )
+                        }
+                        Text(
+                            awayDisplayFlag, 
+                            fontSize = if (awayDisplayFlag.contains(" ou ")) 18.sp else 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
                     }
                 }
 
@@ -2025,6 +2125,7 @@ fun BolaoDetailScreenPreview() {
             onNavigateToEdit = {},
             onNavigateToAddParticipants = {},
             onAdminUpdateScore = { _, _, _ -> },
+            onSyncMatches = {},
             onNavigateBack = {}
         )
     }

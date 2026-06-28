@@ -32,6 +32,7 @@ import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import org.koin.compose.koinInject
 
 private enum class ParticipantInputType {
@@ -67,8 +68,8 @@ fun AddParticipantsScreen(
     val detectedType = remember(identifier) {
         val trimmed = identifier.trim()
         when {
-            trimmed.contains("@") -> ParticipantInputType.EMAIL
-            trimmed.any { it.isDigit() } && trimmed.length >= 8 -> ParticipantInputType.PHONE
+            trimmed.contains("@") && trimmed.contains(".") -> ParticipantInputType.EMAIL
+            trimmed.filter { it.isDigit() }.length >= 8 -> ParticipantInputType.PHONE
             else -> ParticipantInputType.USER
         }
     }
@@ -79,7 +80,6 @@ fun AddParticipantsScreen(
             .background(DeepNavy)
     ) {
         Column(Modifier.fillMaxSize()) {
-            // ... (TopAppBar e resto do conteúdo)
             // ── Header ─────────────────────────────────────────────────────────
             TopAppBar(
                 title = {
@@ -120,7 +120,13 @@ fun AddParticipantsScreen(
                     value = identifier,
                     onValueChange = { identifier = it },
                     label = "E-mail, Telefone ou ID",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = when(detectedType) {
+                            ParticipantInputType.EMAIL -> KeyboardType.Email
+                            ParticipantInputType.PHONE -> KeyboardType.Phone
+                            else -> KeyboardType.Text
+                        }
+                    )
                 )
 
                 Spacer(Modifier.height(24.dp))
@@ -161,61 +167,49 @@ fun AddParticipantsScreen(
                             error = null
                             try {
                                 val trimmedId = identifier.trim()
-                                val exists = when(detectedType) {
-                                    ParticipantInputType.EMAIL -> authRepository.isEmailInUse(trimmedId)
-                                    ParticipantInputType.PHONE -> authRepository.isPhoneInUse(trimmedId)
-                                    ParticipantInputType.USER -> authRepository.isUsernameInUse(trimmedId.lowercase())
-                                }
-
-                                val inviteUrl = "https://bolaodagalera.app/invite?code=${bolaoId.take(6).uppercase()}" // Simplificado para o exemplo, ideal usar o code do bolao
-                                val msg = "Entre no meu bolão da Copa 2026! 🏆\nBolão: $bolaoName\n\nLink: $inviteUrl\n\nCódigo: ${bolaoId.take(6).uppercase()}"
                                 val inviterName = authRepository.currentUser?.name ?: "Alguém"
+                                val inviteUrl = "https://bolaodagalera.app/invite?code=${bolaoId.take(6).uppercase()}"
+                                val msg = "Entre no meu bolão da Copa 2026! 🏆\nBolão: $bolaoName\n\nLink: $inviteUrl\n\nCódigo: ${bolaoId.take(6).uppercase()}"
 
-                                if (exists) {
-                                    // 1. Enviar Notificação/Convite Interno no App
-                                    invitationRepository.sendInvitation(
-                                        bolaoId = bolaoId,
-                                        bolaoName = bolaoName,
-                                        inviterName = inviterName,
-                                        inviteeIdentifier = if (detectedType == ParticipantInputType.USER) trimmedId.lowercase() else trimmedId
-                                    )
-                                    
-                                    // 2. Ação Complementar Externa
-                                    when(detectedType) {
-                                        ParticipantInputType.EMAIL -> launcherProvider.sendEmail(trimmedId, "Convite: Bolão da Galera", msg)
-                                        ParticipantInputType.PHONE -> launcherProvider.sendWhatsApp(trimmedId, msg)
-                                        ParticipantInputType.USER -> { /* Apenas interno */ }
-                                    }
-                                    
-                                    showSuccessMessage = true
-                                    identifier = ""
-                                    delay(3000)
-                                    showSuccessMessage = false
-                                } else {
-                                    // Usuário não existe no app: Apenas canais externos
-                                    when(detectedType) {
-                                        ParticipantInputType.EMAIL -> {
-                                            launcherProvider.sendEmail(trimmedId, "Convite: Bolão da Galera", msg)
-                                            showSuccessMessage = true
-                                            identifier = ""
-                                            delay(3000)
-                                            showSuccessMessage = false
-                                        }
-                                        ParticipantInputType.PHONE -> {
-                                            launcherProvider.sendWhatsApp(trimmedId, msg)
-                                            showSuccessMessage = true
-                                            identifier = ""
-                                            delay(3000)
-                                            showSuccessMessage = false
-                                        }
-                                        ParticipantInputType.USER -> {
-                                            error = "ID não encontrado. Verifique se o ID está correto ou convide via E-mail/WhatsApp."
-                                        }
-                                    }
+                                // 1. Enviar convite interno
+                                val inviteeIdentifier = when(detectedType) {
+                                    ParticipantInputType.EMAIL -> trimmedId.lowercase()
+                                    ParticipantInputType.PHONE -> trimmedId.filter { it.isDigit() }
+                                    ParticipantInputType.USER -> trimmedId.lowercase()
                                 }
+
+                                try {
+                                    // Timeout curto para não prender o usuário se a rede estiver lenta
+                                    // O Firebase cuidará do envio em background se falhar agora
+                                    withTimeout(3000) {
+                                        invitationRepository.sendInvitation(
+                                            bolaoId = bolaoId,
+                                            bolaoName = bolaoName,
+                                            inviterName = inviterName,
+                                            inviteeIdentifier = inviteeIdentifier
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    // Ignora erro de timeout/rede no convite interno e segue para o externo
+                                    // O Firebase enviará quando houver conexão.
+                                    println("Aviso: Convite interno em cache para envio posterior (rede lenta)")
+                                }
+                                
+                                isLoading = false 
+                                showSuccessMessage = true
+                                identifier = ""
+
+                                // 2. Ação Complementar Externa (Opcional)
+                                when(detectedType) {
+                                    ParticipantInputType.EMAIL -> { /* Apenas interno, não abre app de e-mail */ }
+                                    ParticipantInputType.PHONE -> launcherProvider.sendWhatsApp(trimmedId, msg)
+                                    ParticipantInputType.USER -> { /* Apenas interno */ }
+                                }
+                                
+                                delay(3000)
+                                showSuccessMessage = false
                             } catch (e: Exception) {
-                                error = "Erro ao processar convite. Tente novamente."
-                            } finally {
+                                error = "Não foi possível enviar. Verifique sua conexão."
                                 isLoading = false
                             }
                         }

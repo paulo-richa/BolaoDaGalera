@@ -29,6 +29,7 @@ import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.getInitials
+import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.components.UserAvatar
 import com.lpstudio.bolaodagalera.presentation.theme.*
@@ -141,15 +142,18 @@ fun MatchPredictionsScreen(
                             )
 
                             IconButton(onClick = {
+                                val (hName, hFlag) = resolveDisplayName(match.homeTeam, match.homeTeamFlag, uiState.matches)
+                                val (aName, aFlag) = resolveDisplayName(match.awayTeam, match.awayTeamFlag, uiState.matches)
+
                                 val header = buildString {
                                     append("📊 *PALPITES DA GALERA*\n\n")
-                                    append("${match.homeTeamFlag} ${match.homeTeam} ")
+                                    append("$hFlag $hName ")
                                     if (hasStarted || isActuallyFinished) {
                                         append("$hReal x $aReal ")
                                     } else {
                                         append("x ")
                                     }
-                                    append("${match.awayTeam} ${match.awayTeamFlag}")
+                                    append("$aName $aFlag")
                                     
                                     if (hasStarted || isActuallyFinished) {
                                         val label = if (isActuallyFinished) " - Jogo encerrado" else " - Jogo em andamento"
@@ -198,6 +202,9 @@ fun MatchPredictionsScreen(
                         Spacer(Modifier.height(24.dp))
 
                         // Score Info (DENTRO do Header para dar a altura correta)
+                        val (hName, hFlag) = resolveDisplayName(match.homeTeam, match.homeTeamFlag, uiState.matches)
+                        val (aName, aFlag) = resolveDisplayName(match.awayTeam, match.awayTeamFlag, uiState.matches)
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -206,9 +213,18 @@ fun MatchPredictionsScreen(
                                 Box(
                                     modifier = Modifier.size(64.dp).clip(CircleShape).background(NavyElevated.copy(alpha = 0.6f)).border(1.dp, GlassBorder, CircleShape),
                                     contentAlignment = Alignment.Center
-                                ) { Text(match.homeTeamFlag, fontSize = 34.sp) }
-                                Spacer(Modifier.height(8.dp))
-                                Text(match.homeTeam, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                                ) { 
+                                    Text(
+                                        hFlag, 
+                                        fontSize = if (hFlag.contains(" ou ")) 16.sp else if (hFlag.length > 4) 28.sp else 34.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    ) 
+                                }
+                                if (hName.isNotEmpty()) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(hName, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                                }
                             }
 
                             val statusLabel = when {
@@ -235,9 +251,18 @@ fun MatchPredictionsScreen(
                                 Box(
                                     modifier = Modifier.size(64.dp).clip(CircleShape).background(NavyElevated.copy(alpha = 0.6f)).border(1.dp, GlassBorder, CircleShape),
                                     contentAlignment = Alignment.Center
-                                ) { Text(match.awayTeamFlag, fontSize = 34.sp) }
-                                Spacer(Modifier.height(8.dp))
-                                Text(match.awayTeam, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                                ) { 
+                                    Text(
+                                        aFlag, 
+                                        fontSize = if (aFlag.contains(" ou ")) 16.sp else if (aFlag.length > 4) 28.sp else 34.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    ) 
+                                }
+                                if (aName.isNotEmpty()) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(aName, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                                }
                             }
                         }
                     }
