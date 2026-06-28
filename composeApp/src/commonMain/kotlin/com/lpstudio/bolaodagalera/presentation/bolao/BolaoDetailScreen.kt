@@ -199,9 +199,28 @@ fun BolaoDetailContent(
         }
     }
 
-    // Auto-selecionar HOJE se houver jogos, senão a rodada atual (para a aba de Grupos)
+    var hasAutoSelectedTab by rememberSaveable(bolaoId) { mutableStateOf(false) }
+
+    // Auto-selecionar Ranking se todos os jogos acabaram, ou HOJE/Rodada se houver jogos (para a aba de Grupos)
     LaunchedEffect(uiState.matches) {
-        if (selectedRound != 0 || uiState.matches.isEmpty()) return@LaunchedEffect
+        if (uiState.matches.isEmpty()) return@LaunchedEffect
+        
+        // 1. Se todos os jogos acabaram, vai direto pro Ranking (apenas na primeira carga)
+        if (!hasAutoSelectedTab) {
+            val allFinished = uiState.matches.all { it.isFinished }
+            if (allFinished) {
+                val rankingIdx = tabs.indexOf("Ranking")
+                if (rankingIdx != -1) {
+                    selectedTab = rankingIdx
+                    hasAutoSelectedTab = true
+                    return@LaunchedEffect
+                }
+            }
+            hasAutoSelectedTab = true
+        }
+
+        // 2. Lógica de Rodada/Hoje para a aba de Grupos
+        if (selectedRound != 0) return@LaunchedEffect
         
         val tz = TimeZone.currentSystemDefault()
         val now = TimeSource.nowMillis()
