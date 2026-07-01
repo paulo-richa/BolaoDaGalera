@@ -215,6 +215,8 @@ class FootballDataMatchRepository : MatchRepository {
             val derivedStatus = when {
                 apiMatch.status == "IN_PLAY" && apiMatch.score?.duration == "EXTRA_TIME" -> "EXTRA_TIME"
                 apiMatch.status == "IN_PLAY" && apiMatch.score?.duration == "PENALTY_SHOOTOUT" -> "PENALTIES"
+                apiMatch.status == "PAUSED" && apiMatch.score?.duration == "EXTRA_TIME" -> "EXTRA_TIME"
+                apiMatch.status == "PAUSED" && apiMatch.score?.duration == "PENALTY_SHOOTOUT" -> "PENALTIES"
                 else -> apiMatch.status
             }
 
