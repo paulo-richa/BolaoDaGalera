@@ -238,8 +238,8 @@ obrescrevemos.
     if (data.status) {
         // Mapeamento de status especial para Prorrogação e Pênaltis
         let derivedStatus = data.status;
-        if (data.status === "IN_PLAY" && data.duration === "EXTRA_TIME") derivedStatus = "EXTRA_TIME";
-        if (data.status === "IN_PLAY" && data.duration === "PENALTY_SHOOTOUT") derivedStatus = "PENALTIES";
+        if ((data.status === "IN_PLAY" || data.status === "PAUSED") && data.duration === "EXTRA_TIME") derivedStatus = "EXTRA_TIME";
+        if ((data.status === "IN_PLAY" || data.status === "PAUSED") && data.duration === "PENALTY_SHOOTOUT") derivedStatus = "PENALTIES";
 
         if (derivedStatus !== matchData.status) {
             updateObj.status = derivedStatus;
