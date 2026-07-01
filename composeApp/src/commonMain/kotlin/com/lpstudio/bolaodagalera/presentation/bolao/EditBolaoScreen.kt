@@ -251,6 +251,7 @@ fun EditBolaoScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .imePadding()
                     .padding(horizontal = 20.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -411,6 +412,27 @@ fun EditBolaoScreen(
                             onValueChange = { pointsWinner = it },
                             modifier = Modifier.weight(1f)
                         )
+                    }
+
+                    // Info sobre prorrogação e pênaltis
+                    Surface(
+                        color = Color.White.copy(alpha = 0.05f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder.copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text("⏱️", fontSize = 14.sp)
+                            Text(
+                                "O placar válido é o do tempo normal + prorrogação. Pênaltis não contam para a pontuação.",
+                                fontSize = 11.sp,
+                                color = TextMuted,
+                                lineHeight = 15.sp
+                            )
+                        }
                     }
 
                     BolaoButton(

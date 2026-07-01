@@ -204,14 +204,15 @@ fun PredictionScreen(
                         Spacer(Modifier.height(32.dp))
 
                         // ── Points info ───────────────────────────────────────────
-                        Box(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(NavyCard)
                                 .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-                                .padding(16.dp)
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -233,6 +234,22 @@ fun PredictionScreen(
                                     emoji = "❌", 
                                     pts = "0", 
                                     label = "Errou"
+                                )
+                            }
+
+                            HorizontalDivider(color = GlassBorder.copy(alpha = 0.5f), thickness = 0.5.dp)
+
+                            Row(
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            ) {
+                                Text("⏱️", fontSize = 14.sp)
+                                Text(
+                                    "Regra: O placar válido para o bolão é o do tempo normal + prorrogação. Pênaltis não são contabilizados.",
+                                    fontSize = 11.sp,
+                                    color = TextMuted,
+                                    lineHeight = 15.sp
                                 )
                             }
                         }

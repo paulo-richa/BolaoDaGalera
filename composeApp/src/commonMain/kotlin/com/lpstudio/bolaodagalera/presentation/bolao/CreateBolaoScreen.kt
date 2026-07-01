@@ -32,6 +32,8 @@ import com.lpstudio.bolaodagalera.rememberLauncherProvider
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.model.Match
+import com.lpstudio.bolaodagalera.domain.model.Phase
+import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
@@ -65,18 +67,52 @@ class CreateBolaoViewModel(
     private val _brazilMatches = MutableStateFlow<List<Match>>(emptyList())
     val brazilMatches: StateFlow<List<Match>> = _brazilMatches.asStateFlow()
 
+    private val _allMatches = MutableStateFlow<List<Match>>(emptyList())
+    val allMatches: StateFlow<List<Match>> = _allMatches.asStateFlow()
+
+    private val _isGroupStageAvailable = MutableStateFlow(true)
+    val isGroupStageAvailable: StateFlow<Boolean> = _isGroupStageAvailable.asStateFlow()
+
+    private val _isKnockoutAvailable = MutableStateFlow(true)
+    val isKnockoutAvailable: StateFlow<Boolean> = _isKnockoutAvailable.asStateFlow()
+
     init {
-        loadBrazilMatches()
+        loadMatchesData()
     }
 
-    private fun loadBrazilMatches() {
+    private fun loadMatchesData() {
         viewModelScope.launch {
             matchRepository.getMatches().collect { matches ->
-                val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
-                _brazilMatches.value = matches.filter { 
-                    (it.homeTeamCode == "BRA" || it.awayTeamCode == "BRA") &&
-                    !it.isFinished &&
-                    it.matchDateMillis > (now + 60_000)
+                _allMatches.value = matches
+                
+                _brazilMatches.value = matches.filter { m ->
+                    if (m.isFinished) return@filter false
+                    
+                    // Resolve nomes para mata-mata (ex: se um TBD já virou "Brasil")
+                    val (hName, _) = resolveDisplayName(m.id, m.homeTeam, m.homeTeamFlag, matches, true)
+                    val (aName, _) = resolveDisplayName(m.id, m.awayTeam, m.awayTeamFlag, matches, false)
+                    
+                    // Um jogo só conta como "do Brasil" se o Brasil for um dos times JÁ confirmados.
+                    // Não incluímos jogos onde o Brasil é apenas um "candidato" (ex: Venc. Oitava X)
+                    val isHomeBrazil = m.homeTeamCode == "BRA" || 
+                                      m.homeTeam.contains("Brasil", ignoreCase = true) ||
+                                      hName.equals("Brasil", ignoreCase = true)
+                    
+                    val isAwayBrazil = m.awayTeamCode == "BRA" || 
+                                      m.awayTeam.contains("Brasil", ignoreCase = true) ||
+                                      aName.equals("Brasil", ignoreCase = true)
+                    
+                    isHomeBrazil || isAwayBrazil
+                }
+
+                _isGroupStageAvailable.value = matches.any { 
+                    it.phase == Phase.GROUP_STAGE && !it.isFinished
+                }
+
+                _isKnockoutAvailable.value = matches.any { 
+                    it.phase != Phase.GROUP_STAGE && 
+                    it.phase != Phase.FRIENDLIES &&
+                    !it.isFinished
                 }
             }
         }
@@ -126,6 +162,9 @@ fun CreateBolaoScreen(
     val viewModel = remember { CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository) }
     val uiState by viewModel.uiState.collectAsState()
     val brazilMatches by viewModel.brazilMatches.collectAsState()
+    val allMatches by viewModel.allMatches.collectAsState()
+    val isGroupStageAvailable by viewModel.isGroupStageAvailable.collectAsState()
+    val isKnockoutAvailable by viewModel.isKnockoutAvailable.collectAsState()
 
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -141,6 +180,20 @@ fun CreateBolaoScreen(
     val focusManager = LocalFocusManager.current
     val launcherProvider = rememberLauncherProvider()
     var showSuccessDialog by remember { mutableStateOf(false) }
+
+    // Auto-ajuste do scope se a fase de grupos acabar
+    LaunchedEffect(isGroupStageAvailable, isKnockoutAvailable, brazilMatches) {
+        if (!isGroupStageAvailable && (selectedScope == BolaoScope.FULL || selectedScope == BolaoScope.ONLY_GROUPS)) {
+            if (isKnockoutAvailable) {
+                selectedScope = BolaoScope.ONLY_KNOCKOUT
+            } else if (brazilMatches.isNotEmpty()) {
+                selectedScope = BolaoScope.ONLY_BRAZIL
+                if (brazilMatches.size == 1) {
+                    selectedMatchId = brazilMatches.first().id
+                }
+            }
+        }
+    }
 
     // Helpers de Validação
     val nameError = if (nameTouched && name.trim().length < 10) "Nome muito curto (mín. 10)" else null
@@ -285,6 +338,7 @@ fun CreateBolaoScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .imePadding()
                     .padding(horizontal = 24.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
@@ -398,7 +452,11 @@ fun CreateBolaoScreen(
                                         
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                             BolaoScope.entries.forEach { scope ->
-                                                val isScopeEnabled = scope != BolaoScope.ONLY_BRAZIL || brazilMatches.isNotEmpty()
+                                                val isScopeEnabled = when(scope) {
+                                                    BolaoScope.FULL, BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
+                                                    BolaoScope.ONLY_BRAZIL -> brazilMatches.isNotEmpty()
+                                                    BolaoScope.ONLY_KNOCKOUT -> isKnockoutAvailable
+                                                }
                                                 val isScopeSelected = selectedScope == scope && isScopeEnabled
                                                 val scopeEmoji = when(scope) {
                                                     BolaoScope.FULL -> "🏆"
@@ -415,34 +473,55 @@ fun CreateBolaoScreen(
                                                         .border(1.dp, if (isScopeSelected) Neon.copy(alpha = 0.5f) else GlassBorder.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
                                                         .clickable(enabled = isScopeEnabled) { 
                                                             selectedScope = scope
-                                                            if (scope != BolaoScope.ONLY_BRAZIL) selectedMatchId = null
+                                                            if (scope == BolaoScope.ONLY_BRAZIL && brazilMatches.size == 1) {
+                                                                selectedMatchId = brazilMatches.first().id
+                                                            } else {
+                                                                selectedMatchId = null
+                                                            }
                                                         }
                                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Text(scopeEmoji, fontSize = 14.sp, modifier = Modifier.alpha(if (isScopeEnabled) 1f else 0.3f))
-                                                    Spacer(Modifier.width(10.dp))
-                                                    Text(
-                                                        scope.label,
-                                                        fontSize = 13.sp,
-                                                        color = if (isScopeSelected) Color.White else TextMuted,
-                                                        fontWeight = if (isScopeSelected) FontWeight.Bold else FontWeight.Normal,
-                                                        modifier = Modifier.alpha(if (isScopeEnabled) 1f else 0.3f)
-                                                    )
+                                                    Spacer(Modifier.width(12.dp))
                                                     
-                                                    if (scope == BolaoScope.ONLY_BRAZIL && !isScopeEnabled) {
-                                                        Spacer(Modifier.width(8.dp))
-                                                        Text("(Nenhum jogo futuro)", fontSize = 10.sp, color = ErrorRed.copy(alpha = 0.7f))
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text(
+                                                            scope.label,
+                                                            fontSize = 13.sp,
+                                                            color = if (isScopeSelected) Color.White else TextMuted,
+                                                            fontWeight = if (isScopeSelected) FontWeight.Bold else FontWeight.Normal,
+                                                            modifier = Modifier.alpha(if (isScopeEnabled) 1f else 0.3f)
+                                                        )
+                                                        
+                                                        val errorMsg = when {
+                                                            scope == BolaoScope.ONLY_BRAZIL && !isScopeEnabled -> "(Nenhum jogo futuro)"
+                                                            (scope == BolaoScope.FULL || scope == BolaoScope.ONLY_GROUPS) && !isGroupStageAvailable -> "(Fase encerrada)"
+                                                            scope == BolaoScope.ONLY_KNOCKOUT && !isScopeEnabled -> "(Mata-mata encerrado)"
+                                                            else -> null
+                                                        }
+                                                        
+                                                        if (errorMsg != null) {
+                                                            Text(
+                                                                errorMsg, 
+                                                                fontSize = 10.sp, 
+                                                                color = ErrorRed.copy(alpha = 0.7f),
+                                                                lineHeight = 12.sp
+                                                            )
+                                                        }
                                                     }
 
-                                                    Spacer(Modifier.weight(1f))
                                                     RadioButton(
                                                         enabled = isScopeEnabled,
                                                         selected = isScopeSelected,
                                                         onClick = { 
                                                             if (isScopeEnabled) {
                                                                 selectedScope = scope
-                                                                if (scope != BolaoScope.ONLY_BRAZIL) selectedMatchId = null
+                                                                if (scope == BolaoScope.ONLY_BRAZIL && brazilMatches.size == 1) {
+                                                                    selectedMatchId = brazilMatches.first().id
+                                                                } else {
+                                                                    selectedMatchId = null
+                                                                }
                                                             }
                                                         },
                                                         colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
@@ -456,25 +535,31 @@ fun CreateBolaoScreen(
                                                         modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp),
                                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                                     ) {
-                                                        // Opção: Todos
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .clickable { selectedMatchId = null }
-                                                                .padding(vertical = 4.dp),
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            RadioButton(
-                                                                selected = selectedMatchId == null,
-                                                                onClick = { selectedMatchId = null },
-                                                                colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
-                                                                modifier = Modifier.size(16.dp)
-                                                            )
-                                                            Spacer(Modifier.width(8.dp))
-                                                            Text("Todos os jogos do Brasil", fontSize = 12.sp, color = if(selectedMatchId == null) Color.White else TextMuted)
+                                                        // Opção: Todos (Só aparece se houver mais de um jogo)
+                                                        if (brazilMatches.size > 1) {
+                                                            Row(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .clickable { selectedMatchId = null }
+                                                                    .padding(vertical = 4.dp),
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                RadioButton(
+                                                                    selected = selectedMatchId == null,
+                                                                    onClick = { selectedMatchId = null },
+                                                                    colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
+                                                                    modifier = Modifier.size(16.dp)
+                                                                )
+                                                                Spacer(Modifier.width(8.dp))
+                                                                Text("Todos os jogos do Brasil", fontSize = 12.sp, color = if(selectedMatchId == null) Color.White else TextMuted)
+                                                            }
                                                         }
 
                                                         brazilMatches.forEach { match ->
+                                                            val (hName, _) = resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, allMatches, true)
+                                                            val (aName, _) = resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
+                                                            val displayTitle = if (hName.isNotBlank() && aName.isNotBlank()) "$hName x $aName" else "${match.homeTeam} x ${match.awayTeam}"
+
                                                             Row(
                                                                 modifier = Modifier
                                                                     .fillMaxWidth()
@@ -490,7 +575,7 @@ fun CreateBolaoScreen(
                                                                 )
                                                                 Spacer(Modifier.width(8.dp))
                                                                 Text(
-                                                                    "${match.homeTeam} x ${match.awayTeam}",
+                                                                    displayTitle,
                                                                     fontSize = 12.sp,
                                                                     color = if(selectedMatchId == match.id) Color.White else TextMuted,
                                                                     maxLines = 1
@@ -593,6 +678,27 @@ fun CreateBolaoScreen(
                                 onValueChange = { pointsWinner = it },
                                 modifier = Modifier.weight(1f)
                             )
+                        }
+
+                        // Info sobre prorrogação e pênaltis
+                        Surface(
+                            color = Color.White.copy(alpha = 0.05f),
+                            shape = RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder.copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text("⏱️", fontSize = 14.sp)
+                                Text(
+                                    "O placar válido é o do tempo normal + prorrogação. Pênaltis não contam para a pontuação.",
+                                    fontSize = 11.sp,
+                                    color = TextMuted,
+                                    lineHeight = 15.sp
+                                )
+                            }
                         }
                     }
 

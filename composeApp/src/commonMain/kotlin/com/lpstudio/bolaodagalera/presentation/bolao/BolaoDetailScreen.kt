@@ -40,8 +40,12 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.domain.model.Match
@@ -85,7 +89,9 @@ fun BolaoDetailScreen(
     val viewModel: BolaoViewModel = koinInject(parameters = { parametersOf(bolaoId) })
     val uiState by viewModel.uiState.collectAsState()
     val authRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.AuthRepository>()
-    val userId = authRepository.currentUser?.id ?: ""
+    val currentUser = authRepository.currentUser
+    val userId = currentUser?.id ?: ""
+    val isAppOwner = currentUser?.username == "pauloricha" || userId == "pauloricha" || currentUser?.email == "paulo.richa@hotmail.com"
     val launcherProvider = com.lpstudio.bolaodagalera.rememberLauncherProvider()
 
     LaunchedEffect(userId) { viewModel.setUserId(userId) }
@@ -102,6 +108,7 @@ fun BolaoDetailScreen(
         uiState = uiState,
         userId = userId,
         isOwner = uiState.bolao?.ownerId == userId,
+        isAppOwner = isAppOwner,
         launcherProvider = launcherProvider,
         onLeaveBolao = { viewModel.leaveBolao() },
         onApproveJoin = { userId, approve -> viewModel.approveParticipant(userId, approve) },
@@ -125,6 +132,7 @@ fun BolaoDetailContent(
     uiState: BolaoUiState,
     userId: String,
     isOwner: Boolean,
+    isAppOwner: Boolean,
     launcherProvider: com.lpstudio.bolaodagalera.LauncherProvider,
     onLeaveBolao: () -> Unit,
     onApproveJoin: (String, Boolean) -> Unit,
@@ -710,7 +718,7 @@ fun BolaoDetailContent(
                         matches = groupMatches.ifEmpty { filteredMatches },
                         predictions = uiState.userPredictions,
                         isLoading = uiState.isLoading,
-                        isAdmin = isOwner,
+                        isAdmin = isAppOwner,
                         bolaoCreatedAt = uiState.bolao?.createdAtMillis ?: 0L,
                         selectedRound = selectedRound,
                         showSocialBadge = isSocialEnabled,
@@ -731,7 +739,7 @@ fun BolaoDetailContent(
                         matches = filteredMatches,
                         predictions = uiState.userPredictions,
                         isLoading = uiState.isLoading,
-                        isAdmin = isOwner,
+                        isAdmin = isAppOwner,
                         bolaoCreatedAt = uiState.bolao?.createdAtMillis ?: 0L,
                         selectedPhase = selectedPhase,
                         showSocialBadge = isSocialEnabled,
@@ -1716,11 +1724,47 @@ fun MatchCard(
     val matchStart = match.matchDateMillis
     
     // Resolve nomes e bandeiras para mata-mata TBD
-    val (homeDisplayName, homeDisplayFlag) = remember(match.homeTeam, match.homeTeamFlag, allMatches) {
-        resolveDisplayName(match.homeTeam, match.homeTeamFlag, allMatches)
+    val (homeDisplayName, homeDisplayFlag) = remember(match.id, match.homeTeam, match.homeTeamFlag, allMatches) {
+        resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, allMatches, true)
     }
-    val (awayDisplayName, awayDisplayFlag) = remember(match.awayTeam, match.awayTeamFlag, allMatches) {
-        resolveDisplayName(match.awayTeam, match.awayTeamFlag, allMatches)
+    val (awayDisplayName, awayDisplayFlag) = remember(match.id, match.awayTeam, match.awayTeamFlag, allMatches) {
+        resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
+    }
+
+    val homeAnnotatedFlag = remember(homeDisplayFlag) {
+        val parts = homeDisplayFlag.split(" ou ")
+        if (parts.size > 1) {
+            buildAnnotatedString {
+                parts.forEachIndexed { index, part ->
+                    append(part)
+                    if (index < parts.size - 1) {
+                        withStyle(style = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)) {
+                            append(" ou ")
+                        }
+                    }
+                }
+            }
+        } else {
+            AnnotatedString(homeDisplayFlag)
+        }
+    }
+
+    val awayAnnotatedFlag = remember(awayDisplayFlag) {
+        val parts = awayDisplayFlag.split(" ou ")
+        if (parts.size > 1) {
+            buildAnnotatedString {
+                parts.forEachIndexed { index, part ->
+                    append(part)
+                    if (index < parts.size - 1) {
+                        withStyle(style = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)) {
+                            append(" ou ")
+                        }
+                    }
+                }
+            }
+        } else {
+            AnnotatedString(awayDisplayFlag)
+        }
     }
 
     // Agora usamos o status real vindo da API + verificação de tempo para garantir o destaque
@@ -1898,7 +1942,7 @@ fun MatchCard(
                         horizontalArrangement = if (homeDisplayName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            homeDisplayFlag, 
+                            text = homeAnnotatedFlag, 
                             fontSize = if (homeDisplayFlag.contains(" ou ")) 18.sp else 26.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White.copy(alpha = 0.9f)
@@ -1976,7 +2020,7 @@ fun MatchCard(
                             )
                         }
                         Text(
-                            awayDisplayFlag, 
+                            text = awayAnnotatedFlag,
                             fontSize = if (awayDisplayFlag.contains(" ou ")) 18.sp else 26.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White.copy(alpha = 0.9f)
@@ -2257,6 +2301,7 @@ fun BolaoDetailScreenPreview() {
             uiState = uiState,
             userId = myUserId,
             isOwner = true,
+            isAppOwner = true,
             launcherProvider = object : com.lpstudio.bolaodagalera.LauncherProvider {
                 override fun shareText(text: String) {}
                 override fun sendEmail(address: String, subject: String, body: String) {}
