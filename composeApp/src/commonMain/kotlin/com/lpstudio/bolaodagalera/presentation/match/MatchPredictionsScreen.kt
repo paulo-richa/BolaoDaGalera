@@ -22,8 +22,12 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.domain.model.Prediction
@@ -143,8 +147,8 @@ fun MatchPredictionsScreen(
                             )
 
                             IconButton(onClick = {
-                                val (hName, hFlag) = resolveDisplayName(match.homeTeam, match.homeTeamFlag, uiState.matches)
-                                val (aName, aFlag) = resolveDisplayName(match.awayTeam, match.awayTeamFlag, uiState.matches)
+                                val (hName, hFlag) = resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, uiState.matches, true)
+                                val (aName, aFlag) = resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, uiState.matches, false)
 
                                 val isOngoing = hasStarted && !isActuallyFinished
 
@@ -210,8 +214,44 @@ fun MatchPredictionsScreen(
                         Spacer(Modifier.height(24.dp))
 
                         // Score Info (DENTRO do Header para dar a altura correta)
-                        val (hName, hFlag) = resolveDisplayName(match.homeTeam, match.homeTeamFlag, uiState.matches)
-                        val (aName, aFlag) = resolveDisplayName(match.awayTeam, match.awayTeamFlag, uiState.matches)
+                        val (hName, hFlag) = resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, uiState.matches, true)
+                        val (aName, aFlag) = resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, uiState.matches, false)
+
+                        val hAnnotatedFlag = remember(hFlag) {
+                            val parts = hFlag.split(" ou ")
+                            if (parts.size > 1) {
+                                buildAnnotatedString {
+                                    parts.forEachIndexed { index, part ->
+                                        append(part)
+                                        if (index < parts.size - 1) {
+                                            withStyle(style = SpanStyle(fontSize = 11.sp, fontWeight = FontWeight.Normal)) {
+                                                append(" ou ")
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                AnnotatedString(hFlag)
+                            }
+                        }
+
+                        val aAnnotatedFlag = remember(aFlag) {
+                            val parts = aFlag.split(" ou ")
+                            if (parts.size > 1) {
+                                buildAnnotatedString {
+                                    parts.forEachIndexed { index, part ->
+                                        append(part)
+                                        if (index < parts.size - 1) {
+                                            withStyle(style = SpanStyle(fontSize = 11.sp, fontWeight = FontWeight.Normal)) {
+                                                append(" ou ")
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                AnnotatedString(aFlag)
+                            }
+                        }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -223,7 +263,7 @@ fun MatchPredictionsScreen(
                                     contentAlignment = Alignment.Center
                                 ) { 
                                     Text(
-                                        hFlag, 
+                                        text = hAnnotatedFlag, 
                                         fontSize = if (hFlag.contains(" ou ")) 16.sp else if (hFlag.length > 4) 28.sp else 34.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
@@ -289,7 +329,7 @@ fun MatchPredictionsScreen(
                                     contentAlignment = Alignment.Center
                                 ) { 
                                     Text(
-                                        aFlag, 
+                                        text = aAnnotatedFlag,
                                         fontSize = if (aFlag.contains(" ou ")) 16.sp else if (aFlag.length > 4) 28.sp else 34.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
