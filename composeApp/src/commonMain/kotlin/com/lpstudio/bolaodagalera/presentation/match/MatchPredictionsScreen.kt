@@ -1,5 +1,6 @@
 package com.lpstudio.bolaodagalera.presentation.match
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -145,6 +146,8 @@ fun MatchPredictionsScreen(
                                 val (hName, hFlag) = resolveDisplayName(match.homeTeam, match.homeTeamFlag, uiState.matches)
                                 val (aName, aFlag) = resolveDisplayName(match.awayTeam, match.awayTeamFlag, uiState.matches)
 
+                                val isOngoing = hasStarted && !isActuallyFinished
+
                                 val header = buildString {
                                     append("📊 *PALPITES DA GALERA*\n\n")
                                     append("$hFlag $hName ")
@@ -162,7 +165,14 @@ fun MatchPredictionsScreen(
                                     append("\n\n")
                                 }
                                 
-                                val list = itemsList.mapIndexed { index, item ->
+                                // Ordenação Alfabética pelo Apelido/Nome exibido se o jogo estiver em andamento
+                                val shareItems = if (isOngoing) {
+                                    itemsList.sortedBy { (it.first.userNickname.ifBlank { it.first.userName }).lowercase() }
+                                } else {
+                                    itemsList
+                                }
+
+                                val list = shareItems.mapIndexed { index, item ->
                                     val p = item.first
                                     val pred = item.second
                                     val pts = item.third
@@ -180,7 +190,7 @@ fun MatchPredictionsScreen(
                                             }
                                         } else ""
 
-                                        val pointsLabel = if (!isAdminViewingBeforeStart && (hasStarted || isActuallyFinished)) {
+                                        val pointsLabel = if (!isAdminViewingBeforeStart && isActuallyFinished) {
                                             " - *${pts} ${if (pts == 1) "PONTO" else "PONTOS"}*"
                                         } else ""
                                         "${index + 1}. $name: $score$pointsLabel$ptsIcon"
@@ -189,9 +199,7 @@ fun MatchPredictionsScreen(
                                     }
                                 }.joinToString("\n")
                                 
-                                val inviteUrl = uiState.bolao?.let { "https://bolaodagalera-bb002.web.app/invite?code=${it.code}" } ?: ""
-                                val storeLink = "https://play.google.com/store/apps/details?id=com.lpstudio.bolaodagalera"
-                                val footer = "\n\nBaixe o *Bolão da Galera* ($storeLink) e participe! 🏆"
+                                val footer = ""
                                 
                                 launcherProvider.shareText(header + list + footer)
                             }, modifier = Modifier.size(36.dp)) {
@@ -233,8 +241,36 @@ fun MatchPredictionsScreen(
                                 else -> "Jogo em andamento"
                             }
 
+                            val isLive = !isActuallyFinished && !isAdminViewingBeforeStart && hasStarted
+
                             Column(Modifier.padding(horizontal = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(statusLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (isAdminViewingBeforeStart) Gold else TextMuted, letterSpacing = 0.5.sp)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (isLive) {
+                                        val infiniteTransition = rememberInfiniteTransition()
+                                        val alpha by infiniteTransition.animateFloat(
+                                            initialValue = 0.3f,
+                                            targetValue = 1f,
+                                            animationSpec = infiniteRepeatable(
+                                                animation = tween(800, easing = LinearEasing),
+                                                repeatMode = RepeatMode.Reverse
+                                            )
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .clip(CircleShape)
+                                                .background(Neon.copy(alpha = alpha))
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                    }
+                                    Text(
+                                        statusLabel,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isAdminViewingBeforeStart) Gold else TextMuted,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
                                 Spacer(Modifier.height(8.dp))
                                 if (!isAdminViewingBeforeStart) {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -128,9 +128,9 @@ class OpenFootballMatchRepository : MatchRepository {
         return _matches.value
     }
 
-    override suspend fun updateMatchScore(matchId: String, homeScore: Int, awayScore: Int) {
+    override suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {
         _matches.update { list ->
-            list.map { if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore, isManual = true) else it }
+            list.map { if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore, isManual = isManual) else it }
         }
     }
 
@@ -143,7 +143,8 @@ class OpenFootballMatchRepository : MatchRepository {
         awayTeamCode: String,
         awayTeamFlag: String,
         dateMillis: Long?,
-        status: String?
+        status: String?,
+        isManual: Boolean
     ) {
         _matches.update { list ->
             list.map { 
@@ -156,7 +157,7 @@ class OpenFootballMatchRepository : MatchRepository {
                     awayTeamFlag = awayTeamFlag,
                     matchDateMillis = dateMillis ?: it.matchDateMillis,
                     status = status ?: it.status,
-                    isManual = true
+                    isManual = isManual
                 ) else it 
             }
         }

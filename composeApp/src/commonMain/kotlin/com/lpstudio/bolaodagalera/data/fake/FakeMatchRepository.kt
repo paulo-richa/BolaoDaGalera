@@ -25,23 +25,28 @@ class FakeMatchRepository : MatchRepository {
         "GS-C-2" to (0 to 1), // Haiti 0 x 1 Escócia
     )
 
-    // Jogos em andamento (Sem placar final, apenas scores parciais)
-    private val inProgressScores = mapOf(
-        "GS-B-1" to (0 to 0) // Canadá 0 x 0 Bósnia (EM ANDAMENTO)
+    // Jogos em andamento com diferentes estados para teste de UI
+    private val liveMatchData = mapOf(
+        "GS-B-1" to Triple(0, 0, "IN_PLAY"),     // Canadá 0 x 0 Bósnia (EM ANDAMENTO)
     )
 
     private val _matches = MutableStateFlow(
         allMatches.map { match ->
             val finished = finishedScores[match.id]
-            val inProgress = inProgressScores[match.id]
+            val live = liveMatchData[match.id]
             
             when {
-                finished != null -> match.copy(homeScore = finished.first, awayScore = finished.second)
-                inProgress != null -> {
+                finished != null -> match.copy(
+                    homeScore = finished.first, 
+                    awayScore = finished.second,
+                    status = "FINISHED"
+                )
+                live != null -> {
                     // Para simular "Em Andamento", o tempo precisa ser atual
                     match.copy(
-                        homeScore = inProgress.first, 
-                        awayScore = inProgress.second,
+                        homeScore = live.first, 
+                        awayScore = live.second,
+                        status = live.third,
                         matchDateMillis = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis() - 3600_000L // Começou faz 1 hora
                     )
                 }
@@ -58,10 +63,10 @@ class FakeMatchRepository : MatchRepository {
     override suspend fun getMatch(matchId: String): Match =
         _matches.value.first { it.id == matchId }
 
-    override suspend fun updateMatchScore(matchId: String, homeScore: Int, awayScore: Int) {
+    override suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {
         _matches.update { list ->
             list.map { 
-                if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore, isManual = true) 
+                if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore, isManual = isManual) 
                 else it 
             }
         }
@@ -76,7 +81,8 @@ class FakeMatchRepository : MatchRepository {
         awayTeamCode: String,
         awayTeamFlag: String,
         dateMillis: Long?,
-        status: String?
+        status: String?,
+        isManual: Boolean
     ) {
         _matches.update { list ->
             list.map {
@@ -89,7 +95,7 @@ class FakeMatchRepository : MatchRepository {
                     awayTeamFlag = awayTeamFlag,
                     matchDateMillis = dateMillis ?: it.matchDateMillis,
                     status = status ?: it.status,
-                    isManual = true
+                    isManual = isManual
                 )
                 else it
             }

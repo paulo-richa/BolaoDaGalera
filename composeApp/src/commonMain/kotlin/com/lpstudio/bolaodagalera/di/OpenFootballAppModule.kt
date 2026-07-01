@@ -9,7 +9,7 @@ import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
 import com.lpstudio.bolaodagalera.presentation.match.PredictionViewModel
 import com.lpstudio.bolaodagalera.presentation.ranking.RankingViewModel
-import org.koin.core.module.dsl.viewModel
+import org.koin.compose.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 // Módulo híbrido:

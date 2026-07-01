@@ -93,14 +93,14 @@ class FirebaseMatchRepository : MatchRepository {
         return doc.data<MatchDto>().toDomain(doc.id)
     }
 
-    override suspend fun updateMatchScore(matchId: String, homeScore: Int, awayScore: Int) {
+    override suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {
         // Quando atualizamos manualmente pelo app (Admin), setamos isManual = true
         // para que o centralizador (GitHub Action) não sobrescreva este placar.
         collection.document(matchId).set(
             mapOf(
                 "homeScore" to homeScore, 
                 "awayScore" to awayScore,
-                "isManual" to true
+                "isManual" to isManual
             ),
             merge = true
         )
@@ -115,7 +115,8 @@ class FirebaseMatchRepository : MatchRepository {
         awayTeamCode: String,
         awayTeamFlag: String,
         dateMillis: Long?,
-        status: String?
+        status: String?,
+        isManual: Boolean
     ) {
         val updates = mutableMapOf<String, Any>(
             "homeTeam" to homeTeam,
@@ -124,7 +125,7 @@ class FirebaseMatchRepository : MatchRepository {
             "awayTeam" to awayTeam,
             "awayTeamCode" to awayTeamCode,
             "awayTeamFlag" to awayTeamFlag,
-            "isManual" to true
+            "isManual" to isManual
         )
         dateMillis?.let { updates["matchDateMillis"] = it }
         status?.let { updates["status"] = it }
@@ -135,9 +136,42 @@ class FirebaseMatchRepository : MatchRepository {
     override suspend fun seedMatchesIfNeeded() {
         try {
             val snapshot = collection.get()
-            if (snapshot.documents.isEmpty()) {
-                allMatches.forEach { m ->
+            val existingDocs = snapshot.documents.associateBy { it.id }
+            val localIds = allMatches.map { it.id }.toSet()
+
+            // 1. Limpeza Segura de Duplicados (Apenas IDs numéricos puros ou KO-5XXXX)
+            snapshot.documents.forEach { doc ->
+                val id = doc.id
+                val isWrongKoFormat = id.startsWith("KO-") && id.removePrefix("KO-").all { it.isDigit() }
+                val isNumericId = id.all { it.isDigit() }
+
+                if (!localIds.contains(id) && (isWrongKoFormat || isNumericId)) {
+                    collection.document(id).delete()
+                }
+            }
+
+            // 2. Sincronização Inteligente: Só cria se não existir ou se precisar atualizar Times/Bandeiras
+            // NUNCA sobrescreve placar (homeScore/awayScore) ou status se já existirem no Firestore
+            allMatches.forEach { m ->
+                val existing = existingDocs[m.id]
+                if (existing == null) {
                     collection.document(m.id).set(m.toDto())
+                } else {
+                    // Se já existe, atualizamos apenas metadados (times, bandeiras, data) 
+                    // para não perder o placar/status vindo da API
+                    collection.document(m.id).set(
+                        mapOf(
+                            "homeTeam" to m.homeTeam,
+                            "homeTeamCode" to m.homeTeamCode,
+                            "homeTeamFlag" to m.homeTeamFlag,
+                            "awayTeam" to m.awayTeam,
+                            "awayTeamCode" to m.awayTeamCode,
+                            "awayTeamFlag" to m.awayTeamFlag,
+                            "matchDateMillis" to m.matchDateMillis,
+                            "phase" to m.phase.name
+                        ),
+                        merge = true
+                    )
                 }
             }
         } catch (e: Exception) { }

@@ -102,11 +102,22 @@ async function syncFromFootballData() {
         for (const m of matches) {
             const hCode = m.homeTeam?.tla;
             const aCode = m.awayTeam?.tla;
-            const status = m.status; // TIMED, IN_PLAY, FINISHED
-            const hScore = m.score?.fullTime?.home;
-            const aScore = m.score?.fullTime?.away;
+            const status = m.status;
 
-            // Log preventivo para jogos conhecidos (ex: MEX x RSA)
+            // CÁLCULO DO PLACAR: Ignorar Pênaltis
+            // No Football-Data, se o jogo vai para pênaltis, 'fullTime' inclui os gols da disputa.
+            // Queremos apenas o placar até o fim da prorrogação.
+            let hScore, aScore;
+            const s = m.score;
+            if (s?.duration === "PENALTY_SHOOTOUT") {
+                hScore = (s.regularTime?.home ?? 0) + (s.extraTime?.home ?? 0);
+                aScore = (s.regularTime?.away ?? 0) + (s.extraTime?.away ?? 0);
+            } else {
+                hScore = s?.fullTime?.home;
+                aScore = s?.fullTime?.away;
+            }
+
+            // Log preventivo para jogos conhecidos
             if (hCode === 'MEX' || aCode === 'MEX' || hCode === 'KOR' || aCode === 'KOR') {
                 console.log(`🔎 Debug [${hCode} x ${aCode}]: Status=${status}, Placar=${hScore}x${aScore}`);
             }
@@ -115,8 +126,9 @@ async function syncFromFootballData() {
                 homeScore: hScore,
                 awayScore: aScore,
                 status: status,
-                utcDate: m.utcDate
-            }, "Football-Data");
+                utcDate: m.utcDate,
+                duration: m.score?.duration
+            }, "Football-Data", m.id);
         }
     } catch (e) { console.error("⚠️ Football-Data erro:", e.message); }
 }
@@ -139,24 +151,50 @@ async function syncFromOpenFootball() {
     } catch (e) { console.error("⚠️ OpenFootball erro:", e.message); }
 }
 
-async function updateMatchInFirestore(hCode, aCode, data, source) {
-    if (!hCode || !aCode) return;
-
+async function updateMatchInFirestore(hCode, aCode, data, source, apiId) {
     const matchesRef = db.collection('matches');
-    let snapshot = await matchesRef.where('homeTeamCode', '==', hCode).where('awayTeamCode', '==', aCode).get();
-    let isInverted = false;
 
-    if (snapshot.empty) {
-        snapshot = await matchesRef.where('homeTeamCode', '==', aCode).where('awayTeamCode', '==', hCode).get();
-        isInverted = true;
+    // Tradutor de IDs da API para os IDs originais do Firestore (Proteção de Palpites)
+    const apiToInternal = {
+        "537415": "KO-32-1", "537416": "KO-32-2", "537417": "KO-32-3", "537418": "KO-32-4",
+        "537419": "KO-32-5", "537420": "KO-32-6", "537421": "KO-32-7", "537422": "KO-32-8",
+        "537423": "KO-32-9", "537424": "KO-32-10", "537425": "KO-32-11", "537426": "KO-32-12",
+        "537427": "KO-32-13", "537428": "KO-32-14", "537429": "KO-32-15", "537430": "KO-32-16",
+        "537375": "KO-16-1", "537376": "KO-16-2", "537377": "KO-16-3", "537378": "KO-16-4",
+        "537379": "KO-16-5", "537380": "KO-16-6", "537381": "KO-16-7", "537382": "KO-16-8",
+        "537383": "KO-QF-1", "537384": "KO-QF-2", "537385": "KO-QF-3", "537386": "KO-QF-4",
+        "537387": "KO-SF-1", "537388": "KO-SF-2", "537389": "KO-SF-3", "537390": "KO-FINAL"
+    };
+
+    const internalId = apiToInternal[apiId?.toString()];
+    let matchDoc = null;
+
+    if (internalId) {
+        let doc = await matchesRef.doc(internalId).get();
+        if (doc.exists) {
+            matchDoc = doc;
+        }
     }
 
-    if (snapshot.empty) return;
+    if (!matchDoc) {
+        // Fallback por códigos
+        let snapshot = await matchesRef.where('homeTeamCode', '==', hCode).where('awayTeamCode', '==', aCode).get();
+        if (snapshot.empty) {
+            snapshot = await matchesRef.where('homeTeamCode', '==', aCode).where('awayTeamCode', '==', hCode).get();
+        }
+        if (!snapshot.empty) {
+            matchDoc = snapshot.docs[0];
+        }
+    }
 
-    const matchDoc = snapshot.docs[0];
-    const matchData = matchDoc.data();
+    if (!matchDoc || (!matchDoc.exists && !matchDoc.id)) return;
 
-    // TRAVA 1: Se o placar foi definido manualmente no app, nunca sobrescrevemos.
+    const docRef = matchDoc.ref || matchesRef.doc(matchDoc.id);
+    const matchData = matchDoc.data ? matchDoc.data() : null;
+    let isInverted = matchData && matchData.homeTeamCode === aCode;
+
+    // TRAVA 1: Se o placar foi definido manualmente no app, nunca
+obrescrevemos.
     if (matchData.isManual) return;
 
     let updateObj = {};
@@ -165,37 +203,27 @@ async function updateMatchInFirestore(hCode, aCode, data, source) {
     let apiHomeScore = isInverted ? data.awayScore : data.homeScore;
     let apiAwayScore = isInverted ? data.homeScore : data.awayScore;
 
-    // TRAVA 2: Se o jogo ainda não começou (TIMED) e a API manda 0x0,
-    // ignoramos para não sobrescrever o null (que no app aparece como agendado).
-    if (data.status === 'TIMED' && apiHomeScore === 0 && apiAwayScore === 0) {
-        return;
-    }
+    // Se o jogo ainda não começou (TIMED/SCHEDULED), limpamos obrigatoriamente o placar
+    // Isso evita que versões antigas do app mostrem "Em Andamento" com 0x0
+    const isUpcoming = ['TIMED', 'SCHEDULED'].includes(data.status);
+    const finalHomeScore = isUpcoming ? null : (apiHomeScore ?? 0);
+    const finalAwayScore = isUpcoming ? null : (apiAwayScore ?? 0);
 
-    // TRAVA 3: Para o OpenFootball (que não manda status), ignoramos 0x0 se já tivermos um placar.
-    if (source === "OpenFootball" && apiHomeScore === 0 && apiAwayScore === 0 && matchData.homeScore !== null && matchData.homeScore !== undefined) {
-        return;
-    }
-
-    // Só atualizamos se o placar vindo da API não for nulo
-    if (apiHomeScore !== undefined && apiAwayScore !== undefined && apiHomeScore !== null && apiAwayScore !== null) {
-
-        // CÁLCULO DE SEGURANÇA: Soma de gols atual vs nova
+    // Só atualizamos se:
+    // 1. O placar for diferente do atual
+    // 2. E não for uma regressão (novo total de gols < total atual), a menos que o novo placar seja null (correção)
+    if (finalHomeScore !== matchData.homeScore || finalAwayScore !== matchData.awayScore) {
         const currentTotal = (matchData.homeScore || 0) + (matchData.awayScore || 0);
-        const newTotal = apiHomeScore + apiAwayScore;
+        const newTotal = (finalHomeScore || 0) + (finalAwayScore || 0);
 
-        // Só atualizamos se:
-        // 1. O placar atual for nulo (primeira sincronização)
-        // 2. OU se o novo total de gols for maior ou igual ao atual (evita voltar para 0x0)
-        const isProgression = matchData.homeScore === null || matchData.homeScore === undefined || newTotal >= currentTotal;
+        const isProgression = matchData.homeScore === null || finalHomeScore === null || newTotal >= currentTotal;
 
         if (isProgression) {
-            if (apiHomeScore !== matchData.homeScore || apiAwayScore !== matchData.awayScore) {
-                updateObj.homeScore = apiHomeScore;
-                updateObj.awayScore = apiAwayScore;
-                changed = true;
-            }
+            updateObj.homeScore = finalHomeScore;
+            updateObj.awayScore = finalAwayScore;
+            changed = true;
         } else {
-            console.log(`⚠️ [${hCode} x ${aCode}] Ignorada tentativa de regressão: ${matchData.homeScore}x${matchData.awayScore} -> ${apiHomeScore}x${apiAwayScore}`);
+            console.log(`⚠️ [${hCode} x ${aCode}] Ignorada regressão: ${matchData.homeScore}x${matchData.awayScore} -> ${finalHomeScore}x${finalAwayScore}`);
         }
     }
 
@@ -208,8 +236,13 @@ async function updateMatchInFirestore(hCode, aCode, data, source) {
     }
 
     if (data.status) {
-        updateObj.status = data.status;
-        if (data.status === 'FINISHED' || data.status === 'IN_PLAY') {
+        // Mapeamento de status especial para Prorrogação e Pênaltis
+        let derivedStatus = data.status;
+        if (data.status === "IN_PLAY" && data.duration === "EXTRA_TIME") derivedStatus = "EXTRA_TIME";
+        if (data.status === "IN_PLAY" && data.duration === "PENALTY_SHOOTOUT") derivedStatus = "PENALTIES";
+
+        if (derivedStatus !== matchData.status) {
+            updateObj.status = derivedStatus;
             changed = true;
         }
     }
