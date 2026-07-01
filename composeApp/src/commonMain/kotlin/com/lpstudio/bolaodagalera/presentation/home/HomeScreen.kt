@@ -536,7 +536,7 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Group, null, modifier = Modifier.size(13.dp), tint = Neon)
+                        Icon(Icons.Default.Person, null, modifier = Modifier.size(13.dp), tint = Neon)
                         Text("${bolao.participants.size}", fontSize = 12.sp, color = Neon, fontWeight = FontWeight.SemiBold)
                     }
                     

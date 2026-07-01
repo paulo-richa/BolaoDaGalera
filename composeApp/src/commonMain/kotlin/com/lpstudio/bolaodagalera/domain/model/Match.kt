@@ -19,6 +19,6 @@ data class Match(
     val status: String? = null,
     val isManual: Boolean = false
 ) {
-    val isFinished: Boolean get() = status == "FINISHED" || (homeScore != null && awayScore != null && status != "IN_PLAY")
-    val isUpcoming: Boolean get() = status == "TIMED" || (!isFinished && status != "IN_PLAY")
+    val isFinished: Boolean get() = status == "FINISHED"
+    val isUpcoming: Boolean get() = status == "TIMED" || status == "SCHEDULED" || status == null
 }

@@ -113,7 +113,7 @@ class BolaoViewModel(
 
     fun clearError() = _uiState.update { it.copy(error = null) }
 
-    fun updateMatchScore(matchId: String, home: Int, away: Int) {
+    fun updateMatchScore(matchId: String, home: Int?, away: Int?) {
         viewModelScope.launch {
             matchRepository.updateMatchScore(matchId, home, away)
         }
@@ -123,33 +123,51 @@ class BolaoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                // Foco total na Football-Data API conforme solicitado
+                println("BOLAOLOG: Iniciando sincronização ativa...")
+                val currentMatches = _uiState.value.allMatches
+                println("BOLAOLOG: Total de jogos locais: ${currentMatches.size}")
+
                 val remoteRepo = com.lpstudio.bolaodagalera.data.remote.FootballDataMatchRepository()
                 val remoteMatches = try {
-                    remoteRepo.getUpdatedMatches()
+                    remoteRepo.getUpdatedMatches(currentMatches)
                 } catch (e: Exception) {
+                    println("BOLAOLOG: Erro na API: ${e.message}")
                     throw Exception("Falha ao acessar API Football-Data: ${e.message}")
                 }
 
                 if (remoteMatches.isEmpty()) throw Exception("API Football-Data não retornou nenhum jogo.")
 
                 var updatedCount = 0
-                val log = mutableListOf<String>()
-                
                 remoteMatches.forEach { remoteMatch ->
-                    // Procuramos o jogo local correspondente
-                    val localMatch = _uiState.value.matches.find { it.id == remoteMatch.id }
+                    val localMatch = currentMatches.find { it.id == remoteMatch.id }
                     
                     if (localMatch != null) {
-                        // 1. Atualizar Times, Data e Status
+                        // 1. Atualizar Status e Data para TODOS os jogos
+                        val needsStatusUpdate = remoteMatch.status != null && localMatch.status != remoteMatch.status
+                        val needsDateUpdate = remoteMatch.matchDateMillis != 0L && localMatch.matchDateMillis != remoteMatch.matchDateMillis
+                        
+                        if (needsStatusUpdate || needsDateUpdate) {
+                            matchRepository.updateMatchTeams(
+                                matchId = localMatch.id,
+                                homeTeam = localMatch.homeTeam,
+                                homeTeamCode = localMatch.homeTeamCode,
+                                homeTeamFlag = localMatch.homeTeamFlag,
+                                awayTeam = localMatch.awayTeam,
+                                awayTeamCode = localMatch.awayTeamCode,
+                                awayTeamFlag = localMatch.awayTeamFlag,
+                                dateMillis = if (needsDateUpdate) remoteMatch.matchDateMillis else null,
+                                status = if (needsStatusUpdate) remoteMatch.status else null,
+                                isManual = false
+                            )
+                            updatedCount++
+                        }
+
+                        // 2. Atualizar Times (Apenas Mata-Mata)
                         if (localMatch.phase != Phase.GROUP_STAGE) {
                             val needsTeamUpdate = remoteMatch.homeTeamCode != "TBD" && 
                                 (localMatch.homeTeamCode != remoteMatch.homeTeamCode || localMatch.awayTeamCode != remoteMatch.awayTeamCode)
                             
-                            val needsDateUpdate = remoteMatch.matchDateMillis != 0L && localMatch.matchDateMillis != remoteMatch.matchDateMillis
-                            val needsStatusUpdate = remoteMatch.status != null && localMatch.status != remoteMatch.status
-
-                            if (needsTeamUpdate || needsDateUpdate || needsStatusUpdate) {
+                            if (needsTeamUpdate || localMatch.isManual) {
                                 matchRepository.updateMatchTeams(
                                     matchId = localMatch.id,
                                     homeTeam = if (remoteMatch.homeTeamCode != "TBD") remoteMatch.homeTeam else localMatch.homeTeam,
@@ -158,35 +176,35 @@ class BolaoViewModel(
                                     awayTeam = if (remoteMatch.awayTeamCode != "TBD") remoteMatch.awayTeam else localMatch.awayTeam,
                                     awayTeamCode = if (remoteMatch.awayTeamCode != "TBD") remoteMatch.awayTeamCode else localMatch.awayTeamCode,
                                     awayTeamFlag = if (remoteMatch.awayTeamCode != "TBD") remoteMatch.awayTeamFlag else localMatch.awayTeamFlag,
-                                    dateMillis = if (remoteMatch.matchDateMillis != 0L) remoteMatch.matchDateMillis else null,
-                                    status = remoteMatch.status
+                                    dateMillis = null,
+                                    status = null,
+                                    isManual = false
                                 )
                                 updatedCount++
-                                if (needsTeamUpdate) log.add("${localMatch.id}: ${remoteMatch.homeTeamCode}")
                             }
                         }
                         
-                        // 2. Atualizar Placar se não foi editado manualmente
-                        if (!localMatch.isManual && 
-                            (remoteMatch.homeScore != null && remoteMatch.awayScore != null) &&
-                            (localMatch.homeScore != remoteMatch.homeScore || localMatch.awayScore != remoteMatch.awayScore)) {
-                            
+                        // 3. Atualizar Placar (Para todos)
+                        if (localMatch.homeScore != remoteMatch.homeScore || localMatch.awayScore != remoteMatch.awayScore) {
                             matchRepository.updateMatchScore(
                                 localMatch.id, 
-                                remoteMatch.homeScore!!, 
-                                remoteMatch.awayScore!!
+                                remoteMatch.homeScore, 
+                                remoteMatch.awayScore,
+                                isManual = false
                             )
                             updatedCount++
                         }
                     }
                 }
                 
+                println("BOLAOLOG: Sincronização finalizada. Atualizados: $updatedCount")
                 _uiState.update { it.copy(
                     isLoading = false, 
                     error = if (updatedCount > 0) "Sucesso! $updatedCount jogos atualizados." 
                            else "Sincronização concluída (Nenhuma mudança detectada)"
                 ) }
             } catch (e: Exception) {
+                println("BOLAOLOG: Erro Fatal: ${e.message}")
                 _uiState.update { it.copy(error = "Erro: ${e.message}", isLoading = false) }
             }
         }

@@ -41,7 +41,11 @@ private data class FdTeam(
 
 @Serializable
 private data class FdScore(
-    val fullTime: FdGoals? = null
+    val duration: String? = null,
+    val fullTime: FdGoals? = null,
+    val regularTime: FdGoals? = null,
+    val extraTime: FdGoals? = null,
+    val penalties: FdGoals? = null
 )
 
 @Serializable
@@ -130,11 +134,11 @@ class FootballDataMatchRepository : MatchRepository {
     override fun getMatchesByPhase(phase: Phase): Flow<List<Match>> = _matches.map { it.filter { m -> m.phase == phase } }
     override suspend fun getMatch(matchId: String): Match = _matches.value.first { it.id == matchId }
     
-    suspend fun getUpdatedMatches(): List<Match> {
-        return fetchAndMapUpdates()
+    suspend fun getUpdatedMatches(currentMatches: List<Match>): List<Match> {
+        return fetchAndMapUpdates(currentMatches)
     }
 
-    override suspend fun updateMatchScore(matchId: String, homeScore: Int, awayScore: Int) {}
+    override suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {}
     override suspend fun updateMatchTeams(
         matchId: String,
         homeTeam: String,
@@ -144,11 +148,12 @@ class FootballDataMatchRepository : MatchRepository {
         awayTeamCode: String,
         awayTeamFlag: String,
         dateMillis: Long?,
-        status: String?
+        status: String?,
+        isManual: Boolean
     ) {}
     override suspend fun seedMatchesIfNeeded() {}
 
-    private suspend fun fetchAndMapUpdates(): List<Match> {
+    private suspend fun fetchAndMapUpdates(currentMatches: List<Match>): List<Match> {
         val responseText = client.get(API_URL) {
             header("X-Auth-Token", API_KEY)
         }.bodyAsText()
@@ -161,16 +166,39 @@ class FootballDataMatchRepository : MatchRepository {
         
         if (response.matches.isEmpty()) return emptyList()
 
-        return allMatches.map { localMatch ->
+        // Usamos os matches atuais (com times já preenchidos) para fazer o cruzamento
+        return currentMatches.map { localMatch ->
             val apiMatch = findMatchInApi(localMatch, response.matches) ?: return@map localMatch
             
             var updated = localMatch
             
-            val hScore = apiMatch.score?.fullTime?.home
-            val aScore = apiMatch.score?.fullTime?.away
+            // CÁLCULO DO PLACAR: Ignorar Pênaltis
+            // No Football-Data, se o jogo vai para pênaltis, 'fullTime' inclui os gols da disputa.
+            // Queremos apenas o placar até o fim da prorrogação.
+            val s = apiMatch.score
+            val hScore: Int?
+            val aScore: Int?
+
+            if (s?.duration == "PENALTY_SHOOTOUT") {
+                hScore = (s.regularTime?.home ?: 0) + (s.extraTime?.home ?: 0)
+                aScore = (s.regularTime?.away ?: 0) + (s.extraTime?.away ?: 0)
+            } else {
+                hScore = s?.fullTime?.home
+                aScore = s?.fullTime?.away
+            }
             
-            if (hScore != null && aScore != null && (hScore != localMatch.homeScore || aScore != localMatch.awayScore)) {
-                updated = updated.copy(homeScore = hScore, awayScore = aScore)
+            // Se o jogo ainda não começou (TIMED/SCHEDULED), limpamos obrigatoriamente o placar
+            // Isso evita que versões antigas do app mostrem "Em Andamento" com 0x0
+            val isUpcoming = apiMatch.status == "TIMED" || apiMatch.status == "SCHEDULED"
+            
+            if (isUpcoming) {
+                if (localMatch.homeScore != null || localMatch.awayScore != null) {
+                    updated = updated.copy(homeScore = null, awayScore = null)
+                }
+            } else if (hScore != null && aScore != null) {
+                if (hScore != localMatch.homeScore || aScore != localMatch.awayScore) {
+                    updated = updated.copy(homeScore = hScore, awayScore = aScore)
+                }
             }
 
             val apiDateMillis = try {
@@ -183,8 +211,15 @@ class FootballDataMatchRepository : MatchRepository {
                 updated = updated.copy(matchDateMillis = apiDateMillis)
             }
             
-            if (apiMatch.status != localMatch.status) {
-                updated = updated.copy(status = apiMatch.status)
+            // Mapeamento de status especial para Prorrogação e Pênaltis
+            val derivedStatus = when {
+                apiMatch.status == "IN_PLAY" && apiMatch.score?.duration == "EXTRA_TIME" -> "EXTRA_TIME"
+                apiMatch.status == "IN_PLAY" && apiMatch.score?.duration == "PENALTY_SHOOTOUT" -> "PENALTIES"
+                else -> apiMatch.status
+            }
+
+            if (derivedStatus != localMatch.status) {
+                updated = updated.copy(status = derivedStatus)
             }
             
             if (localMatch.phase != Phase.GROUP_STAGE) {
@@ -214,32 +249,34 @@ class FootballDataMatchRepository : MatchRepository {
     }
 
     private fun findMatchInApi(match: Match, apiMatches: List<FdMatch>): FdMatch? {
-        if (match.phase == Phase.GROUP_STAGE) {
+        // 1. Tradutor de IDs para Mata-mata (Mapeamento Seguro para IDs originais do projeto)
+        val apiId = when (match.id) {
+            "KO-32-1" -> 537415; "KO-32-2" -> 537416; "KO-32-3" -> 537417; "KO-32-4" -> 537418
+            "KO-32-5" -> 537419; "KO-32-6" -> 537420; "KO-32-7" -> 537421; "KO-32-8" -> 537422
+            "KO-32-9" -> 537423; "KO-32-10" -> 537424; "KO-32-11" -> 537425; "KO-32-12" -> 537426
+            "KO-32-13" -> 537427; "KO-32-14" -> 537428; "KO-32-15" -> 537429; "KO-32-16" -> 537430
+            "KO-16-1" -> 537375; "KO-16-2" -> 537376; "KO-16-3" -> 537377; "KO-16-4" -> 537378
+            "KO-16-5" -> 537379; "KO-16-6" -> 537380; "KO-16-7" -> 537381; "KO-16-8" -> 537382
+            "KO-QF-1" -> 537383; "KO-QF-2" -> 537384; "KO-QF-3" -> 537385; "KO-QF-4" -> 537386
+            "KO-SF-1" -> 537387; "KO-SF-2" -> 537388; "KO-SF-3" -> 537389; "KO-FINAL" -> 537390
+            else -> match.id.removePrefix("KO-").toIntOrNull()
+        }
+
+        if (apiId != null) {
+            val found = apiMatches.find { it.id == apiId }
+            if (found != null) return found
+        }
+
+        // 2. Fallback: Encontrar por Seleções
+        if (match.homeTeamCode != "TBD" && match.awayTeamCode != "TBD") {
             return apiMatches.find { 
                 val c1 = it.homeTeam?.tla ?: NAME_TO_CODE[it.homeTeam?.name ?: ""]
                 val c2 = it.awayTeam?.tla ?: NAME_TO_CODE[it.awayTeam?.name ?: ""]
                 (c1 == match.homeTeamCode && c2 == match.awayTeamCode) ||
                 (c1 == match.awayTeamCode && c2 == match.homeTeamCode)
             }
-        } else {
-            val apiStage = when (match.phase) {
-                Phase.ROUND_OF_32 -> "LAST_32"
-                Phase.ROUND_OF_16 -> "LAST_16"
-                Phase.QUARTERFINALS -> "QUARTER_FINALS"
-                Phase.SEMIFINALS -> "SEMI_FINALS"
-                Phase.THIRD_PLACE -> "THIRD_PLACE"
-                Phase.FINAL -> "FINAL"
-                else -> ""
-            }
-            
-            val apiPhaseMatches = apiMatches.filter { it.stage == apiStage }
-            
-            // Priorizamos a ordem do Bracket (ID da API) para garantir o chaveamento correto
-            val sortedApiMatches = apiPhaseMatches.sortedBy { it.id }
-            val phaseMatchesInSeed = allMatches.filter { it.phase == match.phase }
-            
-            val indexInPhase = phaseMatchesInSeed.indexOfFirst { it.id == match.id }
-            return sortedApiMatches.getOrNull(indexInPhase)
         }
+
+        return null
     }
 }

@@ -1,8 +1,7 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,9 +23,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
@@ -38,6 +36,7 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -134,7 +133,7 @@ fun BolaoDetailContent(
     onNavigateToAllPredictions: (matchId: String) -> Unit,
     onNavigateToEdit: (bolaoId: String) -> Unit,
     onNavigateToAddParticipants: (bolaoId: String) -> Unit,
-    onAdminUpdateScore: (matchId: String, home: Int, away: Int) -> Unit,
+    onAdminUpdateScore: (matchId: String, home: Int?, away: Int?) -> Unit,
     onSyncMatches: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
@@ -175,7 +174,7 @@ fun BolaoDetailContent(
         AdminScoreDialog(
             match = matchToUpdate!!,
             onDismiss = { matchToUpdate = null },
-            onConfirm = { h: Int, a: Int ->
+            onConfirm = { h: Int?, a: Int? ->
                 onAdminUpdateScore(matchToUpdate!!.id, h, a)
                 matchToUpdate = null
             }
@@ -348,7 +347,7 @@ fun BolaoDetailContent(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            .padding(horizontal = 12.dp, vertical = 12.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         UserAvatar(
@@ -435,10 +434,15 @@ fun BolaoDetailContent(
                 ) {
                     Column(Modifier.padding(horizontal = 20.dp)) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                            verticalAlignment = Alignment.Top,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            IconButton(onClick = onNavigateBack, modifier = Modifier.size(36.dp)) {
+                            IconButton(
+                                onClick = onNavigateBack, 
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .offset(x = (-10).dp)
+                            ) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Voltar",
@@ -451,7 +455,10 @@ fun BolaoDetailContent(
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color.White,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(top = 4.dp)
+                                    .offset(x = (-8).dp)
                             )
                             if (isOwner) {
                                 IconButton(
@@ -470,7 +477,7 @@ fun BolaoDetailContent(
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.PersonAdd,
+                                        Icons.Default.Add,
                                         contentDescription = "Adicionar Participantes",
                                         tint = Neon,
                                         modifier = Modifier.size(20.dp)
@@ -579,7 +586,7 @@ fun BolaoDetailContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 // Code badge
@@ -791,16 +798,16 @@ private fun GroupStageTab(
 
     val roundMatches = remember(matches, selectedRound, showRoundSelector, todayDate, now) {
         when {
-            !showRoundSelector -> matches 
+            !showRoundSelector -> matches.sortedBy { it.matchDateMillis }
             selectedRound == 0 -> {
                 matches.filter { m ->
                     val mDate = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz).date
                     // Na aba HOJE, mantém apenas jogos de hoje (mesmo encerrados, para visualização de resultados)
                     mDate == todayDate || (now in m.matchDateMillis..(m.matchDateMillis + 3 * 3600_000L))
-                }
+                }.sortedBy { it.matchDateMillis }
             }
             // Nas Rodadas 1, 2 e 3, mostramos TODOS os jogos da rodada novamente
-            else -> matches.filter { it.groupRound() == selectedRound }
+            else -> matches.filter { it.groupRound() == selectedRound }.sortedBy { it.matchDateMillis }
         }
     }
     val byGroup = remember(roundMatches) {
@@ -965,49 +972,72 @@ private fun GroupStageTab(
                     }
                 }
 
-                byGroup.entries.sortedBy { it.key }.forEach { (group, groupMatches) ->
-                    val isExpanded = expandedGroups.contains(group)
-                    val isCompleted = groupMatches.all { predictions.containsKey(it.id) }
-                    
-                    item(key = "header-$group", contentType = "header") {
-                        GroupHeader(
-                            group = group,
-                            isExpanded = isExpanded,
-                            isCompleted = isCompleted,
-                            enabled = true, // Sempre liberado para abrir
-                            onToggle = { 
-                                if (isExpanded) expandedGroups.remove(group) else expandedGroups.add(group)
-                            }
-                        )
-                    }
-
-                    items(groupMatches, key = { it.id }, contentType = { "match" }) { match ->
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = isExpanded,
-                            enter = expandVertically(),
-                            exit = shrinkVertically()
+                if (selectedRound == 0 && roundMatches.isNotEmpty()) {
+                    items(roundMatches, key = { it.id }, contentType = { "match" }) { match ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp)
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp) // Removido horizontal = 8.dp para alinhar com abas
-                            ) {
-                                MatchCard(
-                                    match = match,
-                                    prediction = predictions[match.id],
-                                    isAdmin = isAdmin,
-                                    bolaoCreatedAt = bolaoCreatedAt,
-                                    showSocialBadge = showSocialBadge,
-                                    allMatches = matches,
-                                    onClick = { onMatchClick(match.id) },
-                                    onShowAllPredictions = { onShowAllPredictions(match) },
-                                    onAdminUpdateScore = { onAdminUpdateScore(match) }
-                                )
-                                Spacer(Modifier.height(8.dp))
-                            }
+                            MatchCard(
+                                match = match,
+                                prediction = predictions[match.id],
+                                isAdmin = isAdmin,
+                                bolaoCreatedAt = bolaoCreatedAt,
+                                showSocialBadge = showSocialBadge,
+                                allMatches = matches,
+                                onClick = { onMatchClick(match.id) },
+                                onShowAllPredictions = { onShowAllPredictions(match) },
+                                onAdminUpdateScore = { onAdminUpdateScore(match) }
+                            )
+                            Spacer(Modifier.height(8.dp))
                         }
                     }
-                    item(key = "spacer-$group", contentType = "spacer") { Spacer(Modifier.height(4.dp)) }
+                } else {
+                    byGroup.entries.sortedBy { it.key }.forEach { (group, groupMatches) ->
+                        val isExpanded = expandedGroups.contains(group)
+                        val isCompleted = groupMatches.all { predictions.containsKey(it.id) }
+                        
+                        item(key = "header-$group", contentType = "header") {
+                            GroupHeader(
+                                group = group,
+                                isExpanded = isExpanded,
+                                isCompleted = isCompleted,
+                                enabled = true, // Sempre liberado para abrir
+                                onToggle = { 
+                                    if (isExpanded) expandedGroups.remove(group) else expandedGroups.add(group)
+                                }
+                            )
+                        }
+
+                        items(groupMatches, key = { it.id }, contentType = { "match" }) { match ->
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = isExpanded,
+                                enter = expandVertically(),
+                                exit = shrinkVertically()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 8.dp) // Removido horizontal = 8.dp para alinhar com abas
+                                ) {
+                                    MatchCard(
+                                        match = match,
+                                        prediction = predictions[match.id],
+                                        isAdmin = isAdmin,
+                                        bolaoCreatedAt = bolaoCreatedAt,
+                                        showSocialBadge = showSocialBadge,
+                                        allMatches = matches,
+                                        onClick = { onMatchClick(match.id) },
+                                        onShowAllPredictions = { onShowAllPredictions(match) },
+                                        onAdminUpdateScore = { onAdminUpdateScore(match) }
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                }
+                            }
+                        }
+                        item(key = "spacer-$group", contentType = "spacer") { Spacer(Modifier.height(4.dp)) }
+                    }
                 }
             }
 
@@ -1158,9 +1188,18 @@ private fun KnockoutTab(
                         val isStrictlyToday = mDate == todayDate
                         val isEarlyTomorrow = (mDate.toEpochDays() == todayDate.toEpochDays() + 1) && mTime.hour < 4
                         isStrictlyToday || isEarlyTomorrow || (now in m.matchDateMillis..(m.matchDateMillis + 3 * 3600_000L))
-                    }
+                    }.sortedWith(
+                        compareByDescending<Match> { 
+                            val isLiveStatus = it.status in listOf("IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTIES", "LIVE")
+                            val isLocked = now >= (it.matchDateMillis - 60_000)
+                            val isNotFinished = it.status != "FINISHED"
+                            
+                            if (isLiveStatus || (isLocked && isNotFinished)) 2 else if (isNotFinished) 1 else 0
+                        }
+                        .thenBy { it.matchDateMillis }
+                    )
                 } else {
-                    matches.filter { it.phase == selectedPhase }
+                    matches.filter { it.phase == selectedPhase }.sortedBy { it.id }
                 }
             }
 
@@ -1178,29 +1217,42 @@ private fun KnockoutTab(
                     }
                 }
 
-                val pairs = phaseMatches.chunked(2)
-                items(pairs.size) { index ->
-                    val pair = pairs[index]
-                    val m1 = pair[0]
-                    val m2 = pair.getOrNull(1)
-                    
-                    KnockoutBracketPair(
-                        match1 = m1,
-                        match2 = m2,
-                        prediction1 = predictions[m1.id],
-                        prediction2 = m2?.let { predictions[it.id] },
-                        isAdmin = isAdmin,
-                        bolaoCreatedAt = bolaoCreatedAt,
-                        forceLocked = !isKnockoutUnlocked,
-                        showSocialBadge = showSocialBadge,
-                        allMatches = matches,
-                        onMatchClick = onMatchClick,
-                        onShowAllPredictions = onShowAllPredictions,
-                        onAdminUpdateScore = onAdminUpdateScore
-                    )
-                    
-                    if (index < pairs.size - 1) {
-                        Spacer(Modifier.height(16.dp))
+                if (selectedPhase == Phase.FRIENDLIES) {
+                    items(phaseMatches, key = { it.id }) { match ->
+                        MatchCard(
+                            match = match,
+                            prediction = predictions[match.id],
+                            isAdmin = isAdmin,
+                            bolaoCreatedAt = bolaoCreatedAt,
+                            forceLocked = !isKnockoutUnlocked,
+                            showSocialBadge = showSocialBadge,
+                            allMatches = matches,
+                            onClick = { onMatchClick(match.id) },
+                            onShowAllPredictions = { onShowAllPredictions(match) },
+                            onAdminUpdateScore = { onAdminUpdateScore(match) }
+                        )
+                    }
+                } else {
+                    val pairs = phaseMatches.chunked(2)
+                    items(pairs.size) { index ->
+                        val pair = pairs[index]
+                        val m1 = pair[0]
+                        val m2 = pair.getOrNull(1)
+
+                        KnockoutBracketPair(
+                            match1 = m1,
+                            match2 = m2,
+                            prediction1 = predictions[m1.id],
+                            prediction2 = m2?.let { predictions[it.id] },
+                            isAdmin = isAdmin,
+                            bolaoCreatedAt = bolaoCreatedAt,
+                            forceLocked = !isKnockoutUnlocked,
+                            showSocialBadge = showSocialBadge,
+                            allMatches = matches,
+                            onMatchClick = onMatchClick,
+                            onShowAllPredictions = onShowAllPredictions,
+                            onAdminUpdateScore = onAdminUpdateScore
+                        )
                     }
                 }
             }
@@ -1611,6 +1663,37 @@ private fun formatMatchDate(millis: Long): String {
 }
 
 @Composable
+private fun TeamNameText(
+    name: String,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start
+) {
+    var fontSize by remember(name) { mutableStateOf(13.sp) }
+    var readyToDraw by remember(name) { mutableStateOf(false) }
+
+    Text(
+        text = name,
+        modifier = modifier.drawWithContent {
+            if (readyToDraw) drawContent()
+        },
+        fontSize = fontSize,
+        fontWeight = FontWeight.SemiBold,
+        color = Color.White,
+        maxLines = 2,
+        lineHeight = if (fontSize < 13.sp) (fontSize.value + 2).sp else 16.sp,
+        textAlign = textAlign,
+        softWrap = true,
+        onTextLayout = { result ->
+            if (result.hasVisualOverflow && fontSize > 9.sp) {
+                fontSize = (fontSize.value - 0.5f).sp
+            } else {
+                readyToDraw = true
+            }
+        }
+    )
+}
+
+@Composable
 fun MatchCard(
     match: Match,
     prediction: Prediction?,
@@ -1636,9 +1719,10 @@ fun MatchCard(
         resolveDisplayName(match.awayTeam, match.awayTeamFlag, allMatches)
     }
 
-    // Agora usamos o status real vindo da API
-    val isLive = match.status == "IN_PLAY"
+    // Agora usamos o status real vindo da API + verificação de tempo para garantir o destaque
     val isActuallyFinished = match.status == "FINISHED" || (isFinished && now > (matchStart + 7200_000L))
+    val isLive = (match.status in listOf("IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTIES", "LIVE")) || 
+                 (now >= (matchStart - 60_000) && !isActuallyFinished)
     
     // Novo: Um jogo "fantasma" é aquele que aconteceu antes do bolão ser criado.
     // Ninguém poderia ter palpitado nele, então ele deve ser travado.
@@ -1649,7 +1733,6 @@ fun MatchCard(
     val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isGhostMatch && !isTbd
 
     val borderColor = when {
-        isLive -> GlassBorder
         isActuallyFinished && hasPrediction -> {
             val hReal = match.homeScore ?: 0
             val aReal = match.awayScore ?: 0
@@ -1675,15 +1758,24 @@ fun MatchCard(
     val isExpired = now >= (match.matchDateMillis - 60_000) || isFinished
     val isLocked = isExpired || forceLocked || isGhostMatch || isTbd
 
+    val cardBg = if (isLive) {
+        Brush.verticalGradient(
+            colors = listOf(NavyElevated, DeepNavy)
+        )
+    } else {
+        null
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = NavyElevated,
+        color = if (isLive) Color.Transparent else NavyElevated,
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isLive) Neon.copy(alpha = 0.5f) else borderColor)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .then(if (cardBg != null) Modifier.background(cardBg) else Modifier)
                 .clickable(
                     enabled = when {
                         isGhostMatch -> isAdmin 
@@ -1719,7 +1811,7 @@ fun MatchCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
-                            Icons.Default.Visibility,
+                            Icons.Default.Check,
                             contentDescription = null,
                             tint = OrangeNeon,
                             modifier = Modifier.size(12.dp)
@@ -1808,13 +1900,9 @@ fun MatchCard(
                             color = Color.White.copy(alpha = 0.9f)
                         )
                         if (homeDisplayName.isNotEmpty()) {
-                            Text(
-                                homeDisplayName,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.White,
-                                maxLines = 2,
-                                lineHeight = 16.sp
+                            TeamNameText(
+                                name = homeDisplayName,
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -1847,7 +1935,7 @@ fun MatchCard(
                                         if (isExactMatch) Modifier.border(2.dp, Neon, RoundedCornerShape(12.dp))
                                         else Modifier
                                     )
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    .padding(horizontal = 12.dp, vertical = 12.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1877,13 +1965,9 @@ fun MatchCard(
                         horizontalArrangement = if (awayDisplayName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(8.dp, Alignment.End)
                     ) {
                         if (awayDisplayName.isNotEmpty()) {
-                            Text(
-                                awayDisplayName, 
-                                fontSize = 13.sp, 
-                                fontWeight = FontWeight.SemiBold, 
-                                color = Color.White, 
-                                maxLines = 2, 
-                                lineHeight = 16.sp,
+                            TeamNameText(
+                                name = awayDisplayName,
+                                modifier = Modifier.weight(1f),
                                 textAlign = TextAlign.End
                             )
                         }
@@ -1917,13 +2001,51 @@ fun MatchCard(
                         if (showEmBreve) {
                             Text(text = "EM BREVE VOCÊ PODERÁ PALPITAR", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Neon.copy(alpha = 0.6f), letterSpacing = 0.5.sp, modifier = Modifier.padding(top = 8.dp))
                         } else {
-                            val statusText = if (isActuallyFinished) "JOGO ENCERRADO" else "JOGO EM ANDAMENTO"
+                            val statusText = when {
+                                isActuallyFinished -> "JOGO ENCERRADO"
+                                match.status == "EXTRA_TIME" -> "PRORROGAÇÃO"
+                                match.status == "PENALTIES" -> "PÊNALTIS"
+                                match.status == "PAUSED" -> "INTERVALO"
+                                else -> "JOGO EM ANDAMENTO"
+                            }
                             val accentColor = when {
                                 isActuallyFinished -> Color.White
                                 isLive -> Neon // Placar real em andamento em verde
                                 else -> Neon
                             }
-                            Text(text = statusText, fontSize = 9.sp, fontWeight = FontWeight.Black, color = accentColor.copy(alpha = 0.7f), letterSpacing = 0.8.sp, modifier = Modifier.padding(top = 4.dp))
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                if (isLive) {
+                                    val infiniteTransition = rememberInfiniteTransition()
+                                    val alpha by infiniteTransition.animateFloat(
+                                        initialValue = 0.3f,
+                                        targetValue = 1f,
+                                        animationSpec = infiniteRepeatable(
+                                            animation = tween(800, easing = LinearEasing),
+                                            repeatMode = RepeatMode.Reverse
+                                        )
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(Neon.copy(alpha = alpha))
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                }
+                                Text(
+                                    text = statusText,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = accentColor.copy(alpha = 0.7f),
+                                    letterSpacing = 0.8.sp
+                                )
+                            }
+
                             Box(
                                 modifier = Modifier.padding(top = 2.dp).clip(RoundedCornerShape(6.dp)).background(accentColor.copy(alpha = 0.08f))
                                     .then(if (isAdmin) Modifier.clickable { onAdminUpdateScore() } else Modifier)
@@ -1948,7 +2070,7 @@ fun MatchCard(
 fun AdminScoreDialog(
     match: Match,
     onDismiss: () -> Unit,
-    onConfirm: (home: Int, away: Int) -> Unit
+    onConfirm: (home: Int?, away: Int?) -> Unit
 ) {
     var homeStr by remember { mutableStateOf(match.homeScore?.toString() ?: "0") }
     var awayStr by remember { mutableStateOf(match.awayScore?.toString() ?: "0") }
@@ -1996,8 +2118,8 @@ fun AdminScoreDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val h = homeStr.toIntOrNull() ?: 0
-                    val a = awayStr.toIntOrNull() ?: 0
+                    val h = homeStr.toIntOrNull()
+                    val a = awayStr.toIntOrNull()
                     onConfirm(h, a)
                 }
             ) {

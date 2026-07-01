@@ -68,7 +68,7 @@ kotlin {
             // Koin
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
-            //implementation(libs.koin.compose.viewmodel)
+            implementation(libs.koin.compose.viewmodel)
             // Coroutines
             implementation(libs.kotlinx.coroutines.core)
             // Serialization
@@ -81,11 +81,8 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.json)
-            // Material Icons (shorthand do plugin CMP)
-            // The shorthand `compose.materialIconsExtended` is deprecated and
-            // pinned to an old version; declare the artifact explicitly so the
-            // build script doesn't treat the deprecation as an error.
-            implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
+            // Material Icons
+            implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

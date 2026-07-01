@@ -8,7 +8,7 @@ interface MatchRepository {
     fun getMatches(): Flow<List<Match>>
     fun getMatchesByPhase(phase: Phase): Flow<List<Match>>
     suspend fun getMatch(matchId: String): Match
-    suspend fun updateMatchScore(matchId: String, homeScore: Int, awayScore: Int)
+    suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean = true)
     suspend fun updateMatchTeams(
         matchId: String,
         homeTeam: String,
@@ -18,7 +18,8 @@ interface MatchRepository {
         awayTeamCode: String,
         awayTeamFlag: String,
         dateMillis: Long? = null,
-        status: String? = null
+        status: String? = null,
+        isManual: Boolean = true
     )
     suspend fun seedMatchesIfNeeded()
 }

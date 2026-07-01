@@ -13,8 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -434,7 +433,7 @@ fun EditBolaoScreen(
                             onClick = { onNavigateToAddParticipants(bolaoId) },
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.PersonAdd, null, modifier = Modifier.size(16.dp), tint = Neon)
+                            Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp), tint = Neon)
                             Spacer(Modifier.width(4.dp))
                             Text("Adicionar", color = Neon, fontSize = 13.sp)
                         }
@@ -484,7 +483,7 @@ fun EditBolaoScreen(
                                 
                                 if (!isOwner && viewModel.currentUserId == uiState.bolao?.ownerId) {
                                     IconButton(onClick = { viewModel.removeParticipant(participant.id) }) {
-                                        Icon(Icons.Default.RemoveCircleOutline, "Remover", tint = ErrorRed.copy(alpha = 0.7f))
+                                        Icon(Icons.Default.Delete, "Remover", tint = ErrorRed.copy(alpha = 0.7f))
                                     }
                                 }
                             }

@@ -138,51 +138,55 @@ private val groupStageMatches: List<Match> = listOf(
 
 // ──────────────────────────── MATA-MATA ──────────────────────────────────────
 
-private fun k(id: String, home: String, away: String, phase: Phase, offset: Int, hourBrt: Int, min: Int = 0) =
+private fun k(id: String, home: Team, away: Team, phase: Phase, offset: Int, hourBrt: Int, min: Int = 0) =
+    match("KO-$id", home, away, day(offset, hourBrt, min), phase, phase.label)
+
+private fun ktbd(id: String, home: String, away: String, phase: Phase, offset: Int, hourBrt: Int, min: Int = 0) =
     match("KO-$id", Team(home, "TBD", "🏳️"), Team(away, "TBD", "🏳️"), day(offset, hourBrt, min), phase, phase.label)
 
 val knockoutMatches = listOf(
-    // 16-avos de Final (Ordenado pelo Chaveamento FIFA - Bracket Order)
-    k("32-1",  "1º Grupo E", "3º Gr. A/B/C", Phase.ROUND_OF_32, 18, 20, 30), // 29/06 20:30 (GER)
-    k("32-2",  "1º Grupo I", "3º Gr. D/G/J", Phase.ROUND_OF_32, 19, 21), // 30/06 21:00 (FRA)
-    k("32-3",  "1º Grupo A", "3º Gr. C/E/F", Phase.ROUND_OF_32, 17, 19), // 28/06 19:00 (RSA)
-    k("32-4",  "1º Grupo F", "2º Grupo C",   Phase.ROUND_OF_32, 20, 1), // 30/06 01:00 (NED)
-    k("32-5",  "1º Grupo K", "3º Gr. I/L",   Phase.ROUND_OF_32, 22, 23), // 02/07 23:00 (POR)
-    k("32-6",  "1º Grupo H", "2º Grupo J",   Phase.ROUND_OF_32, 21, 19), // 02/07 19:00 (ESP)
-    k("32-7",  "1º Grupo D", "3º Gr. B/E/F", Phase.ROUND_OF_32, 22, 0), // 02/07 00:00 (USA)
-    k("32-8",  "1º Grupo G", "3º Gr. A/E/H", Phase.ROUND_OF_32, 20, 20), // 01/07 20:00 (BEL)
-    k("32-9",  "1º Grupo C", "3º Gr. A/B/F", Phase.ROUND_OF_32, 18, 17), // 29/06 17:00 (BRA)
-    k("32-10", "1º Grupo B", "3º Gr. A/C/D", Phase.ROUND_OF_32, 19, 17), // 30/06 17:00 (CIV)
-    k("32-11", "2º Grupo E", "2º Grupo I",   Phase.ROUND_OF_32, 21, 1), // 01/07 01:00 (MEX)
-    k("32-12", "1º Grupo J", "2º Grupo L",   Phase.ROUND_OF_32, 20, 16), // 01/07 16:00 (ENG)
-    k("32-13", "1º Grupo L", "3º Gr. G/H/K", Phase.ROUND_OF_32, 22, 22), // 03/07 22:00 (ARG)
-    k("32-14", "2º Grupo G", "2º Grupo H",   Phase.ROUND_OF_32, 22, 18), // 03/07 18:00 (AUS)
-    k("32-15", "2º Grupo A", "2º Grupo B",   Phase.ROUND_OF_32, 23, 3), // 03/07 03:00 (SUI)
-    k("32-16", "2º Grupo I", "2º Grupo K",   Phase.ROUND_OF_32, 24, 1, 30), // 04/07 01:30 (COL)
+    // 16-avos de Final (Round of 32)
+    k("32-1", GER, PAR, Phase.ROUND_OF_32, 18, 17, 30),
+    k("32-2", FRA, SWE, Phase.ROUND_OF_32, 19, 18, 0),
+    k("32-3", RSA, CAN, Phase.ROUND_OF_32, 17, 16, 0),
+    k("32-4", NED, MAR, Phase.ROUND_OF_32, 18, 22, 0),
+    k("32-5", POR, CRO, Phase.ROUND_OF_32, 21, 20, 0),
+    k("32-6", ESP, AUT, Phase.ROUND_OF_32, 21, 16, 0),
+    k("32-7", USA, BIH, Phase.ROUND_OF_32, 20, 21, 0),
+    k("32-8", BEL, SEN, Phase.ROUND_OF_32, 20, 17, 0),
+    k("32-9", BRA, JPN, Phase.ROUND_OF_32, 18, 14, 0),
+    k("32-10", CIV, NOR, Phase.ROUND_OF_32, 19, 14, 0),
+    k("32-11", MEX, ECU, Phase.ROUND_OF_32, 19, 22, 0),
+    k("32-12", ENG, COD, Phase.ROUND_OF_32, 20, 13, 0),
+    k("32-13", ARG, CPV, Phase.ROUND_OF_32, 22, 19, 0),
+    k("32-14", AUS, EGY, Phase.ROUND_OF_32, 22, 15, 0),
+    k("32-15", SUI, ALG, Phase.ROUND_OF_32, 21, 21, 0),
+    k("32-16", COL, GHA, Phase.ROUND_OF_32, 22, 22, 30),
 
-    // Oitavas de Final
-    k("16-1", "Venc. J32-1",  "Venc. J32-2",  Phase.ROUND_OF_16, 23, 20), 
-    k("16-2", "Venc. J32-3",  "Venc. J32-4",  Phase.ROUND_OF_16, 23, 15),
-    k("16-3", "Venc. J32-5",  "Venc. J32-6",  Phase.ROUND_OF_16, 24, 19), 
-    k("16-4", "Venc. J32-7",  "Venc. J32-8",  Phase.ROUND_OF_16, 24, 21),
-    k("16-5", "Venc. J32-9",  "Venc. J32-10", Phase.ROUND_OF_16, 25, 17), 
-    k("16-6", "Venc. J32-11", "Venc. J32-12", Phase.ROUND_OF_16, 25, 20),
-    k("16-7", "Venc. J32-13", "Venc. J32-14", Phase.ROUND_OF_16, 26, 15), 
-    k("16-8", "Venc. J32-15", "Venc. J32-16", Phase.ROUND_OF_16, 26, 16),
+    // Oitavas de Final (Round of 16)
+    ktbd("16-1", "Venc. J32-1", "Venc. J32-2", Phase.ROUND_OF_16, 23, 18, 0), 
+    ktbd("16-2", "Venc. J32-3", "Venc. J32-4", Phase.ROUND_OF_16, 23, 14, 0),
+    ktbd("16-3", "Venc. J32-9", "Venc. J32-10", Phase.ROUND_OF_16, 24, 17, 0), 
+    ktbd("16-4", "Venc. J32-11", "Venc. J32-12", Phase.ROUND_OF_16, 24, 21, 0),
+    ktbd("16-5", "Venc. J32-7", "Venc. J32-8", Phase.ROUND_OF_16, 25, 18, 0), 
+    ktbd("16-6", "Venc. J32-5", "Venc. J32-6", Phase.ROUND_OF_16, 26, 21, 0),
+    ktbd("16-7", "Venc. J32-13", "Venc. J32-14", Phase.ROUND_OF_16, 26, 14, 0), 
+    ktbd("16-8", "Venc. J32-15", "Venc. J32-16", Phase.ROUND_OF_16, 26, 18, 0),
 
     // Quartas de Final
-    k("QF-1", "Venc. Oit. 1", "Venc. Oit. 2", Phase.QUARTERFINALS, 28, 19), 
-    k("QF-2", "Venc. Oit. 3", "Venc. Oit. 4", Phase.QUARTERFINALS, 29, 15),
-    k("QF-3", "Venc. Oit. 5", "Venc. Oit. 6", Phase.QUARTERFINALS, 30, 20), 
-    k("QF-4", "Venc. Oit. 7", "Venc. Oit. 8", Phase.QUARTERFINALS, 30, 23),
+    ktbd("QF-1", "Venc. Oit. 1", "Venc. Oit. 2", Phase.QUARTERFINALS, 28, 19, 0), 
+    ktbd("QF-2", "Venc. Oit. 3", "Venc. Oit. 4", Phase.QUARTERFINALS, 29, 15, 0),
+    ktbd("QF-3", "Venc. Oit. 5", "Venc. Oit. 6", Phase.QUARTERFINALS, 30, 20, 0), 
+    ktbd("QF-4", "Venc. Oit. 7", "Venc. Oit. 8", Phase.QUARTERFINALS, 30, 23, 0),
 
     // Semifinais
-    k("SF-1", "Venc. QF 1", "Venc. QF 2", Phase.SEMIFINALS, 33, 17), 
-    k("SF-2", "Venc. QF 3", "Venc. QF 4", Phase.SEMIFINALS, 34, 18),
+    ktbd("SF-1", "Venc. QF 1", "Venc. QF 2", Phase.SEMIFINALS, 33, 17, 0), 
+    ktbd("SF-2", "Venc. QF 3", "Venc. QF 4", Phase.SEMIFINALS, 34, 18, 0),
 
     // 3º Lugar e Final
-    k("3RD",   "Perd. Semi 1", "Perd. Semi 2", Phase.THIRD_PLACE, 37, 20),
-    k("FINAL", "Venc. Semi 1", "Venc. Semi 2", Phase.FINAL, 38, 18)
+    ktbd("SF-3", "Perd. SF 1", "Perd. SF 2", Phase.THIRD_PLACE, 37, 20, 0),
+    ktbd("FINAL", "Venc. SF 1", "Venc. SF 2", Phase.FINAL, 38, 18, 0)
 )
+
 
 val allMatches: List<Match> = groupStageMatches + knockoutMatches
