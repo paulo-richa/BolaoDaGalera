@@ -15,31 +15,33 @@ fun resolveDisplayName(name: String, flag: String, allMatches: List<Match>): Pai
         else -> return name to flag
     }
 
-    val m = allMatches.find { it.id == targetId } ?: return name to flag
+    val m = allMatches.find { it.id == targetId }
     
+    // Se não encontrou no banco, tenta buscar no MatchSeedData como fallback
+    val matchSource = m ?: com.lpstudio.bolaodagalera.data.seed.allMatches.find { it.id == targetId }
+    
+    if (matchSource == null) return name to flag
+
     // Se o jogo de origem já terminou, mostramos o vencedor
-    if (m.isFinished) {
-        val hScore = m.homeScore ?: 0
-        val aScore = m.awayScore ?: 0
+    if (matchSource.isFinished) {
+        val hScore = matchSource.homeScore ?: 0
+        val aScore = matchSource.awayScore ?: 0
         return if (hScore > aScore) {
-            m.homeTeam to m.homeTeamFlag
+            matchSource.homeTeam to matchSource.homeTeamFlag
         } else if (aScore > hScore) {
-            m.awayTeam to m.awayTeamFlag
+            matchSource.awayTeam to matchSource.awayTeamFlag
         } else {
-            // Empate no tempo normal (Mata-mata precisa de um vencedor)
-            // Como o DTO não tem campo de vencedor de pênaltis, mantemos o "ou" ou o nome original
             name to flag
         }
     }
 
     // Se o time de origem NÃO for TBD, podemos mostrar as bandeiras sem o nome
-    if (m.homeTeamCode != "TBD" && m.awayTeamCode != "TBD") {
-        val newFlag = if (m.homeTeamFlag != "🏳️" && m.awayTeamFlag != "🏳️") {
-            "${m.homeTeamFlag} ou ${m.awayTeamFlag}"
+    if (matchSource.homeTeamCode != "TBD" && matchSource.awayTeamCode != "TBD") {
+        val newFlag = if (matchSource.homeTeamFlag != "🏳️" && matchSource.awayTeamFlag != "🏳️") {
+            "${matchSource.homeTeamFlag} ou ${matchSource.awayTeamFlag}"
         } else {
             flag
         }
-        // Retorna nome vazio para indicar que apenas as bandeiras devem ser exibidas centralizadas
         return "" to newFlag
     }
     
