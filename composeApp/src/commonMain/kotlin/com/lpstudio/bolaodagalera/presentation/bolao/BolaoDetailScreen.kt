@@ -1199,7 +1199,11 @@ private fun KnockoutTab(
                         .thenBy { it.matchDateMillis }
                     )
                 } else {
-                    matches.filter { it.phase == selectedPhase }.sortedBy { it.id }
+                    matches.filter { it.phase == selectedPhase }.sortedBy { m ->
+                        // Sort numérico pelo sufixo do ID para evitar ordem lexicográfica (1, 10, 2...)
+                        // Isso garante a ordem 1, 2, 3, ..., 16 para as 16-avos e demais fases
+                        m.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
+                    }
                 }
             }
 
