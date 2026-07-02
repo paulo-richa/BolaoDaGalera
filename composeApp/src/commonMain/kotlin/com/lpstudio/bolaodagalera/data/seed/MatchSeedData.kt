@@ -156,36 +156,36 @@ val knockoutMatches = listOf(
     k("32-8", BEL, SEN, Phase.ROUND_OF_32, 20, 17, 0),
     k("32-9", BRA, JPN, Phase.ROUND_OF_32, 18, 14, 0),
     k("32-10", CIV, NOR, Phase.ROUND_OF_32, 19, 14, 0),
-    k("32-11", MEX, ECU, Phase.ROUND_OF_32, 19, 22, 0),
+    k("32-11", MEX, ECU, Phase.ROUND_OF_32, 19, 23, 0),
     k("32-12", ENG, COD, Phase.ROUND_OF_32, 20, 13, 0),
     k("32-13", ARG, CPV, Phase.ROUND_OF_32, 22, 19, 0),
     k("32-14", AUS, EGY, Phase.ROUND_OF_32, 22, 15, 0),
-    k("32-15", SUI, ALG, Phase.ROUND_OF_32, 21, 21, 0),
+    k("32-15", SUI, ALG, Phase.ROUND_OF_32, 22, 0, 0),
     k("32-16", COL, GHA, Phase.ROUND_OF_32, 22, 22, 30),
 
-    // Oitavas de Final (Round of 16) - Sequencial 1-2, 3-4, 5-6...
-    ktbd("16-1", "Venc. J32-1", "Venc. J32-2", Phase.ROUND_OF_16, 23, 14, 0), 
-    ktbd("16-2", "Venc. J32-3", "Venc. J32-4", Phase.ROUND_OF_16, 23, 18, 0),
-    ktbd("16-3", "Venc. J32-5", "Venc. J32-6", Phase.ROUND_OF_16, 24, 17, 0), 
-    ktbd("16-4", "Venc. J32-7", "Venc. J32-8", Phase.ROUND_OF_16, 24, 21, 0),
-    ktbd("16-5", "Venc. J32-9", "Venc. J32-10", Phase.ROUND_OF_16, 25, 18, 0), 
-    ktbd("16-6", "Venc. J32-11", "Venc. J32-12", Phase.ROUND_OF_16, 26, 21, 0),
-    ktbd("16-7", "Venc. J32-13", "Venc. J32-14", Phase.ROUND_OF_16, 26, 14, 0), 
-    ktbd("16-8", "Venc. J32-15", "Venc. J32-16", Phase.ROUND_OF_16, 26, 18, 0),
+    // Oitavas de Final (Round of 16)
+    ktbd("16-1", "Venc. J32-1", "Venc. J32-2", Phase.ROUND_OF_16, 23, 18, 0), 
+    ktbd("16-2", "Venc. J32-3", "Venc. J32-4", Phase.ROUND_OF_16, 23, 14, 0),
+    ktbd("16-3", "Venc. J32-5", "Venc. J32-6", Phase.ROUND_OF_16, 25, 16, 0), 
+    ktbd("16-4", "Venc. J32-7", "Venc. J32-8", Phase.ROUND_OF_16, 25, 21, 0),
+    ktbd("16-5", "Venc. J32-9", "Venc. J32-10", Phase.ROUND_OF_16, 24, 17, 0), 
+    ktbd("16-6", "Venc. J32-11", "Venc. J32-12", Phase.ROUND_OF_16, 24, 21, 0),
+    ktbd("16-7", "Venc. J32-13", "Venc. J32-14", Phase.ROUND_OF_16, 26, 13, 0), 
+    ktbd("16-8", "Venc. J32-15", "Venc. J32-16", Phase.ROUND_OF_16, 26, 17, 0),
 
     // Quartas de Final
-    ktbd("QF-1", "Venc. Oit. 1", "Venc. Oit. 2", Phase.QUARTERFINALS, 28, 19, 0), 
-    ktbd("QF-2", "Venc. Oit. 3", "Venc. Oit. 4", Phase.QUARTERFINALS, 29, 15, 0),
-    ktbd("QF-3", "Venc. Oit. 5", "Venc. Oit. 6", Phase.QUARTERFINALS, 30, 20, 0), 
-    ktbd("QF-4", "Venc. Oit. 7", "Venc. Oit. 8", Phase.QUARTERFINALS, 30, 23, 0),
+    ktbd("QF-1", "Venc. Oit. 1", "Venc. Oit. 2", Phase.QUARTERFINALS, 28, 17, 0), 
+    ktbd("QF-2", "Venc. Oit. 3", "Venc. Oit. 4", Phase.QUARTERFINALS, 29, 16, 0),
+    ktbd("QF-3", "Venc. Oit. 5", "Venc. Oit. 6", Phase.QUARTERFINALS, 30, 18, 0), 
+    ktbd("QF-4", "Venc. Oit. 7", "Venc. Oit. 8", Phase.QUARTERFINALS, 30, 22, 0),
 
     // Semifinais
-    ktbd("SF-1", "Venc. QF 1", "Venc. QF 2", Phase.SEMIFINALS, 33, 17, 0), 
-    ktbd("SF-2", "Venc. QF 3", "Venc. QF 4", Phase.SEMIFINALS, 34, 18, 0),
+    ktbd("SF-1", "Venc. QF 1", "Venc. QF 2", Phase.SEMIFINALS, 33, 16, 0), 
+    ktbd("SF-2", "Venc. QF 3", "Venc. QF 4", Phase.SEMIFINALS, 34, 16, 0),
 
     // 3º Lugar e Final
-    ktbd("SF-3", "Perd. SF 1", "Perd. SF 2", Phase.THIRD_PLACE, 37, 20, 0),
-    ktbd("FINAL", "Venc. SF 1", "Venc. SF 2", Phase.FINAL, 38, 18, 0)
+    ktbd("SF-3", "Perd. SF 1", "Perd. SF 2", Phase.THIRD_PLACE, 37, 18, 0),
+    ktbd("FINAL", "Venc. SF 1", "Venc. SF 2", Phase.FINAL, 38, 16, 0)
 )
 
 

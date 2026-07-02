@@ -1956,7 +1956,7 @@ fun MatchCard(
                     ) {
                         Text(
                             text = homeAnnotatedFlag, 
-                            fontSize = if (homeDisplayFlag.contains(" ou ")) 18.sp else 26.sp,
+                            fontSize = 26.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White.copy(alpha = 0.9f)
                         )
@@ -2034,7 +2034,7 @@ fun MatchCard(
                         }
                         Text(
                             text = awayAnnotatedFlag,
-                            fontSize = if (awayDisplayFlag.contains(" ou ")) 18.sp else 26.sp,
+                            fontSize = 26.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White.copy(alpha = 0.9f)
                         )
