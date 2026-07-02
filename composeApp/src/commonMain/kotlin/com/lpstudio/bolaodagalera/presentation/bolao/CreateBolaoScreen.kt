@@ -280,7 +280,7 @@ fun CreateBolaoScreen(
                     )
                     OutlinedButton(
                         onClick = {
-                            val inviteUrl = "https://bolaodagalera.app/invite?code=${bolao.code}"
+                            val inviteUrl = "https://bolaodagalera-bb002.web.app/invite?code=${bolao.code}"
                             launcherProvider.shareText("Entre no meu bolão '${bolao.name}'! 🏆\n\nLink: $inviteUrl\n\nCódigo: ${bolao.code}")
                         },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -737,6 +737,9 @@ fun CreateBolaoScreen(
                 )
 
                 Spacer(Modifier.height(32.dp))
+                if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
+                    Spacer(Modifier.height(100.dp))
+                }
             }
         }
     }

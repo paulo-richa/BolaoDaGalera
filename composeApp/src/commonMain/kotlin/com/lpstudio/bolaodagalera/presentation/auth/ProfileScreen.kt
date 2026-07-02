@@ -39,6 +39,12 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsState()
     val launcherProvider = rememberLauncherProvider()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollState = rememberScrollState()
+    val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+
+    LaunchedEffect(keyboardHeight) {
+        // Removido scroll automático para o final em formulários longos
+    }
     
     var name by remember { mutableStateOf("") }
     var nickname by remember { mutableStateOf("") }
@@ -177,7 +183,8 @@ fun ProfileScreen(
                             Icon(Icons.AutoMirrored.Filled.ExitToApp, "Sair", tint = ErrorRed)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = WindowInsets(top = 0.dp)
                 )
             }
         ) { padding ->
@@ -186,10 +193,11 @@ fun ProfileScreen(
                     .fillMaxSize()
                     .padding(padding)
                     .padding(horizontal = 24.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(Modifier.height(10.dp)) // Reduzido de 20dp para subir mais o header
+                Spacer(Modifier.height(24.dp))
+                // Spacer(Modifier.height(10.dp)) // Removido para subir o header ao máximo
 
                 // Avatar large
                 UserAvatar(
@@ -279,7 +287,7 @@ fun ProfileScreen(
                         icon = Icons.Default.Share,
                         title = "Convidar Amigos para o App",
                         onClick = { 
-                            launcherProvider.shareText("Vem jogar o Bolão da Galera comigo! ⚽ Baixe agora e crie seu bolão.")
+                            launcherProvider.shareText("Vem jogar o Bolão da Galera comigo! ⚽ Baixe agora e crie seu bolão.\n\nDisponível na Google Play: https://play.google.com/store/apps/details?id=com.lpstudio.bolaodagalera")
                         }
                     )
                     ProfileOptionItem(
@@ -302,6 +310,11 @@ fun ProfileScreen(
                     fontSize = 12.sp,
                     color = TextSubtle
                 )
+                
+                Spacer(Modifier.height(10.dp))
+                if (keyboardHeight > 0.dp) {
+                    Spacer(Modifier.height(300.dp))
+                }
                 
                 Spacer(Modifier.height(100.dp))
             }

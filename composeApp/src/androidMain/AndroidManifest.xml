@@ -22,12 +22,32 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep Link para convites de bolão (Usando domínio gratuito do Firebase) -->
+            <!-- Filtro para o domínio oficial -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="bolaodagalera.app" android:pathPrefix="/invite" />
+                <data android:scheme="https" android:host="bolaodagalera.app" android:pathPrefix="/invite" />
+                <data android:scheme="http" android:host="www.bolaodagalera.app" android:pathPrefix="/invite" />
+                <data android:scheme="https" android:host="www.bolaodagalera.app" android:pathPrefix="/invite" />
+            </intent-filter>
+
+            <!-- Filtro para o domínio Firebase (mais estável para Deep Links) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="bolaodagalera-bb002.web.app" android:pathPrefix="/invite" />
                 <data android:scheme="https" android:host="bolaodagalera-bb002.web.app" android:pathPrefix="/invite" />
+            </intent-filter>
+
+            <!-- Filtro Custom Scheme (Garantia de funcionamento) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="bolaodagalera" android:host="invite" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

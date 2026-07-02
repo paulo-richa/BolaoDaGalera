@@ -191,11 +191,28 @@ class HomeViewModel(
                     bolaoRepository.addParticipantDirectly(bolaoId, user.id)
                 }
                 
-                // Encontra todos os convites pendentes para este mesmo bolão e responde a todos
-                // Isso garante que duplicados (e-mail/ID/telefone) sumam de uma vez só
-                val relatedInvitations = currentInvitations.filter { it.bolaoId == bolaoId }
+                // Encontra TODOS os convites pendentes que este usuário tem para ESTE bolão específico
+                // (Seja convite por e-mail, por ID ou por telefone)
+                val userIdentifiers = setOf(
+                    user.id,
+                    user.email.trim().lowercase(),
+                    user.username.trim().lowercase(),
+                    user.phone.filter { it.isDigit() }
+                ).filter { it.isNotBlank() }
+
+                // Busca no banco todos os convites pendentes para este bolão que batam com os IDs do usuário
+                val allRelatedInvitations = invitationRepository.getInvitationsForUser(user.id).first() +
+                                           invitationRepository.getInvitationsForUser(user.email.trim().lowercase()).first() +
+                                           invitationRepository.getInvitationsForUser(user.username.trim().lowercase()).first() +
+                                           invitationRepository.getInvitationsForUser(user.phone.filter { it.isDigit() }).first()
+
+                val toResolve = allRelatedInvitations
+                    .filter { it.bolaoId == bolaoId && it.status == InvitationStatus.PENDING }
+                    .distinctBy { it.id }
+
+                // Resolve todos de uma vez
                 withTimeout(5000) {
-                    relatedInvitations.forEach { inv ->
+                    toResolve.forEach { inv ->
                         invitationRepository.respondToInvitation(inv.id, accept)
                     }
                 }

@@ -260,6 +260,7 @@ fun PredictionScreen(
                         }
 
                         Spacer(Modifier.height(24.dp))
+                        Spacer(Modifier.imePadding())
                     }
 
                     // ── Save button (Sticky) ──────────────────────────────────

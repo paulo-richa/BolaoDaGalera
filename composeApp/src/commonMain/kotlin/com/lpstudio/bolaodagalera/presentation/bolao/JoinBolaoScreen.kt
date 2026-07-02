@@ -42,6 +42,7 @@ import org.koin.compose.koinInject
 data class JoinBolaoUiState(
     val isLoading: Boolean = false,
     val joinedBolao: Bolao? = null,
+    val requestSent: Boolean = false,
     val error: String? = null
 )
 
@@ -55,11 +56,11 @@ class JoinBolaoViewModel(
     fun join(code: String) {
         val userId = authRepository.currentUser?.id ?: return
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null, requestSent = false) }
             try {
-                // Mudança de requestJoinBolao para joinBolao (entrada direta via código)
-                val bolao = bolaoRepository.joinBolao(code.trim().uppercase(), userId)
-                _uiState.update { it.copy(joinedBolao = bolao, isLoading = false) }
+                // Agora usamos requestJoinBolao para que o dono precise aceitar
+                val bolao = bolaoRepository.requestJoinBolao(code.trim().uppercase(), userId)
+                _uiState.update { it.copy(joinedBolao = bolao, requestSent = true, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message ?: "Código inválido.", isLoading = false) }
             }
@@ -78,8 +79,8 @@ fun JoinBolaoScreen(
     val authRepository = koinInject<AuthRepository>()
     val viewModel = remember { JoinBolaoViewModel(bolaoRepository, authRepository) }
     val uiState by viewModel.uiState.collectAsState()
-    var code by remember { mutableStateOf(initialCode) }
-    var codeTouched by remember { mutableStateOf(initialCode.isNotEmpty()) }
+    var code by remember(initialCode) { mutableStateOf(initialCode) }
+    var codeTouched by remember(initialCode) { mutableStateOf(initialCode.isNotEmpty()) }
     
     val codeError = if (codeTouched && code.length < 6) "Código deve ter 6 caracteres" else null
 
@@ -90,7 +91,27 @@ fun JoinBolaoScreen(
     }
 
     LaunchedEffect(uiState.joinedBolao) {
-        uiState.joinedBolao?.let { onJoined(it.id) }
+        // Removido o redirecionamento automático para o detalhe, pois agora depende da aprovação do admin
+    }
+
+    if (uiState.requestSent) {
+        AlertDialog(
+            onDismissRequest = onNavigateBack,
+            containerColor = DeepNavy,
+            title = { Text("Solicitação Enviada!", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { 
+                Text(
+                    "O dono do bolão recebeu seu convite. Aguarde a aprovação dele para começar a palpitar!",
+                    color = TextMuted
+                ) 
+            },
+            confirmButton = {
+                BolaoButton(
+                    text = "OK",
+                    onClick = onNavigateBack
+                )
+            }
+        )
     }
 
     Box(
@@ -248,6 +269,10 @@ fun JoinBolaoScreen(
                     gradient = GradientGold,
                     onClick = { viewModel.join(code) }
                 )
+
+                if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
+                    Spacer(Modifier.height(100.dp))
+                }
             }
         }
     }
