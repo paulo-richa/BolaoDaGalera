@@ -21,8 +21,16 @@
     ],
     "rewrites": [
       {
-        "source": "/.well-known/assetlinks.json",
-        "destination": "/.well-known/assetlinks.json"
+        "source": "/invite",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/invite/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
       }
     ],
     "headers": [

@@ -167,6 +167,7 @@ fun EditBolaoScreen(
     var pointsExact by remember { mutableIntStateOf(3) }
     var pointsWinner by remember { mutableIntStateOf(1) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var participantToRemove by remember { mutableStateOf<com.lpstudio.bolaodagalera.domain.model.User?>(null) }
 
     val nameError = if (name.isNotBlank() && name.trim().length < 10) "Mínimo 10 caracteres" else null
     val isFormValid = name.trim().length in 10..35
@@ -219,6 +220,28 @@ fun EditBolaoScreen(
         )
     }
 
+    participantToRemove?.let { user ->
+        AlertDialog(
+            onDismissRequest = { participantToRemove = null },
+            containerColor = NavyCard,
+            title = { Text("Remover Participante?", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text("Tem certeza que deseja remover ${user.name} deste bolão? Ele perderá todos os palpites feitos.", color = TextMuted) },
+            confirmButton = {
+                TextButton(onClick = { 
+                    viewModel.removeParticipant(user.id)
+                    participantToRemove = null
+                }) {
+                    Text("Remover", color = ErrorRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { participantToRemove = null }) {
+                    Text("Cancelar", color = TextMuted)
+                }
+            }
+        )
+    }
+
     Scaffold(
         containerColor = DeepNavy,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -238,7 +261,8 @@ fun EditBolaoScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                windowInsets = WindowInsets(top = 0.dp)
             )
         }
     ) { padding ->
@@ -256,7 +280,8 @@ fun EditBolaoScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(16.dp))
+                // Spacer(Modifier.height(8.dp)) // Removido para subir o header
 
                 // Basic Info Section
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -504,7 +529,7 @@ fun EditBolaoScreen(
                                 }
                                 
                                 if (!isOwner && viewModel.currentUserId == uiState.bolao?.ownerId) {
-                                    IconButton(onClick = { viewModel.removeParticipant(participant.id) }) {
+                                    IconButton(onClick = { participantToRemove = participant }) {
                                         Icon(Icons.Default.Delete, "Remover", tint = ErrorRed.copy(alpha = 0.7f))
                                     }
                                 }
@@ -514,6 +539,9 @@ fun EditBolaoScreen(
                 }
 
                 Spacer(Modifier.height(40.dp))
+                if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
+                    Spacer(Modifier.height(100.dp))
+                }
             }
         }
     }

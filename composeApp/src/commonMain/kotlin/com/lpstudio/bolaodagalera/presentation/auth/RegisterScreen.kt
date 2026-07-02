@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.presentation.theme.*
@@ -54,7 +55,33 @@ fun RegisterScreen(
     var passwordTouched by remember { mutableStateOf(false) }
     var confirmPasswordTouched by remember { mutableStateOf(false) }
     
+    var isGeneratingUsername by remember { mutableStateOf(false) }
+
     val focusManager = LocalFocusManager.current
+    val scrollState = rememberScrollState()
+    val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+
+    // Lógica de Geração Automática de ID
+    LaunchedEffect(name) {
+        val parts = name.trim().split(" ").filter { it.isNotBlank() }
+        if (parts.size >= 2 && !isGeneratingUsername) {
+            // Pequeno delay para não disparar a cada tecla se a pessoa digitar rápido
+            kotlinx.coroutines.delay(800)
+            isGeneratingUsername = true
+            try {
+                val generated = viewModel.generateAvailableUsername(name)
+                if (generated.isNotBlank()) {
+                    username = generated
+                    usernameTouched = true
+                }
+            } catch (e: Exception) { }
+            isGeneratingUsername = false
+        }
+    }
+
+    LaunchedEffect(keyboardHeight) {
+        // Removido scroll automático para o final, pois o formulário é longo e esconde o topo
+    }
 
     LaunchedEffect(uiState.user) { if (uiState.user != null) onRegisterSuccess() }
 
@@ -86,7 +113,7 @@ fun RegisterScreen(
         if (email.isBlank() || !email.matches(emailRegex.toRegex())) "E-mail inválido" else null
     } else null
     
-    val phoneError = if (phoneTouched) {
+    val phoneError = if (phoneTouched && phone.isNotBlank()) {
         val digits = phone.filter { it.isDigit() }
         if (digits.length < 10) "Telefone inválido (mín. 10 dígitos)" else null
     } else null
@@ -138,9 +165,8 @@ fun RegisterScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .imePadding()
                     .padding(horizontal = 28.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -177,28 +203,35 @@ fun RegisterScreen(
                                 if (it.length <= 50) name = it
                                 nameTouched = true
                             },
-                            label = "Nome Completo (ex: João da Silva)",
+                            label = "Nome Completo",
                             isError = nameError != null,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Words,
+                                imeAction = ImeAction.Next
+                            ),
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         nameError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
                     }
 
-                    // Campo ID (Username)
+                    // Campo Email - Movido para baixo do nome
                     Column {
                         BolaoTextField(
-                            value = username,
+                            value = email,
                             onValueChange = { 
-                                if (it.length <= 20) username = it.filter { char -> char.isLetter() }
-                                usernameTouched = true
+                                if (it.length <= 60) email = it.lowercase().trim()
+                                emailTouched = true
                             },
-                            label = "ID (usuário único, ex: joaosilva)",
-                            isError = usernameError != null,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            label = "E-mail (ex: joaosilva@gmail.com)",
+                            isError = emailError != null,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                capitalization = KeyboardCapitalization.None,
+                                imeAction = ImeAction.Next
+                            ),
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
-                        usernameError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
+                        emailError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
                     }
 
                     // Campo Apelido
@@ -209,7 +242,7 @@ fun RegisterScreen(
                                 if (it.length <= 20) nickname = it
                                 nicknameTouched = true
                             },
-                            label = "Apelido (ex: Fofinho)",
+                            label = "Apelido (opcional, ex: Fofinho)",
                             isError = nicknameError != null,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
@@ -225,7 +258,7 @@ fun RegisterScreen(
                                 if (it.length <= 15) phone = it
                                 phoneTouched = true
                             },
-                            label = "Telefone (com DDD, ex: 11987654321)",
+                            label = "Telefone (opcional, ex: 11987654321)",
                             isError = phoneError != null,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Phone,
@@ -236,24 +269,7 @@ fun RegisterScreen(
                         phoneError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
                     }
 
-                    // Campo Email
-                    Column {
-                        BolaoTextField(
-                            value = email,
-                            onValueChange = { 
-                                if (it.length <= 60) email = it
-                                emailTouched = true
-                            },
-                            label = "E-mail (ex: joaosilva@gmail.com)",
-                            isError = emailError != null,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Email,
-                                imeAction = ImeAction.Next
-                            ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
-                        )
-                        emailError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
-                    }
+                    // Campo Email - Removido daqui pois foi movido para cima
 
                     // Campo Senha
                     Column {
@@ -312,6 +328,9 @@ fun RegisterScreen(
                 }
 
                 Spacer(Modifier.height(32.dp))
+                if (keyboardHeight > 0.dp) {
+                    Spacer(Modifier.height(300.dp))
+                }
             }
         }
     }

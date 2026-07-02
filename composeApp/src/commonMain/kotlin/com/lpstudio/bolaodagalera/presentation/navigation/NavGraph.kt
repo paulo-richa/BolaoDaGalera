@@ -72,7 +72,7 @@ fun NavGraph() {
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+            lifecycleOwner.lifecycle.addObserver(observer)
         }
     }
 
@@ -115,7 +115,7 @@ fun NavGraph() {
             MainScreen(
                 onNavigateToBolao = { bolaoId -> navController.navigate(BolaoDetail(bolaoId)) },
                 onNavigateToCreateBolao = { navController.navigate(CreateBolao) },
-                onNavigateToJoinBolao = { navController.navigate(JoinBolao) },
+                onNavigateToJoinBolao = { navController.navigate(JoinBolao()) },
                 onSignOut = { /* O LaunchedEffect acima cuidará do logout global */ }
             )
         }
@@ -144,12 +144,16 @@ fun NavGraph() {
         composable<JoinBolao>(
             deepLinks = listOf(
                 navDeepLink { uriPattern = "https://bolaodagalera.app/invite?code={code}" },
+                navDeepLink { uriPattern = "http://bolaodagalera.app/invite?code={code}" },
+                navDeepLink { uriPattern = "https://www.bolaodagalera.app/invite?code={code}" },
+                navDeepLink { uriPattern = "http://www.bolaodagalera.app/invite?code={code}" },
+                navDeepLink { uriPattern = "https://bolaodagalera-bb002.web.app/invite?code={code}" },
+                navDeepLink { uriPattern = "http://bolaodagalera-bb002.web.app/invite?code={code}" },
                 navDeepLink { uriPattern = "bolaodagalera://invite?code={code}" }
             )
         ) { backStackEntry ->
             val route = backStackEntry.toRoute<JoinBolao>()
-            // Tenta pegar o código do deep link (desativado para build KMP iOS estável por enquanto)
-            val codeFromDeepLink = ""
+            val codeFromDeepLink = route.code ?: ""
             
             JoinBolaoScreen(
                 initialCode = codeFromDeepLink,

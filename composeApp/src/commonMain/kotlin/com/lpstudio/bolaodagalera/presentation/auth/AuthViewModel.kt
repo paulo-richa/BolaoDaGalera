@@ -156,6 +156,46 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     fun clearError() = _uiState.update { it.copy(error = null, successMessage = null) }
 
+    suspend fun generateAvailableUsername(fullName: String): String {
+        val parts = fullName.trim().lowercase()
+            .replace(Regex("[^a-z\\s]"), "") // Remove acentos e símbolos se necessário, simplificado aqui
+            .split(" ")
+            .filter { it.length >= 2 }
+        
+        if (parts.size < 2) return ""
+
+        val firstName = parts[0]
+        val secondName = parts[1]
+        val lastPart = parts.last()
+
+        // 1. Primeiro + Segundo
+        var candidate = firstName + secondName
+        if (!authRepository.isUsernameInUse(candidate)) return candidate
+
+        // 2. Primeiro + Terceiro, Quarto... até o último
+        for (i in 2 until parts.size) {
+            candidate = firstName + parts[i]
+            if (!authRepository.isUsernameInUse(candidate)) return candidate
+        }
+
+        // 3. Inicial do primeiro + Segundo
+        candidate = firstName.take(1) + secondName
+        if (!authRepository.isUsernameInUse(candidate)) return candidate
+
+        // 4. Inicial do primeiro + Inicial do segundo + Último
+        if (parts.size >= 3) {
+            candidate = firstName.take(1) + secondName.take(1) + lastPart
+            if (!authRepository.isUsernameInUse(candidate)) return candidate
+        }
+
+        // 5. Aleatório (Nome + Número)
+        do {
+            candidate = firstName + kotlin.random.Random.nextInt(100, 999).toString()
+        } while (authRepository.isUsernameInUse(candidate))
+        
+        return candidate
+    }
+
     private fun friendlyError(e: Exception): String {
         val msg = e.message?.lowercase() ?: ""
         println("Auth Error Debug: $msg") // Log para debug interno

@@ -55,6 +55,16 @@ fun LoginScreen(
     
     val focusManager = LocalFocusManager.current
     var visible by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+
+    LaunchedEffect(keyboardHeight) {
+        if (keyboardHeight > 0.dp) {
+            // Pequeno delay para o Compose recompor a Column com o novo Spacer no final
+            kotlinx.coroutines.delay(100)
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
 
     // Helpers de Validação
     val emailError = if (emailTouched) {
@@ -77,7 +87,6 @@ fun LoginScreen(
             .fillMaxSize()
             .background(GradientBg)
             .systemBarsPadding()
-            .windowInsetsPadding(WindowInsets.ime)
     ) {
         // Decorative glow
         Box(
@@ -99,7 +108,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 28.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top // Mudado para Top para evitar conflitos de centralização com scroll
             ) {
@@ -147,7 +156,7 @@ fun LoginScreen(
                         BolaoTextField(
                             value = email,
                             onValueChange = { 
-                                email = it 
+                                email = it.lowercase().trim()
                                 emailTouched = true
                                 if (uiState.emailExists != null) viewModel.resetEmailCheck()
                             },
@@ -156,6 +165,7 @@ fun LoginScreen(
                             isError = emailError != null,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Email,
+                                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.None,
                                 imeAction = if (uiState.emailExists == true) ImeAction.Next else ImeAction.Done
                             ),
                             keyboardActions = KeyboardActions(
@@ -274,6 +284,10 @@ fun LoginScreen(
                 }
 
                 Spacer(Modifier.height(48.dp))
+                // Cushion aumentado para 300dp para garantir folga entre campo e teclado
+                if (keyboardHeight > 0.dp) {
+                    Spacer(Modifier.height(300.dp))
+                }
             }
         }
     }

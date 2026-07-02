@@ -135,12 +135,6 @@ class FirebaseBolaoRepository : BolaoRepository {
     }
 
     override suspend fun joinBolao(code: String, userId: String): Bolao {
-        // 1. Verificação de Prazo: 4ª Rodada
-        val deadline = 1782604800000L // 28 de Junho de 2026
-        if (TimeSource.nowMillis() >= deadline) {
-            error("As inscrições para este bolão foram encerradas.")
-        }
-
         val snapshot = collection.where { "code" equalTo code.uppercase() }.get()
         if (snapshot.documents.isEmpty()) error("Bolão não encontrado com o código $code")
 
@@ -179,13 +173,6 @@ class FirebaseBolaoRepository : BolaoRepository {
     }
 
     override suspend fun requestJoinBolao(code: String, userId: String): Bolao {
-        // Verificação de Prazo: 4ª Rodada
-        // Na Copa 2026, a fase de grupos acaba dia 27/06. O mata-mata (Round 4+) inicia em 28/06.
-        val deadline = 1782604800000L // 28 de Junho de 2026
-        if (TimeSource.nowMillis() >= deadline) {
-            error("As inscrições para este bolão foram encerradas (Prazo: 3ª Rodada).")
-        }
-
         val snapshot = collection.where { "code" equalTo code.uppercase() }.get()
         if (snapshot.documents.isEmpty()) error("Bolão não encontrado com o código $code")
 

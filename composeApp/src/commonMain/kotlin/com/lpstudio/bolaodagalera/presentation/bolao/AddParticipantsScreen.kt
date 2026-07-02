@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,18 +50,20 @@ fun AddParticipantsScreen(
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var showSuccessMessage by remember { mutableStateOf(false) }
+    var bolaoCode by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
-    val launcherProvider = com.lpstudio.bolaodagalera.rememberLauncherProvider()
+    val launcherProvider = rememberLauncherProvider()
     val bolaoRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.BolaoRepository>()
     val authRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.AuthRepository>()
     val invitationRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.InvitationRepository>()
     var bolaoName by remember { mutableStateOf("") }
 
-    // Carrega o nome do bolão ao iniciar
+    // Carrega o nome e código do bolão ao iniciar
     LaunchedEffect(bolaoId) {
         try {
             val bolao = bolaoRepository.getBolao(bolaoId)
             bolaoName = bolao.name
+            bolaoCode = bolao.code
         } catch (e: Exception) { }
     }
 
@@ -168,10 +171,21 @@ fun AddParticipantsScreen(
                             try {
                                 val trimmedId = identifier.trim()
                                 val inviterName = authRepository.currentUser?.name ?: "Alguém"
-                                val inviteUrl = "https://bolaodagalera.app/invite?code=${bolaoId.take(6).uppercase()}"
-                                val msg = "Entre no meu bolão da Copa 2026! 🏆\nBolão: $bolaoName\n\nLink: $inviteUrl\n\nCódigo: ${bolaoId.take(6).uppercase()}"
 
-                                // 1. Enviar convite interno
+                                // 1. Verificação de existência do usuário no banco de dados
+                                val userExists = when(detectedType) {
+                                    ParticipantInputType.EMAIL -> authRepository.isEmailInUse(trimmedId.lowercase())
+                                    ParticipantInputType.PHONE -> authRepository.isPhoneInUse(trimmedId.filter { it.isDigit() })
+                                    ParticipantInputType.USER -> authRepository.isUsernameInUse(trimmedId.lowercase())
+                                }
+
+                                if (!userExists) {
+                                    error = "Usuário não encontrado. Peça para seu amigo criar uma conta primeiro ou compartilhe o link de convite abaixo."
+                                    isLoading = false
+                                    return@launch
+                                }
+
+                                // 2. Enviar convite interno
                                 val inviteeIdentifier = when(detectedType) {
                                     ParticipantInputType.EMAIL -> trimmedId.lowercase()
                                     ParticipantInputType.PHONE -> trimmedId.filter { it.isDigit() }
@@ -179,8 +193,6 @@ fun AddParticipantsScreen(
                                 }
 
                                 try {
-                                    // Timeout curto para não prender o usuário se a rede estiver lenta
-                                    // O Firebase cuidará do envio em background se falhar agora
                                     withTimeout(3000) {
                                         invitationRepository.sendInvitation(
                                             bolaoId = bolaoId,
@@ -190,21 +202,12 @@ fun AddParticipantsScreen(
                                         )
                                     }
                                 } catch (e: Exception) {
-                                    // Ignora erro de timeout/rede no convite interno e segue para o externo
-                                    // O Firebase enviará quando houver conexão.
                                     println("Aviso: Convite interno em cache para envio posterior (rede lenta)")
                                 }
                                 
                                 isLoading = false 
                                 showSuccessMessage = true
                                 identifier = ""
-
-                                // 2. Ação Complementar Externa (Opcional)
-                                when(detectedType) {
-                                    ParticipantInputType.EMAIL -> { /* Apenas interno, não abre app de e-mail */ }
-                                    ParticipantInputType.PHONE -> launcherProvider.sendWhatsApp(trimmedId, msg)
-                                    ParticipantInputType.USER -> { /* Apenas interno */ }
-                                }
                                 
                                 delay(3000)
                                 showSuccessMessage = false
@@ -216,7 +219,25 @@ fun AddParticipantsScreen(
                     }
                 )
 
-                Spacer(Modifier.height(40.dp))
+                Spacer(Modifier.height(16.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        val webUrl = "https://bolaodagalera-bb002.web.app/invite?code=$bolaoCode"
+                        val appUrl = "bolaodagalera://invite?code=$bolaoCode"
+                        launcherProvider.shareText("Entre no meu bolão '$bolaoName'! 🏆\n\nLink: $webUrl\n\nSe o link não abrir o app automaticamente, use este: $appUrl\n\nCódigo: $bolaoCode")
+                    },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Neon)
+                ) {
+                    Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Compartilhar Link de Convite", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                }
+
+                Spacer(Modifier.height(32.dp))
                 
                 // Info section
                 Column(
@@ -237,12 +258,17 @@ fun AddParticipantsScreen(
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Enviaremos uma notificação ou e-mail para o usuário convidado. Assim que ele aceitar, ele aparecerá automaticamente na lista de participantes.",
+                        "Adicione seus amigos diretamente via E-mail, Telefone ou ID do app. Eles receberão um convite instantâneo na tela inicial deles. Alternativamente, compartilhe o link do bolão para que eles solicitem a entrada.",
                         fontSize = 13.sp,
                         color = TextMuted,
                         textAlign = TextAlign.Center,
                         lineHeight = 20.sp
                     )
+                }
+
+                if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
+                    val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+                    Spacer(Modifier.height(keyboardHeight + 100.dp))
                 }
             }
         }

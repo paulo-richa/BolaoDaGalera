@@ -15,7 +15,7 @@ object Home
 object CreateBolao
 
 @Serializable
-object JoinBolao
+data class JoinBolao(val code: String? = null)
 
 @Serializable
 data class BolaoDetail(val bolaoId: String)

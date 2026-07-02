@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
@@ -190,19 +191,29 @@ fun BolaoDetailContent(
     }
 
     // Lógica para interceptar o botão voltar do sistema
-    val currentTabName = tabs.getOrNull(selectedTab) ?: "Grupos"
-    val isMainTab = (currentTabName == "Grupos" || currentTabName == "Jogos") && selectedRound == 0
+    val currentTabName = tabs.getOrNull(selectedTab) ?: ""
+    
+    // Identifica se estamos na visualização "HOJE" de qualquer uma das abas de jogos
+    val isAtHoje = when (currentTabName) {
+        "Grupos", "Jogos" -> selectedRound == 0
+        "Mata-Mata" -> selectedPhase == com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES
+        else -> false
+    }
+    
+    // A aba principal é sempre a primeira (pode ser Grupos, Jogos ou Mata-Mata dependendo do bolão)
+    val isFirstTab = selectedTab == 0
+    val isMainTab = isFirstTab && isAtHoje
     
     com.lpstudio.bolaodagalera.CommonBackHandler(enabled = !isMainTab) {
-        if (currentTabName != "Grupos" && currentTabName != "Jogos") {
-            // Se não estiver na aba de Grupos/Jogos, volta para ela
-            val groupsIdx = tabs.indexOfFirst { it == "Grupos" || it == "Jogos" }
-            if (groupsIdx != -1) selectedTab = groupsIdx
+        if (!isFirstTab) {
+            // Se não estiver na primeira aba (ex: está no Ranking), volta para a aba de jogos
+            selectedTab = 0
         }
         
-        // Se estiver na aba de Grupos mas não no HOJE, volta para HOJE
-        if ((currentTabName == "Grupos" || currentTabName == "Jogos") && selectedRound != 0) {
-            selectedRound = 0
+        // Em qualquer caso, reseta os filtros para garantir que a visualização seja a "HOJE"
+        if (selectedRound != 0) selectedRound = 0
+        if (selectedPhase != com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES) {
+            selectedPhase = com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES
         }
     }
 
@@ -472,8 +483,9 @@ fun BolaoDetailContent(
                                 IconButton(
                                     onClick = {
                                         uiState.bolao?.let { bolao ->
-                                            val inviteUrl = "https://bolaodagalera.app/invite?code=${bolao.code}"
-                                            launcherProvider.shareText("Entre no meu bolão '${bolao.name}'! 🏆\n\nLink: $inviteUrl\n\nCódigo: ${bolao.code}")
+                                            val webUrl = "https://bolaodagalera-bb002.web.app/invite?code=${bolao.code}"
+                                            val appUrl = "bolaodagalera://invite?code=${bolao.code}"
+                                            launcherProvider.shareText("Entre no meu bolão '${bolao.name}'! 🏆\n\nLink: $webUrl\n\nSe o link não abrir o app automaticamente, use este: $appUrl\n\nCódigo: ${bolao.code}")
                                         }
                                     }, 
                                     modifier = Modifier.size(36.dp)
@@ -485,7 +497,7 @@ fun BolaoDetailContent(
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.Add,
+                                        Icons.Default.PersonAdd,
                                         contentDescription = "Adicionar Participantes",
                                         tint = Neon,
                                         modifier = Modifier.size(20.dp)
@@ -529,8 +541,9 @@ fun BolaoDetailContent(
                                             onClick = {
                                                 showMenu = false
                                                 uiState.bolao?.let { bolao ->
-                                                    val inviteUrl = "https://bolaodagalera.app/invite?code=${bolao.code}"
-                                                    launcherProvider.shareText("Entre no meu bolão '${bolao.name}'! 🏆\n\nLink: $inviteUrl\n\nCódigo: ${bolao.code}")
+                                                    val webUrl = "https://bolaodagalera-bb002.web.app/invite?code=${bolao.code}"
+                                                    val appUrl = "bolaodagalera://invite?code=${bolao.code}"
+                                                    launcherProvider.shareText("Entre no meu bolão '${bolao.name}'! 🏆\n\nLink: $webUrl\n\nSe o link não abrir o app automaticamente, use este: $appUrl\n\nCódigo: ${bolao.code}")
                                                 }
                                             }
                                         )
@@ -2127,7 +2140,7 @@ fun AdminScoreDialog(
         onDismissRequest = onDismiss,
         title = { Text("Ajustar Placar Oficial", color = Color.White) },
         text = {
-            Column {
+            Column(modifier = Modifier.imePadding().padding(bottom = 24.dp)) {
                 Text(
                     "Defina o placar real de ${match.homeTeam} x ${match.awayTeam}",
                     fontSize = 14.sp,
