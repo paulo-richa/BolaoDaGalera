@@ -100,7 +100,7 @@ android {
         applicationId = "com.lpstudio.bolaodagalera"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 15
+        versionCode = 16
         versionName = "2.5.0"
     }
     packaging {
@@ -120,7 +120,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com" 
-                releaseNotes = "v2.5.0 (Build 15): Exibição de confrontos mata-mata com bandeiras 'ou', sombras nas abas de fase e redirecionamento automático para o Ranking final."
+                releaseNotes = "v2.5.0 (Build 16): Melhorias críticas de UX (Deep Links, Teclado, Navegação) e automação de ID no cadastro."
             }
         }
         getByName("debug") {
@@ -128,7 +128,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com"
-                releaseNotes = "v2.5.0 (Build 15): Exibição de confrontos mata-mata com bandeiras 'ou', sombras nas abas de fase e redirecionamento automático para o Ranking final."
+                releaseNotes = "v2.5.0 (Build 16): Melhorias críticas de UX (Deep Links, Teclado, Navegação) e automação de ID no cadastro."
             }
         }
     }
