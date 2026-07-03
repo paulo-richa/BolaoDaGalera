@@ -211,19 +211,28 @@ obrescrevemos.
 
     // Só atualizamos se:
     // 1. O placar for diferente do atual
-    // 2. E não for uma regressão (novo total de gols < total atual), a menos que o novo placar seja null (correção)
+    // 2. E não for uma regressão (novo total de gols < total atual),
+    //    A MENOS que o jogo tenha terminado (correção de VAR no fim) ou o placar novo seja null
     if (finalHomeScore !== matchData.homeScore || finalAwayScore !== matchData.awayScore) {
         const currentTotal = (matchData.homeScore || 0) + (matchData.awayScore || 0);
         const newTotal = (finalHomeScore || 0) + (finalAwayScore || 0);
 
-        const isProgression = matchData.homeScore === null || finalHomeScore === null || newTotal >= currentTotal;
+        // Lógica Smart-Sync:
+        // 1. Confia se o placar subiu ou manteve (Progressão normal)
+        // 2. Confia se o jogo acabou (Palavra final da API)
+        // 3. Confia se o placar novo é null (Reset para agendado)
+        // 4. Confia em "regressões" pequenas (VAR) se a diferença for de até 2 gols
+        const isProgression = newTotal >= currentTotal ||
+                             ['FINISHED', 'AWARDED'].includes(data.status) ||
+                             finalHomeScore === null ||
+                             (matchData.homeScore !== null && (currentTotal - newTotal) <= 2);
 
         if (isProgression) {
             updateObj.homeScore = finalHomeScore;
             updateObj.awayScore = finalAwayScore;
             changed = true;
         } else {
-            console.log(`⚠️ [${hCode} x ${aCode}] Ignorada regressão: ${matchData.homeScore}x${matchData.awayScore} -> ${finalHomeScore}x${finalAwayScore}`);
+            console.log(`⚠️ [${hCode} x ${aCode}] Ignorada regressão suspeita (API Glitch?): ${matchData.homeScore}x${matchData.awayScore} -> ${finalHomeScore}x${finalAwayScore}`);
         }
     }
 
