@@ -66,7 +66,7 @@ fun MatchPredictionsScreen(
     val aReal = match?.awayScore ?: 0
     val isFinished = match?.isFinished ?: false
     val matchDate = match?.matchDateMillis ?: 0L
-    val isActuallyFinished = match?.status == "FINISHED" || (isFinished && now > (matchDate + 7200_000L))
+    val isActuallyFinished = match?.status == "FINISHED" || match?.status == "PENALTIES" || match?.status == "PAUSED_PENALTIES" || (isFinished && now > (matchDate + 7200_000L))
     val hasStarted = now >= matchDate
     val isAdminViewingBeforeStart = isOwner && !hasStarted
 
