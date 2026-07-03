@@ -94,13 +94,29 @@ exports.syncScores = onSchedule({
         logger.info(hasActiveMatch ? "Jogos ativos detectados! Sincronizando a cada 1 min..." : "Iniciando carga completa de rotina (30 min)...");
 
         const response = await axios.get("https://api.football-data.org/v4/competitions/WC/matches", {
-            headers: { 'X-Auth-Token': API_KEY }
+            headers: {
+                'X-Auth-Token': API_KEY,
+                'Connection': 'keep-alive'
+            },
+            timeout: 15000 // 15 segundos de limite
         });
 
         const matches = response.data.matches || [];
 
         let updatedCount = 0;
         for (const m of matches) {
+            // Log detalhado para jogos em andamento ou próximos
+            if (m.status !== 'FINISHED' && m.status !== 'TIMED') {
+                logger.info(`API: ${m.homeTeam.name} ${m.score.fullTime?.home ?? 0}x${m.score.fullTime?.away ?? 0} ${m.awayTeam.name} (${m.status})`, {
+                    matchId: m.id,
+                    status: m.status,
+                    score: m.score,
+                    homeTeam: m.homeTeam,
+                    awayTeam: m.awayTeam,
+                    utcDate: m.utcDate
+                });
+            }
+
             const wasUpdated = await updateMatchInFirestore(m, matches);
             if (wasUpdated) updatedCount++;
         }
@@ -202,6 +218,9 @@ async function updateMatchInFirestore(apiMatch, allApiMatches) {
         if (apiMatch.status === "IN_PLAY") {
             if (apiMatch.score?.duration === "EXTRA_TIME") derivedStatus = "EXTRA_TIME";
             else if (apiMatch.score?.duration === "PENALTY_SHOOTOUT") derivedStatus = "PENALTIES";
+        } else if (apiMatch.status === "PAUSED") {
+            if (apiMatch.score?.duration === "EXTRA_TIME") derivedStatus = "PAUSED_EXTRA_TIME";
+            else if (apiMatch.score?.duration === "PENALTY_SHOOTOUT") derivedStatus = "PAUSED_PENALTIES";
         }
 
         if (derivedStatus !== matchData.status) {
@@ -276,6 +295,9 @@ async function updateKnockoutByStage(apiMatch, hCode, aCode, allApiMatches) {
         if (apiMatch.status === "IN_PLAY") {
             if (apiMatch.score?.duration === "EXTRA_TIME") derivedStatus = "EXTRA_TIME";
             else if (apiMatch.score?.duration === "PENALTY_SHOOTOUT") derivedStatus = "PENALTIES";
+        } else if (apiMatch.status === "PAUSED") {
+            if (apiMatch.score?.duration === "EXTRA_TIME") derivedStatus = "PAUSED_EXTRA_TIME";
+            else if (apiMatch.score?.duration === "PENALTY_SHOOTOUT") derivedStatus = "PAUSED_PENALTIES";
         }
 
         let updateData = {
