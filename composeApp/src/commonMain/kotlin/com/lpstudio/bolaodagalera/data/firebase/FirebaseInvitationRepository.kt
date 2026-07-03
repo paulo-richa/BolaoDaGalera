@@ -8,6 +8,7 @@ import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
@@ -48,6 +49,7 @@ class FirebaseInvitationRepository(
                     doc.data<InvitationDto>().toDomain(doc.id)
                 }
             }
+            .catch { emit(emptyList()) }
     }
 
     override suspend fun sendInvitation(
