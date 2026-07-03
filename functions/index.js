@@ -59,15 +59,26 @@ exports.syncScores = onSchedule({
     memory: "256MiB"
 }, async (event) => {
     try {
-        // 1. VERIFICAÇÃO DE ECONOMIA: Existe jogo rolando agora?
+        // 1. VERIFICAÇÃO DE ECONOMIA: Existe jogo rolando agora ou próximo?
         const matchesRef = db.collection('matches');
+        const now = Date.now();
+        const buffer = 30 * 60 * 1000; // 30 minutos de margem (pré e pós)
+        const totalWindow = 150 * 60 * 1000; // 2h30 (Tempo médio de jogo + 30min buffer pós)
+
+        // Query A: Jogos com status de "Em andamento"
         const activeMatchesSnap = await matchesRef
             .where('status', 'in', ['IN_PLAY', 'PAUSED', 'EXTRA_TIME', 'PENALTIES', 'LIVE'])
             .get();
 
-        const hasActiveMatch = !activeMatchesSnap.empty;
+        // Query B: Janela de tempo (30min antes de começar até 30min depois de tecnicamente terminar)
+        const hotWindowSnap = await matchesRef
+            .where('matchDateMillis', '>=', now - totalWindow)
+            .where('matchDateMillis', '<=', now + buffer)
+            .get();
 
-        // 2. Se não tem jogo ativo, verificamos a última execução global
+        const hasActiveMatch = !activeMatchesSnap.empty || !hotWindowSnap.empty;
+
+        // 2. Se não tem jogo ativo e não está na janela de pico, verificamos a última execução global
         if (!hasActiveMatch) {
             const configDoc = await db.collection('config').doc('sync_status').get();
             const lastSync = configDoc.exists ? configDoc.data().lastFullSync : 0;
