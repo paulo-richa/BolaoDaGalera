@@ -1781,7 +1781,7 @@ fun MatchCard(
     }
 
     // Agora usamos o status real vindo da API + verificação de tempo para garantir o destaque
-    val isActuallyFinished = match.status == "FINISHED" || (isFinished && now > (matchStart + 7200_000L))
+    val isActuallyFinished = match.status == "FINISHED" || match.status == "PENALTIES" || match.status == "PAUSED_PENALTIES" || (isFinished && now > (matchStart + 7200_000L))
     val isLive = (match.status in listOf("IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTIES", "LIVE")) || 
                  (now >= (matchStart - 60_000) && !isActuallyFinished)
     
