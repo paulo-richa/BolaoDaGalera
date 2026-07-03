@@ -2066,6 +2066,8 @@ fun MatchCard(
                                 isActuallyFinished -> "JOGO ENCERRADO"
                                 match.status == "EXTRA_TIME" -> "PRORROGAÇÃO"
                                 match.status == "PENALTIES" -> "PÊNALTIS"
+                                match.status == "PAUSED_EXTRA_TIME" -> "INDO PARA PRORROGAÇÃO"
+                                match.status == "PAUSED_PENALTIES" -> "INDO PARA PÊNALTIS"
                                 match.status == "PAUSED" -> "INTERVALO"
                                 else -> "JOGO EM ANDAMENTO"
                             }

@@ -278,6 +278,11 @@ fun MatchPredictionsScreen(
                             val statusLabel = when {
                                 isAdminViewingBeforeStart -> "Visualização Admin"
                                 isActuallyFinished -> "Jogo encerrado"
+                                match.status == "EXTRA_TIME" -> "Prorrogação"
+                                match.status == "PENALTIES" -> "Pênaltis"
+                                match.status == "PAUSED_EXTRA_TIME" -> "Indo para prorrogação"
+                                match.status == "PAUSED_PENALTIES" -> "Indo para pênaltis"
+                                match.status == "PAUSED" -> "Intervalo"
                                 else -> "Jogo em andamento"
                             }
 
