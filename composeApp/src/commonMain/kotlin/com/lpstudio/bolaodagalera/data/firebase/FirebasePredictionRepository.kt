@@ -6,9 +6,7 @@ import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -58,6 +56,7 @@ class FirebasePredictionRepository(
             .map { snapshot ->
                 snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
             }
+            .catch { emit(emptyList()) }
     }
 
     override fun getBolaoAllPredictions(bolaoId: String): Flow<List<Prediction>> {
@@ -67,6 +66,7 @@ class FirebasePredictionRepository(
             .map { snapshot ->
                 snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
             }
+            .catch { emit(emptyList()) }
     }
 
     override suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction? {
@@ -117,13 +117,23 @@ class FirebasePredictionRepository(
                 val dto = doc.data<MatchScoreDto>()
                 doc.id to (dto.homeScore to dto.awayScore)
             }
-        }
+        }.catch { emit(emptyMap()) }
 
-        val userNamesFlow = usersCollection.snapshots.map { snapshot ->
-            snapshot.documents.associate { doc ->
-                val dto = doc.data<UserNamesDto>()
-                doc.id to (dto.name to dto.nickname)
-            }
+        val userNamesFlow = if (participantIds.isEmpty()) {
+            flowOf(emptyMap<String, Pair<String, String>>())
+        } else {
+            // Otimização: Ouve apenas os usuários que estão neste bolão específico (limite 30 IDs para query IN)
+            usersCollection
+                .snapshots
+                .map { snapshot ->
+                    snapshot.documents
+                        .filter { it.id in participantIds }
+                        .associate { doc ->
+                            val dto = doc.data<UserNamesDto>()
+                            doc.id to (dto.name to dto.nickname)
+                        }
+                }
+                .catch { emit(emptyMap()) }
         }
 
         return combine(predictionsFlow, matchScoresFlow, userNamesFlow) { predictions, matchScores, userNames ->

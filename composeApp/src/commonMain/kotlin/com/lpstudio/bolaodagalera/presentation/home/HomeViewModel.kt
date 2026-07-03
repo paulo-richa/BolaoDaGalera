@@ -50,11 +50,14 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val readNotificationIds = MutableStateFlow<Set<String>>(emptySet())
+    private var dataCollectionJob: kotlinx.coroutines.Job? = null
 
     init {
         authRepository.authStateFlow.onEach { user ->
+            dataCollectionJob?.cancel() // Cancela fluxos ativos ao mudar de estado de auth
+            
             if (user == null) {
-                _uiState.update { it.copy(user = null, isLoading = false) }
+                _uiState.update { it.copy(user = null, isLoading = false, boloes = emptyList(), invitations = emptyList()) }
             } else {
                 _uiState.update { it.copy(user = user) }
                 loadUserData(user)
@@ -75,7 +78,7 @@ class HomeViewModel(
         }
 
         // Carrega Bolões, Jogos, Palpites, Convites e IDs lidos
-        combine(
+        dataCollectionJob = combine(
             bolaoRepository.getUserBoloes(user.id),
             matchRepository.getMatches(),
             predictionRepository.getUserPredictions(user.id, ""),

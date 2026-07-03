@@ -43,8 +43,8 @@ class FirebaseAuthRepository : AuthRepository {
                     User(firebaseUser.uid, firebaseUser.displayName ?: "Usuário", firebaseUser.email ?: "", "", "", "")
                 }
                 _cachedUser = user
-                user
-            }
+                user as User?
+            }.catch { emit(null) }
         }
     }
 
