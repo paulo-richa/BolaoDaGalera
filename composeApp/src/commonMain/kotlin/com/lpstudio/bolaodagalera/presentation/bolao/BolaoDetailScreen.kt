@@ -1789,7 +1789,8 @@ fun MatchCard(
     // Ninguém poderia ter palpitado nele, então ele deve ser travado.
     val isGhostMatch = matchStart < bolaoCreatedAt
 
-    val isTbd = match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD"
+    val isTbd = homeDisplayFlag == "🏳️" || homeDisplayFlag.contains("ou") || 
+                awayDisplayFlag == "🏳️" || awayDisplayFlag.contains("ou")
 
     val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isGhostMatch && !isTbd
 
