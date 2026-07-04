@@ -24,7 +24,7 @@ kotlin {
     cocoapods {
         summary = "Bolão da Galera Shared Module"
         homepage = "https://github.com/lpstudio"
-        version = "2.5.0"
+        version = "2.8.0"
         ios.deploymentTarget = "16.0"
         podfile = project.file("../iosApp/Podfile")
         framework {
@@ -100,8 +100,8 @@ android {
         applicationId = "com.lpstudio.bolaodagalera"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 18
-        versionName = "2.7.0"
+        versionCode = 19
+        versionName = "2.8.0"
     }
     packaging {
         resources {
