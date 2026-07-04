@@ -35,7 +35,7 @@ fun resolveDisplayName(
             val originNum = if (isHome) (num * 2 - 1) else (num * 2)
             if (hasKo) "KO-QF-$originNum" else "QF-$originNum"
         }
-        id == "FINAL" || id == "THIRD_PLACE" -> {
+        id == "FINAL" || id == "THIRD_PLACE" || id == "SF-3" -> {
             if (isHome) (if (hasKo) "KO-SF-1" else "SF-1") else (if (hasKo) "KO-SF-2" else "SF-2")
         }
         else -> null
@@ -60,7 +60,8 @@ fun resolveDisplayName(
         val hScore = matchSource.homeScore ?: 0
         val aScore = matchSource.awayScore ?: 0
         
-        return if (matchId == "KO-THIRD_PLACE") {
+        val isThirdPlace = matchId == "KO-THIRD_PLACE" || matchId == "THIRD_PLACE" || id == "SF-3"
+        return if (isThirdPlace) {
             if (hScore < aScore) matchSource.homeTeam to matchSource.homeTeamFlag
             else matchSource.awayTeam to matchSource.awayTeamFlag
         } else {
