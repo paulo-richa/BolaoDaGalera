@@ -15,16 +15,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import com.lpstudio.bolaodagalera.presentation.components.UserAvatar
 import com.lpstudio.bolaodagalera.util.getInitials
+import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -58,6 +64,7 @@ fun RankingScreen(bolaoId: String) {
                 ParticipantHitsContent(
                     name = uiState.selectedParticipantName,
                     hits = uiState.selectedParticipantHits,
+                    allMatches = uiState.allMatches,
                     onClose = {
                         showHitsDialog = false
                         viewModel.clearSelectedParticipant()
@@ -99,45 +106,16 @@ fun RankingScreen(bolaoId: String) {
                                 showHitsDialog = true
                             }
                         )
-                        Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(24.dp))
                     }
                 }
 
-                // ── Header Stats ──────────────────────────────────────────────────
-                item(key = "header-stats", contentType = "header") {
-                    Surface(
-                        color = NavyCard.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("#", modifier = Modifier.width(30.dp), fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold)
-                            Text("PARTICIPANTE", modifier = Modifier.weight(1f), fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold)
-                            
-                            Row(
-                                modifier = Modifier.width(110.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("PTS", modifier = Modifier.width(40.dp), fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                                Text("🎯", modifier = Modifier.width(30.dp), fontSize = 12.sp, textAlign = TextAlign.Center)
-                                Text("✅", modifier = Modifier.width(30.dp), fontSize = 12.sp, textAlign = TextAlign.Center)
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                }
-
-                // ── List Section ─────────────────────────────────────────────────
-                itemsIndexed(
-                    items = uiState.entries,
-                    key = { _, entry -> "rank-${entry.userId}" },
-                    contentType = { _, _ -> "ranking-row" }
-                ) { index, entry ->
-                    RankingRow(
-                        position = index + 1,
+                // ── Remaining Rankings List ──────────────────────────────────────
+                val remaining = if (uiState.entries.size >= 3) uiState.entries.drop(3) else uiState.entries
+                itemsIndexed(remaining, key = { _, entry -> entry.userId }) { index, entry ->
+                    val rank = if (uiState.entries.size >= 3) index + 4 else index + 1
+                    RankingItem(
+                        rank = rank,
                         entry = entry,
                         isCurrentUser = entry.userId == uiState.currentUserId,
                         onClick = {
@@ -146,64 +124,7 @@ fun RankingScreen(bolaoId: String) {
                         }
                     )
                 }
-
-                // ── Legend Section ───────────────────────────────────────────────
-                item(key = "legend") {
-                    Spacer(Modifier.height(24.dp))
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(NavyCard.copy(alpha = 0.4f))
-                            .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            "CRITÉRIOS DE DESEMPATE",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White.copy(alpha = 0.5f),
-                            letterSpacing = 1.5.sp
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🎯", fontSize = 14.sp)
-                            Spacer(Modifier.width(12.dp))
-                            Column {
-                                Text("Placar Exato", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                Text("Acerto do resultado cheio da partida.", fontSize = 11.sp, color = TextMuted)
-                            }
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("✅", fontSize = 14.sp)
-                            Spacer(Modifier.width(12.dp))
-                            Column {
-                                Text("Resultado", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                Text("Acerto apenas do vencedor ou do empate.", fontSize = 11.sp, color = TextMuted)
-                            }
-                        }
-                    }
-                }
             }
-
-            // Sombra/Blur no topo
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(20.dp)
-                    .background(Brush.verticalGradient(listOf(DeepNavy, Color.Transparent)))
-                    .align(Alignment.TopCenter)
-            )
-
-            // Sombra/Blur na base
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, DeepNavy)))
-                    .align(Alignment.BottomCenter)
-            )
         }
     }
 }
@@ -216,206 +137,153 @@ private fun Podium(
     currentUserId: String,
     onEntryClick: (RankingEntry) -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        contentAlignment = Alignment.BottomCenter
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Bottom
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            PodiumPillar(
-                entry = second,
-                position = 2,
-                isCurrentUser = second.userId == currentUserId,
-                height = 100.dp,
-                modifier = Modifier.weight(1f).clickable { onEntryClick(second) }
-            )
-            PodiumPillar(
-                entry = first,
-                position = 1,
-                isCurrentUser = first.userId == currentUserId,
-                height = 140.dp,
-                modifier = Modifier.weight(1.1f).clickable { onEntryClick(first) }
-            )
-            PodiumPillar(
-                entry = third,
-                position = 3,
-                isCurrentUser = third.userId == currentUserId,
-                height = 85.dp,
-                modifier = Modifier.weight(1f).clickable { onEntryClick(third) }
-            )
-        }
+        PodiumItem(entry = second, rank = 2, height = 150.dp, color = Color(0xFFC0C0C0), isMe = second.userId == currentUserId, modifier = Modifier.weight(1f), onClick = onEntryClick)
+        PodiumItem(entry = first, rank = 1, height = 180.dp, color = Gold, isMe = first.userId == currentUserId, modifier = Modifier.weight(1.1f), onClick = onEntryClick)
+        PodiumItem(entry = third, rank = 3, height = 130.dp, color = Color(0xFFCD7F32), isMe = third.userId == currentUserId, modifier = Modifier.weight(1f), onClick = onEntryClick)
     }
 }
 
 @Composable
-private fun PodiumPillar(
+private fun PodiumItem(
     entry: RankingEntry,
-    position: Int,
-    isCurrentUser: Boolean,
+    rank: Int,
     height: androidx.compose.ui.unit.Dp,
-    modifier: Modifier = Modifier
+    color: Color,
+    isMe: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: (RankingEntry) -> Unit
 ) {
-    val accentColor = when (position) {
-        1 -> Gold
-        2 -> Color(0xFFC0C0C0)
-        else -> Color(0xFFCD7F32)
-    }
-    
-    val medal = when (position) { 1 -> "🥇"; 2 -> "🥈"; else -> "🥉" }
-
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
+        modifier = modifier.clickable { onClick(entry) },
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Avatar with crown for #1
-        Box(contentAlignment = Alignment.TopCenter) {
+        Box(contentAlignment = Alignment.BottomCenter) {
             UserAvatar(
                 initials = entry.userName.getInitials(),
-                size = if (position == 1) 64.dp else 52.dp,
-                fontSize = if (position == 1) 24.sp else 20.sp,
-                borderColor = if (isCurrentUser) Neon else accentColor.copy(alpha = 0.5f)
+                size = if (rank == 1) 72.dp else 60.dp,
+                borderColor = if (isMe) Neon else color
             )
-            if (position == 1) {
-                Text("👑", modifier = Modifier.offset(y = (-18).dp), fontSize = 20.sp)
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-        
-        Text(
-            text = entry.userNickname.ifBlank { entry.userName.split(" ").first() },
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isCurrentUser) Neon else Color.White,
-            maxLines = 1
-        )
-        
-        Spacer(Modifier.height(12.dp))
-
-        // Pillar
-        Surface(
-            color = NavyCard,
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(height)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(accentColor.copy(alpha = 0.15f), Color.Transparent)
-                        )
-                    ),
-                contentAlignment = Alignment.Center
+            
+            // Badge com a posição
+            Surface(
+                color = color,
+                shape = CircleShape,
+                modifier = Modifier.size(24.dp).offset(y = 12.dp),
+                border = androidx.compose.foundation.BorderStroke(2.dp, DeepNavy)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(medal, fontSize = 16.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = entry.points.toString(),
-                        fontSize = if (position == 1) 24.sp else 20.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                    Text(
-                        "PONTOS",
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = accentColor,
-                        letterSpacing = 1.sp
-                    )
+                Box(contentAlignment = Alignment.Center) {
+                    Text("$rank", color = DeepNavy, fontSize = 12.sp, fontWeight = FontWeight.Black)
                 }
             }
         }
+        
+        Spacer(Modifier.height(18.dp))
+        
+        Surface(
+            modifier = Modifier.fillMaxWidth().height(height),
+            color = NavyElevated,
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, if (isMe) Neon.copy(alpha = 0.5f) else color.copy(alpha = 0.3f))
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = entry.userNickname.ifBlank { entry.userName }.uppercase(),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "${entry.points}",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = color
+                )
+                Text(
+                    text = "PONTOS",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color.copy(alpha = 0.7f)
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolean, onClick: () -> Unit) {
-    val surfaceColor = if (isCurrentUser) NavyElevated else NavyCard
-    val borderColor = if (isCurrentUser) Neon.copy(alpha = 0.5f) else GlassBorder
-
+private fun RankingItem(
+    rank: Int,
+    entry: RankingEntry,
+    isCurrentUser: Boolean,
+    onClick: () -> Unit
+) {
     Surface(
-        color = surfaceColor,
-        shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        color = if (isCurrentUser) Neon.copy(alpha = 0.05f) else NavyElevated,
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, 
+            if (isCurrentUser) Neon.copy(alpha = 0.4f) else GlassBorder
+        )
     ) {
         Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Position
-            Box(
-                modifier = Modifier.width(30.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Text(
-                    text = position.toString(),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = if (position <= 3) Gold else TextMuted
-                )
-            }
-
-            // Avatar
+            Text(
+                text = "$rank",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Black,
+                color = if (isCurrentUser) Neon else TextMuted,
+                modifier = Modifier.width(32.dp)
+            )
+            
             UserAvatar(
                 initials = entry.userName.getInitials(),
-                size = 36.dp,
-                fontSize = 14.sp,
-                borderColor = if (isCurrentUser) Neon else Neon.copy(alpha = 0.3f)
+                size = 40.dp
             )
-
+            
             Spacer(Modifier.width(12.dp))
-
-            // Name
+            
             Column(modifier = Modifier.weight(1f)) {
-                val displayName = entry.userNickname.ifBlank { entry.userName }
                 Text(
-                    text = if (isCurrentUser) "$displayName (Você)" else displayName,
-                    fontSize = 14.sp,
+                    text = entry.userNickname.ifBlank { entry.userName },
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 1
+                    color = Color.White
                 )
+                if (entry.userNickname.isNotBlank()) {
+                    Text(
+                        text = "@${entry.userName.lowercase().replace(" ", "")}",
+                        fontSize = 11.sp,
+                        color = TextMuted
+                    )
+                }
             }
-
-            // Stats
-            Row(
-                modifier = Modifier.width(110.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = entry.points.toString(),
-                    modifier = Modifier.width(40.dp),
-                    fontSize = 16.sp,
+                    text = "${entry.points}",
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Black,
-                    color = if (isCurrentUser) Neon else Color.White,
-                    textAlign = TextAlign.Center
+                    color = if (isCurrentUser) Neon else Color.White
                 )
                 Text(
-                    text = entry.exactScores.toString(),
-                    modifier = Modifier.width(30.dp),
-                    fontSize = 13.sp,
-                    color = TextMuted,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = entry.correctResults.toString(),
-                    modifier = Modifier.width(30.dp),
-                    fontSize = 13.sp,
-                    color = TextMuted,
-                    textAlign = TextAlign.Center
+                    text = "PTS",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextMuted
                 )
             }
         }
@@ -426,23 +294,20 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
 private fun ParticipantHitsContent(
     name: String,
     hits: List<ParticipantHit>,
+    allMatches: List<Match>,
     onClose: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .padding(bottom = 24.dp)
+            .padding(24.dp)
     ) {
-        Spacer(Modifier.height(8.dp))
-        
         Text(
             text = "Acertos de $name",
-            fontSize = 22.sp,
+            fontSize = 20.sp,
             fontWeight = FontWeight.Black,
             color = Color.White
         )
-        
         val totalPoints = hits.sumOf { it.points }
         Text(
             text = "$totalPoints pontos ganhos em ${hits.size} palpites",
@@ -466,7 +331,7 @@ private fun ParticipantHitsContent(
             ) {
                 items(hits.size) { index ->
                     val hit = hits[index]
-                    HitItem(hit)
+                    HitItem(hit, allMatches)
                 }
             }
         }
@@ -483,13 +348,56 @@ private fun ParticipantHitsContent(
 }
 
 @Composable
-private fun HitItem(hit: ParticipantHit) {
+private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
     val date = remember(hit.match.matchDateMillis) {
         val dt = Instant.fromEpochMilliseconds(hit.match.matchDateMillis)
             .toLocalDateTime(TimeZone.currentSystemDefault())
         val d = dt.dayOfMonth.toString().padStart(2, '0')
         val m = dt.monthNumber.toString().padStart(2, '0')
         "$d/$m"
+    }
+
+    val (hName, hFlag) = remember(hit.match.id, hit.match.homeTeam, hit.match.homeTeamFlag, allMatches) {
+        resolveDisplayName(hit.match.id, hit.match.homeTeam, hit.match.homeTeamFlag, allMatches, true)
+    }
+    val (aName, aFlag) = remember(hit.match.id, hit.match.awayTeam, hit.match.awayTeamFlag, allMatches) {
+        resolveDisplayName(hit.match.id, hit.match.awayTeam, hit.match.awayTeamFlag, allMatches, false)
+    }
+
+    val hAnnotatedFlag = remember(hFlag) {
+        if (hFlag.contains(" ou ")) {
+            buildAnnotatedString {
+                val parts = hFlag.split(" ou ")
+                parts.forEachIndexed { index, part ->
+                    append(part)
+                    if (index < parts.size - 1) {
+                        withStyle(style = SpanStyle(fontSize = 11.sp, fontWeight = FontWeight.Normal)) {
+                            append(" ou ")
+                        }
+                    }
+                }
+            }
+        } else {
+            AnnotatedString(hFlag)
+        }
+    }
+
+    val aAnnotatedFlag = remember(aFlag) {
+        if (aFlag.contains(" ou ")) {
+            buildAnnotatedString {
+                val parts = aFlag.split(" ou ")
+                parts.forEachIndexed { index, part ->
+                    append(part)
+                    if (index < parts.size - 1) {
+                        withStyle(style = SpanStyle(fontSize = 11.sp, fontWeight = FontWeight.Normal)) {
+                            append(" ou ")
+                        }
+                    }
+                }
+            }
+        } else {
+            AnnotatedString(aFlag)
+        }
     }
 
     val accentColor = if (hit.points == 3) Neon else Gold
@@ -506,16 +414,16 @@ private fun HitItem(hit: ParticipantHit) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(hit.match.homeTeamFlag, fontSize = 16.sp)
+                    Text(text = hAnnotatedFlag, fontSize = 16.sp)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "${hit.match.homeTeam} x ${hit.match.awayTeam}",
+                        text = "$hName x $aName",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(hit.match.awayTeamFlag, fontSize = 16.sp)
+                    Text(text = aAnnotatedFlag, fontSize = 16.sp)
                 }
                 
                 val groupText = hit.match.group?.let { "Grupo $it • " } ?: ""
@@ -538,26 +446,27 @@ private fun HitItem(hit: ParticipantHit) {
                     )
                     Text(
                         text = "${hit.prediction.homeScore}x${hit.prediction.awayScore}",
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
                         color = Color.White
                     )
                 }
-
-                Spacer(Modifier.width(12.dp))
-
-                // Pontos Pill
-                Surface(
-                    color = accentColor.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.4f))
+                
+                Spacer(Modifier.width(16.dp))
+                
+                // Pontos
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(accentColor),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "+${hit.points}",
-                        fontSize = 12.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Black,
-                        color = accentColor,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        color = DeepNavy
                     )
                 }
             }
