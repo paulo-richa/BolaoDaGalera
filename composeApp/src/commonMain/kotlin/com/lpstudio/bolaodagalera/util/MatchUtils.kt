@@ -78,11 +78,11 @@ fun resolveDisplayName(
         val f2 = if (aResFlag == "🏳️" || aResFlag.isBlank()) "" else aResFlag
 
         if (f1.isNotEmpty() && f2.isNotEmpty()) {
-            return getFallbackName(targetId, teamName) to "$f1 ou $f2"
+            return "" to "$f1 ou $f2"
         } else if (f1.isNotEmpty()) {
-            return getFallbackName(targetId, teamName) to f1
+            return "" to f1
         } else if (f2.isNotEmpty()) {
-            return getFallbackName(targetId, teamName) to f2
+            return "" to f2
         }
     }
 
