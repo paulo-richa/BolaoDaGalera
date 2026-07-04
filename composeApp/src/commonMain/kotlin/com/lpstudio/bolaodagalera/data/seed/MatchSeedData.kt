@@ -164,12 +164,12 @@ val knockoutMatches = listOf(
     k("32-16", COL, GHA, Phase.ROUND_OF_32, 22, 22, 30),
 
     // Oitavas de Final (Round of 16)
-    ktbd("16-1", "Venc. J32-1", "Venc. J32-2", Phase.ROUND_OF_16, 23, 18, 0), 
-    ktbd("16-2", "Venc. J32-3", "Venc. J32-4", Phase.ROUND_OF_16, 23, 14, 0),
-    ktbd("16-3", "Venc. J32-5", "Venc. J32-6", Phase.ROUND_OF_16, 25, 16, 0), 
-    ktbd("16-4", "Venc. J32-7", "Venc. J32-8", Phase.ROUND_OF_16, 25, 21, 0),
-    ktbd("16-5", "Venc. J32-9", "Venc. J32-10", Phase.ROUND_OF_16, 24, 17, 0), 
-    ktbd("16-6", "Venc. J32-11", "Venc. J32-12", Phase.ROUND_OF_16, 24, 21, 0),
+    ktbd("16-1", "Venc. J32-1", "Venc. J32-2", Phase.ROUND_OF_16, 23, 13, 0), 
+    ktbd("16-2", "Venc. J32-3", "Venc. J32-4", Phase.ROUND_OF_16, 23, 17, 0),
+    ktbd("16-3", "Venc. J32-5", "Venc. J32-6", Phase.ROUND_OF_16, 24, 13, 0), 
+    ktbd("16-4", "Venc. J32-7", "Venc. J32-8", Phase.ROUND_OF_16, 24, 17, 0),
+    ktbd("16-5", "Venc. J32-9", "Venc. J32-10", Phase.ROUND_OF_16, 25, 13, 0), 
+    ktbd("16-6", "Venc. J32-11", "Venc. J32-12", Phase.ROUND_OF_16, 25, 17, 0),
     ktbd("16-7", "Venc. J32-13", "Venc. J32-14", Phase.ROUND_OF_16, 26, 13, 0), 
     ktbd("16-8", "Venc. J32-15", "Venc. J32-16", Phase.ROUND_OF_16, 26, 17, 0),
 
