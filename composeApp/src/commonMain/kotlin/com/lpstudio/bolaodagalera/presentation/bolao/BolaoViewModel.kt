@@ -36,10 +36,20 @@ class BolaoViewModel(
     val uiState: StateFlow<BolaoUiState> = _uiState.asStateFlow()
 
     private val _userId = MutableStateFlow(authRepository.currentUser?.id ?: "")
+    private var dataCollectionJob: kotlinx.coroutines.Job? = null
 
     init {
-        loadBolao()
-        observeMatchesPredictionsAndRanking()
+        authRepository.authStateFlow.onEach { user ->
+            dataCollectionJob?.cancel()
+            
+            if (user == null) {
+                _uiState.update { BolaoUiState(isLoading = false) }
+            } else {
+                _userId.value = user.id
+                loadBolao()
+                observeMatchesPredictionsAndRanking()
+            }
+        }.launchIn(viewModelScope)
     }
 
     private fun loadBolao() {
@@ -55,13 +65,13 @@ class BolaoViewModel(
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observeMatchesPredictionsAndRanking() {
-        // Observa o Bolão em tempo real para atualizar participantes e dados gerais
-        val bolaoFlow = bolaoRepository.getBolaoFlow(bolaoId)
-            .onEach { bolao -> _uiState.update { it.copy(bolao = bolao) } }
+        dataCollectionJob = viewModelScope.launch {
+            // Observa o Bolão em tempo real para atualizar participantes e dados gerais
+            val bolaoFlow = bolaoRepository.getBolaoFlow(bolaoId)
+                .onEach { bolao -> _uiState.update { it.copy(bolao = bolao) } }
 
-        val participantsFlow = bolaoFlow
-            .onEach { bolao ->
-                viewModelScope.launch {
+            val participantsFlow = bolaoFlow
+                .onEach { bolao ->
                     val pendingJoin = authRepository.getUsers(bolao.pendingParticipants)
                     val pendingExit = authRepository.getUsers(bolao.pendingExits)
                     _uiState.update { it.copy(
@@ -69,40 +79,40 @@ class BolaoViewModel(
                         pendingExitUsers = pendingExit
                     ) }
                 }
-            }
-            .map { it.participants }
-            .distinctUntilChanged()
-        
-        _userId.filter { it.isNotBlank() }
-            .flatMapLatest { currentUserId ->
-                combine(
-                    matchRepository.getMatches(),
-                    predictionRepository.getUserPredictions(currentUserId, bolaoId),
-                    predictionRepository.getBolaoAllPredictions(bolaoId),
-                    participantsFlow.flatMapLatest { participants ->
-                        predictionRepository.getRanking(bolaoId, participants)
-                    }
-                ) { matches, predictions, allPredictions, ranking ->
-                    val bolao = _uiState.value.bolao
-                    val filteredMatches = when {
-                        bolao?.specificMatchId != null -> matches.filter { it.id == bolao.specificMatchId }
-                        bolao?.scope == BolaoScope.ONLY_GROUPS -> matches.filter { it.phase == Phase.GROUP_STAGE }
-                        bolao?.scope == BolaoScope.ONLY_KNOCKOUT -> matches.filter { it.phase != Phase.GROUP_STAGE }
-                        bolao?.scope == BolaoScope.ONLY_BRAZIL -> matches.filter { it.homeTeamCode == "BRA" || it.awayTeamCode == "BRA" }
-                        else -> matches
-                    }
+                .map { it.participants }
+                .distinctUntilChanged()
+            
+            _userId.filter { it.isNotBlank() }
+                .flatMapLatest { currentUserId ->
+                    combine(
+                        matchRepository.getMatches(),
+                        predictionRepository.getUserPredictions(currentUserId, bolaoId),
+                        predictionRepository.getBolaoAllPredictions(bolaoId),
+                        participantsFlow.flatMapLatest { participants ->
+                            predictionRepository.getRanking(bolaoId, participants)
+                        }
+                    ) { matches, predictions, allPredictions, ranking ->
+                        val bolao = _uiState.value.bolao
+                        val filteredMatches = when {
+                            bolao?.specificMatchId != null -> matches.filter { it.id == bolao.specificMatchId }
+                            bolao?.scope == BolaoScope.ONLY_GROUPS -> matches.filter { it.phase == Phase.GROUP_STAGE }
+                            bolao?.scope == BolaoScope.ONLY_KNOCKOUT -> matches.filter { it.phase != Phase.GROUP_STAGE }
+                            bolao?.scope == BolaoScope.ONLY_BRAZIL -> matches.filter { it.homeTeamCode == "BRA" || it.awayTeamCode == "BRA" }
+                            else -> matches
+                        }
 
-                    val predictionMap = predictions.associateBy { it.matchId }
-                    _uiState.update { it.copy(
-                        matches = filteredMatches,
-                        allMatches = matches,
-                        userPredictions = predictionMap,
-                        allPredictions = allPredictions,
-                        participants = ranking,
-                        isLoading = false
-                    ) }
-                }
-            }.launchIn(viewModelScope)
+                        val predictionMap = predictions.associateBy { it.matchId }
+                        _uiState.update { it.copy(
+                            matches = filteredMatches,
+                            allMatches = matches,
+                            userPredictions = predictionMap,
+                            allPredictions = allPredictions,
+                            participants = ranking,
+                            isLoading = false
+                        ) }
+                    }
+                }.collect()
+        }
     }
 
     fun setUserId(id: String) {
