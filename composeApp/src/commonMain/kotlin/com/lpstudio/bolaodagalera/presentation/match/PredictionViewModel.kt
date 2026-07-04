@@ -12,10 +12,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class PredictionUiState(
     val match: Match? = null,
+    val allMatches: List<Match> = emptyList(),
     val bolao: Bolao? = null,
     val existingPrediction: Prediction? = null,
     val isLoading: Boolean = true,
@@ -38,11 +40,18 @@ class PredictionViewModel(
         viewModelScope.launch {
             try {
                 val match = matchRepository.getMatch(matchId)
+                val allMatches = try {
+                    // Tenta buscar todas as partidas para resolver nomes de mata-mata
+                    matchRepository.getMatches().first()
+                } catch (e: Exception) {
+                    emptyList<Match>()
+                }
                 val bolao = bolaoRepository.getBolao(bolaoId)
                 val prediction = predictionRepository.getUserPredictionForMatch(userId, bolaoId, matchId)
                 _uiState.update { 
                     it.copy(
-                        match = match, 
+                        match = match,
+                        allMatches = allMatches,
                         bolao = bolao,
                         existingPrediction = prediction, 
                         isLoading = false

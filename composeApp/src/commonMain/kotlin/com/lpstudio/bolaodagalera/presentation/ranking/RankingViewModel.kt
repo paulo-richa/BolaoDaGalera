@@ -22,6 +22,7 @@ data class ParticipantHit(
 
 data class RankingUiState(
     val entries: List<RankingEntry> = emptyList(),
+    val allMatches: List<Match> = emptyList(),
     val currentUserId: String = "",
     val selectedParticipantHits: List<ParticipantHit> = emptyList(),
     val selectedParticipantName: String = "",
@@ -60,6 +61,7 @@ class RankingViewModel(
         ) { matches, predictions ->
             allMatches = matches
             allPredictions = predictions
+            _uiState.update { it.copy(allMatches = matches) }
         }.launchIn(viewModelScope)
     }
 

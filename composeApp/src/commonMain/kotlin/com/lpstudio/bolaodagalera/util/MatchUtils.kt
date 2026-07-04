@@ -15,24 +15,29 @@ fun resolveDisplayName(
     depth: Int = 0
 ): Pair<String, String> {
     
+    val id = matchId.removePrefix("KO-")
+    val hasKo = matchId.startsWith("KO-")
+
     // 1. Determinar o ID do jogo de origem baseado na lógica sequencial
     val targetId = when {
-        matchId.startsWith("KO-16-") -> {
-            val num = matchId.substringAfterLast("-").toIntOrNull() ?: 0
+        id.startsWith("16-") -> {
+            val num = id.substringAfterLast("-").toIntOrNull() ?: 0
             val originNum = if (isHome) (num * 2 - 1) else (num * 2)
-            "KO-32-$originNum"
+            if (hasKo) "KO-32-$originNum" else "32-$originNum"
         }
-        matchId.startsWith("KO-QF-") -> {
-            val num = matchId.substringAfterLast("-").toIntOrNull() ?: 0
+        id.startsWith("QF-") -> {
+            val num = id.substringAfterLast("-").toIntOrNull() ?: 0
             val originNum = if (isHome) (num * 2 - 1) else (num * 2)
-            "KO-16-$originNum"
+            if (hasKo) "KO-16-$originNum" else "16-$originNum"
         }
-        matchId.startsWith("KO-SF-") -> {
-            val num = matchId.substringAfterLast("-").toIntOrNull() ?: 0
+        id.startsWith("SF-") -> {
+            val num = id.substringAfterLast("-").toIntOrNull() ?: 0
             val originNum = if (isHome) (num * 2 - 1) else (num * 2)
-            "KO-QF-$originNum"
+            if (hasKo) "KO-QF-$originNum" else "QF-$originNum"
         }
-        matchId == "KO-FINAL" || matchId == "KO-THIRD_PLACE" -> if (isHome) "KO-SF-1" else "KO-SF-2"
+        id == "FINAL" || id == "THIRD_PLACE" -> {
+            if (isHome) (if (hasKo) "KO-SF-1" else "SF-1") else (if (hasKo) "KO-SF-2" else "SF-2")
+        }
         else -> null
     }
 
@@ -82,12 +87,15 @@ fun resolveDisplayName(
     }
 
     // 5. Fallback final: Nome do Vencedor Genérico
-    val fallbackName = when {
+    return getFallbackName(targetId, teamName) to teamFlag.ifBlank { "🏳️" }
+}
+
+private fun getFallbackName(targetId: String, teamName: String): String {
+    return when {
         targetId.contains("32-") -> "Venc. J32-${targetId.substringAfterLast("-")}"
         targetId.contains("16-") -> "Venc. Oit. ${targetId.substringAfterLast("-")}"
         targetId.contains("QF-") -> "Venc. QF ${targetId.substringAfterLast("-")}"
         targetId.contains("SF-") -> "Venc. SF ${targetId.substringAfterLast("-")}"
         else -> teamName
     }
-    return fallbackName to teamFlag.ifBlank { "🏳️" }
 }

@@ -29,11 +29,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import kotlinx.coroutines.delay
+import com.lpstudio.bolaodagalera.util.TimeSource
+import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
@@ -86,7 +92,15 @@ fun PredictionScreen(
 
             uiState.match != null -> {
                 val match = uiState.match!!
+                val allMatches = uiState.allMatches
                 val scrollState = rememberScrollState()
+
+                val (homeDisplayName, homeDisplayFlag) = remember(match.id, match.homeTeam, match.homeTeamFlag, allMatches) {
+                    resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, allMatches, true)
+                }
+                val (awayDisplayName, awayDisplayFlag) = remember(match.id, match.awayTeam, match.awayTeamFlag, allMatches) {
+                    resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
+                }
 
                 Column(modifier = Modifier.fillMaxSize()) {
                     Column(
@@ -144,10 +158,10 @@ fun PredictionScreen(
                                     horizontalArrangement = Arrangement.SpaceEvenly,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    TeamHero(flag = match.homeTeamFlag, name = match.homeTeam)
+                                    TeamHero(flag = homeDisplayFlag, name = homeDisplayName)
 
                                     Text(
-                                        "VS",
+                                        "vs",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Black,
                                         color = TextMuted.copy(alpha = 0.4f),
@@ -155,7 +169,7 @@ fun PredictionScreen(
                                         letterSpacing = 2.sp
                                     )
 
-                                    TeamHero(flag = match.awayTeamFlag, name = match.awayTeam)
+                                    TeamHero(flag = awayDisplayFlag, name = awayDisplayName)
                                 }
                             }
                         }
@@ -183,7 +197,7 @@ fun PredictionScreen(
                                 value = homeScore,
                                 onIncrement = { homeScore++ },
                                 onDecrement = { if (homeScore > 0) homeScore-- },
-                                teamName = match.homeTeam.take(10)
+                                teamName = homeDisplayName
                             )
 
                             Text(
@@ -197,7 +211,7 @@ fun PredictionScreen(
                                 value = awayScore,
                                 onIncrement = { awayScore++ },
                                 onDecrement = { if (awayScore > 0) awayScore-- },
-                                teamName = match.awayTeam.take(10)
+                                teamName = awayDisplayName
                             )
                         }
 
@@ -408,6 +422,24 @@ private fun ConfettiPiece(state: ConfettiState) {
 
 @Composable
 private fun TeamHero(flag: String, name: String) {
+    val annotatedFlag = remember(flag) {
+        if (flag.contains(" ou ")) {
+            buildAnnotatedString {
+                val parts = flag.split(" ou ")
+                parts.forEachIndexed { index, part ->
+                    append(part)
+                    if (index < parts.size - 1) {
+                        withStyle(style = SpanStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal)) {
+                            append(" ou ")
+                        }
+                    }
+                }
+            }
+        } else {
+            AnnotatedString(flag)
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(120.dp)
@@ -420,7 +452,11 @@ private fun TeamHero(flag: String, name: String) {
                 .border(2.dp, GlassBorder, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(flag, fontSize = 42.sp, textAlign = TextAlign.Center)
+            Text(
+                text = annotatedFlag,
+                fontSize = if (flag.contains(" ou ")) 24.sp else if (flag.length > 4) 32.sp else 42.sp,
+                textAlign = TextAlign.Center
+            )
         }
         Spacer(Modifier.height(12.dp))
         Text(
