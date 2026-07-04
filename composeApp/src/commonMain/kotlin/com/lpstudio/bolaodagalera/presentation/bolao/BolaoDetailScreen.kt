@@ -1792,7 +1792,7 @@ fun MatchCard(
     val isTbd = homeDisplayFlag == "🏳️" || homeDisplayFlag.contains("ou") || 
                 awayDisplayFlag == "🏳️" || awayDisplayFlag.contains("ou")
 
-    val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isGhostMatch && !isTbd
+    val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isGhostMatch
 
     val borderColor = when {
         isActuallyFinished && hasPrediction -> {
@@ -1818,7 +1818,7 @@ fun MatchCard(
     }
 
     val isExpired = now >= (match.matchDateMillis - 60_000) || isFinished
-    val isLocked = isExpired || forceLocked || isGhostMatch || isTbd
+    val isLocked = isExpired || forceLocked || isGhostMatch
 
     val cardBg = if (isLive) {
         Brush.verticalGradient(
