@@ -143,12 +143,11 @@ fun NavGraph() {
 
         composable<JoinBolao>(
             deepLinks = listOf(
-                navDeepLink { uriPattern = "https://bolaodagalera.app/invite?code={code}" },
-                navDeepLink { uriPattern = "http://bolaodagalera.app/invite?code={code}" },
-                navDeepLink { uriPattern = "https://www.bolaodagalera.app/invite?code={code}" },
-                navDeepLink { uriPattern = "http://www.bolaodagalera.app/invite?code={code}" },
-                navDeepLink { uriPattern = "https://bolaodagalera-bb002.web.app/invite?code={code}" },
-                navDeepLink { uriPattern = "http://bolaodagalera-bb002.web.app/invite?code={code}" },
+                navDeepLink<JoinBolao>(basePath = "https://bolaodagalera.app/invite"),
+                navDeepLink<JoinBolao>(basePath = "http://bolaodagalera.app/invite"),
+                navDeepLink<JoinBolao>(basePath = "https://www.bolaodagalera.app/invite"),
+                navDeepLink<JoinBolao>(basePath = "https://bolaodagalera-bb002.web.app/invite"),
+                navDeepLink<JoinBolao>(basePath = "http://bolaodagalera-bb002.web.app/invite"),
                 navDeepLink { uriPattern = "bolaodagalera://invite?code={code}" }
             )
         ) { backStackEntry ->
