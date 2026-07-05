@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
+import com.lpstudio.bolaodagalera.APP_VERSION
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
@@ -306,7 +307,7 @@ fun ProfileScreen(
                 Spacer(Modifier.height(40.dp))
                 
                 Text(
-                    "Versão 1.0.0",
+                    "Versão $APP_VERSION",
                     fontSize = 12.sp,
                     color = TextSubtle
                 )
