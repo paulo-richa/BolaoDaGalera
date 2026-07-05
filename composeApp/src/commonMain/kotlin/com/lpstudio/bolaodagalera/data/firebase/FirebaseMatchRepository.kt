@@ -158,21 +158,19 @@ class FirebaseMatchRepository : MatchRepository {
                 if (existing == null) {
                     collection.document(m.id).set(m.toDto())
                 } else {
-                    // Se já existe, atualizamos apenas metadados (times, bandeiras, data) 
-                    // para não perder o placar/status vindo da API
-                    collection.document(m.id).set(
-                        mapOf(
-                            "homeTeam" to m.homeTeam,
-                            "homeTeamCode" to m.homeTeamCode,
-                            "homeTeamFlag" to m.homeTeamFlag,
-                            "awayTeam" to m.awayTeam,
-                            "awayTeamCode" to m.awayTeamCode,
-                            "awayTeamFlag" to m.awayTeamFlag,
-                            "matchDateMillis" to m.matchDateMillis,
-                            "phase" to m.phase.name
-                        ),
-                        merge = true
+                    // Sincronização básica de metadados para garantir que nomes e bandeiras estejam certos
+                    val updates = mutableMapOf<String, Any?>(
+                        "homeTeam" to m.homeTeam,
+                        "homeTeamCode" to m.homeTeamCode,
+                        "homeTeamFlag" to m.homeTeamFlag,
+                        "awayTeam" to m.awayTeam,
+                        "awayTeamCode" to m.awayTeamCode,
+                        "awayTeamFlag" to m.awayTeamFlag,
+                        "matchDateMillis" to m.matchDateMillis,
+                        "phase" to m.phase.name
                     )
+
+                    collection.document(m.id).update(updates)
                 }
             }
         } catch (e: Exception) { }
