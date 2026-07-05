@@ -105,14 +105,16 @@ class CreateBolaoViewModel(
                     isHomeBrazil || isAwayBrazil
                 }
 
+                val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
+
                 _isGroupStageAvailable.value = matches.any { 
-                    it.phase == Phase.GROUP_STAGE && !it.isFinished
+                    it.phase == Phase.GROUP_STAGE && it.matchDateMillis > now
                 }
 
                 _isKnockoutAvailable.value = matches.any { 
                     it.phase != Phase.GROUP_STAGE && 
                     it.phase != Phase.FRIENDLIES &&
-                    !it.isFinished
+                    it.matchDateMillis > now
                 }
             }
         }
@@ -388,11 +390,14 @@ fun CreateBolaoScreen(
                         )
                         
                         val championships = listOf(
-                            "COPA_2026" to ("Copa do Mundo 2026" to "🏆")
+                            Triple("COPA_2026", "Copa do Mundo 2026", "🏆"),
+                            Triple("BRASILEIRAO", "Brasileirão", "🇧🇷"),
+                            Triple("LIBERTADORES", "Libertadores", "🔥"),
+                            Triple("COPA_BRASIL", "Copa do Brasil", "⚔️")
                         )
 
-                        championships.forEach { (id, data) ->
-                            val (label, emoji) = data
+                        championships.forEach { (id, label, emoji) ->
+                            val isAvailable = id == "COPA_2026"
                             val isSelected = selectedChampionshipId == id
                             
                             Surface(
@@ -401,11 +406,12 @@ fun CreateBolaoScreen(
                                     .clip(RoundedCornerShape(12.dp))
                                     .border(
                                         width = 1.dp,
-                                        color = if (isSelected) Neon else GlassBorder,
+                                        color = if (isSelected) Neon else GlassBorder.copy(alpha = 0.5f),
                                         shape = RoundedCornerShape(12.dp)
                                     )
-                                    .clickable { selectedChampionshipId = id },
-                                color = if (isSelected) NavyElevated else NavyCard
+                                    .alpha(if (isAvailable) 1f else 0.5f)
+                                    .clickable(enabled = isAvailable) { selectedChampionshipId = id },
+                                color = if (isSelected) NavyElevated else NavyCard.copy(alpha = 0.7f)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Row(
@@ -415,16 +421,27 @@ fun CreateBolaoScreen(
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
-                                            Text(emoji, fontSize = 18.sp)
-                                            Text(
-                                                label,
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = if (isSelected) Color.White else TextMuted
-                                            )
+                                            Text(emoji, fontSize = 20.sp)
+                                            Column {
+                                                Text(
+                                                    label,
+                                                    fontSize = 15.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                                    color = if (isSelected) Color.White else TextMuted
+                                                )
+                                                if (!isAvailable) {
+                                                    Text(
+                                                        "Disponível em breve",
+                                                        fontSize = 10.sp,
+                                                        color = Neon.copy(alpha = 0.7f),
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+                                            }
                                         }
+                                        
                                         if (isSelected) {
                                             Icon(
                                                 Icons.Default.Check,
@@ -435,6 +452,7 @@ fun CreateBolaoScreen(
                                         }
                                     }
 
+                                    // Aqui é onde as opções (Radio Buttons) aparecem apenas para o selecionado
                                     if (isSelected && id == "COPA_2026") {
                                         Spacer(Modifier.height(16.dp))
                                         HorizontalDivider(color = GlassBorder, thickness = 0.5.dp)
