@@ -43,6 +43,7 @@ data class JoinBolaoUiState(
     val isLoading: Boolean = false,
     val joinedBolao: Bolao? = null,
     val requestSent: Boolean = false,
+    val alreadyMemberBolaoId: String? = null,
     val error: String? = null
 )
 
@@ -60,7 +61,14 @@ class JoinBolaoViewModel(
             try {
                 // Agora usamos requestJoinBolao para que o dono precise aceitar
                 val bolao = bolaoRepository.requestJoinBolao(code.trim().uppercase(), userId)
-                _uiState.update { it.copy(joinedBolao = bolao, requestSent = true, isLoading = false) }
+                
+                if (userId in bolao.participants) {
+                    // Regra 4: Já é membro, sinaliza para navegar direto
+                    _uiState.update { it.copy(alreadyMemberBolaoId = bolao.id, isLoading = false) }
+                } else {
+                    // Regra 3: Novo pedido enviado
+                    _uiState.update { it.copy(joinedBolao = bolao, requestSent = true, isLoading = false) }
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message ?: "Código inválido.", isLoading = false) }
             }
@@ -90,8 +98,10 @@ fun JoinBolaoScreen(
         }
     }
 
-    LaunchedEffect(uiState.joinedBolao) {
-        // Removido o redirecionamento automático para o detalhe, pois agora depende da aprovação do admin
+    LaunchedEffect(uiState.alreadyMemberBolaoId) {
+        uiState.alreadyMemberBolaoId?.let { bolaoId ->
+            onJoined(bolaoId)
+        }
     }
 
     if (uiState.requestSent) {
