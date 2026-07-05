@@ -3,22 +3,15 @@ package com.lpstudio.bolaodagalera.data.seed
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Copa do Mundo FIFA 2026 — EUA · Canadá · México
-// Calendário Oficial FIFA (Seed Data) - Sincronizado com OpenFootball API
-// Horários convertidos para Brasília (UTC-3)
-// ──────────────────────────────────────────────────────────────────────────────
+/**
+ * Copa do Mundo FIFA 2026 — Seed Data
+ * Sincronizado com OpenFootball API. Horários em Brasília (UTC-3).
+ */
 
 private data class Team(val name: String, val code: String, val flag: String)
 
-// Base: 11 de junho de 2026 00:00 UTC
-private const val BASE = 1781136000000L
+private const val BASE = 1781136000000L // 11 de Junho de 2026
 
-/**
- * Converte data da API para Millis.
- * @param offset Dias após o início (0 = 11/06)
- * @param hourBrt Hora no fuso de Brasília (UTC-3)
- */
 private fun day(offset: Int, hourBrt: Int, minutes: Int = 0) =
     BASE + (offset * 86_400_000L) + ((hourBrt + 3) * 3_600_000L) + (minutes * 60_000L)
 
@@ -145,7 +138,6 @@ private fun ktbd(id: String, home: String, away: String, phase: Phase, offset: I
     match("KO-$id", Team(home, "TBD", "🏳️"), Team(away, "TBD", "🏳️"), day(offset, hourBrt, min), phase, phase.label)
 
 val knockoutMatches = listOf(
-    // 16-avos de Final (Round of 32)
     k("32-1", GER, PAR, Phase.ROUND_OF_32, 18, 17, 30),
     k("32-2", FRA, SWE, Phase.ROUND_OF_32, 19, 18, 0),
     k("32-3", RSA, CAN, Phase.ROUND_OF_32, 17, 16, 0),
@@ -163,30 +155,29 @@ val knockoutMatches = listOf(
     k("32-15", SUI, ALG, Phase.ROUND_OF_32, 22, 0, 0),
     k("32-16", COL, GHA, Phase.ROUND_OF_32, 22, 22, 30),
 
-    // Oitavas de Final (Round of 16)
-    ktbd("16-1", "Canadá", "Marrocos", Phase.ROUND_OF_16, 23, 14, 0), // Sáb 4/7
-    ktbd("16-2", "Paraguai", "França", Phase.ROUND_OF_16, 23, 18, 0), // Sáb 4/7
-    ktbd("16-3", "Portugal", "Espanha", Phase.ROUND_OF_16, 25, 16, 0), // Seg 6/7
-    ktbd("16-4", "EUA", "Bélgica", Phase.ROUND_OF_16, 25, 21, 0), // Seg 6/7
-    ktbd("16-5", "Brasil", "Noruega", Phase.ROUND_OF_16, 24, 17, 0), // Dom 5/7
-    ktbd("16-6", "México", "Inglaterra", Phase.ROUND_OF_16, 24, 21, 0), // Dom 5/7
-    ktbd("16-7", "Venc. J32-13", "Venc. J32-14", Phase.ROUND_OF_16, 26, 13, 0), 
-    ktbd("16-8", "Venc. J32-15", "Venc. J32-16", Phase.ROUND_OF_16, 26, 17, 0),
+    // Oitavas de Final
+    k("16-1", CAN, MAR, Phase.ROUND_OF_16, 23, 14, 0),
+    k("16-2", PAR, FRA, Phase.ROUND_OF_16, 23, 18, 0),
+    k("16-3", POR, ESP, Phase.ROUND_OF_16, 25, 16, 0),
+    k("16-4", USA, BEL, Phase.ROUND_OF_16, 25, 21, 0),
+    k("16-5", BRA, NOR, Phase.ROUND_OF_16, 24, 17, 0),
+    k("16-6", MEX, ENG, Phase.ROUND_OF_16, 24, 21, 0),
+    ktbd("16-7", "Argentina", "Austrália", Phase.ROUND_OF_16, 26, 13, 0), 
+    ktbd("16-8", "Suíça", "Colômbia", Phase.ROUND_OF_16, 26, 17, 0),
 
     // Quartas de Final
-    ktbd("QF-1", "Venc. Oit. 1", "Venc. Oit. 2", Phase.QUARTERFINALS, 28, 17, 0), 
-    ktbd("QF-2", "Venc. Oit. 3", "Venc. Oit. 4", Phase.QUARTERFINALS, 29, 16, 0),
-    ktbd("QF-3", "Venc. Oit. 5", "Venc. Oit. 6", Phase.QUARTERFINALS, 30, 18, 0), 
-    ktbd("QF-4", "Venc. Oit. 7", "Venc. Oit. 8", Phase.QUARTERFINALS, 30, 22, 0),
+    ktbd("QF-1", "Canadá/Marrocos", "Paraguai/França", Phase.QUARTERFINALS, 28, 17, 0), 
+    ktbd("QF-2", "Portugal/Espanha", "EUA/Bélgica", Phase.QUARTERFINALS, 29, 16, 0),
+    ktbd("QF-3", "Brasil/Noruega", "México/Inglaterra", Phase.QUARTERFINALS, 30, 18, 0), 
+    ktbd("QF-4", "Argentina/Austrália", "Suíça/Colômbia", Phase.QUARTERFINALS, 30, 22, 0),
 
     // Semifinais
-    ktbd("SF-1", "Venc. QF 1", "Venc. QF 2", Phase.SEMIFINALS, 33, 16, 0), 
-    ktbd("SF-2", "Venc. QF 3", "Venc. QF 4", Phase.SEMIFINALS, 34, 16, 0),
+    ktbd("SF-1", "Vencedor QF1", "Vencedor QF2", Phase.SEMIFINALS, 33, 16, 0), 
+    ktbd("SF-2", "Vencedor QF3", "Vencedor QF4", Phase.SEMIFINALS, 34, 16, 0),
 
     // 3º Lugar e Final
-    ktbd("SF-3", "Perd. SF 1", "Perd. SF 2", Phase.THIRD_PLACE, 37, 18, 0),
-    ktbd("FINAL", "Venc. SF 1", "Venc. SF 2", Phase.FINAL, 38, 16, 0)
+    ktbd("SF-3", "Perdedor SF1", "Perdedor SF2", Phase.THIRD_PLACE, 37, 18, 0),
+    ktbd("FINAL", "Vencedor SF1", "Vencedor SF2", Phase.FINAL, 38, 16, 0)
 )
-
 
 val allMatches: List<Match> = groupStageMatches + knockoutMatches
