@@ -27,6 +27,7 @@ import org.koin.compose.koinInject
 // ── Configuração de dados (expect/actual para plataformas) ─────────────────────
 expect val USE_FAKE_DATA: Boolean
 expect val USE_OPEN_FOOTBALL: Boolean
+expect val APP_VERSION: String
 
 @Composable
 fun App() {
