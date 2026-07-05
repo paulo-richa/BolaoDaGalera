@@ -151,7 +151,8 @@ class BolaoViewModel(
                 remoteMatches.forEach { remoteMatch ->
                     val localMatch = currentMatches.find { it.id == remoteMatch.id }
                     
-                    if (localMatch != null) {
+                    // SEGURANÇA: Se o jogo for manual (travado pelo admin), não sincronizamos via App
+                    if (localMatch != null && !localMatch.isManual) {
                         // 1. Atualizar Status e Data para TODOS os jogos
                         val needsStatusUpdate = remoteMatch.status != null && localMatch.status != remoteMatch.status
                         val needsDateUpdate = remoteMatch.matchDateMillis != 0L && localMatch.matchDateMillis != remoteMatch.matchDateMillis
