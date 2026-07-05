@@ -7,10 +7,40 @@ admin.initializeApp();
 const db = admin.firestore();
 const API_KEY = "***REMOVED_SECRET***";
 
-/**
- * Sincroniza os placares da API com o Firestore.
- * Ignora gols de disputa de pênaltis e mantém placares manuais travados.
- */
+// Dicionário para garantir nomes em Português e Bandeiras corretas
+const TEAM_DATA = {
+    "Argentina": { name: "Argentina", flag: "🇦🇷", code: "ARG" },
+    "Brazil": { name: "Brasil", flag: "🇧🇷", code: "BRA" },
+    "France": { name: "França", flag: "🇫🇷", code: "FRA" },
+    "Germany": { name: "Alemanha", flag: "🇩🇪", code: "GER" },
+    "Portugal": { name: "Portugal", flag: "🇵🇹", code: "POR" },
+    "Spain": { name: "Espanha", flag: "🇪🇸", code: "ESP" },
+    "England": { name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", code: "ENG" },
+    "Netherlands": { name: "Holanda", flag: "🇳🇱", code: "NED" },
+    "Morocco": { name: "Marrocos", flag: "🇲🇦", code: "MAR" },
+    "Switzerland": { name: "Suíça", flag: "🇨🇭", code: "SUI" },
+    "Croatia": { name: "Croácia", flag: "🇭🇷", code: "CRO" },
+    "Belgium": { name: "Bélgica", flag: "🇧🇪", code: "BEL" },
+    "Mexico": { name: "México", flag: "🇲🇽", code: "MEX" },
+    "Sweden": { name: "Suécia", flag: "🇸🇪", code: "SWE" },
+    "Norway": { name: "Noruega", flag: "🇳🇴", code: "NOR" },
+    "Paraguay": { name: "Paraguai", flag: "🇵🇾", code: "PAR" },
+    "Canada": { name: "Canadá", flag: "🇨🇦", code: "CAN" },
+    "South Africa": { name: "África do Sul", flag: "🇿🇦", code: "RSA" },
+    "Ecuador": { name: "Equador", flag: "🇪🇨", code: "ECU" },
+    "Senegal": { name: "Senegal", flag: "🇸🇳", code: "SEN" },
+    "Japan": { name: "Japão", flag: "🇯🇵", code: "JPN" },
+    "USA": { name: "EUA", flag: "🇺🇸", code: "USA" },
+    "Australia": { name: "Austrália", flag: "🇦🇺", code: "AUS" },
+    "Egypt": { name: "Egito", flag: "🇪🇬", code: "EGY" },
+    "Colombia": { name: "Colômbia", flag: "🇨🇴", code: "COL" },
+    "Ghana": { name: "Gana", flag: "🇬🇭", code: "GHA" },
+    "Algeria": { name: "Argélia", flag: "🇩🇿", code: "ALG" },
+    "Austria": { name: "Áustria", flag: "🇦🇹", code: "AUT" },
+    "Bosnia-Herzegovina": { name: "Bósnia", flag: "🇧🇦", code: "BIH" },
+    "Ivory Coast": { name: "Costa do Marfim", flag: "🇨🇮", code: "CIV" }
+};
+
 exports.syncScores = onSchedule({
     schedule: "every 1 minutes",
     timeZone: "America/Sao_Paulo",
@@ -21,10 +51,9 @@ exports.syncScores = onSchedule({
     try {
         const matchesRef = db.collection('matches');
 
-        // 1. PLACARES MANUAIS (Travados com isManual: true)
         const manualFixes = {
-            'KO-16-1': { homeScore: 0, awayScore: 1, status: 'FINISHED' },
-            'KO-16-2': { homeScore: 0, awayScore: 3, status: 'FINISHED' },
+            'KO-16-1': { homeTeam: "Canadá", homeTeamFlag: "🇨🇦", awayTeam: "Marrocos", awayTeamFlag: "🇲🇦", homeScore: 0, awayScore: 1, status: 'FINISHED' },
+            'KO-16-2': { homeTeam: "Paraguai", homeTeamFlag: "🇵🇾", awayTeam: "França", awayTeamFlag: "🇫🇷", homeScore: 0, awayScore: 3, status: 'FINISHED' },
             'KO-32-2': { homeScore: 3, awayScore: 0, status: 'FINISHED' },
             'KO-32-3': { homeScore: 0, awayScore: 1, status: 'FINISHED' }
         };
@@ -33,7 +62,6 @@ exports.syncScores = onSchedule({
             await matchesRef.doc(id).set({ ...data, isManual: true }, { merge: true });
         }
 
-        // 2. SINCRONIZAÇÃO COM API
         const res = await axios.get("https://api.football-data.org/v4/competitions/WC/matches", {
             headers: { 'X-Auth-Token': API_KEY },
             timeout: 10000
@@ -59,23 +87,44 @@ exports.syncScores = onSchedule({
             const doc = await docRef.get();
 
             if (doc.exists && !doc.data().isManual) {
-                const s = m.score;
-                let h, a;
+                const updateData = {};
 
-                // Lógica de "Ignorar Pênaltis": Soma apenas Regular Time + Extra Time
+                // 1. Placar (Ignorando Pênaltis)
+                const s = m.score;
                 if (s.duration === "PENALTY_SHOOTOUT" || s.penalties) {
-                    h = (s.regularTime?.home ?? 0) + (s.extraTime?.home ?? 0);
-                    a = (s.regularTime?.away ?? 0) + (s.extraTime?.away ?? 0);
+                    updateData.homeScore = (s.regularTime?.home ?? 0) + (s.extraTime?.home ?? 0);
+                    updateData.awayScore = (s.regularTime?.away ?? 0) + (s.extraTime?.away ?? 0);
                 } else {
-                    h = s.fullTime?.home ?? 0;
-                    a = s.fullTime?.away ?? 0;
+                    updateData.homeScore = s.fullTime?.home ?? 0;
+                    updateData.awayScore = s.fullTime?.away ?? 0;
+                }
+                updateData.status = m.status;
+
+                // 2. Horário Oficial (Converte UTC da API para Millis)
+                if (m.utcDate) {
+                    updateData.matchDateMillis = Date.parse(m.utcDate);
                 }
 
-                await docRef.update({
-                    homeScore: h,
-                    awayScore: a,
-                    status: m.status
-                });
+                // 3. Promoção de Times (Atualiza TBD para nomes reais)
+                if (m.homeTeam && m.homeTeam.name && m.homeTeam.name !== "TBD") {
+                    const homeInfo = TEAM_DATA[m.homeTeam.name];
+                    if (homeInfo) {
+                        updateData.homeTeam = homeInfo.name;
+                        updateData.homeTeamFlag = homeInfo.flag;
+                        updateData.homeTeamCode = homeInfo.code;
+                    }
+                }
+
+                if (m.awayTeam && m.awayTeam.name && m.awayTeam.name !== "TBD") {
+                    const awayInfo = TEAM_DATA[m.awayTeam.name];
+                    if (awayInfo) {
+                        updateData.awayTeam = awayInfo.name;
+                        updateData.awayTeamFlag = awayInfo.flag;
+                        updateData.awayTeamCode = awayInfo.code;
+                    }
+                }
+
+                await docRef.update(updateData);
             }
         }
     } catch (e) {
