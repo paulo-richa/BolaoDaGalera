@@ -52,8 +52,8 @@ exports.syncScores = onSchedule({
 
         // 1. PLACARES E TIMES FIXADOS MANUALMENTE
         const manualFixes = {
-            'KO-16-1': { homeTeam: "Canadá", homeTeamFlag: "🇨🇦", awayTeam: "Marrocos", awayTeamFlag: "🇲🇦", homeScore: 0, awayScore: 3, status: 'FINISHED' },
-            'KO-16-2': { homeTeam: "Paraguai", homeTeamFlag: "🇵🇾", awayTeam: "França", awayTeamFlag: "🇫🇷", homeScore: 0, awayScore: 1, status: 'FINISHED' },
+            'KO-16-1': { homeTeam: "Paraguai", homeTeamFlag: "🇵🇾", awayTeam: "França", awayTeamFlag: "🇫🇷", homeScore: 0, awayScore: 1, status: 'FINISHED' },
+            'KO-16-2': { homeTeam: "Canadá", homeTeamFlag: "🇨🇦", awayTeam: "Marrocos", awayTeamFlag: "🇲🇦", homeScore: 0, awayScore: 3, status: 'FINISHED' },
             'KO-32-2': { homeScore: 3, awayScore: 0, status: 'FINISHED' },
             'KO-32-3': { homeScore: 0, awayScore: 1, status: 'FINISHED' }
         };
