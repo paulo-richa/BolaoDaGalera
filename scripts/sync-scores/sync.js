@@ -84,6 +84,45 @@ const db = admin.firestore();
 async function syncScores() {
     try {
         console.log(`🚀 [${new Date().toISOString()}] Iniciando Sincronização...`);
+
+        // --- OVERRIDE MANUAL (Solicitado pelo usuário) ---
+        console.log("🔧 Aplicando correções manuais (Hard-lock)...");
+        const matchesRef = db.collection('matches');
+
+        // Paraguai 0 x 1 França (Encerrado) - KO-16-1
+        await matchesRef.doc('KO-16-1').set({
+            homeTeam: 'Paraguai',
+            homeTeamCode: 'PAR',
+            homeTeamFlag: '🇵🇾',
+            awayTeam: 'França',
+            awayTeamCode: 'FRA',
+            awayTeamFlag: '🇫🇷',
+            homeScore: 0,
+            awayScore: 1,
+            status: 'FINISHED',
+            isManual: true,
+            manualReason: 'User requested: France 0-1'
+        }, { merge: true });
+
+        // Canadá 0 x 3 Marrocos (Encerrado) - KO-16-2
+        await matchesRef.doc('KO-16-2').set({
+            homeTeam: 'Canadá',
+            homeTeamCode: 'CAN',
+            homeTeamFlag: '🇨🇦',
+            awayTeam: 'Marrocos',
+            awayTeamCode: 'MAR',
+            awayTeamFlag: '🇲🇦',
+            homeScore: 0,
+            awayScore: 3,
+            status: 'FINISHED',
+            isManual: true,
+            manualReason: 'User requested: Canada 0-3'
+        }, { merge: true });
+
+        console.log("✅ KO-16-1 (0-1) e KO-16-2 (0-3) travados com isManual: true.");
+
+        // ------------------------------------------------
+
         await syncFromFootballData();
         await syncFromOpenFootball();
         console.log("🏁 Sincronização concluída.");
@@ -160,8 +199,8 @@ async function updateMatchInFirestore(hCode, aCode, data, source, apiId) {
         "537419": "KO-32-5", "537420": "KO-32-6", "537421": "KO-32-7", "537422": "KO-32-8",
         "537423": "KO-32-9", "537424": "KO-32-10", "537425": "KO-32-11", "537426": "KO-32-12",
         "537427": "KO-32-13", "537428": "KO-32-14", "537429": "KO-32-15", "537430": "KO-32-16",
-        "537375": "KO-16-1", "537376": "KO-16-2", "537377": "KO-16-3", "537378": "KO-16-4",
-        "537379": "KO-16-5", "537380": "KO-16-6", "537381": "KO-16-7", "537382": "KO-16-8",
+        "537376": "KO-16-1", "537375": "KO-16-2", "537379": "KO-16-3", "537380": "KO-16-4",
+        "537377": "KO-16-5", "537378": "KO-16-6", "537381": "KO-16-7", "537382": "KO-16-8",
         "537383": "KO-QF-1", "537384": "KO-QF-2", "537385": "KO-QF-3", "537386": "KO-QF-4",
         "537387": "KO-SF-1", "537388": "KO-SF-2", "537389": "KO-SF-3", "537390": "KO-FINAL"
     };
