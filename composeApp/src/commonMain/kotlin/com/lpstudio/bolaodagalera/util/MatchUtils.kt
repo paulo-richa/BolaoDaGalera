@@ -80,10 +80,6 @@ fun resolveDisplayName(
 
         if (f1.isNotEmpty() && f2.isNotEmpty()) {
             return "" to "$f1 ou $f2"
-        } else if (f1.isNotEmpty()) {
-            return "" to f1
-        } else if (f2.isNotEmpty()) {
-            return "" to f2
         }
     }
 
