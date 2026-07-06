@@ -54,6 +54,9 @@ exports.syncScores = onSchedule({
         const manualFixes = {
             'KO-16-1': { homeTeam: "Paraguai", homeTeamFlag: "🇵🇾", awayTeam: "França", awayTeamFlag: "🇫🇷", homeScore: 0, awayScore: 1, status: 'FINISHED' },
             'KO-16-2': { homeTeam: "Canadá", homeTeamFlag: "🇨🇦", awayTeam: "Marrocos", awayTeamFlag: "🇲🇦", homeScore: 0, awayScore: 3, status: 'FINISHED' },
+            'KO-16-5': { homeTeam: "Brasil", homeTeamFlag: "🇧🇷", awayTeam: "Noruega", awayTeamFlag: "🇳🇴", homeScore: 0, awayScore: 1, status: 'FINISHED' },
+            'KO-QF-3': { homeTeam: "Noruega", homeTeamFlag: "🇳🇴", awayTeamCode: "TBD", homeScore: null, awayScore: null, status: 'TIMED' },
+            'KO-SF-2': { homeTeam: "Vencedor Quartas de Final 3", homeTeamCode: "TBD", homeTeamFlag: "🏳️", homeScore: null, awayScore: null, status: 'TIMED' },
             'KO-32-2': { homeScore: 3, awayScore: 0, status: 'FINISHED' },
             'KO-32-3': { homeScore: 0, awayScore: 1, status: 'FINISHED' }
         };
