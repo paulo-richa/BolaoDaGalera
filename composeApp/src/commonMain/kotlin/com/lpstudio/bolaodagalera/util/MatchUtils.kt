@@ -89,10 +89,10 @@ fun resolveDisplayName(
 
 private fun getFallbackName(targetId: String, teamName: String): String {
     return when {
-        targetId.contains("32-") -> "Venc. J32-${targetId.substringAfterLast("-")}"
-        targetId.contains("16-") -> "Venc. Oit. ${targetId.substringAfterLast("-")}"
-        targetId.contains("QF-") -> "Venc. QF ${targetId.substringAfterLast("-")}"
-        targetId.contains("SF-") -> "Venc. SF ${targetId.substringAfterLast("-")}"
+        targetId.contains("32-") -> "Vencedor J32-${targetId.substringAfterLast("-")}"
+        targetId.contains("16-") -> "Vencedor Oitavas ${targetId.substringAfterLast("-")}"
+        targetId.contains("QF-") -> "Vencedor Quartas ${targetId.substringAfterLast("-")}"
+        targetId.contains("SF-") -> "Vencedor Semifinal ${targetId.substringAfterLast("-")}"
         else -> teamName
     }
 }
