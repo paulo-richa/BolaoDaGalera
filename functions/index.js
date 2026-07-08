@@ -52,11 +52,20 @@ exports.syncScores = onSchedule({
 
         // 1. PLACARES E TIMES FIXADOS MANUALMENTE
         const manualFixes = {
-            'KO-16-1': { homeTeam: "Paraguai", homeTeamFlag: "🇵🇾", awayTeam: "França", awayTeamFlag: "🇫🇷", homeScore: 0, awayScore: 1, status: 'FINISHED' },
-            'KO-16-2': { homeTeam: "Canadá", homeTeamFlag: "🇨🇦", awayTeam: "Marrocos", awayTeamFlag: "🇲🇦", homeScore: 0, awayScore: 3, status: 'FINISHED' },
-            'KO-16-5': { homeTeam: "Brasil", homeTeamFlag: "🇧🇷", awayTeam: "Noruega", awayTeamFlag: "🇳🇴", homeScore: 0, awayScore: 1, status: 'FINISHED' },
-            'KO-QF-3': { homeTeam: "Noruega", homeTeamFlag: "🇳🇴", awayTeamCode: "TBD", homeScore: null, awayScore: null, status: 'TIMED' },
-            'KO-SF-2': { homeTeam: "Vencedor Quartas de Final 3", homeTeamCode: "TBD", homeTeamFlag: "🏳️", homeScore: null, awayScore: null, status: 'TIMED' },
+            'KO-16-1': { homeTeam: "Paraguai", homeTeamCode: "PAR", homeTeamFlag: "🇵🇾", awayTeam: "França", awayTeamCode: "FRA", awayTeamFlag: "🇫🇷", homeScore: 0, awayScore: 1, status: 'FINISHED' },
+            'KO-16-2': { homeTeam: "Canadá", homeTeamCode: "CAN", homeTeamFlag: "🇨🇦", awayTeam: "Marrocos", awayTeamCode: "MAR", awayTeamFlag: "🇲🇦", homeScore: 0, awayScore: 3, status: 'FINISHED' },
+            'KO-16-3': { homeTeam: "Portugal", homeTeamCode: "POR", homeTeamFlag: "🇵🇹", awayTeam: "Espanha", awayTeamCode: "ESP", awayTeamFlag: "🇪🇸", homeScore: 0, awayScore: 1, status: 'FINISHED' },
+            'KO-16-4': { homeTeam: "EUA", homeTeamCode: "USA", homeTeamFlag: "🇺🇸", awayTeam: "Bélgica", awayTeamCode: "BEL", awayTeamFlag: "🇧🇪", homeScore: 1, awayScore: 4, status: 'FINISHED' },
+            'KO-16-5': { homeTeam: "Brasil", homeTeamCode: "BRA", homeTeamFlag: "🇧🇷", awayTeam: "Noruega", awayTeamCode: "NOR", awayTeamFlag: "🇳🇴", homeScore: 0, awayScore: 1, status: 'FINISHED' },
+            'KO-16-6': { homeTeam: "México", homeTeamCode: "MEX", homeTeamFlag: "🇲🇽", awayTeam: "Inglaterra", awayTeamCode: "ENG", awayTeamFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", homeScore: 2, awayScore: 3, status: 'FINISHED' },
+            'KO-16-7': { homeTeam: "Argentina", homeTeamCode: "ARG", homeTeamFlag: "🇦🇷", awayTeam: "Egito", awayTeamCode: "EGY", awayTeamFlag: "🇪🇬", homeScore: 3, awayScore: 2, status: 'FINISHED' },
+            'KO-16-8': { homeTeam: "Suíça", homeTeamCode: "SUI", homeTeamFlag: "🇨🇭", awayTeam: "Colômbia", awayTeamCode: "COL", awayTeamFlag: "🇨🇴", homeScore: 0, awayScore: 0, status: 'FINISHED' },
+
+            'KO-QF-1': { homeTeam: "Marrocos", homeTeamCode: "MAR", homeTeamFlag: "🇲🇦", awayTeam: "França", awayTeamCode: "FRA", awayTeamFlag: "🇫🇷", status: 'TIMED' },
+            'KO-QF-2': { homeTeam: "Espanha", homeTeamCode: "ESP", homeTeamFlag: "🇪🇸", awayTeam: "Bélgica", awayTeamCode: "BEL", awayTeamFlag: "🇧🇪", status: 'TIMED' },
+            'KO-QF-3': { homeTeam: "Noruega", homeTeamCode: "NOR", homeTeamFlag: "🇳🇴", awayTeam: "Inglaterra", awayTeamCode: "ENG", awayTeamFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", status: 'TIMED' },
+            'KO-QF-4': { homeTeam: "Argentina", homeTeamCode: "ARG", homeTeamFlag: "🇦🇷", awayTeam: "Colômbia", awayTeamCode: "COL", awayTeamFlag: "🇨🇴", status: 'TIMED' },
+
             'KO-32-2': { homeScore: 3, awayScore: 0, status: 'FINISHED' },
             'KO-32-3': { homeScore: 0, awayScore: 1, status: 'FINISHED' }
         };
@@ -79,38 +88,38 @@ exports.syncScores = onSchedule({
             const docSnap = await matchesRef.doc(id).get();
             const data = docSnap.exists ? docSnap.data() : {};
 
-            // Só atualizamos se o time ainda não for real (TBD)
-            if (data.homeTeamCode === "TBD" || !data.homeTeamCode) {
-                const num = id.split('-').pop();
-                let hLabel, aLabel;
+            // Ajustamos se QUALQUER um dos times ainda for TBD ou não existir
+            const homeIsTbd = data.homeTeamCode === "TBD" || !data.homeTeamCode;
+            const awayIsTbd = data.awayTeamCode === "TBD" || !data.awayTeamCode;
 
-                if (id.includes('16-')) {
-                    hLabel = `Vencedor 16-avos ${num*2-1}`;
-                    aLabel = `Vencedor 16-avos ${num*2}`;
-                } else if (id.includes('QF-')) {
-                    hLabel = `Vencedor Oitavas de Final ${num*2-1}`;
-                    aLabel = `Vencedor Oitavas de Final ${num*2}`;
-                } else if (id.includes('SF-1') || id.includes('SF-2')) {
-                    hLabel = `Vencedor Quartas de Final ${num*2-1}`;
-                    aLabel = `Vencedor Quartas de Final ${num*2}`;
-                } else if (id === 'KO-SF-3') {
-                    hLabel = "Perdedor Semifinal 1";
-                    aLabel = "Perdedor Semifinal 2";
-                } else if (id === 'KO-FINAL') {
-                    hLabel = "Vencedor Semifinal 1";
-                    aLabel = "Vencedor Semifinal 2";
+            if (homeIsTbd || awayIsTbd) {
+                const num = id.split('-').pop();
+                let hLabel = data.homeTeam, aLabel = data.awayTeam;
+
+                if (homeIsTbd) {
+                    if (id.includes('16-')) hLabel = `Vencedor 16-avos ${num*2-1}`;
+                    else if (id.includes('QF-')) hLabel = `Vencedor Oitavas ${num*2-1}`;
+                    else if (id.includes('SF-1') || id.includes('SF-2')) hLabel = `Vencedor Quartas ${num*2-1}`;
+                    else if (id === 'KO-SF-3') hLabel = "Perdedor Semifinal 1";
+                    else if (id === 'KO-FINAL') hLabel = "Vencedor Semifinal 1";
                 }
 
-                if (hLabel) {
-                    // Nota: Mantemos o código TBD para que a bandeira de "ou" continue funcionando no App novo,
-                    // mas o texto por extenso agora virá do banco.
+                if (awayIsTbd) {
+                    if (id.includes('16-')) aLabel = `Vencedor 16-avos ${num*2}`;
+                    else if (id.includes('QF-')) aLabel = `Vencedor Oitavas ${num*2}`;
+                    else if (id.includes('SF-1') || id.includes('SF-2')) aLabel = `Vencedor Quartas ${num*2}`;
+                    else if (id === 'KO-SF-3') aLabel = "Perdedor Semifinal 2";
+                    else if (id === 'KO-FINAL') aLabel = "Vencedor Semifinal 2";
+                }
+
+                if (hLabel !== data.homeTeam || aLabel !== data.awayTeam) {
                     await matchesRef.doc(id).set({
-                        homeTeam: hLabel,
-                        awayTeam: aLabel,
-                        homeTeamCode: "TBD",
-                        awayTeamCode: "TBD",
-                        homeTeamFlag: "🏳️",
-                        awayTeamFlag: "🏳️"
+                        homeTeam: hLabel || "TBD",
+                        awayTeam: aLabel || "TBD",
+                        homeTeamCode: data.homeTeamCode || "TBD",
+                        awayTeamCode: data.awayTeamCode || "TBD",
+                        homeTeamFlag: data.homeTeamFlag || "🏳️",
+                        awayTeamFlag: data.awayTeamFlag || "🏳️"
                     }, { merge: true });
                 }
             }
