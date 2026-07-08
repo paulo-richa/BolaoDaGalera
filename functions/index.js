@@ -64,7 +64,7 @@ exports.syncScores = onSchedule({
             'KO-QF-1': { homeTeam: "Marrocos", homeTeamCode: "MAR", homeTeamFlag: "🇲🇦", awayTeam: "França", awayTeamCode: "FRA", awayTeamFlag: "🇫🇷", status: 'TIMED' },
             'KO-QF-2': { homeTeam: "Espanha", homeTeamCode: "ESP", homeTeamFlag: "🇪🇸", awayTeam: "Bélgica", awayTeamCode: "BEL", awayTeamFlag: "🇧🇪", status: 'TIMED' },
             'KO-QF-3': { homeTeam: "Noruega", homeTeamCode: "NOR", homeTeamFlag: "🇳🇴", awayTeam: "Inglaterra", awayTeamCode: "ENG", awayTeamFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", status: 'TIMED' },
-            'KO-QF-4': { homeTeam: "Argentina", homeTeamCode: "ARG", homeTeamFlag: "🇦🇷", awayTeam: "Colômbia", awayTeamCode: "COL", awayTeamFlag: "🇨🇴", status: 'TIMED' },
+            'KO-QF-4': { homeTeam: "Argentina", homeTeamCode: "ARG", homeTeamFlag: "🇦🇷", awayTeam: "Suíça", awayTeamCode: "SUI", awayTeamFlag: "🇨🇭", status: 'TIMED' },
 
             'KO-32-2': { homeScore: 3, awayScore: 0, status: 'FINISHED' },
             'KO-32-3': { homeScore: 0, awayScore: 1, status: 'FINISHED' }
