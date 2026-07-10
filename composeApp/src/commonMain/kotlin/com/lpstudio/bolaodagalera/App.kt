@@ -16,9 +16,11 @@ import com.lpstudio.bolaodagalera.di.appModule
 import com.lpstudio.bolaodagalera.di.fakeAppModule
 import com.lpstudio.bolaodagalera.di.openFootballAppModule
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.presentation.maintenance.MaintenanceScreen
 import com.lpstudio.bolaodagalera.presentation.navigation.NavGraph
 import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
+import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
 
@@ -39,9 +41,14 @@ fun App() {
     
     KoinApplication(application = { modules(module) }) {
         val matchRepository = koinInject<MatchRepository>()
+        val remoteConfigManager = koinInject<RemoteConfigManager>()
         
+        val isMaintenanceMode by remoteConfigManager.isMaintenanceMode.collectAsState()
+
         LaunchedEffect(Unit) {
             try {
+                // Ativa verificação de manutenção primeiro
+                remoteConfigManager.fetchAndActivate()
                 // Semeia os jogos iniciais (fake data no iOS, real no Android/Desktop)
                 matchRepository.seedMatchesIfNeeded()
             } catch (e: Exception) {
@@ -64,7 +71,11 @@ fun App() {
                         .background(DeepNavy)
                 )
                 Box(Modifier.weight(1f)) {
-                    NavGraph()
+                    if (isMaintenanceMode) {
+                        MaintenanceScreen()
+                    } else {
+                        NavGraph()
+                    }
                 }
             }
         }

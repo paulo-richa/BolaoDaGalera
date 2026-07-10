@@ -14,6 +14,16 @@ fun resolveDisplayName(
     isHome: Boolean,
     depth: Int = 0
 ): Pair<String, String> {
+
+    // Se o nome já for de uma seleção real (não for TBD ou "Vencedor..."), usamos ele direto
+    if (teamName.isNotBlank() && 
+        teamName != "TBD" && 
+        !teamName.startsWith("Vencedor") && 
+        !teamName.contains("/") &&
+        teamFlag != "🏳️"
+    ) {
+        return teamName to teamFlag
+    }
     
     val id = matchId.removePrefix("KO-")
     val hasKo = matchId.startsWith("KO-")
