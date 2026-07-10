@@ -101,8 +101,8 @@ android {
         applicationId = "com.lpstudio.bolaodagalera"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 22
-        versionName = "3.0.2"
+        versionCode = 23
+        versionName = "3.1.0"
     }
     packaging {
         resources {
