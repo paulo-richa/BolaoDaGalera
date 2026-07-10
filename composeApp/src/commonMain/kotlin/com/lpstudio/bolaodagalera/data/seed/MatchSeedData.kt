@@ -162,14 +162,14 @@ val knockoutMatches = listOf(
     k("16-4", USA, BEL, Phase.ROUND_OF_16, 25, 21, 0),
     k("16-5", BRA, NOR, Phase.ROUND_OF_16, 24, 17, 0),
     k("16-6", MEX, ENG, Phase.ROUND_OF_16, 24, 21, 0),
-    ktbd("16-7", "Argentina", "Austrália", Phase.ROUND_OF_16, 26, 13, 0), 
-    ktbd("16-8", "Suíça", "Colômbia", Phase.ROUND_OF_16, 26, 17, 0),
+    k("16-7", ARG, EGY, Phase.ROUND_OF_16, 26, 13, 0), 
+    k("16-8", SUI, COL, Phase.ROUND_OF_16, 26, 17, 0),
 
     // Quartas de Final
-    ktbd("QF-1", "Canadá/Marrocos", "Paraguai/França", Phase.QUARTERFINALS, 28, 17, 0), 
-    ktbd("QF-2", "Portugal/Espanha", "EUA/Bélgica", Phase.QUARTERFINALS, 29, 16, 0),
-    ktbd("QF-3", "Brasil/Noruega", "México/Inglaterra", Phase.QUARTERFINALS, 30, 18, 0), 
-    ktbd("QF-4", "Argentina/Austrália", "Suíça/Colômbia", Phase.QUARTERFINALS, 30, 22, 0),
+    k("QF-1", FRA, MAR, Phase.QUARTERFINALS, 28, 17, 0), 
+    k("QF-2", ESP, BEL, Phase.QUARTERFINALS, 29, 16, 0),
+    k("QF-3", NOR, ENG, Phase.QUARTERFINALS, 30, 18, 0), 
+    k("QF-4", ARG, SUI, Phase.QUARTERFINALS, 30, 22, 0),
 
     // Semifinais
     ktbd("SF-1", "Vencedor QF1", "Vencedor QF2", Phase.SEMIFINALS, 33, 16, 0), 

@@ -65,6 +65,7 @@ kotlin {
             // a Kotlin/Gradle DSL compilation issue. See below for the BOM.
             implementation(libs.firebase.auth)
             implementation(libs.firebase.firestore)
+            implementation(libs.firebase.config)
             // Koin
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
@@ -135,10 +136,12 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     // Provide Firebase BOM at module level so platform versions are available
     // to the GitLive KMP artifacts which rely on platform-specific Android
     // Firebase artifacts without explicit versions.
