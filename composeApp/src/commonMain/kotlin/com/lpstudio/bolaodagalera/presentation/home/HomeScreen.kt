@@ -516,13 +516,8 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                 }
                 
                 // Championship Label
-                val champLabel = when(bolao.championshipId) {
-                    "BRASILEIRAO" -> "Brasileirão 🇧🇷"
-                    "LIBERTADORES" -> "Libertadores 🔥"
-                    "COPA_BRASIL" -> "Copa do Brasil ⚔️"
-                    "AMISTOSOS" -> "Amistosos Pre-Copa ⚽"
-                    else -> "Copa do Mundo 2026 🏆"
-                }
+                val championship = com.lpstudio.bolaodagalera.domain.model.Championship.fromId(bolao.championshipId)
+                val champLabel = "${championship.displayName} ${championship.emoji}"
 
                 // Code (Plain text below title)
                 Text(
