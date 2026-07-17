@@ -343,7 +343,8 @@ fun EditBolaoScreen(
                             
                             val isOnlyGroups = originalBolao.scope == BolaoScope.ONLY_GROUPS
                             val isFull = originalBolao.scope == BolaoScope.FULL
-                            val canEditScope = isOnlyGroups || (isFull && !isKnockoutStarted)
+                            val isLeague = originalBolao.scope == BolaoScope.PONTOS_CORRIDOS
+                            val canEditScope = (isOnlyGroups || (isFull && !isKnockoutStarted)) && !isLeague
                             
                             Surface(
                                 modifier = Modifier
@@ -363,6 +364,7 @@ fun EditBolaoScreen(
                                                 BolaoScope.ONLY_GROUPS -> "⚽"
                                                 BolaoScope.ONLY_KNOCKOUT -> "⚔️"
                                                 BolaoScope.ONLY_BRAZIL -> "🇧🇷"
+                                                BolaoScope.PONTOS_CORRIDOS -> "📈"
                                             },
                                             fontSize = 18.sp
                                         )

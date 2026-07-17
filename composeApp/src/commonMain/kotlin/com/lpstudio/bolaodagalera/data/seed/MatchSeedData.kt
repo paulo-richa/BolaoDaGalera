@@ -17,14 +17,16 @@ private fun day(offset: Int, hourBrt: Int, minutes: Int = 0) =
 
 private fun match(
     id: String, home: Team, away: Team,
-    dateMillis: Long, phase: Phase, group: String? = null
+    dateMillis: Long, phase: Phase, group: String? = null,
+    championshipId: String = "COPA_2026"
 ) = Match(
     id = id,
     homeTeam = home.name, awayTeam = away.name,
     homeTeamCode = home.code, awayTeamCode = away.code,
     homeTeamFlag = home.flag, awayTeamFlag = away.flag,
     matchDateMillis = dateMillis,
-    phase = phase, group = group
+    phase = phase, group = group,
+    championshipId = championshipId
 )
 
 // ─────────────────────────────── SELEÇÕES ────────────────────────────────────
@@ -176,8 +178,8 @@ val knockoutMatches = listOf(
     ktbd("SF-2", "Vencedor QF3", "Vencedor QF4", Phase.SEMIFINALS, 34, 16, 0),
 
     // 3º Lugar e Final
-    ktbd("SF-3", "Perdedor SF1", "Perdedor SF2", Phase.THIRD_PLACE, 37, 18, 0),
-    ktbd("FINAL", "Vencedor SF1", "Vencedor SF2", Phase.FINAL, 38, 16, 0)
+    match("KO-SF-3", Team("Perdedor SF1", "TBD", "🏳️"), Team("Perdedor SF2", "TBD", "🏳️"), day(37, 18), Phase.THIRD_PLACE, Phase.THIRD_PLACE.label),
+    match("KO-FINAL", Team("Vencedor SF1", "TBD", "🏳️"), Team("Vencedor SF2", "TBD", "🏳️"), day(38, 16), Phase.FINAL, Phase.FINAL.label)
 )
 
 val allMatches: List<Match> = groupStageMatches + knockoutMatches

@@ -25,5 +25,6 @@ enum class BolaoScope(val label: String) {
     FULL("Grupos + Mata-mata"),
     ONLY_GROUPS("Apenas Grupos"),
     ONLY_KNOCKOUT("Apenas Mata-mata"),
-    ONLY_BRAZIL("Apenas Jogos do Brasil")
+    ONLY_BRAZIL("Apenas Jogos do Brasil"),
+    PONTOS_CORRIDOS("Pontos Corridos")
 }

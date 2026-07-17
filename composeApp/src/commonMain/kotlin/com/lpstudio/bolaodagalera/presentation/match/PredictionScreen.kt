@@ -35,6 +35,11 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.svg.SvgDecoder
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import kotlinx.coroutines.delay
@@ -95,10 +100,10 @@ fun PredictionScreen(
                 val allMatches = uiState.allMatches
                 val scrollState = rememberScrollState()
 
-                val (homeDisplayName, homeDisplayFlag) = remember(match.id, match.homeTeam, match.homeTeamFlag, allMatches) {
+                val (homeDisplayName, homeDisplayFlag, homeResolvedCrest) = remember(match.id, match.homeTeam, match.homeTeamFlag, allMatches) {
                     resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, allMatches, true)
                 }
-                val (awayDisplayName, awayDisplayFlag) = remember(match.id, match.awayTeam, match.awayTeamFlag, allMatches) {
+                val (awayDisplayName, awayDisplayFlag, awayResolvedCrest) = remember(match.id, match.awayTeam, match.awayTeamFlag, allMatches) {
                     resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
                 }
 
@@ -158,7 +163,11 @@ fun PredictionScreen(
                                     horizontalArrangement = Arrangement.SpaceEvenly,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    TeamHero(flag = homeDisplayFlag, name = homeDisplayName)
+                                    TeamHero(
+                                        flag = homeDisplayFlag,
+                                        name = homeDisplayName,
+                                        crestUrl = homeResolvedCrest ?: match.homeTeamCrest
+                                    )
 
                                     Text(
                                         "vs",
@@ -169,7 +178,11 @@ fun PredictionScreen(
                                         letterSpacing = 2.sp
                                     )
 
-                                    TeamHero(flag = awayDisplayFlag, name = awayDisplayName)
+                                    TeamHero(
+                                        flag = awayDisplayFlag,
+                                        name = awayDisplayName,
+                                        crestUrl = awayResolvedCrest ?: match.awayTeamCrest
+                                    )
                                 }
                             }
                         }
@@ -421,7 +434,7 @@ private fun ConfettiPiece(state: ConfettiState) {
 
 
 @Composable
-private fun TeamHero(flag: String, name: String) {
+private fun TeamHero(flag: String, name: String, crestUrl: String?) {
     val annotatedFlag = remember(flag) {
         if (flag.contains(" ou ")) {
             buildAnnotatedString {
@@ -452,12 +465,35 @@ private fun TeamHero(flag: String, name: String) {
                 .border(2.dp, GlassBorder, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = annotatedFlag,
-                fontSize = if (flag.contains(" ou ")) 24.sp else if (flag.length > 4) 32.sp else 42.sp,
-                textAlign = TextAlign.Center
-            )
+            if (!crestUrl.isNullOrBlank()) {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalPlatformContext.current)
+                        .data(crestUrl)
+                        .decoderFactory(SvgDecoder.Factory())
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp),
+                    loading = {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Neon)
+                    },
+                    error = {
+                        Text(
+                            text = annotatedFlag,
+                            fontSize = 24.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                )
+            } else {
+                Text(
+                    text = annotatedFlag,
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
+
         Spacer(Modifier.height(12.dp))
         Text(
             name,

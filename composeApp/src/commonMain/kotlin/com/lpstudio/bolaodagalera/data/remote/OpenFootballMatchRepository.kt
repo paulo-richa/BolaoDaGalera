@@ -163,6 +163,14 @@ class OpenFootballMatchRepository : MatchRepository {
         }
     }
 
+    override suspend fun upsertMatch(match: Match) {
+        _matches.update { list ->
+            val index = list.indexOfFirst { it.id == match.id }
+            if (index != -1) list.toMutableList().apply { set(index, match) }
+            else list + match
+        }
+    }
+
     override suspend fun seedMatchesIfNeeded() {}
 
     private suspend fun fetchAndApplyUpdates() {

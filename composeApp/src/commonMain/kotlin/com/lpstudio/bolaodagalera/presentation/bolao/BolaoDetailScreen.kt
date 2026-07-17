@@ -77,6 +77,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.svg.SvgDecoder
 
 @Composable
 fun BolaoDetailScreen(
@@ -121,7 +126,7 @@ fun BolaoDetailScreen(
         onAdminUpdateScore = { matchId, home, away ->
             viewModel.updateMatchScore(matchId, home, away)
         },
-        onSyncMatches = { viewModel.syncKnockoutWithApi() },
+        onSyncMatches = { viewModel.syncMatchesWithApi() },
         onNavigateBack = onNavigateBack
     )
 }
@@ -154,12 +159,18 @@ fun BolaoDetailContent(
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     
-    val tabs = remember(uiState.bolao?.scope) {
+    val tabs = remember(uiState.bolao?.scope, uiState.bolao?.championshipId) {
+        val isBrasileirao = uiState.bolao?.championshipId != "COPA_2026"
+        
         when (uiState.bolao?.scope) {
             com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_GROUPS -> listOf("Grupos", "Ranking")
             com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_KNOCKOUT -> listOf("Mata-Mata", "Ranking")
             com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_BRAZIL -> listOf("Jogos", "Ranking")
-            else -> listOf("Grupos", "Mata-Mata", "Ranking")
+            com.lpstudio.bolaodagalera.domain.model.BolaoScope.PONTOS_CORRIDOS -> listOf("Pontos Corridos", "Ranking", "Tabela")
+            else -> {
+                if (isBrasileirao) listOf("Pontos Corridos", "Ranking", "Tabela")
+                else listOf("Grupos", "Mata-Mata", "Ranking")
+            }
         }
     }
 
@@ -253,7 +264,7 @@ fun BolaoDetailContent(
             val currentRound = uiState.matches
                 .filter { it.phase == Phase.GROUP_STAGE && !it.isFinished }
                 .minByOrNull { it.matchDateMillis }
-                ?.groupRound() ?: 1
+                ?.groupRound() ?: uiState.matches.filter { it.phase == Phase.GROUP_STAGE }.minOfOrNull { it.groupRound() } ?: 1
             
             selectedRound = currentRound
         }
@@ -661,7 +672,7 @@ fun BolaoDetailContent(
                                 ) {
                                     Text("🏆", fontSize = 12.sp)
                                     Text(
-                                        "Copa 2026",
+                                        if (bolao.championshipId == "BRASILEIRAO") "Brasileirão" else "Copa 2026",
                                         fontSize = 12.sp,
                                         color = TextMuted,
                                         fontWeight = FontWeight.Medium
@@ -727,7 +738,7 @@ fun BolaoDetailContent(
                 val currentTab = tabs.getOrNull(selectedTab) ?: "Grupos"
 
                 when (currentTab) {
-                    "Grupos", "Jogos" -> GroupStageTab(
+                    "Grupos", "Jogos", "Rodadas", "Pontos Corridos" -> GroupStageTab(
                         matches = groupMatches.ifEmpty { filteredMatches },
                         predictions = uiState.userPredictions,
                         isLoading = uiState.isLoading,
@@ -768,20 +779,186 @@ fun BolaoDetailContent(
                         onAdminUpdateScore = { matchToUpdate = it }
                     )
                     "Ranking" -> RankingScreen(bolaoId = bolaoId)
+                    "Tabela" -> {
+                        val champId = uiState.bolao?.championshipId ?: "BRASILEIRAO"
+                        val champMatches = remember(uiState.allMatches, champId) {
+                            uiState.allMatches.filter { it.championshipId == champId }
+                        }
+                        StandingsTab(matches = champMatches)
+                    }
                 }
             }
         }
     }
 }
 
-// Infere a rodada de um jogo de grupo a partir do ID (GS-X-1..6)
-private fun Match.groupRound(): Int {
-    val n = id.substringAfterLast("-").toIntOrNull() ?: return 0
-    return when (n) { 1, 2 -> 1; 3, 4 -> 2; 5, 6 -> 3; else -> 0 }
+// Rodadas da fase de grupos agora são baseadas nos jogos filtrados
+private fun unlockedRounds(groupMatches: List<Match>): Set<Int> = 
+    groupMatches.map { it.groupRound() }.toSet()
+
+// ── Aba Tabela de Classificação ─────────────────────────────────────────────
+
+@Immutable
+data class TeamStanding(
+    val teamName: String,
+    val teamCode: String,
+    val teamFlag: String,
+    val teamCrest: String?,
+    val played: Int = 0,
+    val won: Int = 0,
+    val drawn: Int = 0,
+    val lost: Int = 0,
+    val goalsFor: Int = 0,
+    val goalsAgainst: Int = 0,
+    val points: Int = 0
+) {
+    val goalDifference: Int get() = goalsFor - goalsAgainst
 }
 
-// Rodadas da fase de grupos agora estão todas liberadas por padrão
-private fun unlockedRounds(groupMatches: List<Match>): Set<Int> = setOf(1, 2, 3)
+@Composable
+private fun StandingsTab(matches: List<Match>) {
+    val standings = remember(matches) {
+        val table = mutableMapOf<String, TeamStanding>()
+        
+        matches.filter { it.isFinished && it.homeScore != null && it.awayScore != null }.forEach { match ->
+            val h = match.homeScore!!
+            val a = match.awayScore!!
+            
+            // Home Team
+            val currentH = table.getOrPut(match.homeTeamCode) { 
+                TeamStanding(match.homeTeam, match.homeTeamCode, match.homeTeamFlag, match.homeTeamCrest) 
+            }
+            table[match.homeTeamCode] = currentH.copy(
+                played = currentH.played + 1,
+                won = currentH.won + (if (h > a) 1 else 0),
+                drawn = currentH.drawn + (if (h == a) 1 else 0),
+                lost = currentH.lost + (if (h < a) 1 else 0),
+                goalsFor = currentH.goalsFor + h,
+                goalsAgainst = currentH.goalsAgainst + a,
+                points = currentH.points + (if (h > a) 3 else if (h == a) 1 else 0)
+            )
+            
+            // Away Team
+            val currentA = table.getOrPut(match.awayTeamCode) { 
+                TeamStanding(match.awayTeam, match.awayTeamCode, match.awayTeamFlag, match.awayTeamCrest) 
+            }
+            table[match.awayTeamCode] = currentA.copy(
+                played = currentA.played + 1,
+                won = currentA.won + (if (a > h) 1 else 0),
+                drawn = currentA.drawn + (if (a == h) 1 else 0),
+                lost = currentA.lost + (if (a < h) 1 else 0),
+                goalsFor = currentA.goalsFor + a,
+                goalsAgainst = currentA.goalsAgainst + h,
+                points = currentA.points + (if (a > h) 3 else if (a == h) 1 else 0)
+            )
+        }
+        
+        table.values.sortedWith(
+            compareByDescending<TeamStanding> { it.points }
+                .thenByDescending { it.won }
+                .thenByDescending { it.goalDifference }
+                .thenByDescending { it.goalsFor }
+        )
+    }
+
+    if (standings.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Aguardando início dos jogos...", color = TextMuted)
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("#", modifier = Modifier.width(24.dp), fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold)
+                    Text("TIME", modifier = Modifier.weight(1f), fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold)
+                    Row(modifier = Modifier.width(140.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        listOf("P", "J", "V", "SG").forEach {
+                            Text(it, modifier = Modifier.width(35.dp), fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                        }
+                    }
+                }
+            }
+
+            items(standings.size) { index ->
+                val team = standings[index]
+                val (name, flag, crest) = remember(team.teamName, team.teamFlag, team.teamCrest, matches) {
+                    resolveDisplayName("", team.teamName, team.teamFlag, matches, true)
+                }
+
+                val isG4 = index < 4
+                val isG5 = index == 4
+                val isZ4 = index >= standings.size - 4 && standings.size > 5
+                
+                val accentColor = when {
+                    isG4 -> Neon
+                    isG5 -> Gold
+                    isZ4 -> ErrorRed
+                    else -> null
+                }
+
+                Surface(
+                    color = when {
+                        isG4 -> Neon.copy(alpha = 0.05f)
+                        isG5 -> Gold.copy(alpha = 0.05f)
+                        isZ4 -> ErrorRed.copy(alpha = 0.05f)
+                        else -> NavyCard
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp, 
+                        when {
+                            isG4 -> Neon.copy(alpha = 0.2f)
+                            isG5 -> Gold.copy(alpha = 0.2f)
+                            isZ4 -> ErrorRed.copy(alpha = 0.2f)
+                            else -> GlassBorder
+                        }
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "${index + 1}",
+                            modifier = Modifier.width(24.dp),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = accentColor ?: TextMuted
+                        )
+                        
+                        TeamIcon(crestUrl = crest ?: team.teamCrest, flag = AnnotatedString(flag), isTbd = false, size = 24.dp)
+                        
+                        Spacer(Modifier.width(10.dp))
+                        
+                        Text(
+                            name,
+                            modifier = Modifier.weight(1f),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                            maxLines = 1
+                        )
+
+                        Row(modifier = Modifier.width(140.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("${team.points}", modifier = Modifier.width(35.dp), fontSize = 13.sp, fontWeight = FontWeight.Black, color = accentColor ?: Color.White, textAlign = TextAlign.Center)
+                            Text("${team.played}", modifier = Modifier.width(35.dp), fontSize = 12.sp, color = TextMuted, textAlign = TextAlign.Center)
+                            Text("${team.won}", modifier = Modifier.width(35.dp), fontSize = 12.sp, color = TextMuted, textAlign = TextAlign.Center)
+                            Text("${team.goalDifference}", modifier = Modifier.width(35.dp), fontSize = 12.sp, color = if (team.goalDifference > 0) Neon else if (team.goalDifference < 0) ErrorRed else TextMuted, textAlign = TextAlign.Center)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 // ── Aba Fase de Grupos ────────────────────────────────────────────────────────
 
@@ -1416,6 +1593,20 @@ private fun KnockoutPhaseSelector(
     onSelect: (Phase?) -> Unit
 ) {
     val listState = rememberLazyListState()
+
+    // Auto-scroll para o item selecionado para garantir visibilidade
+    LaunchedEffect(selected) {
+        if (selected != null) {
+            val index = if (showHoje) {
+                if (selected == Phase.FRIENDLIES) 0 else phases.indexOf(selected) + 1
+            } else {
+                phases.indexOf(selected)
+            }
+            if (index >= 0) {
+                listState.animateScrollToItem(index)
+            }
+        }
+    }
     
     // Verifica se há conteúdo para scrollar para a esquerda ou direita
     val canScrollBackward by remember {
@@ -1488,32 +1679,33 @@ private fun RodadaSelector(
     showHoje: Boolean,
     onSelect: (Int) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        val rounds = listOf(1, 2, 3)
+    val sortedRounds = remember(unlocked) { unlocked.sorted() }
+    val listState = rememberLazyListState()
 
+    androidx.compose.foundation.lazy.LazyRow(
+        state = listState,
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp)
+    ) {
         // Opção HOJE
         if (showHoje) {
-            FilterChip(
-                label = "⚽️ HOJE",
-                isSelected = selected == 0,
-                isUnlocked = true,
-                onClick = { onSelect(0) },
-                modifier = Modifier.weight(1f)
-            )
+            item {
+                FilterChip(
+                    label = "⚽️ HOJE",
+                    isSelected = selected == 0,
+                    isUnlocked = true,
+                    onClick = { onSelect(0) }
+                )
+            }
         }
         
-        rounds.forEach { round ->
+        items(sortedRounds) { round ->
             FilterChip(
                 label = "Rodada $round",
                 isSelected = selected == round,
-                isUnlocked = round in unlocked,
-                onClick = { onSelect(round) },
-                modifier = Modifier.weight(1f)
+                isUnlocked = true, // Já vem filtrado do ViewModel
+                onClick = { onSelect(round) }
             )
         }
     }
@@ -1719,6 +1911,57 @@ private fun TeamNameText(
 }
 
 @Composable
+private fun TeamIcon(
+    crestUrl: String?,
+    flag: AnnotatedString,
+    isTbd: Boolean,
+    size: androidx.compose.ui.unit.Dp = 32.dp
+) {
+    val hasCrest = !crestUrl.isNullOrBlank()
+    
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(if (hasCrest) Color.Transparent else NavyElevated.copy(alpha = 0.6f)),
+        contentAlignment = Alignment.Center
+    ) {
+        if (hasCrest) {
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(LocalPlatformContext.current)
+                    .data(crestUrl)
+                    .decoderFactory(SvgDecoder.Factory())
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                loading = {
+                    CircularProgressIndicator(modifier = Modifier.size(size * 0.5f), strokeWidth = 1.dp, color = Neon)
+                },
+                error = {
+                    Text(
+                        text = flag,
+                        fontSize = if (isTbd) (size.value * 0.5f).sp else (size.value * 0.7f).sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            )
+        } else {
+            // Se não tem escudo e não é TBD (Copa), o usuário prefere não mostrar emojis/círculos
+            if (isTbd) {
+                Text(
+                    text = flag,
+                    fontSize = (size.value * 0.5f).sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun MatchCard(
     match: Match,
     prediction: Prediction?,
@@ -1737,10 +1980,10 @@ fun MatchCard(
     val matchStart = match.matchDateMillis
     
     // Resolve nomes e bandeiras para mata-mata TBD
-    val (homeDisplayName, homeDisplayFlag) = remember(match.id, match.homeTeam, match.homeTeamFlag, allMatches) {
+    val (homeDisplayName, homeDisplayFlag, homeCrest) = remember(match.id, match.homeTeam, match.homeTeamFlag, allMatches) {
         resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, allMatches, true)
     }
-    val (awayDisplayName, awayDisplayFlag) = remember(match.id, match.awayTeam, match.awayTeamFlag, allMatches) {
+    val (awayDisplayName, awayDisplayFlag, awayCrest) = remember(match.id, match.awayTeam, match.awayTeamFlag, allMatches) {
         resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
     }
 
@@ -1789,10 +2032,12 @@ fun MatchCard(
     // Ninguém poderia ter palpitado nele, então ele deve ser travado.
     val isGhostMatch = matchStart < bolaoCreatedAt
 
-    val isTbd = homeDisplayFlag == "🏳️" || homeDisplayFlag.contains("ou") || 
-                awayDisplayFlag == "🏳️" || awayDisplayFlag.contains("ou")
+    val isTbd = (homeDisplayFlag == "🏳️" && match.championshipId == "COPA_2026") || 
+                homeDisplayFlag.contains("ou") || 
+                (awayDisplayFlag == "🏳️" && match.championshipId == "COPA_2026") || 
+                awayDisplayFlag.contains("ou")
 
-    val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isGhostMatch && !isTbd
+    val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isTbd
 
     val borderColor = when {
         isActuallyFinished && hasPrediction -> {
@@ -1953,13 +2198,13 @@ fun MatchCard(
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = if (homeDisplayName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = if (homeDisplayName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = homeAnnotatedFlag, 
-                            fontSize = if (homeDisplayFlag.contains(" ou ")) 22.sp else 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.9f)
+                        TeamIcon(
+                            crestUrl = homeCrest ?: match.homeTeamCrest,
+                            flag = homeAnnotatedFlag,
+                            isTbd = isTbd,
+                            size = 32.dp
                         )
                         if (homeDisplayName.isNotEmpty()) {
                             TeamNameText(
@@ -2024,7 +2269,7 @@ fun MatchCard(
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = if (awayDisplayName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(8.dp, Alignment.End)
+                        horizontalArrangement = if (awayDisplayName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(10.dp, Alignment.End)
                     ) {
                         if (awayDisplayName.isNotEmpty()) {
                             TeamNameText(
@@ -2033,11 +2278,11 @@ fun MatchCard(
                                 textAlign = TextAlign.End
                             )
                         }
-                        Text(
-                            text = awayAnnotatedFlag,
-                            fontSize = if (awayDisplayFlag.contains(" ou ")) 22.sp else 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.9f)
+                        TeamIcon(
+                            crestUrl = awayCrest ?: match.awayTeamCrest,
+                            flag = awayAnnotatedFlag,
+                            isTbd = isTbd,
+                            size = 32.dp
                         )
                     }
                 }

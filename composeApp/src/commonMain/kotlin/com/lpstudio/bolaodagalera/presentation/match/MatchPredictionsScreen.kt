@@ -30,6 +30,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.svg.SvgDecoder
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.util.TimeSource
@@ -147,8 +152,8 @@ fun MatchPredictionsScreen(
                             )
 
                             IconButton(onClick = {
-                                val (hName, hFlag) = resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, uiState.matches, true)
-                                val (aName, aFlag) = resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, uiState.matches, false)
+                                val (hName, hFlag, _) = resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, uiState.matches, true)
+                                val (aName, aFlag, _) = resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, uiState.matches, false)
 
                                 val isOngoing = hasStarted && !isActuallyFinished
 
@@ -214,8 +219,8 @@ fun MatchPredictionsScreen(
                         Spacer(Modifier.height(24.dp))
 
                         // Score Info (DENTRO do Header para dar a altura correta)
-                        val (hName, hFlag) = resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, uiState.matches, true)
-                        val (aName, aFlag) = resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, uiState.matches, false)
+                        val (hName, hFlag, hResolvedCrest) = resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, uiState.matches, true)
+                        val (aName, aFlag, aResolvedCrest) = resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, uiState.matches, false)
 
                         val hAnnotatedFlag = remember(hFlag) {
                             val parts = hFlag.split(" ou ")
@@ -258,17 +263,12 @@ fun MatchPredictionsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Box(
-                                    modifier = Modifier.size(64.dp).clip(CircleShape).background(NavyElevated.copy(alpha = 0.6f)).border(1.dp, GlassBorder, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) { 
-                                    Text(
-                                        text = hAnnotatedFlag, 
-                                        fontSize = if (hFlag.contains(" ou ")) 16.sp else if (hFlag.length > 4) 28.sp else 34.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    ) 
-                                }
+                                TeamCrestCircle(
+                                    url = hResolvedCrest ?: match.homeTeamCrest,
+                                    flag = hAnnotatedFlag,
+                                    isTbd = hFlag.contains(" ou "),
+                                    flagSize = 34.sp
+                                )
                                 if (hName.isNotEmpty()) {
                                     Spacer(Modifier.height(8.dp))
                                     Text(hName, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
@@ -329,17 +329,12 @@ fun MatchPredictionsScreen(
                             }
 
                             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Box(
-                                    modifier = Modifier.size(64.dp).clip(CircleShape).background(NavyElevated.copy(alpha = 0.6f)).border(1.dp, GlassBorder, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) { 
-                                    Text(
-                                        text = aAnnotatedFlag,
-                                        fontSize = if (aFlag.contains(" ou ")) 16.sp else if (aFlag.length > 4) 28.sp else 34.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    ) 
-                                }
+                                TeamCrestCircle(
+                                    url = aResolvedCrest ?: match.awayTeamCrest,
+                                    flag = aAnnotatedFlag,
+                                    isTbd = aFlag.contains(" ou "),
+                                    flagSize = 34.sp
+                                )
                                 if (aName.isNotEmpty()) {
                                     Spacer(Modifier.height(8.dp))
                                     Text(aName, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
@@ -411,6 +406,53 @@ fun MatchPredictionsScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TeamCrestCircle(
+    url: String?,
+    flag: AnnotatedString,
+    isTbd: Boolean,
+    flagSize: androidx.compose.ui.unit.TextUnit
+) {
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .clip(CircleShape)
+            .background(NavyElevated.copy(alpha = 0.6f))
+            .border(1.dp, GlassBorder, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        if (!url.isNullOrBlank()) {
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(LocalPlatformContext.current)
+                    .data(url)
+                    .decoderFactory(SvgDecoder.Factory())
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                loading = {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Neon)
+                },
+                error = {
+                    Text(
+                        text = flag,
+                        fontSize = if (isTbd) 16.sp else flagSize,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            )
+        } else {
+            Text(
+                text = flag,
+                fontSize = if (isTbd) 16.sp else flagSize,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
         }
     }
 }

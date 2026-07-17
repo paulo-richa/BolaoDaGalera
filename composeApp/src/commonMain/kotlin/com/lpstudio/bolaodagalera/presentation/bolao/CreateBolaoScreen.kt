@@ -108,10 +108,11 @@ class CreateBolaoViewModel(
                 val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
 
                 _isGroupStageAvailable.value = matches.any { 
-                    it.phase == Phase.GROUP_STAGE && it.matchDateMillis > now
+                    it.championshipId == "COPA_2026" && it.phase == Phase.GROUP_STAGE && it.matchDateMillis > now
                 }
 
                 _isKnockoutAvailable.value = matches.any { 
+                    it.championshipId == "COPA_2026" &&
                     it.phase != Phase.GROUP_STAGE && 
                     it.phase != Phase.FRIENDLIES &&
                     it.matchDateMillis > now
@@ -173,6 +174,26 @@ fun CreateBolaoScreen(
     var selectedChampionshipId by remember { mutableStateOf("COPA_2026") }
     var selectedScope by remember { mutableStateOf(BolaoScope.FULL) }
     var selectedMatchId by remember { mutableStateOf<String?>(null) }
+
+    // Ajuste inicial do scope baseado no campeonato selecionado
+    LaunchedEffect(selectedChampionshipId) {
+        when (selectedChampionshipId) {
+            "BRASILEIRAO" -> {
+                selectedScope = BolaoScope.PONTOS_CORRIDOS
+                selectedMatchId = null
+            }
+            "COPA_BRASIL" -> {
+                selectedScope = BolaoScope.ONLY_KNOCKOUT
+                selectedMatchId = null
+            }
+            "LIBERTADORES" -> {
+                if (!isGroupStageAvailable) {
+                    selectedScope = BolaoScope.ONLY_KNOCKOUT
+                }
+                selectedMatchId = null
+            }
+        }
+    }
 
     var pointsExact by remember { mutableIntStateOf(3) }
     var pointsWinner by remember { mutableIntStateOf(1) }
@@ -321,7 +342,7 @@ fun CreateBolaoScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text("Criar Bolão", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Novo Bolão", fontWeight = FontWeight.Bold, color = Color.White)
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
@@ -332,7 +353,8 @@ fun CreateBolaoScreen(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = WindowInsets(0, 0, 0, 0)
                 )
             }
         ) { padding ->
@@ -345,8 +367,6 @@ fun CreateBolaoScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                Spacer(Modifier.height(16.dp))
-
                 // Hero section
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -355,16 +375,10 @@ fun CreateBolaoScreen(
                     Text("🏆", fontSize = 56.sp)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Novo Bolão",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
                         "Crie seu bolão e convide amigos com um código único",
                         fontSize = 13.sp,
-                        color = TextMuted
+                        color = TextMuted,
+                        textAlign = TextAlign.Center
                     )
                 }
 
@@ -397,7 +411,7 @@ fun CreateBolaoScreen(
                         )
 
                         championships.forEach { (id, label, emoji) ->
-                            val isAvailable = id == "COPA_2026"
+                            val isAvailable = true // Agora todos os campeonatos estão disponíveis
                             val isSelected = selectedChampionshipId == id
                             
                             Surface(
@@ -453,7 +467,10 @@ fun CreateBolaoScreen(
                                     }
 
                                     // Aqui é onde as opções (Radio Buttons) aparecem apenas para o selecionado
-                                    if (isSelected && id == "COPA_2026") {
+                                    // Brasileirão e Copa do Brasil não precisam de opções de escopo
+                                    val showScopeOptions = isSelected && (id == "COPA_2026" || id == "LIBERTADORES")
+                                    
+                                    if (showScopeOptions) {
                                         Spacer(Modifier.height(16.dp))
                                         HorizontalDivider(color = GlassBorder, thickness = 0.5.dp)
                                         Spacer(Modifier.height(16.dp))
@@ -469,11 +486,23 @@ fun CreateBolaoScreen(
                                         Spacer(Modifier.height(12.dp))
                                         
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            BolaoScope.entries.forEach { scope ->
-                                                val isScopeEnabled = when(scope) {
+                                            BolaoScope.entries
+                                                .filter { scope -> 
+                                                    // Filtros de visibilidade do escopo
+                                                    when (scope) {
+                                                        BolaoScope.ONLY_BRAZIL -> id == "COPA_2026"
+                                                        BolaoScope.PONTOS_CORRIDOS -> false // Definido automaticamente para o Brasileirão
+                                                        // Oculta opções que envolvem grupos se a fase de grupos já acabou
+                                                        BolaoScope.FULL, BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
+                                                        else -> true
+                                                    }
+                                                }
+                                                .forEach { scope ->
+                                                    val isScopeEnabled = when(scope) {
                                                     BolaoScope.FULL, BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
                                                     BolaoScope.ONLY_BRAZIL -> brazilMatches.isNotEmpty()
                                                     BolaoScope.ONLY_KNOCKOUT -> isKnockoutAvailable
+                                                    BolaoScope.PONTOS_CORRIDOS -> true
                                                 }
                                                 val isScopeSelected = selectedScope == scope && isScopeEnabled
                                                 val scopeEmoji = when(scope) {
@@ -481,6 +510,7 @@ fun CreateBolaoScreen(
                                                     BolaoScope.ONLY_GROUPS -> "⚽"
                                                     BolaoScope.ONLY_KNOCKOUT -> "⚔️"
                                                     BolaoScope.ONLY_BRAZIL -> "🇧🇷"
+                                                    BolaoScope.PONTOS_CORRIDOS -> "📈"
                                                 }
                                                 
                                                 Row(
