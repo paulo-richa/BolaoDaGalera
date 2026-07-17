@@ -493,7 +493,7 @@ fun CreateBolaoScreen(
                                                 .filter { scope -> 
                                                     // Filtros de visibilidade do escopo
                                                     when (scope) {
-                                                        BolaoScope.ONLY_BRAZIL -> id == "COPA_2026" || id == "LIBERTADORES"
+                                                        BolaoScope.ONLY_BRAZIL -> id == "COPA_2026"
                                                         BolaoScope.PONTOS_CORRIDOS -> false // Definido automaticamente para o Brasileirão
                                                         // Oculta opções que envolvem grupos se a fase de grupos já acabou
                                                         BolaoScope.FULL, BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
