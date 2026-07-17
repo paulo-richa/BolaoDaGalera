@@ -279,8 +279,13 @@ class FootballDataMatchRepository : MatchRepository {
                         val instant = Instant.parse(apiMatch.utcDate)
                         val tz = TimeZone.UTC
                         val dateTime = instant.toLocalDateTime(tz)
+                        
+                        // Se o ano já for 2026 ou posterior (caso da Libertadores/Brasileirão reais), não alteramos.
+                        // Se for anterior, adicionamos 2 anos para simular a Copa 2026 (legado do projeto).
+                        val finalYear = if (dateTime.year < 2026) dateTime.year + 2 else dateTime.year
+                        
                         val futureDateTime = LocalDateTime(
-                            dateTime.year + 2,
+                            finalYear,
                             dateTime.month,
                             dateTime.dayOfMonth,
                             dateTime.hour,
@@ -291,7 +296,11 @@ class FootballDataMatchRepository : MatchRepository {
                         futureDateTime.toInstant(tz).toEpochMilliseconds()
                     } catch (e: Exception) { 
                         try {
-                            Instant.parse(apiMatch.utcDate).toEpochMilliseconds() + (31536000000L * 2)
+                            val instant = Instant.parse(apiMatch.utcDate)
+                            val baseMillis = instant.toEpochMilliseconds()
+                            // Se a data original já é 2026, não soma
+                            if (instant.toLocalDateTime(TimeZone.UTC).year >= 2026) baseMillis
+                            else baseMillis + (31536000000L * 2)
                         } catch (e2: Exception) { 0L }
                     }
 
@@ -318,9 +327,9 @@ class FootballDataMatchRepository : MatchRepository {
                         phase = when(apiMatch.stage) {
                             "REGULAR_SEASON" -> Phase.GROUP_STAGE
                             "GROUP_STAGE" -> Phase.GROUP_STAGE
-                            "ROUND_1" -> Phase.GROUP_STAGE
-                            "ROUND_2" -> Phase.GROUP_STAGE
-                            "ROUND_3" -> Phase.GROUP_STAGE
+                            "ROUND_1" -> Phase.ROUND_OF_32 // Preliminares
+                            "ROUND_2" -> Phase.ROUND_OF_32
+                            "ROUND_3" -> Phase.ROUND_OF_32
                             "PLAY_OFFS" -> Phase.ROUND_OF_16
                             "ROUND_OF_16" -> Phase.ROUND_OF_16
                             "QUARTER_FINALS" -> Phase.QUARTERFINALS
