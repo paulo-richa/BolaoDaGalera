@@ -159,7 +159,35 @@ private val CLUB_INFO = mapOf(
     "CFC" to ("Coritiba" to "🏁"),
     "CHA" to ("Chapecoense" to "🏹"),
     "MIR" to ("Mirassol" to "🟡"),
-    "CRE" to ("Remo" to "🦁")
+    "CRE" to ("Remo" to "🦁"),
+    "STR" to ("The Strongest" to "🐯"),
+    "TÁC" to ("Deportivo Táchira" to "🦓"),
+    "ALI" to ("Alianza Lima" to "⚪"),
+    "JUV" to ("Juventud" to "🟢"),
+    "CAR" to ("Carabobo" to "🍷"),
+    "HUA" to ("Huachipato" to "⚽"),
+    "DIM" to ("Ind. Medellín" to "🔴"),
+    "SPO" to ("Sporting Cristal" to "🔵"),
+    "OHI" to ("O'Higgins" to "🔵"),
+    "BOL" to ("Bolívar" to "🔵"),
+    "ROS" to ("Rosário Central" to "🏟️"),
+    "UCV" to ("Uni. Central" to "⚽"),
+    "PLA" to ("Platense" to "⚽"),
+    "BOC" to ("Boca Juniors" to "🟦"),
+    "IDL" to ("Ind. del Valle" to "⚫"),
+    "CLA" to ("Libertad" to "⚪"),
+    "NAC" to ("Nacional" to "⚪"),
+    "CUD" to ("Universitario" to "⚽"),
+    "EST" to ("Estudiantes" to "🔴"),
+    "CCP" to ("Cerro Porteño" to "🔵"),
+    "LDU" to ("LDU Quito" to "⚪"),
+    "LAN" to ("Lanús" to "🍷"),
+    "CUS" to ("Cusco FC" to "⚽"),
+    "DLG" to ("La Guaira" to "⚽"),
+    "BAR" to ("Barcelona-EQU" to "🟡"),
+    "PEN" to ("Peñarol" to "🟡"),
+    "CAT" to ("Uni. Católica" to "🔵"),
+    "COQ" to ("Coquimbo Unido" to "🟡")
 )
 
 private val CODE_TO_TEAM_INFO = allMatches
@@ -290,6 +318,10 @@ class FootballDataMatchRepository : MatchRepository {
                         phase = when(apiMatch.stage) {
                             "REGULAR_SEASON" -> Phase.GROUP_STAGE
                             "GROUP_STAGE" -> Phase.GROUP_STAGE
+                            "ROUND_1" -> Phase.GROUP_STAGE
+                            "ROUND_2" -> Phase.GROUP_STAGE
+                            "ROUND_3" -> Phase.GROUP_STAGE
+                            "PLAY_OFFS" -> Phase.ROUND_OF_16
                             "ROUND_OF_16" -> Phase.ROUND_OF_16
                             "QUARTER_FINALS" -> Phase.QUARTERFINALS
                             "SEMI_FINALS" -> Phase.SEMIFINALS
