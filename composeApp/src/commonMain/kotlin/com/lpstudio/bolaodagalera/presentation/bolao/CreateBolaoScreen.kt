@@ -378,8 +378,8 @@ fun CreateBolaoScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("🏆", fontSize = 56.sp)
-                    Spacer(Modifier.height(8.dp))
+                    Text("🏆", fontSize = 48.sp)
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         "Crie seu bolão e convide amigos com um código único",
                         fontSize = 13.sp,
@@ -388,7 +388,7 @@ fun CreateBolaoScreen(
                     )
                 }
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(20.dp))
 
                 // Form card
                 Column(
@@ -397,8 +397,8 @@ fun CreateBolaoScreen(
                         .clip(RoundedCornerShape(20.dp))
                         .background(GlassWhite)
                         .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     // Campeonato
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -474,9 +474,9 @@ fun CreateBolaoScreen(
                                     val showScopeOptions = isSelected && championship.isGroupsAndKnockout
                                     
                                     if (showScopeOptions) {
-                                        Spacer(Modifier.height(16.dp))
+                                        Spacer(Modifier.height(12.dp))
                                         HorizontalDivider(color = GlassBorder, thickness = 0.5.dp)
-                                        Spacer(Modifier.height(16.dp))
+                                        Spacer(Modifier.height(12.dp))
                                         
                                         Text(
                                             "Fases:",
@@ -658,7 +658,7 @@ fun CreateBolaoScreen(
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             if (nameError != null) {
@@ -699,13 +699,13 @@ fun CreateBolaoScreen(
                             "${description.length}/115",
                             color = if (description.length >= 115) ErrorRed else TextSubtle,
                             fontSize = 11.sp,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
                             textAlign = TextAlign.End
                         )
                     }
 
                     // Scoring System Section
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             "Sistema de Pontuação",
                             fontSize = 12.sp,
@@ -778,7 +778,7 @@ fun CreateBolaoScreen(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
                 BolaoButton(
                     text = "Criar Bolão",
