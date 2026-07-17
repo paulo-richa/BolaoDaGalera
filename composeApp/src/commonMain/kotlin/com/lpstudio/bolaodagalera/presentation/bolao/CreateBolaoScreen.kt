@@ -109,11 +109,12 @@ class CreateBolaoViewModel(
                 val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
 
                 _isGroupStageAvailable.value = matches.any { 
-                    it.championshipId == "COPA_2026" && it.phase == Phase.GROUP_STAGE && it.matchDateMillis > now
+                    (it.championshipId == "COPA_2026" || it.championshipId == "LIBERTADORES") && 
+                    it.phase == Phase.GROUP_STAGE && it.matchDateMillis > now
                 }
 
                 _isKnockoutAvailable.value = matches.any { 
-                    it.championshipId == "COPA_2026" &&
+                    (it.championshipId == "COPA_2026" || it.championshipId == "LIBERTADORES") &&
                     it.phase != Phase.GROUP_STAGE && 
                     it.phase != Phase.FRIENDLIES &&
                     it.matchDateMillis > now
@@ -414,7 +415,7 @@ fun CreateBolaoScreen(
                             val id = championship.id
                             val label = championship.displayName
                             val emoji = championship.emoji
-                            val isAvailable = id == "COPA_2026" || id == "BRASILEIRAO"
+                            val isAvailable = id == "COPA_2026" || id == "BRASILEIRAO" || id == "LIBERTADORES"
                             val isSelected = selectedChampionshipId == id
                             
                             Surface(
@@ -492,7 +493,7 @@ fun CreateBolaoScreen(
                                                 .filter { scope -> 
                                                     // Filtros de visibilidade do escopo
                                                     when (scope) {
-                                                        BolaoScope.ONLY_BRAZIL -> id == "COPA_2026"
+                                                        BolaoScope.ONLY_BRAZIL -> id == "COPA_2026" || id == "LIBERTADORES"
                                                         BolaoScope.PONTOS_CORRIDOS -> false // Definido automaticamente para o Brasileirão
                                                         // Oculta opções que envolvem grupos se a fase de grupos já acabou
                                                         BolaoScope.FULL, BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
