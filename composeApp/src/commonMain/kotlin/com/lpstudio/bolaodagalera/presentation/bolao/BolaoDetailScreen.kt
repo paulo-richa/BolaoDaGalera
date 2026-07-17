@@ -160,16 +160,29 @@ fun BolaoDetailContent(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     
     val tabs = remember(uiState.bolao?.scope, uiState.bolao?.championshipId) {
-        val isBrasileirao = uiState.bolao?.championshipId != "COPA_2026"
+        val championship = com.lpstudio.bolaodagalera.domain.model.Championship.fromId(uiState.bolao?.championshipId)
         
         when (uiState.bolao?.scope) {
             com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_GROUPS -> listOf("Grupos", "Ranking")
             com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_KNOCKOUT -> listOf("Mata-Mata", "Ranking")
             com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_BRAZIL -> listOf("Jogos", "Ranking")
-            com.lpstudio.bolaodagalera.domain.model.BolaoScope.PONTOS_CORRIDOS -> listOf("Pontos Corridos", "Ranking", "Tabela")
+            com.lpstudio.bolaodagalera.domain.model.BolaoScope.PONTOS_CORRIDOS -> {
+                val list = mutableListOf("Pontos Corridos", "Ranking")
+                if (championship.hasStandings) list.add("Tabela")
+                list
+            }
             else -> {
-                if (isBrasileirao) listOf("Pontos Corridos", "Ranking", "Tabela")
-                else listOf("Grupos", "Mata-Mata", "Ranking")
+                // Caso Escopo Total (FULL)
+                if (championship.isPointsBased) {
+                    val list = mutableListOf("Pontos Corridos", "Ranking")
+                    if (championship.hasStandings) list.add("Tabela")
+                    list
+                } else if (championship.isGroupsAndKnockout) {
+                    listOf("Grupos", "Mata-Mata", "Ranking")
+                } else {
+                    // Fallback para campeonatos apenas mata-mata (ex: Copa do Brasil)
+                    listOf("Mata-Mata", "Ranking")
+                }
             }
         }
     }
@@ -672,7 +685,7 @@ fun BolaoDetailContent(
                                 ) {
                                     Text("🏆", fontSize = 12.sp)
                                     Text(
-                                        if (bolao.championshipId == "BRASILEIRAO") "Brasileirão" else "Copa 2026",
+                                        com.lpstudio.bolaodagalera.domain.model.Championship.fromId(bolao.championshipId).displayName,
                                         fontSize = 12.sp,
                                         color = TextMuted,
                                         fontWeight = FontWeight.Medium
@@ -798,67 +811,10 @@ private fun unlockedRounds(groupMatches: List<Match>): Set<Int> =
 
 // ── Aba Tabela de Classificação ─────────────────────────────────────────────
 
-@Immutable
-data class TeamStanding(
-    val teamName: String,
-    val teamCode: String,
-    val teamFlag: String,
-    val teamCrest: String?,
-    val played: Int = 0,
-    val won: Int = 0,
-    val drawn: Int = 0,
-    val lost: Int = 0,
-    val goalsFor: Int = 0,
-    val goalsAgainst: Int = 0,
-    val points: Int = 0
-) {
-    val goalDifference: Int get() = goalsFor - goalsAgainst
-}
-
 @Composable
 private fun StandingsTab(matches: List<Match>) {
     val standings = remember(matches) {
-        val table = mutableMapOf<String, TeamStanding>()
-        
-        matches.filter { it.isFinished && it.homeScore != null && it.awayScore != null }.forEach { match ->
-            val h = match.homeScore!!
-            val a = match.awayScore!!
-            
-            // Home Team
-            val currentH = table.getOrPut(match.homeTeamCode) { 
-                TeamStanding(match.homeTeam, match.homeTeamCode, match.homeTeamFlag, match.homeTeamCrest) 
-            }
-            table[match.homeTeamCode] = currentH.copy(
-                played = currentH.played + 1,
-                won = currentH.won + (if (h > a) 1 else 0),
-                drawn = currentH.drawn + (if (h == a) 1 else 0),
-                lost = currentH.lost + (if (h < a) 1 else 0),
-                goalsFor = currentH.goalsFor + h,
-                goalsAgainst = currentH.goalsAgainst + a,
-                points = currentH.points + (if (h > a) 3 else if (h == a) 1 else 0)
-            )
-            
-            // Away Team
-            val currentA = table.getOrPut(match.awayTeamCode) { 
-                TeamStanding(match.awayTeam, match.awayTeamCode, match.awayTeamFlag, match.awayTeamCrest) 
-            }
-            table[match.awayTeamCode] = currentA.copy(
-                played = currentA.played + 1,
-                won = currentA.won + (if (a > h) 1 else 0),
-                drawn = currentA.drawn + (if (a == h) 1 else 0),
-                lost = currentA.lost + (if (a < h) 1 else 0),
-                goalsFor = currentA.goalsFor + a,
-                goalsAgainst = currentA.goalsAgainst + h,
-                points = currentA.points + (if (a > h) 3 else if (a == h) 1 else 0)
-            )
-        }
-        
-        table.values.sortedWith(
-            compareByDescending<TeamStanding> { it.points }
-                .thenByDescending { it.won }
-                .thenByDescending { it.goalDifference }
-                .thenByDescending { it.goalsFor }
-        )
+        com.lpstudio.bolaodagalera.domain.model.StandingsCalculator.calculate(matches)
     }
 
     if (standings.isEmpty()) {

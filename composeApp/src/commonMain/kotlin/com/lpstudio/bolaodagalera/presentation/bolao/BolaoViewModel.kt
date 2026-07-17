@@ -124,8 +124,9 @@ class BolaoViewModel(
                                 }!!
                             }
 
-                        // 2. Filtro de Rodada de Corte (Apenas para novos campeonatos como Brasileirão)
-                        if (championshipId != "COPA_2026") {
+                        // 2. Filtro de Rodada de Corte (Apenas para campeonatos baseados em pontos/rodadas)
+                        val championship = Championship.fromId(championshipId)
+                        if (championship.isPointsBased) {
                             val matchesByRound = filteredMatches.groupBy { it.groupRound() }
                             
                             // Encontramos a maior rodada onde a maioria dos jogos (>50%) já terminou ou começou

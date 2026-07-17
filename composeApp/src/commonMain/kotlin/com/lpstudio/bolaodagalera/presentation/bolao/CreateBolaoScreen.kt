@@ -31,6 +31,7 @@ import com.lpstudio.bolaodagalera.LauncherProvider
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
+import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
@@ -177,18 +178,22 @@ fun CreateBolaoScreen(
 
     // Ajuste inicial do scope baseado no campeonato selecionado
     LaunchedEffect(selectedChampionshipId) {
-        when (selectedChampionshipId) {
-            "BRASILEIRAO" -> {
+        val championship = Championship.fromId(selectedChampionshipId)
+        when {
+            championship.isPointsBased -> {
                 selectedScope = BolaoScope.PONTOS_CORRIDOS
                 selectedMatchId = null
             }
-            "COPA_BRASIL" -> {
+            !championship.isGroupsAndKnockout -> {
+                // Se não tem a mistura (ex: apenas mata-mata como Copa do Brasil)
                 selectedScope = BolaoScope.ONLY_KNOCKOUT
                 selectedMatchId = null
             }
-            "LIBERTADORES" -> {
+            championship.isGroupsAndKnockout -> {
                 if (!isGroupStageAvailable) {
                     selectedScope = BolaoScope.ONLY_KNOCKOUT
+                } else {
+                    selectedScope = BolaoScope.FULL
                 }
                 selectedMatchId = null
             }
@@ -403,15 +408,13 @@ fun CreateBolaoScreen(
                             fontWeight = FontWeight.Medium
                         )
                         
-                        val championships = listOf(
-                            Triple("COPA_2026", "Copa do Mundo 2026", "🏆"),
-                            Triple("BRASILEIRAO", "Brasileirão", "🇧🇷"),
-                            Triple("LIBERTADORES", "Libertadores", "🔥"),
-                            Triple("COPA_BRASIL", "Copa do Brasil", "⚔️")
-                        )
+                        val championships = Championship.entries
 
-                        championships.forEach { (id, label, emoji) ->
-                            val isAvailable = true // Agora todos os campeonatos estão disponíveis
+                        championships.forEach { championship ->
+                            val id = championship.id
+                            val label = championship.displayName
+                            val emoji = championship.emoji
+                            val isAvailable = id == "COPA_2026" || id == "BRASILEIRAO"
                             val isSelected = selectedChampionshipId == id
                             
                             Surface(
@@ -447,7 +450,7 @@ fun CreateBolaoScreen(
                                                 )
                                                 if (!isAvailable) {
                                                     Text(
-                                                        "Disponível em breve",
+                                                        "Em breve",
                                                         fontSize = 10.sp,
                                                         color = Neon.copy(alpha = 0.7f),
                                                         fontWeight = FontWeight.Bold
@@ -467,8 +470,7 @@ fun CreateBolaoScreen(
                                     }
 
                                     // Aqui é onde as opções (Radio Buttons) aparecem apenas para o selecionado
-                                    // Brasileirão e Copa do Brasil não precisam de opções de escopo
-                                    val showScopeOptions = isSelected && (id == "COPA_2026" || id == "LIBERTADORES")
+                                    val showScopeOptions = isSelected && championship.isGroupsAndKnockout
                                     
                                     if (showScopeOptions) {
                                         Spacer(Modifier.height(16.dp))
@@ -476,7 +478,7 @@ fun CreateBolaoScreen(
                                         Spacer(Modifier.height(16.dp))
                                         
                                         Text(
-                                            "Jogos incluídos:",
+                                            "Fases:",
                                             fontSize = 11.sp,
                                             color = TextMuted,
                                             fontWeight = FontWeight.Bold,
