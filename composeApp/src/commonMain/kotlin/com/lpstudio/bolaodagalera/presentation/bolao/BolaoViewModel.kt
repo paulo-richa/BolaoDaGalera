@@ -113,8 +113,12 @@ class BolaoViewModel(
 
                         // TRATAMENTO DE DUPLICADOS/GHOSTS: Mesmo usando IDs padronizados,
                         // podem existir documentos antigos com IDs diferentes no Firestore.
-                        // Agrupamos por Times e Rodada para garantir que exibimos apenas a versão "mais completa".
-                        filteredMatches = filteredMatches.groupBy { "${it.homeTeamCode}-${it.awayTeamCode}-${it.groupRound()}" }
+                        // Agrupamos por Times e Rodada apenas para a Fase de Grupos.
+                        // Para Mata-Mata, usamos o ID único para evitar que jogos TBD sejam colapsados.
+                        filteredMatches = filteredMatches.groupBy { 
+                            if (it.phase == Phase.GROUP_STAGE) "${it.homeTeamCode}-${it.awayTeamCode}-${it.groupRound()}"
+                            else it.id 
+                        }
                             .map { (_, matchGroup) ->
                                 matchGroup.maxByOrNull { 
                                     if (it.status == "FINISHED") 3 
