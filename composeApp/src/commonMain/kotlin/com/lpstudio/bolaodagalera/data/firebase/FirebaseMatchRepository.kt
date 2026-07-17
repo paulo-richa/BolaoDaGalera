@@ -16,11 +16,13 @@ private data class MatchDto(
     val homeTeam: String = "", val awayTeam: String = "",
     val homeTeamCode: String = "", val awayTeamCode: String = "",
     val homeTeamFlag: String = "", val awayTeamFlag: String = "",
+    val homeTeamCrest: String? = null, val awayTeamCrest: String? = null,
     val matchDateMillis: Long = 0L, val phase: String = "",
     val group: String? = null, 
     val homeScore: Int? = null, 
     val awayScore: Int? = null,
     val status: String? = null,
+    val championshipId: String = "COPA_2026",
     val isManual: Boolean = false
 )
 
@@ -28,18 +30,24 @@ private fun MatchDto.toDomain(id: String) = Match(
     id = id, homeTeam = homeTeam, awayTeam = awayTeam,
     homeTeamCode = homeTeamCode, awayTeamCode = awayTeamCode,
     homeTeamFlag = homeTeamFlag, awayTeamFlag = awayTeamFlag,
+    homeTeamCrest = homeTeamCrest, awayTeamCrest = awayTeamCrest,
     matchDateMillis = matchDateMillis, phase = Phase.valueOf(phase),
     group = group, homeScore = homeScore, awayScore = awayScore,
-    status = status, isManual = isManual
-)
+    status = status, championshipId = championshipId, isManual = isManual
+).also { 
+    if (it.homeTeamCode == "BOT" || it.homeTeamCode == "VIT") {
+        println("BOLAOLOG: DTO -> Domain: ${it.homeTeamCode} ${it.homeScore}x${it.awayScore} | ID: $id")
+    }
+}
 
 private fun Match.toDto() = MatchDto(
     homeTeam = homeTeam, awayTeam = awayTeam,
     homeTeamCode = homeTeamCode, awayTeamCode = awayTeamCode,
     homeTeamFlag = homeTeamFlag, awayTeamFlag = awayTeamFlag,
+    homeTeamCrest = homeTeamCrest, awayTeamCrest = awayTeamCrest,
     matchDateMillis = matchDateMillis, phase = phase.name,
     group = group, homeScore = homeScore, awayScore = awayScore,
-    status = status, isManual = isManual
+    status = status, championshipId = championshipId, isManual = isManual
 )
 
 /**
@@ -132,6 +140,21 @@ class FirebaseMatchRepository : MatchRepository {
         status?.let { updates["status"] = it }
 
         collection.document(matchId).set(updates, merge = true)
+    }
+
+    override suspend fun upsertMatch(match: Match) {
+        try {
+            val doc = collection.document(match.id).get()
+            if (doc.exists) {
+                val existing = doc.data<MatchDto>()
+                if (existing.isManual) return // Não sobrescreve se foi editado manualmente
+            }
+            collection.document(match.id).set(match.toDto(), merge = true)
+        } catch (e: Exception) {
+            // Se o documento não existe, o get() pode falhar dependendo da lib, 
+            // mas aqui apenas tentamos o set direto como fallback.
+            collection.document(match.id).set(match.toDto(), merge = true)
+        }
     }
 
     override suspend fun seedMatchesIfNeeded() {

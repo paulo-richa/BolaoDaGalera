@@ -517,6 +517,9 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                 
                 // Championship Label
                 val champLabel = when(bolao.championshipId) {
+                    "BRASILEIRAO" -> "Brasileirão 🇧🇷"
+                    "LIBERTADORES" -> "Libertadores 🔥"
+                    "COPA_BRASIL" -> "Copa do Brasil ⚔️"
                     "AMISTOSOS" -> "Amistosos Pre-Copa ⚽"
                     else -> "Copa do Mundo 2026 🏆"
                 }

@@ -5,13 +5,14 @@ import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import io.ktor.client.*
-import io.ktor.client.call.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -28,6 +29,7 @@ private data class FdMatch(
     val utcDate: String,
     val status: String,
     val stage: String,
+    val matchday: Int? = null,
     val homeTeam: FdTeam? = null,
     val awayTeam: FdTeam? = null,
     val score: FdScore? = null
@@ -35,8 +37,10 @@ private data class FdMatch(
 
 @Serializable
 private data class FdTeam(
+    val id: Int? = null,
     val name: String? = null,
-    val tla: String? = null
+    val tla: String? = null,
+    val crest: String? = null
 )
 
 @Serializable
@@ -106,7 +110,56 @@ private val NAME_TO_CODE = mapOf(
     "England" to "ENG", "Inglaterra" to "ENG",
     "Croatia" to "CRO", "Croácia" to "CRO",
     "Panama" to "PAN", "Panamá" to "PAN",
-    "Ghana" to "GHA", "Gana" to "GHA"
+    "Ghana" to "GHA", "Gana" to "GHA",
+    // Brasileirão
+    "SE Palmeiras" to "PAL", "Palmeiras" to "PAL",
+    "CR Flamengo" to "FLA", "Flamengo" to "FLA",
+    "Corinthians" to "COR", "Sport Club Corinthians Paulista" to "COR",
+    "São Paulo" to "SAO", "São Paulo FC" to "SAO",
+    "Botafogo" to "BOT", "Botafogo FR" to "BOT",
+    "Fluminense" to "FLU", "Fluminense FC" to "FLU",
+    "Atlético Mineiro" to "CAM", "Atlético-MG" to "CAM",
+    "Grêmio" to "GRE", "Grêmio FBPA" to "GRE",
+    "Internacional" to "INT", "SC Internacional" to "INT",
+    "Cruzeiro" to "CRU", "Cruzeiro EC" to "CRU",
+    "Vasco da Gama" to "VAS", "Vasco" to "VAS",
+    "Bahia" to "BAH", "EC Bahia" to "BAH",
+    "Athletico Paranaense" to "CAP", "Athletico-PR" to "CAP",
+    "Fortaleza" to "FOR", "Fortaleza EC" to "FOR",
+    "Santos FC" to "SAN", "Santos" to "SAN",
+    "EC Vitória" to "VIT", "Vitória" to "VIT",
+    "RB Bragantino" to "RBB", "Bragantino" to "RBB",
+    "Mirassol FC" to "MIR", "Mirassol" to "MIR",
+    "Chapecoense AF" to "CHA", "Chapecoense" to "CHA",
+    "Coritiba FBC" to "CFC", "Coritiba" to "CFC",
+    "Clube do Remo" to "CRE", "Remo" to "CRE"
+)
+
+private val CLUB_INFO = mapOf(
+    "PAL" to ("Palmeiras" to "🐷"),
+    "FLA" to ("Flamengo" to "🔴"),
+    "COR" to ("Corinthians" to "🦅"),
+    "SAO" to ("São Paulo" to "🇾🇪"),
+    "PAU" to ("São Paulo" to "🇾🇪"),
+    "BOT" to ("Botafogo" to "⭐"),
+    "FLU" to ("Fluminense" to "🇭🇺"),
+    "CAM" to ("Atlético-MG" to "🐔"),
+    "GRE" to ("Grêmio" to "🇪🇪"),
+    "FBP" to ("Grêmio" to "🇪🇪"),
+    "INT" to ("Internacional" to "🇦🇹"),
+    "SCI" to ("Internacional" to "🇦🇹"),
+    "CRU" to ("Cruzeiro" to "🦊"),
+    "VAS" to ("Vasco" to "💢"),
+    "BAH" to ("Bahia" to "🇳🇱"),
+    "CAP" to ("Athletico-PR" to "🌪️"),
+    "FOR" to ("Fortaleza" to "🦁"),
+    "VIT" to ("Vitória" to "🦁"),
+    "SAN" to ("Santos" to "🐳"),
+    "RBB" to ("Bragantino" to "🐂"),
+    "CFC" to ("Coritiba" to "🏁"),
+    "CHA" to ("Chapecoense" to "🏹"),
+    "MIR" to ("Mirassol" to "🟡"),
+    "CRE" to ("Remo" to "🦁")
 )
 
 private val CODE_TO_TEAM_INFO = allMatches
@@ -123,10 +176,15 @@ class FootballDataMatchRepository : MatchRepository {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
         }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30000
+            connectTimeoutMillis = 15000
+            socketTimeoutMillis = 15000
+        }
     }
 
     private val API_KEY = "***REMOVED_SECRET***"
-    private val API_URL = "https://api.football-data.org/v4/competitions/WC/matches"
+    private val BASE_URL = "https://api.football-data.org/v4/competitions"
 
     private val _matches = MutableStateFlow(allMatches)
 
@@ -134,8 +192,122 @@ class FootballDataMatchRepository : MatchRepository {
     override fun getMatchesByPhase(phase: Phase): Flow<List<Match>> = _matches.map { it.filter { m -> m.phase == phase } }
     override suspend fun getMatch(matchId: String): Match = _matches.value.first { it.id == matchId }
     
-    suspend fun getUpdatedMatches(currentMatches: List<Match>): List<Match> {
-        return fetchAndMapUpdates(currentMatches)
+    suspend fun getUpdatedMatches(currentMatches: List<Match>, championshipId: String = "COPA_2026"): List<Match> {
+        // Para a Copa do Mundo, mantemos o mapeamento conservador original (Não mexer!)
+        if (championshipId == "COPA_2026") {
+            return fetchAndMapUpdates(currentMatches, championshipId)
+        }
+        
+        // Para novos campeonatos, buscamos todos os jogos da API e mapeamos
+        return fetchAllMatchesFromApi(championshipId)
+    }
+
+    private suspend fun fetchAllMatchesFromApi(championshipId: String): List<Match> {
+        val compCode = when(championshipId) {
+            "BRASILEIRAO" -> "BSA"
+            "LIBERTADORES" -> "CLI"
+            else -> return emptyList()
+        }
+        
+        // Buscamos a temporada atual (sem fixar 2026) para pegar jogos reais
+        val url = "$BASE_URL/$compCode/matches"
+        
+        try {
+            val response = client.get(url) {
+                header("X-Auth-Token", API_KEY)
+            }
+            
+            if (response.status.value != 200) {
+                println("BOLAOLOG: Erro na API (${response.status.value}): ${response.bodyAsText()}")
+                return emptyList()
+            }
+
+            val responseText = response.bodyAsText()
+            val jsonParser = Json { ignoreUnknownKeys = true }
+            val fdResponse: FdResponse = jsonParser.decodeFromString(responseText)
+            
+            return fdResponse.matches
+                .map { apiMatch ->
+                    val hName = apiMatch.homeTeam?.name ?: ""
+                    val aName = apiMatch.awayTeam?.name ?: ""
+                    
+                    var hCode = apiMatch.homeTeam?.tla ?: NAME_TO_CODE[hName] ?: "TBD"
+                    var aCode = apiMatch.awayTeam?.tla ?: NAME_TO_CODE[aName] ?: "TBD"
+                    
+                    // Ajuste para Coritiba
+                    if (apiMatch.homeTeam?.id == 4241) hCode = "CFC"
+                    if (apiMatch.awayTeam?.id == 4241) aCode = "CFC"
+
+                    val hInfo = CLUB_INFO[hCode] ?: CODE_TO_TEAM_INFO[hCode]
+                    val aInfo = CLUB_INFO[aCode] ?: CODE_TO_TEAM_INFO[aCode]
+
+                    val round = apiMatch.matchday ?: 0
+                    
+                    // BUSCA DE ID ROBUSTA: Agora usamos o ID da API como fonte única de verdade
+                    // para evitar duplicados e "adivinhações" por nome de time.
+                    val matchId = "${compCode}-2026-R${round}-${apiMatch.id}"
+
+                    val apiDateMillis = try {
+                        val instant = Instant.parse(apiMatch.utcDate)
+                        val tz = TimeZone.UTC
+                        val dateTime = instant.toLocalDateTime(tz)
+                        val futureDateTime = LocalDateTime(
+                            dateTime.year + 2,
+                            dateTime.month,
+                            dateTime.dayOfMonth,
+                            dateTime.hour,
+                            dateTime.minute,
+                            dateTime.second,
+                            dateTime.nanosecond
+                        )
+                        futureDateTime.toInstant(tz).toEpochMilliseconds()
+                    } catch (e: Exception) { 
+                        try {
+                            Instant.parse(apiMatch.utcDate).toEpochMilliseconds() + (31536000000L * 2)
+                        } catch (e2: Exception) { 0L }
+                    }
+
+                    val s = apiMatch.score
+                    // Priorizar regularTime para jogos ao vivo
+                    val hScore = s?.fullTime?.home ?: s?.regularTime?.home
+                    val aScore = s?.fullTime?.away ?: s?.regularTime?.away
+                    
+                    if (apiMatch.status == "IN_PLAY") {
+                        println("BOLAOLOG: Live Match Found: $hName $hScore x $aScore $aName")
+                    }
+
+                    Match(
+                        id = matchId,
+                        homeTeam = hInfo?.first ?: hName,
+                        homeTeamCode = hCode,
+                        homeTeamFlag = hInfo?.second ?: "🏳️",
+                        awayTeam = aInfo?.first ?: aName,
+                        awayTeamCode = aCode,
+                        awayTeamFlag = aInfo?.second ?: "🏳️",
+                        homeTeamCrest = apiMatch.homeTeam?.crest,
+                        awayTeamCrest = apiMatch.awayTeam?.crest,
+                        matchDateMillis = apiDateMillis,
+                        phase = when(apiMatch.stage) {
+                            "REGULAR_SEASON" -> Phase.GROUP_STAGE
+                            "GROUP_STAGE" -> Phase.GROUP_STAGE
+                            "ROUND_OF_16" -> Phase.ROUND_OF_16
+                            "QUARTER_FINALS" -> Phase.QUARTERFINALS
+                            "SEMI_FINALS" -> Phase.SEMIFINALS
+                            "FINAL" -> Phase.FINAL
+                            else -> Phase.GROUP_STAGE
+                        },
+                        group = if (round > 0) "Rodada $round" else apiMatch.stage,
+                        homeScore = hScore,
+                        awayScore = aScore,
+                        status = apiMatch.status,
+                        championshipId = championshipId,
+                        isManual = false
+                    )
+                }
+        } catch (e: Exception) {
+            println("BOLAOLOG: Falha crítica na busca para $championshipId: ${e.message}")
+            return emptyList()
+        }
     }
 
     override suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {}
@@ -151,10 +323,16 @@ class FootballDataMatchRepository : MatchRepository {
         status: String?,
         isManual: Boolean
     ) {}
+    override suspend fun upsertMatch(match: Match) {
+        // Implementação vazia no repositório remoto, pois ele apenas consome
+    }
     override suspend fun seedMatchesIfNeeded() {}
 
-    private suspend fun fetchAndMapUpdates(currentMatches: List<Match>): List<Match> {
-        val responseText = client.get(API_URL) {
+    private suspend fun fetchAndMapUpdates(currentMatches: List<Match>, championshipId: String): List<Match> {
+        val compCode = "WC" // Fixo para o legado
+        val url = "$BASE_URL/$compCode/matches"
+        
+        val responseText = client.get(url) {
             header("X-Auth-Token", API_KEY)
         }.bodyAsText()
         
@@ -239,9 +417,11 @@ class FootballDataMatchRepository : MatchRepository {
                         homeTeam = hInfo?.first ?: hName,
                         homeTeamCode = hCode,
                         homeTeamFlag = hInfo?.second ?: "🏳️",
+                        homeTeamCrest = apiMatch.homeTeam?.crest,
                         awayTeam = aInfo?.first ?: aName,
                         awayTeamCode = aCode,
-                        awayTeamFlag = aInfo?.second ?: "🏳️"
+                        awayTeamFlag = aInfo?.second ?: "🏳️",
+                        awayTeamCrest = apiMatch.awayTeam?.crest
                     )
                 }
             }

@@ -21,5 +21,6 @@ interface MatchRepository {
         status: String? = null,
         isManual: Boolean = true
     )
+    suspend fun upsertMatch(match: Match)
     suspend fun seedMatchesIfNeeded()
 }

@@ -13,16 +13,38 @@ fun resolveDisplayName(
     allMatches: List<Match>,
     isHome: Boolean,
     depth: Int = 0
-): Pair<String, String> {
+): Triple<String, String, String?> {
 
-    // Se o nome já for de uma seleção real (não for TBD ou "Vencedor..."), usamos ele direto
-    if (teamName.isNotBlank() && 
-        teamName != "TBD" && 
-        !teamName.startsWith("Vencedor") && 
-        !teamName.contains("/") &&
-        teamFlag != "🏳️"
-    ) {
-        return teamName to teamFlag
+    // Se o nome já for de uma seleção real (não for TBD ou "Vencedor..."), usamos ele direto.
+    // Para jogos de fase de grupos, aceitamos a bandeira branca como válida (pode ser erro de mapping).
+    val isPlaceholder = teamName == "TBD" || teamName.startsWith("Vencedor") || teamName.startsWith("Perdedor") || teamName.contains("/")
+    if (teamName.isNotBlank() && !isPlaceholder && (teamFlag != "🏳️" || !matchId.startsWith("KO-"))) {
+        val currentMatch = allMatches.find { it.id == matchId }
+        val crest = if (isHome) currentMatch?.homeTeamCrest else currentMatch?.awayTeamCrest
+        
+        // Limpeza Local de Nomes do Brasileirão
+        val cleanedName = teamName
+            .replace("CR Vasco da Gama", "Vasco")
+            .replace("Vasco da Gama", "Vasco")
+            .replace("Santos FC", "Santos")
+            .replace("Botafogo FR", "Botafogo")
+            .replace("SE Palmeiras", "Palmeiras")
+            .replace("CR Flamengo", "Flamengo")
+            .replace("SC Corinthians Paulista", "Corinthians")
+            .replace("São Paulo FC", "São Paulo")
+            .replace("Fluminense FC", "Fluminense")
+            .replace("CA Mineiro", "Atlético-MG")
+            .replace("Grêmio FBPA", "Grêmio")
+            .replace("SC Internacional", "Internacional")
+            .replace("Cruzeiro EC", "Cruzeiro")
+            .replace("EC Vitória", "Vitória")
+            .replace("Fortaleza EC", "Fortaleza")
+            .replace("EC Bahia", "Bahia")
+            .replace("CA Paranaense", "Athletico-PR")
+            .replace("RB Bragantino", "Bragantino")
+            .trim()
+
+        return Triple(cleanedName, teamFlag, crest)
     }
     
     val id = matchId.removePrefix("KO-")
@@ -51,7 +73,7 @@ fun resolveDisplayName(
         else -> null
     }
 
-    if (targetId == null) return teamName to teamFlag
+    if (targetId == null) return Triple(teamName, teamFlag, null)
 
     // 2. Buscar o jogo de origem
     val m = allMatches.find { it.id == targetId }
@@ -63,46 +85,50 @@ fun resolveDisplayName(
                    m.homeTeamCode.isNotBlank() && 
                    m.homeTeamFlag != "🏳️"
 
-    val matchSource = if (isDbValid) m!! else seed ?: return teamName to teamFlag
+    val matchSource = if (isDbValid) m!! else seed ?: return Triple(teamName, teamFlag, null)
 
-    // 3. Se o jogo de origem terminou, mostramos o vencedor real
-    if (matchSource.isFinished && matchSource.homeTeamCode != "TBD" && matchSource.homeTeamCode.isNotBlank()) {
+    // 3. Se o jogo de origem terminou, resolvemos quem passou ou quem perdeu
+    if (matchSource.isFinished) {
         val hScore = matchSource.homeScore ?: 0
         val aScore = matchSource.awayScore ?: 0
         
         val isThirdPlace = matchId == "KO-THIRD_PLACE" || matchId == "THIRD_PLACE" || id == "SF-3"
+        
+        // Resolvemos os nomes dos times da origem recursivamente para garantir que não pegamos placeholders
+        val homeRes = resolveDisplayName(matchSource.id, matchSource.homeTeam, matchSource.homeTeamFlag, allMatches, true, depth + 1)
+        val awayRes = resolveDisplayName(matchSource.id, matchSource.awayTeam, matchSource.awayTeamFlag, allMatches, false, depth + 1)
+
         return if (isThirdPlace) {
-            if (hScore < aScore) matchSource.homeTeam to matchSource.homeTeamFlag
-            else matchSource.awayTeam to matchSource.awayTeamFlag
+            if (hScore < aScore) homeRes else awayRes
         } else {
-            if (hScore > aScore) matchSource.homeTeam to matchSource.homeTeamFlag
-            else matchSource.awayTeam to matchSource.awayTeamFlag
+            if (hScore > aScore) homeRes else awayRes
         }
     }
 
-    // 4. Se o jogo não terminou, tentamos resolver os candidatos recursivamente (até profundidade 1)
-    if (depth < 1) {
-        val (hResName, hResFlag) = resolveDisplayName(matchSource.id, matchSource.homeTeam, matchSource.homeTeamFlag, allMatches, true, depth + 1)
-        val (aResName, aResFlag) = resolveDisplayName(matchSource.id, matchSource.awayTeam, matchSource.awayTeamFlag, allMatches, false, depth + 1)
+    // 4. Se o jogo não terminou, tentamos resolver os candidatos recursivamente (até profundidade 3 para chegar nos grupos)
+    if (depth < 3) {
+        val (hResName, hResFlag, hResCrest) = resolveDisplayName(matchSource.id, matchSource.homeTeam, matchSource.homeTeamFlag, allMatches, true, depth + 1)
+        val (aResName, aResFlag, aResCrest) = resolveDisplayName(matchSource.id, matchSource.awayTeam, matchSource.awayTeamFlag, allMatches, false, depth + 1)
 
         val f1 = if (hResFlag == "🏳️" || hResFlag.isBlank()) "" else hResFlag
         val f2 = if (aResFlag == "🏳️" || aResFlag.isBlank()) "" else aResFlag
 
         if (f1.isNotEmpty() && f2.isNotEmpty()) {
-            return "" to "$f1 ou $f2"
+            return Triple("", "$f1 ou $f2", null)
         }
     }
 
     // 5. Fallback final: Nome do Vencedor Genérico
-    return getFallbackName(targetId, teamName) to teamFlag.ifBlank { "🏳️" }
+    return Triple(getFallbackName(targetId, teamName), teamFlag.ifBlank { "🏳️" }, null)
 }
 
 private fun getFallbackName(targetId: String, teamName: String): String {
+    val isThirdPlace = teamName.startsWith("Perdedor")
     return when {
         targetId.contains("32-") -> "Vencedor J32-${targetId.substringAfterLast("-")}"
         targetId.contains("16-") -> "Vencedor Oitavas ${targetId.substringAfterLast("-")}"
         targetId.contains("QF-") -> "Vencedor Quartas ${targetId.substringAfterLast("-")}"
-        targetId.contains("SF-") -> "Vencedor Semifinal ${targetId.substringAfterLast("-")}"
+        targetId.contains("SF-") -> if (isThirdPlace) "Perdedor Semifinal ${targetId.substringAfterLast("-")}" else "Vencedor Semifinal ${targetId.substringAfterLast("-")}"
         else -> teamName
     }
 }
