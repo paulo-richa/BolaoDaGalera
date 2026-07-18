@@ -271,9 +271,26 @@ class FootballDataMatchRepository : MatchRepository {
 
                     val round = apiMatch.matchday ?: 0
                     
-                    // BUSCA DE ID ROBUSTA: Agora usamos o ID da API como fonte única de verdade
-                    // para evitar duplicados e "adivinhações" por nome de time.
-                    val matchId = "${compCode}-2026-R${round}-${apiMatch.id}"
+                    // Identifica Ida e Volta para gerar o ID compatível com a UI
+                    val legSuffix = when (round) {
+                        1 -> "-L1"
+                        2 -> "-L2"
+                        else -> ""
+                    }
+                    val matchId = "${compCode}-2026-M${apiMatch.id}$legSuffix"
+                    
+                    // Ordem GE para Libertadores 2026
+                    val geOrder = when (apiMatch.id.toString()) {
+                        "564456", "564465" -> 1 // Estudiantes
+                        "564462", "564470" -> 2 // Rosario
+                        "564460", "564468" -> 3 // Cruzeiro
+                        "564457", "564464" -> 4 // Tolima
+                        "564461", "564469" -> 5 // Mirassol
+                        "564459", "564466" -> 6 // Palmeiras
+                        "564458", "564467" -> 7 // Platense
+                        "564455", "564463" -> 8 // Fluminense
+                        else -> 99
+                    }
 
                     val apiDateMillis = try {
                         val instant = Instant.parse(apiMatch.utcDate)
@@ -342,6 +359,7 @@ class FootballDataMatchRepository : MatchRepository {
                         awayScore = aScore,
                         status = apiMatch.status,
                         championshipId = championshipId,
+                        matchOrder = geOrder,
                         isManual = false
                     )
                 }

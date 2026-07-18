@@ -61,8 +61,34 @@ const TEAM_DATA = {
     "Coritiba FBC": { name: "Coritiba", flag: "🏳️", code: "CFC", crest: "https://crests.football-data.org/4241.svg" },
     "Mirassol FC": { name: "Mirassol", flag: "🏳️", code: "MIR" },
     "Chapecoense AF": { name: "Chapecoense", flag: "🏳️", code: "CHA" },
-    "Clube do Remo": { name: "Remo", flag: "🏳️", code: "CRE" }
+    "Clube do Remo": { name: "Remo", flag: "🏳️", code: "CRE" },
+    // LIBERTADORES
+    "River Plate": { name: "River Plate", flag: "🇦🇷", code: "RIV", crest: "https://crests.football-data.org/430.svg" },
+    "CA Boca Juniors": { name: "Boca Juniors", flag: "🇦🇷", code: "BOC", crest: "https://crests.football-data.org/431.svg" },
+    "Peñarol": { name: "Peñarol", flag: "🇺🇾", code: "PEN", crest: "https://crests.football-data.org/1066.svg" },
+    "Club Nacional de Football": { name: "Nacional", flag: "🇺🇾", code: "NAC", crest: "https://crests.football-data.org/1065.svg" },
+    "Colo Colo": { name: "Colo-Colo", flag: "🇨🇱", code: "COL", crest: "https://crests.football-data.org/1071.svg" },
+    "Olimpia": { name: "Olimpia", flag: "🇵🇾", code: "OLI", crest: "https://crests.football-data.org/1073.svg" },
+    "Cerro Porteño": { name: "Cerro Porteño", flag: "🇵🇾", code: "CCP", crest: "https://crests.football-data.org/1074.svg" },
+    "LDU Quito": { name: "LDU Quito", flag: "🇪🇨", code: "LDU", crest: "https://crests.football-data.org/1075.svg" },
+    "Independiente del Valle": { name: "Ind. del Valle", flag: "🇪🇨", code: "IDV", crest: "https://crests.football-data.org/1076.svg" },
+    "Bolívar": { name: "Bolívar", flag: "🇧🇴", code: "BOL", crest: "https://crests.football-data.org/1077.svg" },
+    "The Strongest": { name: "The Strongest", flag: "🇧🇴", code: "STR", crest: "https://crests.football-data.org/1078.svg" },
+    "San Lorenzo": { name: "San Lorenzo", flag: "🇦🇷", code: "SLO", crest: "https://crests.football-data.org/1079.svg" },
+    "Junior": { name: "Junior", flag: "🇨🇴", code: "JUN", crest: "https://crests.football-data.org/1080.svg" },
+    "Talleres": { name: "Talleres", flag: "🇦🇷", code: "TAL", crest: "https://crests.football-data.org/1081.svg" }
 };
+
+function mapPhase(stage) {
+    switch (stage) {
+        case "GROUP_STAGE": return "GROUP_STAGE";
+        case "ROUND_OF_16": return "ROUND_OF_16";
+        case "QUARTER_FINALS": return "QUARTERFINALS";
+        case "SEMI_FINALS": return "SEMIFINALS";
+        case "FINAL": return "FINAL";
+        default: return "GROUP_STAGE";
+    }
+}
 
 exports.syncScores = onSchedule({
     schedule: "every 1 minutes",
@@ -89,7 +115,7 @@ exports.syncScores = onSchedule({
             'KO-16-1': { homeTeam: "Paraguai", homeTeamCode: "PAR", homeTeamFlag: "🇵🇾", awayTeam: "França", awayTeamCode: "FRA", awayTeamFlag: "🇫🇷", homeScore: 0, awayScore: 1, status: 'FINISHED', isManual: true, phase: 'ROUND_OF_16', group: 'Oitavas' },
             'KO-16-2': { homeTeam: "Canadá", homeTeamCode: "CAN", homeTeamFlag: "🇨🇦", awayTeam: "Marrocos", awayTeamCode: "MAR", awayTeamFlag: "🇲🇦", homeScore: 0, awayScore: 3, status: 'FINISHED', isManual: true, phase: 'ROUND_OF_16', group: 'Oitavas' },
             'KO-16-7': { homeTeam: "Argentina", homeTeamCode: "ARG", homeTeamFlag: "🇦🇷", awayTeam: "Egito", awayTeamCode: "EGY", awayTeamFlag: "🇪🇬", homeScore: 3, awayScore: 2, status: 'FINISHED', isManual: true, phase: 'ROUND_OF_16', group: 'Oitavas' },
-            'KO-16-8': { homeTeam: "Suíça", homeTeamCode: "SUI", homeTeamFlag: "🇨🇭", awayTeam: "Colômbia", awayTeamCode: "COL", awayTeamFlag: "🇨🇴", homeScore: 0, awayScore: 0, status: 'FINISHED', isManual: true, phase: 'ROUND_OF_16', group: 'Oitavas' }
+            'KO-16-8': { homeTeam: "Suíça", homeTeamCode: "SUI", homeTeamFlag: "🇨🇭", awayTeam: "Colômbia", awayTeamCode: "COL", awayTeamFlag: "🇨🇴", homeScore: 0, awayScore: 0, status: 'FINISHED', isManual: true, phase: 'ROUND_OF_16', group: 'Oitavas' },
         };
 
         for (const id in manualFixes) {
@@ -167,6 +193,82 @@ exports.syncScores = onSchedule({
                         championshipId: "BRASILEIRAO",
                         lastSync: admin.firestore.FieldValue.serverTimestamp()
                     };
+
+                    batch.set(matchesRef.doc(matchId), updateData, { merge: true });
+                    count++;
+                }
+                if (count > 0) await batch.commit();
+            }
+        }
+
+        // 4. LIBERTADORES 2026 (CLI)
+        const leaguesLib = ["CLI"];
+        for (const leagueCode of leaguesLib) {
+            const res = await axios.get(`https://api.football-data.org/v4/competitions/${leagueCode}/matches`, {
+                headers: { 'X-Auth-Token': API_KEY },
+                timeout: 15000
+            }).catch(() => null);
+
+            if (res && res.data && res.data.matches) {
+                const batch = db.batch();
+                let count = 0;
+
+                const matchesSnap = await matchesRef.where('championshipId', '==', 'LIBERTADORES').get();
+                const existingDocs = {};
+                matchesSnap.docs.forEach(d => existingDocs[d.id] = d.data());
+
+                for (const m of res.data.matches) {
+                    const isVolta = m.matchday === 2 || m.stage.includes("LEG2");
+                    const legSuffix = isVolta ? "-L2" : "-L1";
+
+                    // Mantemos o ID original para evitar duplicados, mas adicionamos a ordem do GE
+                    const matchId = `CLI-2026-M${m.id}${legSuffix}`;
+
+                    const geOrderMap = {
+                        '564456': 1, '564465': 1, // Estudiantes
+                        '564462': 2, '564470': 2, // Rosario
+                        '564460': 3, '564468': 3, // Cruzeiro
+                        '564457': 4, '564464': 4, // Tolima
+                        '564461': 5, '564469': 5, // Mirassol
+                        '564459': 6, '564466': 6, // Palmeiras
+                        '564458': 7, '564467': 7, // Platense
+                        '564455': 8, '564463': 8  // Fluminense
+                    };
+
+                    if (existingDocs[matchId] && existingDocs[matchId].isManual) continue;
+
+                    const s = m.score;
+                    const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
+                    const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
+
+                    const hTeam = TEAM_DATA[m.homeTeam.name] || { name: m.homeTeam.name, flag: "🏳️", code: m.homeTeam.tla };
+                    const aTeam = TEAM_DATA[m.awayTeam.name] || { name: m.awayTeam.name, flag: "🏳️", code: m.awayTeam.tla };
+
+                    const updateData = {
+                        status: m.status,
+                        homeTeam: hTeam.name,
+                        homeTeamCode: hTeam.code || m.homeTeam.tla || "TBD",
+                        homeTeamFlag: hTeam.flag,
+                        homeTeamCrest: m.homeTeam.crest,
+                        awayTeam: aTeam.name,
+                        awayTeamCode: aTeam.code || m.awayTeam.tla || "TBD",
+                        awayTeamFlag: aTeam.flag,
+                        awayTeamCrest: m.awayTeam.crest,
+                        homeScore: hScore !== undefined ? hScore : null,
+                        awayScore: aScore !== undefined ? aScore : null,
+                        championshipId: "LIBERTADORES",
+                        matchOrder: geOrderMap[m.id.toString()] || 99,
+                        phase: mapPhase(m.stage),
+                        group: m.group || (m.matchday ? `Rodada ${m.matchday}` : m.stage),
+                        matchDateMillis: Date.parse(m.utcDate),
+                        lastSync: admin.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    // EXCLUSÃO DE DUPLICADOS: Se o ID for novo, tentamos limpar o antigo se existir
+                    const oldId = `CLI-2026-R${m.matchday}-${m.id}`;
+                    if (oldId !== matchId) {
+                        batch.delete(matchesRef.doc(oldId));
+                    }
 
                     batch.set(matchesRef.doc(matchId), updateData, { merge: true });
                     count++;
