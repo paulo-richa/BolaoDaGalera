@@ -23,6 +23,7 @@ private data class MatchDto(
     val awayScore: Int? = null,
     val status: String? = null,
     val championshipId: String = "COPA_2026",
+    val matchOrder: Int = 0,
     val isManual: Boolean = false
 )
 
@@ -33,7 +34,8 @@ private fun MatchDto.toDomain(id: String) = Match(
     homeTeamCrest = homeTeamCrest, awayTeamCrest = awayTeamCrest,
     matchDateMillis = matchDateMillis, phase = Phase.valueOf(phase),
     group = group, homeScore = homeScore, awayScore = awayScore,
-    status = status, championshipId = championshipId, isManual = isManual
+    status = status, championshipId = championshipId, 
+    matchOrder = matchOrder, isManual = isManual
 ).also { 
     if (it.homeTeamCode == "BOT" || it.homeTeamCode == "VIT") {
         println("BOLAOLOG: DTO -> Domain: ${it.homeTeamCode} ${it.homeScore}x${it.awayScore} | ID: $id")
@@ -47,7 +49,8 @@ private fun Match.toDto() = MatchDto(
     homeTeamCrest = homeTeamCrest, awayTeamCrest = awayTeamCrest,
     matchDateMillis = matchDateMillis, phase = phase.name,
     group = group, homeScore = homeScore, awayScore = awayScore,
-    status = status, championshipId = championshipId, isManual = isManual
+    status = status, championshipId = championshipId, 
+    matchOrder = matchOrder, isManual = isManual
 )
 
 /**
@@ -64,10 +67,40 @@ class FirebaseMatchRepository : MatchRepository {
         if (a.phase == Phase.GROUP_STAGE && b.phase == Phase.GROUP_STAGE) {
             a.matchDateMillis.compareTo(b.matchDateMillis)
         } else if (a.phase != Phase.GROUP_STAGE && b.phase != Phase.GROUP_STAGE && a.phase == b.phase) {
-            // Se for a mesma fase de mata-mata, mantém a ordem do ID (Bracket Order)
-            val numA = a.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
-            val numB = b.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
-            if (numA != numB) numA.compareTo(numB) else a.matchDateMillis.compareTo(b.matchDateMillis)
+            // Se for a mesma fase de mata-mata
+            if (a.championshipId == "LIBERTADORES" || b.championshipId == "LIBERTADORES") {
+                // Função local para extrair a ordem se o campo matchOrder estiver zerado (retrocompatibilidade)
+                fun getEffectiveOrder(m: Match): Int {
+                    if (m.matchOrder > 0) return m.matchOrder
+                    val apiId = m.id.substringAfterLast("-")
+                    return when (apiId) {
+                        "564456", "564465" -> 1 // Estudiantes
+                        "564462", "564470" -> 2 // Rosario
+                        "564460", "564468" -> 3 // Cruzeiro
+                        "564457", "564464" -> 4 // Tolima
+                        "564461", "564469" -> 5 // Mirassol
+                        "564459", "564466" -> 6 // Palmeiras
+                        "564458", "564467" -> 7 // Platense
+                        "564455", "564463" -> 8 // Fluminense
+                        else -> 99
+                    }
+                }
+
+                val orderA = getEffectiveOrder(a)
+                val orderB = getEffectiveOrder(b)
+
+                if (orderA != orderB) {
+                    orderA.compareTo(orderB)
+                } else {
+                    val dateComp = a.matchDateMillis.compareTo(b.matchDateMillis)
+                    if (dateComp != 0) dateComp else a.id.compareTo(b.id)
+                }
+            } else {
+                // Para os demais (Copa), mantém a ordem do ID (Bracket Order)
+                val numA = a.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
+                val numB = b.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
+                if (numA != numB) numA.compareTo(numB) else a.matchDateMillis.compareTo(b.matchDateMillis)
+            }
         } else {
             // Fases diferentes: segue a ordem cronológica ou a ordem do enum Phase
             if (a.matchDateMillis != b.matchDateMillis) {
@@ -190,7 +223,8 @@ class FirebaseMatchRepository : MatchRepository {
                         "awayTeamCode" to m.awayTeamCode,
                         "awayTeamFlag" to m.awayTeamFlag,
                         "matchDateMillis" to m.matchDateMillis,
-                        "phase" to m.phase.name
+                        "phase" to m.phase.name,
+                        "championshipId" to m.championshipId
                     )
 
                     collection.document(m.id).update(updates)

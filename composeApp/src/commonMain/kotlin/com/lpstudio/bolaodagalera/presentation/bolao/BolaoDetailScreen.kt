@@ -789,7 +789,8 @@ fun BolaoDetailContent(
                             onNavigateToPrediction(it) 
                         },
                         onShowAllPredictions = { onNavigateToAllPredictions(it.id) },
-                        onAdminUpdateScore = { matchToUpdate = it }
+                        onAdminUpdateScore = { matchToUpdate = it },
+                        championshipId = uiState.bolao?.championshipId ?: ""
                     )
                     "Ranking" -> RankingScreen(bolaoId = bolaoId)
                     "Tabela" -> {
@@ -1240,7 +1241,8 @@ private fun KnockoutTab(
     onClearLastMatchId: () -> Unit,
     onMatchClick: (String) -> Unit,
     onShowAllPredictions: (Match) -> Unit,
-    onAdminUpdateScore: (Match) -> Unit
+    onAdminUpdateScore: (Match) -> Unit,
+    championshipId: String = ""
 ) {
     if (isLoading && matches.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -1256,6 +1258,7 @@ private fun KnockoutTab(
         ).filter { phase -> matches.any { it.phase == phase } }
     }
 
+    val isLibertadores = championshipId == "LIBERTADORES"
     val tz = TimeZone.currentSystemDefault()
     val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
@@ -1270,21 +1273,64 @@ private fun KnockoutTab(
         }
     }
 
+    // Gerencia as abas (Labels) para a Libertadores
+    val labels = remember(phaseOrder, isLibertadores) {
+        if (isLibertadores) {
+            phaseOrder.flatMap { phase ->
+                if (phase == Phase.FINAL || phase == Phase.THIRD_PLACE) listOf(phase.label)
+                else listOf("${phase.label} - Ida", "${phase.label} - Volta")
+            }
+        } else {
+            phaseOrder.map { it.label }
+        }
+    }
+
+    var selectedLabel by rememberSaveable(championshipId) { mutableStateOf<String?>(null) }
+
+    // Sincroniza o label quando a fase muda (ex: via lógica de "Hoje" ou scroll)
+    LaunchedEffect(selectedPhase, labels) {
+        if (selectedPhase == Phase.FRIENDLIES) {
+            selectedLabel = "⚽️ HOJE"
+        } else if (selectedPhase != null) {
+            if (isLibertadores) {
+                if (selectedLabel?.startsWith(selectedPhase.label) != true) {
+                    selectedLabel = labels.find { it.startsWith(selectedPhase.label) }
+                }
+            } else {
+                selectedLabel = selectedPhase.label
+            }
+        }
+    }
+
     // Auto-selecionar HOJE se houver jogos, senão a próxima fase
     LaunchedEffect(matches, lastInteractedMatchId) {
         if (lastInteractedMatchId != null) {
             val targetMatch = matches.find { it.id == lastInteractedMatchId }
             if (targetMatch != null && targetMatch.phase != Phase.GROUP_STAGE) {
-                // Se estamos na aba HOJE, não redirecionamos nem scrollamos
-                // para manter a visualização simplificada do "Hoje"
                 if (selectedPhase == Phase.FRIENDLIES) {
                     onClearLastMatchId()
                     return@LaunchedEffect
                 }
 
                 onPhaseChange(targetMatch.phase)
+                
+                if (isLibertadores) {
+                    val leg = if (targetMatch.id.contains("-L2")) "Volta" else "Ida"
+                    selectedLabel = "${targetMatch.phase.label} - $leg"
+                }
+
                 kotlinx.coroutines.delay(100)
-                val pairs = matches.filter { it.phase == targetMatch.phase }.chunked(2)
+                
+                val currentPhaseMatches = matches.filter { 
+                    if (isLibertadores) {
+                        it.phase == targetMatch.phase && 
+                        (if (targetMatch.id.contains("-L2")) it.id.contains("-L2") else it.id.contains("-L1"))
+                    } else {
+                        it.phase == targetMatch.phase 
+                    }
+                }.sortedBy { it.id.split("-").lastOrNull()?.toIntOrNull() ?: 0 }
+                
+                val pairs = currentPhaseMatches.chunked(2)
                 val pairIndex = pairs.indexOfFirst { pair -> pair.any { it.id == lastInteractedMatchId } }
                 if (pairIndex != -1) {
                     listState.scrollToItem(pairIndex)
@@ -1316,7 +1362,7 @@ private fun KnockoutTab(
     }
 
     Column(Modifier.fillMaxSize()) {
-        if (phaseOrder.isNotEmpty()) {
+        if (labels.isNotEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1324,17 +1370,26 @@ private fun KnockoutTab(
                     .padding(vertical = 8.dp)
             ) {
                 KnockoutPhaseSelector(
-                    phases = phaseOrder,
-                    selected = selectedPhase,
+                    labels = labels,
+                    selectedLabel = selectedLabel,
                     isUnlocked = isKnockoutUnlocked,
                     showHoje = hasMatchToday,
-                    onSelect = { onPhaseChange(it) }
+                    onSelect = { label ->
+                        if (label == "⚽️ HOJE") {
+                            onPhaseChange(Phase.FRIENDLIES)
+                        } else {
+                            val phaseName = label?.substringBefore(" - ")
+                            val phase = phaseOrder.find { it.label == phaseName }
+                            selectedLabel = label
+                            onPhaseChange(phase)
+                        }
+                    }
                 )
             }
         }
 
         Box(Modifier.weight(1f)) {
-            val phaseMatches = remember(matches, selectedPhase, todayDate, now) {
+            val phaseMatches = remember(matches, selectedPhase, selectedLabel, isLibertadores, todayDate, now) {
                 if (selectedPhase == Phase.FRIENDLIES) {
                     matches.filter { it.phase != Phase.GROUP_STAGE }.filter { m ->
                         val mTime = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz)
@@ -1352,12 +1407,61 @@ private fun KnockoutTab(
                         }
                         .thenBy { it.matchDateMillis }
                     )
-                } else {
-                    matches.filter { it.phase == selectedPhase }.sortedBy { m ->
-                        // Sort numérico pelo sufixo do ID para evitar ordem lexicográfica (1, 10, 2...)
-                        // Isso garante a ordem 1, 2, 3, ..., 16 para as 16-avos e demais fases
-                        m.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
+                } else if (isLibertadores && selectedLabel != null && selectedLabel != "⚽️ HOJE") {
+                    val basePhaseName = selectedLabel!!.substringBefore(" - ")
+                    val isVoltaTab = selectedLabel!!.contains("Volta")
+                    
+                    // 1. Pega todos os jogos daquela fase (ex: Oitavas)
+                    val phaseMatches = matches.filter { 
+                        it.phase.label.contains(basePhaseName, ignoreCase = true)
                     }
+
+                    // 2. Agrupa os jogos por confronto (Par de Ida e Volta)
+                    val confrontationGroups = phaseMatches.groupBy { 
+                        val idDigits = it.id.filter { c -> c.isDigit() }
+                        val apiId = if (idDigits.length > 4) idDigits.takeLast(6) else idDigits
+                        when (apiId) {
+                            "564456", "564465" -> 1 // Estudiantes
+                            "564462", "564470" -> 2 // Rosario
+                            "564460", "564468" -> 3 // Cruzeiro
+                            "564457", "564464" -> 4 // Tolima
+                            "564461", "564469" -> 5 // Mirassol
+                            "564459", "564466" -> 6 // Palmeiras
+                            "564458", "564467" -> 7 // Platense
+                            "564455", "564463" -> 8 // Fluminense
+                            else -> 99
+                        }
+                    }
+
+                    // 3. Para cada par, seleciona apenas um baseado na aba atual
+                    val filtered = confrontationGroups.entries.mapNotNull { (order, groupMatches) ->
+                        // Ordena os jogos do mesmo confronto pela data
+                        val sortedGroup = groupMatches.sortedBy { it.matchDateMillis }
+                        // Se for a aba de Volta, pega o segundo jogo. Se for Ida, pega o primeiro.
+                        if (isVoltaTab) sortedGroup.getOrNull(1) else sortedGroup.firstOrNull()
+                    }.sortedBy { confrontationMatches ->
+                        // Re-identifica a ordem para o sort final na lista (1 a 8)
+                        val idDigits = confrontationMatches.id.filter { c -> c.isDigit() }
+                        val apiId = if (idDigits.length > 4) idDigits.takeLast(6) else idDigits
+                        when (apiId) {
+                            "564456", "564465" -> 1
+                            "564462", "564470" -> 2
+                            "564460", "564468" -> 3
+                            "564457", "564464" -> 4
+                            "564461", "564469" -> 5
+                            "564459", "564466" -> 6
+                            "564458", "564467" -> 7
+                            "564455", "564463" -> 8
+                            else -> 99
+                        }
+                    }
+                    
+                    println("BOLAOLOG: Knockout Filtered for $selectedLabel: ${filtered.size}")
+                    filtered
+                } else {
+                    matches.filter { it.phase == selectedPhase }.sortedWith(compareBy({ it.matchOrder }, { m ->
+                        m.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
+                    }))
                 }
             }
 
@@ -1542,27 +1646,16 @@ private fun KnockoutBracketPair(
 
 @Composable
 private fun KnockoutPhaseSelector(
-    phases: List<Phase>,
-    selected: Phase?,
+    labels: List<String>,
+    selectedLabel: String?,
     isUnlocked: Boolean,
     showHoje: Boolean,
-    onSelect: (Phase?) -> Unit
+    onSelect: (String?) -> Unit
 ) {
     val listState = rememberLazyListState()
 
-    // Auto-scroll para o item selecionado para garantir visibilidade
-    LaunchedEffect(selected) {
-        if (selected != null) {
-            val index = if (showHoje) {
-                if (selected == Phase.FRIENDLIES) 0 else phases.indexOf(selected) + 1
-            } else {
-                phases.indexOf(selected)
-            }
-            if (index >= 0) {
-                listState.animateScrollToItem(index)
-            }
-        }
-    }
+    // Removido LaunchedEffect de auto-scroll para manter a barra de abas estática.
+    // Agora ela só se move se o usuário arrastar.
     
     // Verifica se há conteúdo para scrollar para a esquerda ou direita
     val canScrollBackward by remember {
@@ -1588,18 +1681,18 @@ private fun KnockoutPhaseSelector(
                 item {
                     FilterChip(
                         label = "⚽️ HOJE",
-                        isSelected = selected == Phase.FRIENDLIES,
+                        isSelected = selectedLabel == "⚽️ HOJE",
                         isUnlocked = true,
-                        onClick = { onSelect(Phase.FRIENDLIES) }
+                        onClick = { onSelect("⚽️ HOJE") }
                     )
                 }
             }
-            items(phases) { phase ->
+            items(labels) { label ->
                 FilterChip(
-                    label = phase.label,
-                    isSelected = selected == phase,
+                    label = label,
+                    isSelected = selectedLabel == label,
                     isUnlocked = isUnlocked,
-                    onClick = { onSelect(phase) }
+                    onClick = { onSelect(label) }
                 )
             }
         }
@@ -1943,6 +2036,20 @@ fun MatchCard(
         resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
     }
 
+    // Lógica para Placar de Ida (Libertadores)
+    val isLibertadores = match.championshipId == "LIBERTADORES"
+    val isVolta = match.id.contains("-L2")
+    val idaScore = remember(match.id, allMatches, isLibertadores, isVolta) {
+        if (isLibertadores && isVolta) {
+            val idaId = match.id.replace("-L2", "-L1")
+            allMatches.find { it.id == idaId }?.let { m ->
+                if (m.homeScore != null && m.awayScore != null) {
+                    "${m.homeScore}×${m.awayScore}"
+                } else null
+            }
+        } else null
+    }
+
     val homeAnnotatedFlag = remember(homeDisplayFlag) {
         val parts = homeDisplayFlag.split(" ou ")
         if (parts.size > 1) {
@@ -2090,17 +2197,37 @@ fun MatchCard(
                 }
             }
 
-            // 2. DATA E HORA
+            // 2. DATA E HORA e IDA SCORE
             if (!(isActuallyFinished && hasPrediction)) {
-                Text(
-                    text = formatMatchDate(match.matchDateMillis),
-                    fontSize = 9.sp,
-                    color = Color.White,
+                Row(
                     modifier = Modifier
                         .align(if (!showGaleraBadge) Alignment.TopCenter else Alignment.TopEnd)
                         .padding(top = 10.dp, end = if (!showGaleraBadge) 0.dp else 12.dp),
-                    letterSpacing = 0.2.sp
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (idaScore != null) {
+                        Surface(
+                            color = Gold.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(4.dp),
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, Gold.copy(alpha = 0.3f))
+                        ) {
+                            Text(
+                                text = "IDA: $idaScore",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Gold,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = formatMatchDate(match.matchDateMillis),
+                        fontSize = 9.sp,
+                        color = Color.White,
+                        letterSpacing = 0.2.sp
+                    )
+                }
             }
 
             // Badge de Pontuação (Canto Superior Direito)

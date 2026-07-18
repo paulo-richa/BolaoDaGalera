@@ -42,6 +42,9 @@ fun resolveDisplayName(
             .replace("EC Bahia", "Bahia")
             .replace("CA Paranaense", "Athletico-PR")
             .replace("RB Bragantino", "Bragantino")
+            .replace("CA Boca Juniors", "Boca Juniors")
+            .replace("Club Nacional de Football", "Nacional")
+            .replace("Independiente del Valle", "Ind. del Valle")
             .trim()
 
         return Triple(cleanedName, teamFlag, crest)

@@ -101,15 +101,22 @@ class BolaoViewModel(
                         // 1. Filtrar por Campeonato e Escopo
                         var filteredMatches = matches.filter { m ->
                             val matchesChamp = m.championshipId == championshipId
-                            val matchesScope = when {
-                                bolao.specificMatchId != null -> m.id == bolao.specificMatchId
-                                bolao.scope == BolaoScope.ONLY_GROUPS -> m.phase == Phase.GROUP_STAGE
-                                bolao.scope == BolaoScope.ONLY_KNOCKOUT -> m.phase != Phase.GROUP_STAGE
-                                bolao.scope == BolaoScope.ONLY_BRAZIL -> m.homeTeamCode == "BRA" || m.awayTeamCode == "BRA"
-                                else -> true
-                            }
-                            matchesChamp && matchesScope
+                        val matchesScope = when {
+                            bolao.specificMatchId != null -> m.id == bolao.specificMatchId
+                            bolao.scope == BolaoScope.ONLY_GROUPS -> m.phase == Phase.GROUP_STAGE
+                            bolao.scope == BolaoScope.ONLY_KNOCKOUT -> m.phase != Phase.GROUP_STAGE
+                            bolao.scope == BolaoScope.ONLY_BRAZIL -> m.homeTeamCode == "BRA" || m.awayTeamCode == "BRA"
+                            else -> true
                         }
+                        matchesChamp && matchesScope
+                    }
+                    
+                    println("BOLAOLOG: Filtered matches for $championshipId: ${filteredMatches.size} (Total: ${matches.size})")
+                    if (filteredMatches.isEmpty() && matches.isNotEmpty()) {
+                        matches.take(5).forEach { 
+                            println("BOLAOLOG: Sample Match: ID=${it.id} Champ=${it.championshipId} Phase=${it.phase}")
+                        }
+                    }
 
                         // TRATAMENTO DE DUPLICADOS/GHOSTS: Mesmo usando IDs padronizados,
                         // podem existir documentos antigos com IDs diferentes no Firestore.
@@ -252,6 +259,7 @@ class BolaoViewModel(
                 } else {
                     // Lógica Dinâmica para Novos Campeonatos (Brasileirão, etc)
                     remoteMatches.forEach { m ->
+                        println("BOLAOLOG: Upserting match ${m.id} with order ${m.matchOrder}")
                         matchRepository.upsertMatch(m)
                         updatedCount++
                     }

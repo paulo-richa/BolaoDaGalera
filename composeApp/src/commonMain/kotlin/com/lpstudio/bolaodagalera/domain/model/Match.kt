@@ -20,6 +20,7 @@ data class Match(
     val awayScore: Int? = null,
     val status: String? = null,
     val championshipId: String = "COPA_2026",
+    val matchOrder: Int = 0,
     val isManual: Boolean = false
 ) {
     val isFinished: Boolean get() = status == "FINISHED"
