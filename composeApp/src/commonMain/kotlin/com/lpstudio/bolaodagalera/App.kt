@@ -17,6 +17,8 @@ import com.lpstudio.bolaodagalera.di.fakeAppModule
 import com.lpstudio.bolaodagalera.di.openFootballAppModule
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
+import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.presentation.maintenance.MaintenanceScreen
 import com.lpstudio.bolaodagalera.presentation.navigation.NavGraph
 import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
@@ -44,6 +46,7 @@ fun App() {
         val matchRepository = koinInject<MatchRepository>()
         val remoteConfigManager = koinInject<RemoteConfigManager>()
         val authRepository = koinInject<AuthRepository>()
+        val championshipRepository = koinInject<ChampionshipRepository>()
         
         val isMaintenanceMode by remoteConfigManager.isMaintenanceMode.collectAsState()
         val currentUser by authRepository.authStateFlow.collectAsState(initial = authRepository.currentUser)
@@ -54,12 +57,17 @@ fun App() {
             try {
                 // Ativa verificação de manutenção primeiro
                 remoteConfigManager.fetchAndActivate()
+                // Inicia carregamento de campeonatos
+                championshipRepository.refreshCache()
                 // Semeia os jogos iniciais (fake data no iOS, real no Android/Desktop)
                 matchRepository.seedMatchesIfNeeded()
             } catch (e: Exception) {
                 // Falha silenciosa - app continua funcionando
             }
         }
+        
+        // Inicia observação dos campeonatos para manter o cache atualizado
+        val championships by championshipRepository.getChampionships().collectAsState(initial = emptyList())
 
         AppTheme {
             Column(

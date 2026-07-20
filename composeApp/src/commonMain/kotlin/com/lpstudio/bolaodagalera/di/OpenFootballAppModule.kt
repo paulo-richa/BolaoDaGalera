@@ -25,6 +25,7 @@ val openFootballAppModule = module {
     single<BolaoRepository>     { FirebaseBolaoRepository() }
     single<InvitationRepository>{ FirebaseInvitationRepository(get()) }
     single<PredictionRepository>{ FirebasePredictionRepository(get()) }
+    single<ChampionshipRepository>{ FirebaseChampionshipRepository() }
 
     // UseCases
     single { CalculatePointsUseCase() }
