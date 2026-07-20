@@ -15,13 +15,14 @@ class FakeBolaoRepository : BolaoRepository {
             Bolao(
                 id = "bolao-1",
                 name = "Bolão da Galera",
-                description = "Copa do Mundo 2026 🏆",
+                description = "Libertadores 2026 🔥",
                 pointsExactScore = 3,
                 pointsWinnerOrDraw = 1,
-                code = "COPA26",
+                code = "LIB26",
                 ownerId = "pauloricha",
                 participants = listOf("pauloricha", "user-2", "u3", "u4", "u5", "u6", "u7", "u8", "u9"),
-                createdAtMillis = 1781136000000L
+                createdAtMillis = 1781136000000L,
+                championshipId = "LIBERTADORES"
             )
         )
     )

@@ -12,7 +12,7 @@ interface BolaoRepository {
         name: String, 
         description: String, 
         ownerId: String, 
-        championshipId: String = "COPA_2026",
+        championshipId: String = "LIBERTADORES",
         scope: BolaoScope = BolaoScope.FULL,
         specificMatchId: String? = null,
         pointsExactScore: Int = 3,

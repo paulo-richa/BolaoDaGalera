@@ -19,7 +19,7 @@ data class Match(
     val homeScore: Int? = null,
     val awayScore: Int? = null,
     val status: String? = null,
-    val championshipId: String = "COPA_2026",
+    val championshipId: String = "LIBERTADORES",
     val matchOrder: Int = 0,
     val isManual: Boolean = false
 ) {
@@ -47,7 +47,7 @@ data class Match(
             return group.substringAfter("Rodada ").toIntOrNull() ?: 0
         }
 
-        // Legado Copa 2026 (GS-A-1, GS-B-3, etc)
+        // Legado (GS-A-1, GS-B-3, etc)
         // Cada grupo tem 6 jogos (3 rodadas de 2 jogos cada)
         val n = id.substringAfterLast("-").toIntOrNull() ?: return 0
         return when (n) { 1, 2 -> 1; 3, 4 -> 2; 5, 6 -> 3; else -> 0 }

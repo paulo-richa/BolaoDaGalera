@@ -15,7 +15,7 @@ fun resolveDisplayName(
     depth: Int = 0
 ): Triple<String, String, String?> {
 
-    // Se o nome já for de uma seleção real (não for TBD ou "Vencedor..."), usamos ele direto.
+    // Se o nome já for de um time real (não for TBD ou "Vencedor..."), usamos ele direto.
     // Para jogos de fase de grupos, aceitamos a bandeira branca como válida (pode ser erro de mapping).
     val isPlaceholder = teamName == "TBD" || teamName.startsWith("Vencedor") || teamName.startsWith("Perdedor") || teamName.contains("/")
     if (teamName.isNotBlank() && !isPlaceholder && (teamFlag != "🏳️" || !matchId.startsWith("KO-"))) {

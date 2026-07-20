@@ -16,66 +16,10 @@ class FakePredictionRepository(
     private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase()
 ) : PredictionRepository {
 
-    private val _predictions = MutableStateFlow(
-        listOf(
-            // ── Jogador Teste (pauloricha) ──────────────────────────────────
-            // Grupo A: México 2x1 África do Sul → palpite exato ✅ +3
-            Prediction("p1",  "pauloricha", "bolao-1", "GS-A-1", homeScore = 2, awayScore = 1),
-            // Grupo A: Coreia 1x0 Tcheca → palpite exato ✅ +3
-            Prediction("p2",  "pauloricha", "bolao-1", "GS-A-2", homeScore = 1, awayScore = 0),
-            // Grupo A: Tcheca 1x1 África do Sul → palpite 0x0 (empate certo) 🟡 +1
-            Prediction("p3",  "pauloricha", "bolao-1", "GS-A-3", homeScore = 0, awayScore = 0),
-            // Grupo B: Canadá 2x0 Bósnia → palpite 1x0 (vencedor certo) 🟡 +1
-            Prediction("p4",  "pauloricha", "bolao-1", "GS-B-1", homeScore = 1, awayScore = 0),
-            // Grupo B: Catar 1x1 Suíça → palpite 0x0 (empate certo) 🟡 +1
-            Prediction("p27", "pauloricha", "bolao-1", "GS-B-2", homeScore = 0, awayScore = 0),
-            // Grupo C: Brasil 2x1 Marrocos → palpite 3x1 (vencedor certo) 🟡 +1
-            Prediction("p5",  "pauloricha", "bolao-1", "GS-C-1", homeScore = 3, awayScore = 1),
-            // ── Maria Silva (fake-user-2) ────────────────────────────────────
-            // Grupo A: México 2x1 → palpite 1x0 (resultado certo) 🟡 +1
-            Prediction("p6",  "fake-user-2", "bolao-1", "GS-A-1", homeScore = 1, awayScore = 0),
-            // Grupo A: Coreia 1x0 → palpite exato ✅ +3
-            Prediction("p7",  "fake-user-2", "bolao-1", "GS-A-2", homeScore = 1, awayScore = 0),
-            // Grupo B: Canadá 2x0 → palpite exato ✅ +3
-            Prediction("p8",  "fake-user-2", "bolao-1", "GS-B-1", homeScore = 2, awayScore = 0),
-            // Grupo C: Brasil 2x1 → palpite 2x0 (resultado certo) 🟡 +1
-            Prediction("p9",  "fake-user-2", "bolao-1", "GS-C-1", homeScore = 2, awayScore = 0),
-            // ── Carlos Souza (fake-user-3) ───────────────────────────────────
-            // Grupo A: México 2x1 → palpite errado ❌ +0
-            Prediction("p10", "fake-user-3", "bolao-1", "GS-A-1", homeScore = 0, awayScore = 0),
-            // Grupo B: Catar 1x1 Suíça → palpite exato ✅ +3
-            Prediction("p11", "fake-user-3", "bolao-1", "GS-B-2", homeScore = 1, awayScore = 1),
-            // Grupo C: Brasil 2x1 → palpite errado ❌ +0
-            Prediction("p12", "fake-user-3", "bolao-1", "GS-C-1", homeScore = 0, awayScore = 1),
-
-            // Novos Participantes
-            Prediction("p13", "u3", "bolao-1", "GS-A-1", 2, 1), // Rick +3
-            Prediction("p14", "u4", "bolao-1", "GS-A-1", 1, 0), // Bia +1
-            Prediction("p15", "u5", "bolao-1", "GS-A-1", 3, 1), // Fernandão +1
-            Prediction("p16", "u6", "bolao-1", "GS-A-2", 1, 0), // Ju +3
-            Prediction("p17", "u7", "bolao-1", "GS-B-1", 2, 0), // Tchelo +3
-            Prediction("p20", "u3", "bolao-1", "GS-B-1", 1, 0), // Rick +1
-            Prediction("p21", "u4", "bolao-1", "GS-B-1", 2, 1), // Bia +1
-            Prediction("p22", "u5", "bolao-1", "GS-B-1", 0, 0), // Fernandão 0
-            Prediction("p23", "u6", "bolao-1", "GS-B-1", 3, 0), // Ju +1
-            Prediction("p24", "u8", "bolao-1", "GS-B-1", 2, 0), // Paty +3
-            Prediction("p25", "u9", "bolao-1", "GS-B-1", 1, 2), // Guga 0
-            Prediction("p26", "fake-user-3", "bolao-1", "GS-B-1", 1, 1), // Carlos 0
-            Prediction("p18", "u8", "bolao-1", "GS-C-1", 2, 1), // Paty +3
-            Prediction("p19", "u9", "bolao-1", "GS-D-1", 1, 1), // Guga 0
-        )
-    )
+    private val _predictions = MutableStateFlow<List<Prediction>>(emptyList())
 
     private val userNames = mapOf(
-        "pauloricha" to ("Paulo Teste Silva" to "Paulão"),
-        "livialima" to ("Lívia Teste Souza" to "Lívia"),
-        "u3" to ("Ricardo Oliveira" to "Rick"),
-        "u4" to ("Ana Beatriz" to "Bia"),
-        "u5" to ("Fernando Costa" to "Fernandão"),
-        "u6" to ("Juliana Mendes" to "Ju"),
-        "u7" to ("Marcelo Santos" to "Tchelo"),
-        "u8" to ("Patrícia Lima" to "Paty"),
-        "u9" to ("Gustavo Lima" to "Guga")
+        "pauloricha" to ("Paulo Teste Silva" to "Paulão")
     )
 
     override fun getUserPredictions(userId: String, bolaoId: String): Flow<List<Prediction>> =
@@ -114,13 +58,12 @@ class FakePredictionRepository(
             val matchScores = matches.associate { it.id to (it.homeScore to it.awayScore) }
             val userStats = mutableMapOf<String, Triple<Int, Int, Int>>() // points, exact, correct
 
-            // Initialize all participants with 0 points
             participantIds.forEach { userId ->
                 userStats[userId] = Triple(0, 0, 0)
             }
 
             predictions.forEach { prediction ->
-                if (prediction.userId !in userStats) return@forEach // Only participants in this bolao
+                if (prediction.userId !in userStats) return@forEach
 
                 val (homeScore, awayScore) = matchScores[prediction.matchId] ?: return@forEach
                 if (homeScore == null || awayScore == null) return@forEach
