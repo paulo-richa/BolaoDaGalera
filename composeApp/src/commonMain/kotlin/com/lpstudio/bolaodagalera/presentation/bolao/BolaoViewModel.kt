@@ -57,10 +57,7 @@ class BolaoViewModel(
             try {
                 val bolao = bolaoRepository.getBolao(bolaoId)
                 _uiState.update { it.copy(bolao = bolao) }
-                
-                // O sync agora é feito via Backend (Cloud Functions).
-                // O App apenas exibe os dados que o servidor popula.
-                println("BOLAOLOG: Bolão carregado (${bolao.name}). Aguardando sync do servidor...")
+                println("BOLAOLOG: Bolão carregado (${bolao.name}).")
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
@@ -87,84 +84,68 @@ class BolaoViewModel(
             
             _userId.filter { it.isNotBlank() }
                 .flatMapLatest { currentUserId ->
-                    combine(
-                        bolaoFlow,
-                        matchRepository.getMatches(),
-                        predictionRepository.getUserPredictions(currentUserId, bolaoId),
-                        predictionRepository.getBolaoAllPredictions(bolaoId),
-                        participantsFlow.flatMapLatest { participants ->
-                            predictionRepository.getRanking(bolaoId, participants)
-                        }
-                    ) { bolao, matches, predictions, allPredictions, ranking ->
+                    bolaoFlow.flatMapLatest { bolao ->
                         val championshipId = bolao.championshipId
                         
-                        // 1. Filtrar por Campeonato e Escopo
-                        var filteredMatches = matches.filter { m ->
-                            val matchesChamp = m.championshipId == championshipId
-                        val matchesScope = when {
-                            bolao.specificMatchId != null -> m.id == bolao.specificMatchId
-                            bolao.scope == BolaoScope.ONLY_GROUPS -> m.phase == Phase.GROUP_STAGE
-                            bolao.scope == BolaoScope.ONLY_KNOCKOUT -> m.phase != Phase.GROUP_STAGE
-                            else -> true
-                        }
-                        matchesChamp && matchesScope
-                    }
-                    
-                    println("BOLAOLOG: Filtered matches for $championshipId: ${filteredMatches.size} (Total: ${matches.size})")
-                    if (filteredMatches.isEmpty() && matches.isNotEmpty()) {
-                        matches.take(5).forEach { 
-                            println("BOLAOLOG: Sample Match: ID=${it.id} Champ=${it.championshipId} Phase=${it.phase}")
-                        }
-                    }
-
-                        // TRATAMENTO DE DUPLICADOS/GHOSTS: Mesmo usando IDs padronizados,
-                        // podem existir documentos antigos com IDs diferentes no Firestore.
-                        // Agrupamos por Times e Rodada apenas para a Fase de Grupos.
-                        // Para Mata-Mata, usamos o ID único para evitar que jogos TBD sejam colapsados.
-                        filteredMatches = filteredMatches.groupBy { 
-                            if (it.phase == Phase.GROUP_STAGE) "${it.homeTeamCode}-${it.awayTeamCode}-${it.groupRound()}"
-                            else it.id 
-                        }
+                        combine(
+                            flowOf(bolao),
+                            matchRepository.getMatches(championshipId),
+                            predictionRepository.getUserPredictions(currentUserId, bolaoId),
+                            predictionRepository.getBolaoAllPredictions(bolaoId),
+                            participantsFlow.flatMapLatest { participants ->
+                                predictionRepository.getRanking(bolaoId, championshipId, participants)
+                            }
+                        ) { b, matches, predictions, allPredictions, ranking ->
+                            // 1. Filtrar por Escopo
+                            var filteredMatches = matches.filter { m ->
+                                when {
+                                    b.specificMatchId != null -> m.id == b.specificMatchId
+                                    b.scope == BolaoScope.ONLY_GROUPS -> m.phase == Phase.GROUP_STAGE
+                                    b.scope == BolaoScope.ONLY_KNOCKOUT -> m.phase != Phase.GROUP_STAGE
+                                    else -> true
+                                }
+                            }
+                            
+                            // TRATAMENTO DE DUPLICADOS/GHOSTS
+                            filteredMatches = filteredMatches.groupBy { 
+                                if (it.phase == Phase.GROUP_STAGE) "${it.homeTeamCode}-${it.awayTeamCode}-${it.groupRound()}"
+                                else it.id 
+                            }
                             .map { (_, matchGroup) ->
                                 matchGroup.maxByOrNull { 
                                     if (it.status == "FINISHED") 3 
                                     else if (it.homeScore != null) 2 
-                                    else if (it.id.contains("-")) 1 // Prefere IDs padronizados se tudo for null
+                                    else if (it.id.contains("-")) 1
                                     else 0 
                                 }!!
                             }
 
-                        // 2. Filtro de Rodada de Corte (Apenas para campeonatos baseados em pontos/rodadas)
-                        val championship = Championship.fromId(championshipId)
-                        if (championship.isPointsBased) {
-                            val matchesByRound = filteredMatches.groupBy { it.groupRound() }
-                            
-                            // Encontramos a maior rodada onde a maioria dos jogos (>50%) já terminou ou começou
-                            // antes da criação do bolão. Isso define o que é "passado".
-                            val lastMostlyFinishedRound = matchesByRound.keys
-                                .filter { round ->
-                                    val roundMatches = matchesByRound[round] ?: emptyList()
-                                    val finishedCount = roundMatches.count { it.matchDateMillis < bolao.createdAtMillis }
-                                    finishedCount > (roundMatches.size / 2)
-                                }
-                                .maxOrNull() ?: 0
-                            
-                            // A rodada de exibição inicial será a próxima após a última rodada "passada".
-                            val startFromRound = lastMostlyFinishedRound + 1
-                            
-                            // Filtramos TUDO que for de rodada anterior numericamente.
-                            filteredMatches = filteredMatches.filter { it.groupRound() >= startFromRound }
-                        }
+                            // 2. Filtro de Rodada de Corte
+                            val championship = Championship.fromId(championshipId)
+                            if (championship.isPointsBased) {
+                                val matchesByRound = filteredMatches.groupBy { it.groupRound() }
+                                val lastMostlyFinishedRound = matchesByRound.keys
+                                    .filter { round ->
+                                        val roundMatches = matchesByRound[round] ?: emptyList()
+                                        val finishedCount = roundMatches.count { it.matchDateMillis < b.createdAtMillis }
+                                        finishedCount > (roundMatches.size / 2)
+                                    }
+                                    .maxOrNull() ?: 0
+                                
+                                val startFromRound = lastMostlyFinishedRound + 1
+                                filteredMatches = filteredMatches.filter { it.groupRound() >= startFromRound }
+                            }
 
-                        val predictionMap = predictions.associateBy { it.matchId }
-                        _uiState.update { it.copy(
-                            matches = filteredMatches,
-                            allMatches = matches,
-                            userPredictions = predictionMap,
-                            allPredictions = allPredictions,
-                            participants = ranking,
-                            isLoading = false
-                        ) }
+                            val predictionMap = predictions.associateBy { it.matchId }
+                            _uiState.update { it.copy(
+                                matches = filteredMatches,
+                                allMatches = matches,
+                                userPredictions = predictionMap,
+                                allPredictions = allPredictions,
+                                participants = ranking,
+                                isLoading = false
+                            ) }
+                        }
                     }
                 }.collect()
         }
@@ -179,8 +160,9 @@ class BolaoViewModel(
     fun clearError() = _uiState.update { it.copy(error = null) }
 
     fun updateMatchScore(matchId: String, home: Int?, away: Int?) {
+        val championshipId = _uiState.value.bolao?.championshipId ?: return
         viewModelScope.launch {
-            matchRepository.updateMatchScore(matchId, home, away)
+            matchRepository.updateMatchScore(championshipId, matchId, home, away)
         }
     }
 
@@ -204,8 +186,6 @@ class BolaoViewModel(
                 println("BOLAOLOG: API retornou ${remoteMatches.size} jogos. Iniciando escrita no Firestore...")
 
                 var updatedCount = 0
-                
-                // Lógica de Upsert direto para campeonatos ativos (Brasileirão, Libertadores, etc)
                 remoteMatches.forEach { remoteMatch ->
                     matchRepository.upsertMatch(remoteMatch)
                     updatedCount++

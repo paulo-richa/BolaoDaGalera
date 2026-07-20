@@ -60,7 +60,6 @@ private data class FdGoals(
 // ──────────────────────────── Mapeamento de nomes ────────────────────────────
 
 private val NAME_TO_CODE = mapOf(
-    // Brasileirão
     "SE Palmeiras" to "PAL", "Palmeiras" to "PAL",
     "CR Flamengo" to "FLA", "Flamengo" to "FLA",
     "Corinthians" to "COR", "Sport Club Corinthians Paulista" to "COR",
@@ -165,12 +164,11 @@ class FootballDataMatchRepository : MatchRepository {
 
     private val _matches = MutableStateFlow(allMatches)
 
-    override fun getMatches(): Flow<List<Match>> = _matches
-    override fun getMatchesByPhase(phase: Phase): Flow<List<Match>> = _matches.map { it.filter { m -> m.phase == phase } }
-    override suspend fun getMatch(matchId: String): Match = _matches.value.first { it.id == matchId }
+    override fun getMatches(championshipId: String): Flow<List<Match>> = _matches
+    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> = _matches.map { it.filter { m -> m.phase == phase } }
+    override suspend fun getMatch(championshipId: String, matchId: String): Match = _matches.value.first { it.id == matchId }
     
     suspend fun getUpdatedMatches(currentMatches: List<Match>, championshipId: String): List<Match> {
-        // Busca todos os jogos da API e mapeia para o formato interno
         return fetchAllMatchesFromApi(championshipId)
     }
 
@@ -178,7 +176,6 @@ class FootballDataMatchRepository : MatchRepository {
         val championship = com.lpstudio.bolaodagalera.domain.model.Championship.fromId(championshipId)
         val compCode = championship.apiCode.ifBlank { return emptyList() }
         
-        // Buscamos a temporada atual para pegar jogos reais
         val url = "$BASE_URL/$compCode/matches"
         
         try {
@@ -203,7 +200,6 @@ class FootballDataMatchRepository : MatchRepository {
                     var hCode = apiMatch.homeTeam?.tla ?: NAME_TO_CODE[hName] ?: "TBD"
                     var aCode = apiMatch.awayTeam?.tla ?: NAME_TO_CODE[aName] ?: "TBD"
                     
-                    // Ajuste para Coritiba
                     if (apiMatch.homeTeam?.id == 4241) hCode = "CFC"
                     if (apiMatch.awayTeam?.id == 4241) aCode = "CFC"
 
@@ -223,11 +219,8 @@ class FootballDataMatchRepository : MatchRepository {
                         else -> Phase.GROUP_STAGE
                     }
 
-                    // Determina a ordem e a perna (Ida/Volta) de forma genérica
                     val geLeg = if (stage.contains("LEG2") || round == 2) 2 else 1
                     val legSuffix = if (championship.isTwoLegged) "-L$geLeg" else ""
-                    
-                    // ID consistente baseado no código da competição e ID da API
                     val matchId = "${compCode}-M${apiMatch.id}$legSuffix"
 
                     val apiDateMillis = try {
@@ -268,8 +261,9 @@ class FootballDataMatchRepository : MatchRepository {
         }
     }
 
-    override suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {}
+    override suspend fun updateMatchScore(championshipId: String, matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {}
     override suspend fun updateMatchTeams(
+        championshipId: String,
         matchId: String,
         homeTeam: String,
         homeTeamCode: String,

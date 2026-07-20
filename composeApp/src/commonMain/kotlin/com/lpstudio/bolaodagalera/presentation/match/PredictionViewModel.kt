@@ -39,15 +39,17 @@ class PredictionViewModel(
     fun load(userId: String) {
         viewModelScope.launch {
             try {
-                val match = matchRepository.getMatch(matchId)
+                val bolao = bolaoRepository.getBolao(bolaoId)
+                val championshipId = bolao.championshipId
+                
+                val match = matchRepository.getMatch(championshipId, matchId)
                 val allMatches = try {
-                    // Tenta buscar todas as partidas para resolver nomes de mata-mata
-                    matchRepository.getMatches().first()
+                    matchRepository.getMatches(championshipId).first()
                 } catch (e: Exception) {
                     emptyList<Match>()
                 }
-                val bolao = bolaoRepository.getBolao(bolaoId)
                 val prediction = predictionRepository.getUserPredictionForMatch(userId, bolaoId, matchId)
+
                 _uiState.update { 
                     it.copy(
                         match = match,

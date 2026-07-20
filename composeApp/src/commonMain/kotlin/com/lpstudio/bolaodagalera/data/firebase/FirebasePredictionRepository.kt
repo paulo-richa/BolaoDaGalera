@@ -44,15 +44,19 @@ class FirebasePredictionRepository(
 ) : PredictionRepository {
 
     private val db = Firebase.firestore
-    private val predictionsCollection = db.collection("predictions")
-    private val matchesCollection = db.collection("matches")
     private val usersCollection = db.collection("users")
 
+    private fun getPredictionsCollection(bolaoId: String) = 
+        db.collection("boloes").document(bolaoId).collection("predictions")
+
     override fun getUserPredictions(userId: String, bolaoId: String): Flow<List<Prediction>> {
-        return predictionsCollection
-            .where { "userId" equalTo userId }
-            .where { "bolaoId" equalTo bolaoId }
-            .snapshots
+        val query = if (bolaoId.isEmpty()) {
+            db.collectionGroup("predictions").where { "userId" equalTo userId }
+        } else {
+            getPredictionsCollection(bolaoId).where { "userId" equalTo userId }
+        }
+        
+        return query.snapshots
             .map { snapshot ->
                 snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
             }
@@ -60,8 +64,7 @@ class FirebasePredictionRepository(
     }
 
     override fun getBolaoAllPredictions(bolaoId: String): Flow<List<Prediction>> {
-        return predictionsCollection
-            .where { "bolaoId" equalTo bolaoId }
+        return getPredictionsCollection(bolaoId)
             .snapshots
             .map { snapshot ->
                 snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
@@ -70,9 +73,8 @@ class FirebasePredictionRepository(
     }
 
     override suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction? {
-        val snapshot = predictionsCollection
+        val snapshot = getPredictionsCollection(bolaoId)
             .where { "userId" equalTo userId }
-            .where { "bolaoId" equalTo bolaoId }
             .where { "matchId" equalTo matchId }
             .get()
         return snapshot.documents.firstOrNull()?.let { doc ->
@@ -89,40 +91,44 @@ class FirebasePredictionRepository(
             awayScore = prediction.awayScore
         )
         val existing = getUserPredictionForMatch(prediction.userId, prediction.bolaoId, prediction.matchId)
+        val collection = getPredictionsCollection(prediction.bolaoId)
         if (existing != null) {
-            predictionsCollection.document(existing.id).set(dto)
+            collection.document(existing.id).set(dto)
         } else {
-            predictionsCollection.add(dto)
+            collection.add(dto)
         }
     }
 
     override suspend fun deleteUserPredictions(userId: String, bolaoId: String) {
         try {
-            val snapshot = predictionsCollection
+            val collection = getPredictionsCollection(bolaoId)
+            val snapshot = collection
                 .where { "userId" equalTo userId }
-                .where { "bolaoId" equalTo bolaoId }
                 .get()
             
             snapshot.documents.forEach { doc ->
-                predictionsCollection.document(doc.id).delete()
+                collection.document(doc.id).delete()
             }
         } catch (e: Exception) { }
     }
 
-    override fun getRanking(bolaoId: String, participantIds: List<String>): Flow<List<RankingEntry>> {
+    override fun getRanking(bolaoId: String, championshipId: String, participantIds: List<String>): Flow<List<RankingEntry>> {
         val predictionsFlow = getBolaoAllPredictions(bolaoId)
 
-        val matchScoresFlow = matchesCollection.snapshots.map { snapshot ->
-            snapshot.documents.associate { doc ->
-                val dto = doc.data<MatchScoreDto>()
-                doc.id to (dto.homeScore to dto.awayScore)
+        // Escopa a busca de placares apenas para o campeonato do bolão
+        val matchScoresFlow = db.collection("championships").document(championshipId).collection("matches")
+            .snapshots
+            .map { snapshot ->
+                snapshot.documents.associate { doc ->
+                    val dto = doc.data<MatchScoreDto>()
+                    doc.id to (dto.homeScore to dto.awayScore)
+                }
             }
-        }.catch { emit(emptyMap()) }
+            .catch { emit(emptyMap()) }
 
         val userNamesFlow = if (participantIds.isEmpty()) {
             flowOf(emptyMap<String, Pair<String, String>>())
         } else {
-            // Otimização: Ouve apenas os usuários que estão neste bolão específico (limite 30 IDs para query IN)
             usersCollection
                 .snapshots
                 .map { snapshot ->
@@ -139,7 +145,6 @@ class FirebasePredictionRepository(
         return combine(predictionsFlow, matchScoresFlow, userNamesFlow) { predictions, matchScores, userNames ->
             val userStats = mutableMapOf<String, Triple<Int, Int, Int>>() // points, exact, correct
 
-            // Initialize all participants with 0 points
             participantIds.forEach { userId ->
                 userStats[userId] = Triple(0, 0, 0)
             }
@@ -152,7 +157,7 @@ class FirebasePredictionRepository(
 
                 val points = calculatePointsUseCase(prediction, homeScore, awayScore)
                 val isExact = points == 3 
-                val isCorrectResult = points == 1 // Apenas resultado, sem placar exato
+                val isCorrectResult = points == 1
 
                 val current = userStats[prediction.userId] ?: Triple(0, 0, 0)
                 userStats[prediction.userId] = Triple(

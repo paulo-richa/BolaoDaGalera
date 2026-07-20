@@ -13,15 +13,16 @@ class FakeMatchRepository : MatchRepository {
 
     private val _matches = MutableStateFlow(allMatches)
 
-    override fun getMatches(): Flow<List<Match>> = _matches
+    override fun getMatches(championshipId: String): Flow<List<Match>> = 
+        _matches.map { it.filter { m -> m.championshipId == championshipId } }
 
-    override fun getMatchesByPhase(phase: Phase): Flow<List<Match>> =
-        _matches.map { it.filter { m -> m.phase == phase } }
+    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> =
+        _matches.map { it.filter { m -> m.championshipId == championshipId && m.phase == phase } }
 
-    override suspend fun getMatch(matchId: String): Match =
+    override suspend fun getMatch(championshipId: String, matchId: String): Match =
         _matches.value.first { it.id == matchId }
 
-    override suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {
+    override suspend fun updateMatchScore(championshipId: String, matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {
         _matches.update { list ->
             list.map { 
                 if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore, isManual = isManual) 
@@ -31,6 +32,7 @@ class FakeMatchRepository : MatchRepository {
     }
 
     override suspend fun updateMatchTeams(
+        championshipId: String,
         matchId: String,
         homeTeam: String,
         homeTeamCode: String,

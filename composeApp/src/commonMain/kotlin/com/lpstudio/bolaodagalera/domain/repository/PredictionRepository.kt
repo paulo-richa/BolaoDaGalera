@@ -10,5 +10,5 @@ interface PredictionRepository {
     suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction?
     suspend fun savePrediction(prediction: Prediction)
     suspend fun deleteUserPredictions(userId: String, bolaoId: String)
-    fun getRanking(bolaoId: String, participantIds: List<String>): Flow<List<RankingEntry>>
+    fun getRanking(bolaoId: String, championshipId: String, participantIds: List<String>): Flow<List<RankingEntry>>
 }

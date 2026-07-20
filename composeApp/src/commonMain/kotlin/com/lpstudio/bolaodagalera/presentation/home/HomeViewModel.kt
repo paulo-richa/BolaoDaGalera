@@ -80,7 +80,7 @@ class HomeViewModel(
         // Carrega Bolões, Jogos, Palpites, Convites e IDs lidos
         dataCollectionJob = combine(
             bolaoRepository.getUserBoloes(user.id),
-            matchRepository.getMatches(),
+            matchRepository.getAllMatches(),
             predictionRepository.getUserPredictions(user.id, ""),
             invitationsFlow,
             readNotificationIds

@@ -18,7 +18,8 @@ data class Bolao(
     val championshipId: String = "UNKNOWN", // Carregado dinamicamente
     val scope: BolaoScope = BolaoScope.FULL,
     val specificMatchId: String? = null,
-    val createdAtMillis: Long = 0L
+    val createdAtMillis: Long = 0L,
+    val deletedAtMillis: Long? = null // Se preenchido, o bolão está marcado para deleção
 )
 
 enum class BolaoScope(val label: String) {

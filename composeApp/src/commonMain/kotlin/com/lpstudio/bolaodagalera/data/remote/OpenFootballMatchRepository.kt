@@ -12,12 +12,13 @@ import kotlinx.coroutines.flow.*
 class OpenFootballMatchRepository : MatchRepository {
     private val _matches = MutableStateFlow<List<Match>>(emptyList())
 
-    override fun getMatches(): Flow<List<Match>> = _matches
-    override fun getMatchesByPhase(phase: Phase): Flow<List<Match>> = _matches.map { it.filter { m -> m.phase == phase } }
-    override suspend fun getMatch(matchId: String): Match = _matches.value.first { it.id == matchId }
+    override fun getMatches(championshipId: String): Flow<List<Match>> = _matches
+    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> = _matches.map { it.filter { m -> m.phase == phase } }
+    override suspend fun getMatch(championshipId: String, matchId: String): Match = _matches.value.first { it.id == matchId }
     
-    override suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {}
+    override suspend fun updateMatchScore(championshipId: String, matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {}
     override suspend fun updateMatchTeams(
+        championshipId: String,
         matchId: String,
         homeTeam: String,
         homeTeamCode: String,
