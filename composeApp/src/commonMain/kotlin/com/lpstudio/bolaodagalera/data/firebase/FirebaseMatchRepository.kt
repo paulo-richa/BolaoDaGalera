@@ -22,7 +22,7 @@ private data class MatchDto(
     val homeScore: Int? = null, 
     val awayScore: Int? = null,
     val status: String? = null,
-    val championshipId: String = "LIBERTADORES",
+    val championshipId: String = "UNKNOWN",
     val matchOrder: Int = 0,
     val isManual: Boolean = false
 )
@@ -68,38 +68,15 @@ class FirebaseMatchRepository : MatchRepository {
             a.matchDateMillis.compareTo(b.matchDateMillis)
         } else if (a.phase != Phase.GROUP_STAGE && b.phase != Phase.GROUP_STAGE && a.phase == b.phase) {
             // Se for a mesma fase de mata-mata
-            if (a.championshipId == "LIBERTADORES" || b.championshipId == "LIBERTADORES") {
-                // Função local para extrair a ordem se o campo matchOrder estiver zerado (retrocompatibilidade)
-                fun getEffectiveOrder(m: Match): Int {
-                    if (m.matchOrder > 0) return m.matchOrder
-                    val apiId = m.id.substringAfterLast("-")
-                    return when (apiId) {
-                        "564456", "564465" -> 1 // Estudiantes
-                        "564462", "564470" -> 2 // Rosario
-                        "564460", "564468" -> 3 // Cruzeiro
-                        "564457", "564464" -> 4 // Tolima
-                        "564461", "564469" -> 5 // Mirassol
-                        "564459", "564466" -> 6 // Palmeiras
-                        "564458", "564467" -> 7 // Platense
-                        "564455", "564463" -> 8 // Fluminense
-                        else -> 99
-                    }
-                }
+            // Usamos matchOrder se disponível (>0), senão tenta inferir pelo ID
+            val orderA = if (a.matchOrder > 0) a.matchOrder else a.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
+            val orderB = if (b.matchOrder > 0) b.matchOrder else b.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
 
-                val orderA = getEffectiveOrder(a)
-                val orderB = getEffectiveOrder(b)
-
-                if (orderA != orderB) {
-                    orderA.compareTo(orderB)
-                } else {
-                    val dateComp = a.matchDateMillis.compareTo(b.matchDateMillis)
-                    if (dateComp != 0) dateComp else a.id.compareTo(b.id)
-                }
+            if (orderA != orderB) {
+                orderA.compareTo(orderB)
             } else {
-                // Para os demais, mantém a ordem do ID
-                val numA = a.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
-                val numB = b.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
-                if (numA != numB) numA.compareTo(numB) else a.matchDateMillis.compareTo(b.matchDateMillis)
+                val dateComp = a.matchDateMillis.compareTo(b.matchDateMillis)
+                if (dateComp != 0) dateComp else a.id.compareTo(b.id)
             }
         } else {
             // Fases diferentes: segue a ordem cronológica ou a ordem do enum Phase

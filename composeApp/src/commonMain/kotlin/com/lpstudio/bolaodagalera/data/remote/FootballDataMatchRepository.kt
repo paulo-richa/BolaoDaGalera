@@ -10,7 +10,6 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
@@ -170,19 +169,16 @@ class FootballDataMatchRepository : MatchRepository {
     override fun getMatchesByPhase(phase: Phase): Flow<List<Match>> = _matches.map { it.filter { m -> m.phase == phase } }
     override suspend fun getMatch(matchId: String): Match = _matches.value.first { it.id == matchId }
     
-    suspend fun getUpdatedMatches(currentMatches: List<Match>, championshipId: String = "LIBERTADORES"): List<Match> {
+    suspend fun getUpdatedMatches(currentMatches: List<Match>, championshipId: String): List<Match> {
         // Busca todos os jogos da API e mapeia para o formato interno
         return fetchAllMatchesFromApi(championshipId)
     }
 
     private suspend fun fetchAllMatchesFromApi(championshipId: String): List<Match> {
-        val compCode = when(championshipId) {
-            "BRASILEIRAO" -> "BSA"
-            "LIBERTADORES" -> "CLI"
-            else -> return emptyList()
-        }
+        val championship = com.lpstudio.bolaodagalera.domain.model.Championship.fromId(championshipId)
+        val compCode = championship.apiCode.ifBlank { return emptyList() }
         
-        // Buscamos a temporada atual (sem fixar 2026) para pegar jogos reais
+        // Buscamos a temporada atual para pegar jogos reais
         val url = "$BASE_URL/$compCode/matches"
         
         try {
@@ -217,31 +213,6 @@ class FootballDataMatchRepository : MatchRepository {
                     val round = apiMatch.matchday ?: 0
                     val stage = apiMatch.stage
                     
-                    // Mapeamento específico para Libertadores 2026
-                    val geInfo = when (apiMatch.id.toString()) {
-                        "564456" -> 1 to 1 // Estudiantes Ida
-                        "564465" -> 1 to 2 // Estudiantes Volta
-                        "564462" -> 2 to 1 // Rosario Ida
-                        "564470" -> 2 to 2 // Rosario Volta
-                        "564460" -> 3 to 1 // Cruzeiro Ida
-                        "564468" -> 3 to 2 // Cruzeiro Volta
-                        "564457" -> 4 to 1 // Tolima Ida
-                        "564464" -> 4 to 2 // Tolima Volta
-                        "564461" -> 5 to 1 // Mirassol Ida
-                        "564469" -> 5 to 2 // Mirassol Volta
-                        "564459" -> 6 to 1 // Palmeiras Ida
-                        "564466" -> 6 to 2 // Palmeiras Volta
-                        "564458" -> 7 to 1 // Platense Ida
-                        "564467" -> 7 to 2 // Platense Volta
-                        "564455" -> 8 to 1 // Fluminense Ida
-                        "564463" -> 8 to 2 // Fluminense Volta
-                        else -> null
-                    }
-
-                    val geOrder = geInfo?.first ?: 99
-                    val geLeg = geInfo?.second ?: (if (round == 2 || stage.contains("LEG2")) 2 else 1)
-                    val legSuffix = "-L$geLeg"
-                    
                     val internalPhase = when(stage) {
                         "REGULAR_SEASON", "GROUP_STAGE" -> Phase.GROUP_STAGE
                         "ROUND_1", "ROUND_2", "ROUND_3" -> Phase.ROUND_OF_32
@@ -252,44 +223,18 @@ class FootballDataMatchRepository : MatchRepository {
                         else -> Phase.GROUP_STAGE
                     }
 
-                    // FILTRO DE SEGURANÇA: No mata-mata da Libertadores, ignorar o que não está no mapa GE ou preliminares
-                    if (compCode == "CLI" && internalPhase != Phase.GROUP_STAGE) {
-                        if (geOrder == 99 || stage.contains("ROUND_1")) return@mapNotNull null
-                    }
-
-                    // Define o ID do documento de forma consistente
-                    var matchId = "${compCode}-2026-M${apiMatch.id}$legSuffix"
-                    if (internalPhase == Phase.ROUND_OF_16) {
-                        matchId = "${compCode}-2026-R16-$geOrder$legSuffix"
-                    } else if (internalPhase == Phase.QUARTERFINALS) {
-                        matchId = "${compCode}-2026-QF$geOrder$legSuffix"
-                    }
+                    // Determina a ordem e a perna (Ida/Volta) de forma genérica
+                    val geLeg = if (stage.contains("LEG2") || round == 2) 2 else 1
+                    val legSuffix = if (championship.isTwoLegged) "-L$geLeg" else ""
+                    
+                    // ID consistente baseado no código da competição e ID da API
+                    val matchId = "${compCode}-M${apiMatch.id}$legSuffix"
 
                     val apiDateMillis = try {
                         val instant = Instant.parse(apiMatch.utcDate)
-                        val tz = TimeZone.UTC
-                        val dateTime = instant.toLocalDateTime(tz)
-                        
-                        // Se o ano já for 2026 ou posterior (caso da Libertadores/Brasileirão reais), não alteramos.
-                        val finalYear = if (dateTime.year < 2026) dateTime.year + 2 else dateTime.year
-                        
-                        val futureDateTime = LocalDateTime(
-                            finalYear,
-                            dateTime.month,
-                            dateTime.dayOfMonth,
-                            dateTime.hour,
-                            dateTime.minute,
-                            dateTime.second,
-                            dateTime.nanosecond
-                        )
-                        futureDateTime.toInstant(tz).toEpochMilliseconds()
+                        instant.toEpochMilliseconds()
                     } catch (e: Exception) { 
-                        try {
-                            val instant = Instant.parse(apiMatch.utcDate)
-                            val baseMillis = instant.toEpochMilliseconds()
-                            if (instant.toLocalDateTime(TimeZone.UTC).year >= 2026) baseMillis
-                            else baseMillis + (31536000000L * 2)
-                        } catch (e2: Exception) { 0L }
+                        0L
                     }
 
                     val s = apiMatch.score
@@ -313,7 +258,7 @@ class FootballDataMatchRepository : MatchRepository {
                         awayScore = aScore,
                         status = apiMatch.status,
                         championshipId = championshipId,
-                        matchOrder = geOrder,
+                        matchOrder = 0,
                         isManual = false
                     )
                 }

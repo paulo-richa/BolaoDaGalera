@@ -36,31 +36,7 @@ class FirebaseChampionshipRepository : ChampionshipRepository {
     }
 
     override suspend fun seedChampionships() {
-        try {
-            val bras = Championship(
-                id = "BRASILEIRAO",
-                displayName = "Brasileirão 2026",
-                emoji = "🇧🇷",
-                hasStandings = true,
-                isPointsBased = true,
-                isGroupsAndKnockout = false,
-                isAvailable = true
-            )
-            val lib = Championship(
-                id = "LIBERTADORES",
-                displayName = "Libertadores 2026",
-                emoji = "🔥",
-                hasStandings = true,
-                isPointsBased = false,
-                isGroupsAndKnockout = true,
-                isAvailable = true
-            )
-            
-            collection.document(bras.id).set(bras)
-            collection.document(lib.id).set(lib)
-            println("BOLAOLOG: Campeonatos semeados com sucesso!")
-        } catch (e: Exception) {
-            println("BOLAOLOG: Erro ao semear campeonatos: ${e.message}")
-        }
+        // Agora o seed é feito centralizadamente via script Node.js (seed.js)
+        // ou via GitHub Actions para garantir consistência.
     }
 }
