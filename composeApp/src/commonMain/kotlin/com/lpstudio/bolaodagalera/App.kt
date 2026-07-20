@@ -57,6 +57,7 @@ fun App() {
             try {
                 // Ativa verificação de manutenção primeiro
                 remoteConfigManager.fetchAndActivate()
+
                 // Inicia carregamento de campeonatos
                 championshipRepository.refreshCache()
                 // Semeia os jogos iniciais (fake data no iOS, real no Android/Desktop)
