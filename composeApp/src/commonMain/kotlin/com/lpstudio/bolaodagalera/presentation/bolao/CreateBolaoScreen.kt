@@ -74,7 +74,7 @@ class CreateBolaoViewModel(
 
     private fun loadMatchesData() {
         viewModelScope.launch {
-            matchRepository.getMatches().collect { matches ->
+            matchRepository.getAllMatches().collect { matches ->
                 _allMatches.value = matches
             }
         }

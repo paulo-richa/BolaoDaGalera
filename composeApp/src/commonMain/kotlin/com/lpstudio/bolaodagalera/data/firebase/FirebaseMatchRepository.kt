@@ -36,11 +36,7 @@ private fun MatchDto.toDomain(id: String) = Match(
     group = group, homeScore = homeScore, awayScore = awayScore,
     status = status, championshipId = championshipId, 
     matchOrder = matchOrder, isManual = isManual
-).also { 
-    if (it.homeTeamCode == "BOT" || it.homeTeamCode == "VIT") {
-        println("BOLAOLOG: DTO -> Domain: ${it.homeTeamCode} ${it.homeScore}x${it.awayScore} | ID: $id")
-    }
-}
+)
 
 private fun Match.toDto() = MatchDto(
     homeTeam = homeTeam, awayTeam = awayTeam,
@@ -55,20 +51,19 @@ private fun Match.toDto() = MatchDto(
 
 /**
  * Repositório de Jogos via Firebase Firestore.
- * Agora atua apenas como consumidor dos dados sincronizados centralizadamente
- * via GitHub Actions (sync.js).
+ * Organizado por Subcollections: championships/{championshipId}/matches/{matchId}
  */
 class FirebaseMatchRepository : MatchRepository {
 
     private val db by lazy { Firebase.firestore }
-    private val collection by lazy { db.collection("matches") }
+    
+    private fun getMatchesCollection(championshipId: String) = 
+        db.collection("championships").document(championshipId).collection("matches")
 
     private fun List<Match>.sortedForUi(): List<Match> = sortedWith { a, b ->
         if (a.phase == Phase.GROUP_STAGE && b.phase == Phase.GROUP_STAGE) {
             a.matchDateMillis.compareTo(b.matchDateMillis)
         } else if (a.phase != Phase.GROUP_STAGE && b.phase != Phase.GROUP_STAGE && a.phase == b.phase) {
-            // Se for a mesma fase de mata-mata
-            // Usamos matchOrder se disponível (>0), senão tenta inferir pelo ID
             val orderA = if (a.matchOrder > 0) a.matchOrder else a.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
             val orderB = if (b.matchOrder > 0) b.matchOrder else b.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
 
@@ -79,7 +74,6 @@ class FirebaseMatchRepository : MatchRepository {
                 if (dateComp != 0) dateComp else a.id.compareTo(b.id)
             }
         } else {
-            // Fases diferentes: segue a ordem cronológica ou a ordem do enum Phase
             if (a.matchDateMillis != b.matchDateMillis) {
                 a.matchDateMillis.compareTo(b.matchDateMillis)
             } else {
@@ -88,18 +82,8 @@ class FirebaseMatchRepository : MatchRepository {
         }
     }
 
-    override fun getMatches(): Flow<List<Match>> = collection.snapshots.map { snap ->
-        try {
-            snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }.catch { emit(emptyList()) }
-
-    override fun getMatchesByPhase(phase: Phase): Flow<List<Match>> = collection
-        .where { "phase" equalTo phase.name }
-        .snapshots
-        .map { snap ->
+    override fun getMatches(championshipId: String): Flow<List<Match>> = 
+        getMatchesCollection(championshipId).snapshots.map { snap ->
             try {
                 snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
             } catch (e: Exception) {
@@ -107,15 +91,25 @@ class FirebaseMatchRepository : MatchRepository {
             }
         }.catch { emit(emptyList()) }
 
-    override suspend fun getMatch(matchId: String): Match {
-        val doc = collection.document(matchId).get()
+    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> = 
+        getMatchesCollection(championshipId)
+            .where { "phase" equalTo phase.name }
+            .snapshots
+            .map { snap ->
+                try {
+                    snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }.catch { emit(emptyList()) }
+
+    override suspend fun getMatch(championshipId: String, matchId: String): Match {
+        val doc = getMatchesCollection(championshipId).document(matchId).get()
         return doc.data<MatchDto>().toDomain(doc.id)
     }
 
-    override suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {
-        // Quando atualizamos manualmente pelo app (Admin), setamos isManual = true
-        // para que o centralizador (GitHub Action) não sobrescreva este placar.
-        collection.document(matchId).set(
+    override suspend fun updateMatchScore(championshipId: String, matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {
+        getMatchesCollection(championshipId).document(matchId).set(
             mapOf(
                 "homeScore" to homeScore, 
                 "awayScore" to awayScore,
@@ -126,6 +120,7 @@ class FirebaseMatchRepository : MatchRepository {
     }
 
     override suspend fun updateMatchTeams(
+        championshipId: String,
         matchId: String,
         homeTeam: String,
         homeTeamCode: String,
@@ -149,64 +144,28 @@ class FirebaseMatchRepository : MatchRepository {
         dateMillis?.let { updates["matchDateMillis"] = it }
         status?.let { updates["status"] = it }
 
-        collection.document(matchId).set(updates, merge = true)
+        getMatchesCollection(championshipId).document(matchId).set(updates, merge = true)
     }
 
     override suspend fun upsertMatch(match: Match) {
+        val collection = getMatchesCollection(match.championshipId)
         try {
             val doc = collection.document(match.id).get()
             if (doc.exists) {
                 val existing = doc.data<MatchDto>()
-                if (existing.isManual) return // Não sobrescreve se foi editado manualmente
+                if (existing.isManual) return 
             }
             collection.document(match.id).set(match.toDto(), merge = true)
         } catch (e: Exception) {
-            // Se o documento não existe, o get() pode falhar dependendo da lib, 
-            // mas aqui apenas tentamos o set direto como fallback.
             collection.document(match.id).set(match.toDto(), merge = true)
         }
     }
 
+    override fun getAllMatches(): Flow<List<Match>> = db.collectionGroup("matches").snapshots.map { snap ->
+        snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
+    }.catch { emit(emptyList()) }
+
     override suspend fun seedMatchesIfNeeded() {
-        try {
-            val snapshot = collection.get()
-            val existingDocs = snapshot.documents.associateBy { it.id }
-            val localIds = allMatches.map { it.id }.toSet()
-
-            // 1. Limpeza Segura de Duplicados (Apenas IDs numéricos puros ou KO-5XXXX)
-            snapshot.documents.forEach { doc ->
-                val id = doc.id
-                val isWrongKoFormat = id.startsWith("KO-") && id.removePrefix("KO-").all { it.isDigit() }
-                val isNumericId = id.all { it.isDigit() }
-
-                if (!localIds.contains(id) && (isWrongKoFormat || isNumericId)) {
-                    collection.document(id).delete()
-                }
-            }
-
-            // 2. Sincronização Inteligente: Só cria se não existir ou se precisar atualizar Times/Bandeiras
-            // NUNCA sobrescreve placar (homeScore/awayScore) ou status se já existirem no Firestore
-            allMatches.forEach { m ->
-                val existing = existingDocs[m.id]
-                if (existing == null) {
-                    collection.document(m.id).set(m.toDto())
-                } else {
-                    // Sincronização básica de metadados para garantir que nomes e bandeiras estejam certos
-                    val updates = mutableMapOf<String, Any?>(
-                        "homeTeam" to m.homeTeam,
-                        "homeTeamCode" to m.homeTeamCode,
-                        "homeTeamFlag" to m.homeTeamFlag,
-                        "awayTeam" to m.awayTeam,
-                        "awayTeamCode" to m.awayTeamCode,
-                        "awayTeamFlag" to m.awayTeamFlag,
-                        "matchDateMillis" to m.matchDateMillis,
-                        "phase" to m.phase.name,
-                        "championshipId" to m.championshipId
-                    )
-
-                    collection.document(m.id).update(updates)
-                }
-            }
-        } catch (e: Exception) { }
+        // Agora os jogos são sincronizados via Backend ou script externo para as subcollections
     }
 }

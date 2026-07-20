@@ -96,10 +96,14 @@ exports.syncGeMatches = onSchedule("every 6 hours", async (context) => {
   // Executar scraper Python ou usar Playwright no Node
   const matches = await scrapeGeMatches();
   
-  // Salvar em Firestore
-  await db.collection("matches")
-    .doc("friendly_today")
-    .set(matches);
+  // Salvar em Firestore na subcoleção correta (ex: AMISTOSOS)
+  const batch = db.batch();
+  const matchesRef = db.collection("championships").doc("AMISTOSOS").collection("matches");
+  
+  matches.forEach(m => {
+    batch.set(matchesRef.doc(m.id), { ...m, championshipId: "AMISTOSOS" }, { merge: true });
+  });
+  await batch.commit();
 });
 ```
 

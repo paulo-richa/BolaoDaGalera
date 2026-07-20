@@ -50,19 +50,42 @@ class RankingViewModel(
     init {
         val userId = authRepository.currentUser?.id ?: ""
         _uiState.update { it.copy(currentUserId = userId) }
-        loadRanking()
-        observeData()
+        loadData()
     }
 
-    private fun observeData() {
-        combine(
-            matchRepository.getMatches(),
-            predictionRepository.getBolaoAllPredictions(bolaoId)
-        ) { matches, predictions ->
-            allMatches = matches
-            allPredictions = predictions
-            _uiState.update { it.copy(allMatches = matches) }
-        }.launchIn(viewModelScope)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun loadData() {
+        viewModelScope.launch {
+            try {
+                val bolao = bolaoRepository.getBolao(bolaoId)
+                val championshipId = bolao.championshipId
+                pointsExact = bolao.pointsExactScore
+                pointsWinner = bolao.pointsWinnerOrDraw
+
+                // Ranking em tempo real
+                predictionRepository.getRanking(bolaoId, championshipId, bolao.participants)
+                    .onEach { entries ->
+                        _uiState.update { it.copy(entries = entries, isLoading = false) }
+                    }
+                    .catch { e ->
+                        _uiState.update { it.copy(error = e.message, isLoading = false) }
+                    }
+                    .launchIn(viewModelScope)
+
+                // Outros dados (jogos e palpites)
+                combine(
+                    matchRepository.getMatches(championshipId),
+                    predictionRepository.getBolaoAllPredictions(bolaoId)
+                ) { matches, predictions ->
+                    allMatches = matches
+                    allPredictions = predictions
+                    _uiState.update { it.copy(allMatches = matches) }
+                }.launchIn(viewModelScope)
+
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message, isLoading = false) }
+            }
+        }
     }
 
     fun selectParticipant(entry: RankingEntry) {
@@ -70,11 +93,11 @@ class RankingViewModel(
             .filter { it.userId == entry.userId }
             .mapNotNull { pred ->
                 val match = allMatches.find { it.id == pred.matchId }
-                if (match?.isFinished == true) {
+                if (match?.isFinished == true && match.homeScore != null && match.awayScore != null) {
                     val points = calculatePointsUseCase(
                         pred, 
-                        match.homeScore!!, 
-                        match.awayScore!!,
+                        match.homeScore, 
+                        match.awayScore,
                         pointsExact,
                         pointsWinner
                     )
@@ -93,27 +116,5 @@ class RankingViewModel(
 
     fun clearSelectedParticipant() {
         _uiState.update { it.copy(selectedParticipantHits = emptyList(), selectedParticipantName = "") }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun loadRanking() {
-        viewModelScope.launch {
-            try {
-                val bolao = bolaoRepository.getBolao(bolaoId)
-                pointsExact = bolao.pointsExactScore
-                pointsWinner = bolao.pointsWinnerOrDraw
-
-                predictionRepository.getRanking(bolaoId, bolao.participants)
-                    .onEach { entries ->
-                        _uiState.update { it.copy(entries = entries, isLoading = false) }
-                    }
-                    .catch { e ->
-                        _uiState.update { it.copy(error = e.message, isLoading = false) }
-                    }
-                    .launchIn(viewModelScope)
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
-            }
-        }
     }
 }

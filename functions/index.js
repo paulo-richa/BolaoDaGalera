@@ -67,7 +67,7 @@ exports.syncScores = onSchedule({
     timeoutSeconds: 120
 }, async (event) => {
     try {
-        const matchesRef = db.collection('matches');
+        const championshipsRef = db.collection('championships');
 
         // 1. BRASILEIRÃO 2026
         const resBSA = await axios.get(`https://api.football-data.org/v4/competitions/BSA/matches`, {
@@ -76,6 +76,7 @@ exports.syncScores = onSchedule({
         }).catch(() => null);
 
         if (resBSA && resBSA.data && resBSA.data.matches) {
+            const matchesRef = championshipsRef.doc("BRASILEIRAO").collection("matches");
             const batch = db.batch();
             for (const m of resBSA.data.matches) {
                 const matchId = `BSA-2026-R${m.matchday}-${m.id}`;
@@ -98,6 +99,7 @@ exports.syncScores = onSchedule({
         }).catch(() => null);
 
         if (resCLI && resCLI.data && resCLI.data.matches) {
+            const matchesRef = championshipsRef.doc("LIBERTADORES").collection("matches");
             const batch = db.batch();
             for (const m of resCLI.data.matches) {
                 const isVolta = m.matchday === 2 || m.stage.includes("LEG2");
@@ -142,5 +144,80 @@ exports.syncScores = onSchedule({
         }
     } catch (e) {
         logger.error("Erro na sincronização:", e.message);
+    }
+});
+
+/**
+ * Limpeza de Bolões deletados há mais de 7 dias.
+ * Roda diariamente às 03:00.
+ */
+exports.cleanupDeletedBoloes = onSchedule({
+    schedule: "0 3 * * *",
+    timeZone: "America/Sao_Paulo",
+    region: "southamerica-east1",
+    memory: "256MiB"
+}, async (event) => {
+    try {
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const snapshot = await db.collection("boloes")
+            .where("deletedAtMillis", "<=", sevenDaysAgo)
+            .get();
+
+        if (snapshot.empty) return;
+
+        logger.info(`🧹 Iniciando limpeza definitiva de ${snapshot.size} bolões...`);
+
+        for (const doc of snapshot.docs) {
+            const bolaoId = doc.id;
+
+            // 1. Deletar Subcollection Predictions
+            const predsSnap = await doc.ref.collection("predictions").get();
+            const batch = db.batch();
+            predsSnap.forEach(pDoc => batch.delete(pDoc.ref));
+            await batch.commit();
+
+            // 2. Deletar Convites vinculados
+            const invitesSnap = await db.collection("invitations").where("bolaoId", "==", bolaoId).get();
+            const inviteBatch = db.batch();
+            invitesSnap.forEach(iDoc => inviteBatch.delete(iDoc.ref));
+            await inviteBatch.commit();
+
+            // 3. Deletar o documento do Bolão
+            await doc.ref.delete();
+            logger.info(`✅ Bolão ${bolaoId} removido permanentemente.`);
+        }
+    } catch (e) {
+        logger.error("Erro na limpeza de bolões:", e.message);
+    }
+});
+
+/**
+ * Limpeza de Convites expirados (mais de 7 dias sem resposta).
+ * Roda diariamente às 03:30.
+ */
+exports.cleanupExpiredInvitations = onSchedule({
+    schedule: "30 3 * * *",
+    timeZone: "America/Sao_Paulo",
+    region: "southamerica-east1",
+    memory: "256MiB"
+}, async (event) => {
+    try {
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const snapshot = await db.collection("invitations")
+            .where("status", "==", "PENDING")
+            .where("createdAtMillis", "<=", sevenDaysAgo)
+            .get();
+
+        if (snapshot.empty) return;
+
+        logger.info(`🧹 Limpando ${snapshot.size} convites expirados...`);
+
+        const batch = db.batch();
+        snapshot.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        logger.info(`✅ Convites expirados removidos.`);
+    } catch (e) {
+        logger.error("Erro na limpeza de convites:", e.message);
     }
 });

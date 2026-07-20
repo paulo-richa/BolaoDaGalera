@@ -10,11 +10,12 @@ admin.initializeApp({
 const db = admin.firestore();
 
 async function exportCollections() {
-  const collections = ["predictions", "users", "boloes", "matches"];
+  const collections = ["users", "boloes"];
   const backup = {};
 
   console.log("🚀 Iniciando Backup...");
 
+  // 1. Coleções de primeiro nível
   for (const colName of collections) {
     console.log(`📦 Baixando coleção: ${colName}...`);
     const snapshot = await db.collection(colName).get();
@@ -22,6 +23,58 @@ async function exportCollections() {
 
     snapshot.forEach(doc => {
       backup[colName][doc.id] = doc.data();
+    });
+  }
+
+  // 1.1 Palpites dentro dos Bolões (Subcollections)
+  console.log(`📦 Baixando palpites dentro de cada bolão...`);
+  const boloesSnap = await db.collection("boloes").get();
+  for (const bolaoDoc of boloesSnap.docs) {
+    const bolaoId = bolaoDoc.id;
+    if (!backup["boloes"][bolaoId]) continue;
+
+    backup["boloes"][bolaoId].predictions = {};
+    const predsSnap = await db.collection("boloes").doc(bolaoId).collection("predictions").get();
+    predsSnap.forEach(pDoc => {
+      backup["boloes"][bolaoId].predictions[pDoc.id] = pDoc.data();
+    });
+  }
+
+  // 2. Campeonatos e suas subcollections (matches)
+  console.log(`📦 Baixando campeonatos e subcoleções de jogos...`);
+  backup["championships"] = {};
+  const championshipsSnap = await db.collection("championships").get();
+
+  for (const champDoc of championshipsSnap.docs) {
+    const champId = champDoc.id;
+    backup["championships"][champId] = {
+      ...champDoc.data(),
+      matches: {}
+    };
+
+    const matchesSnap = await db.collection("championships").doc(champId).collection("matches").get();
+    matchesSnap.forEach(matchDoc => {
+      backup["championships"][champId].matches[matchDoc.id] = matchDoc.data();
+    });
+  }
+
+  // 3. Antiga coleção matches (se ainda existir)
+  const oldMatchesSnap = await db.collection("matches").get();
+  if (!oldMatchesSnap.empty) {
+    console.log(`⚠️ Backup da antiga coleção 'matches' (ainda contém dados)...`);
+    backup["old_matches"] = {};
+    oldMatchesSnap.forEach(doc => {
+      backup["old_matches"][doc.id] = doc.data();
+    });
+  }
+
+  // 4. Antiga coleção predictions (se ainda existir)
+  const oldPredictionsSnap = await db.collection("predictions").get();
+  if (!oldPredictionsSnap.empty) {
+    console.log(`⚠️ Backup da antiga coleção 'predictions' (ainda contém dados)...`);
+    backup["old_predictions"] = {};
+    oldPredictionsSnap.forEach(doc => {
+      backup["old_predictions"][doc.id] = doc.data();
     });
   }
 

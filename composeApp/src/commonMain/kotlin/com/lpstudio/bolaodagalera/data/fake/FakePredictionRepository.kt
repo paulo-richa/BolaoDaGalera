@@ -50,10 +50,10 @@ class FakePredictionRepository(
         }
     }
 
-    override fun getRanking(bolaoId: String, participantIds: List<String>): Flow<List<RankingEntry>> {
+    override fun getRanking(bolaoId: String, championshipId: String, participantIds: List<String>): Flow<List<RankingEntry>> {
         return combine(
             getBolaoAllPredictions(bolaoId),
-            matchRepository.getMatches()
+            matchRepository.getMatches(championshipId)
         ) { predictions, matches ->
             val matchScores = matches.associate { it.id to (it.homeScore to it.awayScore) }
             val userStats = mutableMapOf<String, Triple<Int, Int, Int>>() // points, exact, correct

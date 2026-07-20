@@ -26,7 +26,8 @@ private data class BolaoDto(
     val championshipId: String = "UNKNOWN",
     val scope: String = "FULL",
     val specificMatchId: String? = null,
-    val createdAtMillis: Long = 0L
+    val createdAtMillis: Long = 0L,
+    val deletedAtMillis: Long? = null
 )
 
 private fun BolaoDto.toDomain(id: String) = Bolao(
@@ -43,7 +44,8 @@ private fun BolaoDto.toDomain(id: String) = Bolao(
     championshipId = championshipId,
     scope = try { BolaoScope.valueOf(scope) } catch (e: Exception) { BolaoScope.FULL },
     specificMatchId = specificMatchId,
-    createdAtMillis = createdAtMillis
+    createdAtMillis = createdAtMillis,
+    deletedAtMillis = deletedAtMillis
 )
 
 class FirebaseBolaoRepository : BolaoRepository {
@@ -56,9 +58,9 @@ class FirebaseBolaoRepository : BolaoRepository {
             .where { "participants" contains userId as Any }
             .snapshots
             .map { snapshot ->
-                snapshot.documents.map { doc ->
-                    doc.data<BolaoDto>().toDomain(doc.id)
-                }
+                snapshot.documents
+                    .map { doc -> doc.data<BolaoDto>().toDomain(doc.id) }
+                    .filter { it.deletedAtMillis == null } // Oculta bolões marcados para deleção
             }
             .catch { emit(emptyList()) }
     }
@@ -273,30 +275,16 @@ class FirebaseBolaoRepository : BolaoRepository {
     }
 
     override suspend fun deleteBolao(bolaoId: String) {
-        // 1. Deleta o bolão
-        collection.document(bolaoId).delete()
-
-        // 2. Deleta todos os palpites deste bolão (Limpeza)
-        try {
-            val predictionsSnapshot = db.collection("predictions")
-                .where { "bolaoId" equalTo bolaoId }
-                .get()
-            
-            predictionsSnapshot.documents.forEach { doc ->
-                db.collection("predictions").document(doc.id).delete()
-            }
-        } catch (e: Exception) { }
+        // Agora o bolão não é deletado imediatamente.
+        // Ele é marcado para deleção e ficará oculto para os usuários.
+        // Uma Cloud Function ou processo de limpeza removerá após 7 dias.
+        collection.document(bolaoId).update("deletedAtMillis" to TimeSource.nowMillis())
         
-        // 3. Deleta convites deste bolão
-        try {
-            val invitesSnapshot = db.collection("invitations")
-                .where { "bolaoId" equalTo bolaoId }
-                .get()
-            
-            invitesSnapshot.documents.forEach { doc ->
-                db.collection("invitations").document(doc.id).delete()
-            }
-        } catch (e: Exception) { }
+        // Removemos o código do bolão para que ele não possa ser encontrado via busca
+        collection.document(bolaoId).update("code" to "DELETED_${bolaoId}")
+
+        // Os dados reais (documento, palpites e convites) continuam existindo por 7 dias 
+        // caso o admin se arrependa (recuperação via suporte ou futuramente no app).
     }
 
     override suspend fun removeParticipant(bolaoId: String, userId: String) {

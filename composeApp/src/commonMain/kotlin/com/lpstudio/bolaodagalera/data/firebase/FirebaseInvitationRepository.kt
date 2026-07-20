@@ -58,6 +58,22 @@ class FirebaseInvitationRepository(
         inviterName: String,
         inviteeIdentifier: String
     ) {
+        val existing = collection
+            .where { "bolaoId" equalTo bolaoId }
+            .where { "inviteeIdentifier" equalTo inviteeIdentifier }
+            .where { "status" equalTo "PENDING" }
+            .get()
+
+        if (existing.documents.isNotEmpty()) {
+            // Se já existe um convite pendente, apenas atualiza o timestamp e o nome do inviter (caso mude)
+            val docId = existing.documents.first().id
+            collection.document(docId).update(
+                "createdAtMillis" to TimeSource.nowMillis(),
+                "inviterName" to inviterName
+            )
+            return
+        }
+
         val dto = InvitationDto(
             bolaoId = bolaoId,
             bolaoName = bolaoName,
@@ -70,15 +86,8 @@ class FirebaseInvitationRepository(
     }
 
     override suspend fun respondToInvitation(invitationId: String, accept: Boolean) {
-        val newStatus = if (accept) "ACCEPTED" else "DECLINED"
-        collection.document(invitationId).update("status" to newStatus)
-        
-        if (accept) {
-            val doc = collection.document(invitationId).get()
-            val dto = doc.data<InvitationDto>()
-            // Note: We might need a userId here, assuming inviteeIdentifier WAS the userId
-            // Or we handle the join logic in a ViewModel that calls bolaoRepository.joinBolao
-            // For now, this is just updating the status.
-        }
+        // Agora, em vez de apenas atualizar o status, deletamos o convite
+        // pois ele já foi processado (aceito ou recusado)
+        collection.document(invitationId).delete()
     }
 }

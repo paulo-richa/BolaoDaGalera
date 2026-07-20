@@ -5,11 +5,12 @@ import com.lpstudio.bolaodagalera.domain.model.Phase
 import kotlinx.coroutines.flow.Flow
 
 interface MatchRepository {
-    fun getMatches(): Flow<List<Match>>
-    fun getMatchesByPhase(phase: Phase): Flow<List<Match>>
-    suspend fun getMatch(matchId: String): Match
-    suspend fun updateMatchScore(matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean = true)
+    fun getMatches(championshipId: String): Flow<List<Match>>
+    fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>>
+    suspend fun getMatch(championshipId: String, matchId: String): Match
+    suspend fun updateMatchScore(championshipId: String, matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean = true)
     suspend fun updateMatchTeams(
+        championshipId: String,
         matchId: String,
         homeTeam: String,
         homeTeamCode: String,
@@ -23,4 +24,7 @@ interface MatchRepository {
     )
     suspend fun upsertMatch(match: Match)
     suspend fun seedMatchesIfNeeded()
+    
+    // Para compatibilidade ou fluxos globais (opcional)
+    fun getAllMatches(): Flow<List<Match>> = kotlinx.coroutines.flow.flowOf(emptyList())
 }

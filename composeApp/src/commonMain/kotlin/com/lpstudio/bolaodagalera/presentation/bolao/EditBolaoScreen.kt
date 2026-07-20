@@ -68,25 +68,10 @@ class EditBolaoViewModel(
     val currentUserId = authRepository.currentUser?.id
 
     init {
-        loadBolao()
-        checkKnockoutStatus()
+        loadData()
     }
 
-    private fun checkKnockoutStatus() {
-        viewModelScope.launch {
-            matchRepository.getMatches().collect { matches ->
-                val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
-                val knockoutStarted = matches.any { 
-                    it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.GROUP_STAGE && 
-                    it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES &&
-                    (it.isFinished || now >= it.matchDateMillis)
-                }
-                _isKnockoutStarted.value = knockoutStarted
-            }
-        }
-    }
-
-    private fun loadBolao() {
+    private fun loadData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
@@ -97,6 +82,17 @@ class EditBolaoViewModel(
                     participants = participants,
                     isLoading = false
                 ) }
+
+                // Check knockout status for this specific championship
+                matchRepository.getMatches(bolao.championshipId).collect { matches ->
+                    val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
+                    val knockoutStarted = matches.any { 
+                        it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.GROUP_STAGE && 
+                        it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES &&
+                        (it.isFinished || now >= it.matchDateMillis)
+                    }
+                    _isKnockoutStarted.value = knockoutStarted
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
@@ -122,7 +118,6 @@ class EditBolaoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                // Adicionamos um timeout de 10 segundos para não travar a UI
                 withTimeout(10000) {
                     bolaoRepository.deleteBolao(bolaoId)
                 }
@@ -137,7 +132,10 @@ class EditBolaoViewModel(
         viewModelScope.launch {
             try {
                 bolaoRepository.removeParticipant(bolaoId, userId)
-                loadBolao()
+                // Refresh data
+                val bolao = bolaoRepository.getBolao(bolaoId)
+                val participants = authRepository.getUsers(bolao.participants)
+                _uiState.update { it.copy(bolao = bolao, participants = participants) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
@@ -281,7 +279,6 @@ fun EditBolaoScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 Spacer(Modifier.height(16.dp))
-                // Spacer(Modifier.height(8.dp)) // Removido para subir o header
 
                 // Basic Info Section
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
