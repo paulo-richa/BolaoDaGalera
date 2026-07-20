@@ -378,13 +378,13 @@ fun CreateBolaoScreen(
                             fontWeight = FontWeight.Medium
                         )
                         
-                        val championships = Championship.entries
+                        val championships = Championship.getAll()
 
                         championships.forEach { championship ->
                             val id = championship.id
                             val label = championship.displayName
                             val emoji = championship.emoji
-                            val isAvailable = id == "BRASILEIRAO" || id == "LIBERTADORES" || id == "COPA_BRASIL"
+                            val isAvailable = championship.isAvailable
                             val isSelected = selectedChampionshipId == id
                             
                             Surface(

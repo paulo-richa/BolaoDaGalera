@@ -2,11 +2,13 @@ package com.lpstudio.bolaodagalera.di
 
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
+import com.lpstudio.bolaodagalera.data.fake.FakeChampionshipRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
+import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
@@ -26,6 +28,7 @@ val fakeAppModule = module {
     single<BolaoRepository> { FakeBolaoRepository() }
     single<InvitationRepository> { FakeInvitationRepository() }
     single<PredictionRepository> { FakePredictionRepository(get()) }
+    single<ChampionshipRepository> { FakeChampionshipRepository() }
 
     // UseCases
     single { CalculatePointsUseCase() }
