@@ -105,7 +105,6 @@ class BolaoViewModel(
                             bolao.specificMatchId != null -> m.id == bolao.specificMatchId
                             bolao.scope == BolaoScope.ONLY_GROUPS -> m.phase == Phase.GROUP_STAGE
                             bolao.scope == BolaoScope.ONLY_KNOCKOUT -> m.phase != Phase.GROUP_STAGE
-                            bolao.scope == BolaoScope.ONLY_BRAZIL -> m.homeTeamCode == "BRA" || m.awayTeamCode == "BRA"
                             else -> true
                         }
                         matchesChamp && matchesScope
@@ -189,7 +188,7 @@ class BolaoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val championshipId = forcedChampionshipId ?: _uiState.value.bolao?.championshipId ?: "COPA_2026"
+                val championshipId = forcedChampionshipId ?: _uiState.value.bolao?.championshipId ?: "LIBERTADORES"
                 println("BOLAOLOG: Iniciando sincronização ativa para $championshipId...")
                 
                 val currentMatches = _uiState.value.allMatches
@@ -197,7 +196,7 @@ class BolaoViewModel(
                 val remoteMatches = remoteRepo.getUpdatedMatches(currentMatches, championshipId)
 
                 if (remoteMatches.isEmpty()) {
-                    println("BOLAOLOG: API não retornou jogos para $championshipId. Verifique se o plano da API cobre esta liga ou se a temporada existe.")
+                    println("BOLAOLOG: API não retornou jogos para $championshipId.")
                     _uiState.update { it.copy(isLoading = false) }
                     return@launch
                 }
@@ -206,63 +205,10 @@ class BolaoViewModel(
 
                 var updatedCount = 0
                 
-                if (championshipId == "COPA_2026") {
-                    // Lógica Conservadora para Copa do Mundo
-                    remoteMatches.forEach { remoteMatch ->
-                        val localMatch = currentMatches.find { it.id == remoteMatch.id }
-                        if (localMatch != null) {
-                            val needsStatusUpdate = remoteMatch.status != null && localMatch.status != remoteMatch.status
-                            val needsDateUpdate = remoteMatch.matchDateMillis != 0L && localMatch.matchDateMillis != remoteMatch.matchDateMillis
-                            
-                            if (needsStatusUpdate || needsDateUpdate) {
-                                matchRepository.updateMatchTeams(
-                                    matchId = localMatch.id,
-                                    homeTeam = localMatch.homeTeam,
-                                    homeTeamCode = localMatch.homeTeamCode,
-                                    homeTeamFlag = localMatch.homeTeamFlag,
-                                    awayTeam = localMatch.awayTeam,
-                                    awayTeamCode = localMatch.awayTeamCode,
-                                    awayTeamFlag = localMatch.awayTeamFlag,
-                                    dateMillis = if (needsDateUpdate) remoteMatch.matchDateMillis else null,
-                                    status = if (needsStatusUpdate) remoteMatch.status else null,
-                                    isManual = false
-                                )
-                                updatedCount++
-                            }
-
-                            if (localMatch.phase != Phase.GROUP_STAGE) {
-                                val needsTeamUpdate = remoteMatch.homeTeamCode != "TBD" && 
-                                    (localMatch.homeTeamCode != remoteMatch.homeTeamCode || localMatch.awayTeamCode != remoteMatch.awayTeamCode)
-                                if (needsTeamUpdate) {
-                                    matchRepository.updateMatchTeams(
-                                        matchId = localMatch.id,
-                                        homeTeam = remoteMatch.homeTeam,
-                                        homeTeamCode = remoteMatch.homeTeamCode,
-                                        homeTeamFlag = remoteMatch.homeTeamFlag,
-                                        awayTeam = remoteMatch.awayTeam,
-                                        awayTeamCode = remoteMatch.awayTeamCode,
-                                        awayTeamFlag = remoteMatch.awayTeamFlag,
-                                        dateMillis = null,
-                                        status = null,
-                                        isManual = false
-                                    )
-                                    updatedCount++
-                                }
-                            }
-                            
-                            if (localMatch.homeScore != remoteMatch.homeScore || localMatch.awayScore != remoteMatch.awayScore) {
-                                matchRepository.updateMatchScore(localMatch.id, remoteMatch.homeScore, remoteMatch.awayScore, isManual = false)
-                                updatedCount++
-                            }
-                        }
-                    }
-                } else {
-                    // Lógica Dinâmica para Novos Campeonatos (Brasileirão, etc)
-                    remoteMatches.forEach { m ->
-                        println("BOLAOLOG: Upserting match ${m.id} with order ${m.matchOrder}")
-                        matchRepository.upsertMatch(m)
-                        updatedCount++
-                    }
+                // Lógica de Upsert direto para campeonatos ativos (Brasileirão, Libertadores, etc)
+                remoteMatches.forEach { remoteMatch ->
+                    matchRepository.upsertMatch(remoteMatch)
+                    updatedCount++
                 }
                 
                 _uiState.update { it.copy(

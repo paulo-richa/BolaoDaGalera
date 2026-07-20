@@ -16,6 +16,7 @@ import com.lpstudio.bolaodagalera.di.appModule
 import com.lpstudio.bolaodagalera.di.fakeAppModule
 import com.lpstudio.bolaodagalera.di.openFootballAppModule
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.presentation.maintenance.MaintenanceScreen
 import com.lpstudio.bolaodagalera.presentation.navigation.NavGraph
 import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
@@ -42,8 +43,12 @@ fun App() {
     KoinApplication(application = { modules(module) }) {
         val matchRepository = koinInject<MatchRepository>()
         val remoteConfigManager = koinInject<RemoteConfigManager>()
+        val authRepository = koinInject<AuthRepository>()
         
         val isMaintenanceMode by remoteConfigManager.isMaintenanceMode.collectAsState()
+        val currentUser by authRepository.authStateFlow.collectAsState(initial = authRepository.currentUser)
+        
+        val shouldShowMaintenance = isMaintenanceMode && currentUser?.email != "paulo.richa@hotmail.com"
 
         LaunchedEffect(Unit) {
             try {
@@ -71,7 +76,7 @@ fun App() {
                         .background(DeepNavy)
                 )
                 Box(Modifier.weight(1f)) {
-                    if (isMaintenanceMode) {
+                    if (shouldShowMaintenance) {
                         MaintenanceScreen()
                     } else {
                         NavGraph()

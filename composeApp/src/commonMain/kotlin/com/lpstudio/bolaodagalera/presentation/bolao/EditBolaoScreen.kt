@@ -363,7 +363,6 @@ fun EditBolaoScreen(
                                                 BolaoScope.FULL -> "🏆"
                                                 BolaoScope.ONLY_GROUPS -> "⚽"
                                                 BolaoScope.ONLY_KNOCKOUT -> "⚔️"
-                                                BolaoScope.ONLY_BRAZIL -> "🇧🇷"
                                                 BolaoScope.PONTOS_CORRIDOS -> "📈"
                                             },
                                             fontSize = 18.sp

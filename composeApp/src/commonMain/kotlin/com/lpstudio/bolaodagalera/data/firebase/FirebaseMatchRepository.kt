@@ -22,7 +22,7 @@ private data class MatchDto(
     val homeScore: Int? = null, 
     val awayScore: Int? = null,
     val status: String? = null,
-    val championshipId: String = "COPA_2026",
+    val championshipId: String = "LIBERTADORES",
     val matchOrder: Int = 0,
     val isManual: Boolean = false
 )
@@ -96,7 +96,7 @@ class FirebaseMatchRepository : MatchRepository {
                     if (dateComp != 0) dateComp else a.id.compareTo(b.id)
                 }
             } else {
-                // Para os demais (Copa), mantém a ordem do ID (Bracket Order)
+                // Para os demais, mantém a ordem do ID
                 val numA = a.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
                 val numB = b.id.split("-").lastOrNull()?.toIntOrNull() ?: 0
                 if (numA != numB) numA.compareTo(numB) else a.matchDateMillis.compareTo(b.matchDateMillis)

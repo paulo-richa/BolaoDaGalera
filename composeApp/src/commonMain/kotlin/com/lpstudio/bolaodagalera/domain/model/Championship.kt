@@ -11,11 +11,11 @@ enum class Championship(
     val isPointsBased: Boolean,    // Se é formato "Pontos Corridos" (ex: Brasileirão)
     val isGroupsAndKnockout: Boolean // Se tem fase de grupos seguida de mata-mata (ex: Copa)
 ) {
-    COPA_2026(
-        id = "COPA_2026",
-        displayName = "Copa do Mundo 2026",
-        emoji = "🏆",
-        hasStandings = false,
+    LIBERTADORES(
+        id = "LIBERTADORES",
+        displayName = "Libertadores 2026",
+        emoji = "🔥",
+        hasStandings = true,
         isPointsBased = false,
         isGroupsAndKnockout = true
     ),
@@ -26,14 +26,6 @@ enum class Championship(
         hasStandings = true,
         isPointsBased = true,
         isGroupsAndKnockout = false
-    ),
-    LIBERTADORES(
-        id = "LIBERTADORES",
-        displayName = "Libertadores 2026",
-        emoji = "🔥",
-        hasStandings = true,
-        isPointsBased = false,
-        isGroupsAndKnockout = true
     ),
     COPA_BRASIL(
         id = "COPA_BRASIL",
@@ -53,6 +45,6 @@ enum class Championship(
     );
 
     companion object {
-        fun fromId(id: String?): Championship = entries.find { it.id == id } ?: COPA_2026
+        fun fromId(id: String?): Championship = entries.find { it.id == id } ?: LIBERTADORES
     }
 }

@@ -165,7 +165,6 @@ fun BolaoDetailContent(
         when (uiState.bolao?.scope) {
             com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_GROUPS -> listOf("Grupos", "Ranking")
             com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_KNOCKOUT -> listOf("Mata-Mata", "Ranking")
-            com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_BRAZIL -> listOf("Jogos", "Ranking")
             com.lpstudio.bolaodagalera.domain.model.BolaoScope.PONTOS_CORRIDOS -> {
                 val list = mutableListOf("Pontos Corridos", "Ranking")
                 if (championship.hasStandings) list.add("Tabela")
@@ -747,7 +746,7 @@ fun BolaoDetailContent(
                     filteredMatches.filter { it.phase == Phase.GROUP_STAGE } 
                 }
 
-                val isSocialEnabled = uiState.bolao?.scope != com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_BRAZIL
+                val isSocialEnabled = true
                 val currentTab = tabs.getOrNull(selectedTab) ?: "Grupos"
 
                 when (currentTab) {
@@ -770,7 +769,7 @@ fun BolaoDetailContent(
                         },
                         onShowAllPredictions = { onNavigateToAllPredictions(it.id) },
                         onAdminUpdateScore = { matchToUpdate = it },
-                        showRoundSelector = uiState.bolao?.scope != com.lpstudio.bolaodagalera.domain.model.BolaoScope.ONLY_BRAZIL
+                        showRoundSelector = true
                     )
                     "Mata-Mata" -> KnockoutTab(
                         matches = filteredMatches,
@@ -2095,10 +2094,11 @@ fun MatchCard(
     // Ninguém poderia ter palpitado nele, então ele deve ser travado.
     val isGhostMatch = matchStart < bolaoCreatedAt
 
-    val isTbd = (homeDisplayFlag == "🏳️" && match.championshipId == "COPA_2026") || 
+    val isTbd = homeDisplayFlag == "🏳️" || 
                 homeDisplayFlag.contains("ou") || 
-                (awayDisplayFlag == "🏳️" && match.championshipId == "COPA_2026") || 
-                awayDisplayFlag.contains("ou")
+                awayDisplayFlag == "🏳️" || 
+                awayDisplayFlag.contains("ou") ||
+                match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD"
 
     val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isTbd
 
@@ -2589,9 +2589,9 @@ fun BolaoDetailScreenPreview() {
     val myUserId = "pauloricha"
     val mockBolao = com.lpstudio.bolaodagalera.domain.model.Bolao(
         id = "bolao-1",
-        name = "Bolão da Copa 2026",
-        description = "Participe do maior bolão da Copa do Mundo!",
-        code = "COPA26",
+        name = "Bolão da Libertadores",
+        description = "Participe do maior bolão de futebol!",
+        code = "LIB26",
         ownerId = myUserId,
         participants = listOf(myUserId, "user-2"),
         createdAtMillis = 1781136000000L
@@ -2605,24 +2605,24 @@ fun BolaoDetailScreenPreview() {
     val now = TimeSource.nowMillis()
     val mockMatches = listOf(
         Match(
-            id = "GS-A-1", homeTeam = "Canadá", awayTeam = "Bósnia",
-            homeTeamCode = "CAN", awayTeamCode = "BIH", homeTeamFlag = "🇨🇦", awayTeamFlag = "🇧🇦",
+            id = "GS-A-1", homeTeam = "River Plate", awayTeam = "Nacional",
+            homeTeamCode = "RIV", awayTeamCode = "NAC", homeTeamFlag = "🇦🇷", awayTeamFlag = "🇺🇾",
             matchDateMillis = now - (2 * 60 * 60 * 1000), phase = Phase.GROUP_STAGE, group = "A",
             homeScore = 1, awayScore = 0
         ),
         Match(
-            id = "GS-A-2", homeTeam = "Brasil", awayTeam = "Espanha",
-            homeTeamCode = "BRA", awayTeamCode = "ESP", homeTeamFlag = "🇧🇷", awayTeamFlag = "🇪🇸",
+            id = "GS-A-2", homeTeam = "Palmeiras", awayTeam = "River Plate",
+            homeTeamCode = "PAL", awayTeamCode = "RIV", homeTeamFlag = "🐷", awayTeamFlag = "⚪️",
             matchDateMillis = now + (30 * 60 * 1000), phase = Phase.GROUP_STAGE, group = "A"
         ),
         Match(
-            id = "GS-B-1", homeTeam = "Argentina", awayTeam = "França",
-            homeTeamCode = "ARG", awayTeamCode = "FRA", homeTeamFlag = "🇦🇷", awayTeamFlag = "🇫🇷",
+            id = "GS-B-1", homeTeam = "Flamengo", awayTeam = "Peñarol",
+            homeTeamCode = "FLA", awayTeamCode = "PEN", homeTeamFlag = "🔴", awayTeamFlag = "🟡",
             matchDateMillis = now + (24 * 60 * 60 * 1000), phase = Phase.GROUP_STAGE, group = "B"
         ),
         Match(
-            id = "KO-1", homeTeam = "Portugal", awayTeam = "Itália",
-            homeTeamCode = "POR", awayTeamCode = "ITA", homeTeamFlag = "🇵🇹", awayTeamFlag = "🇮🇹",
+            id = "KO-1", homeTeam = "Atlético-MG", awayTeam = "Boca Juniors",
+            homeTeamCode = "CAM", awayTeamCode = "BOC", homeTeamFlag = "🐔", awayTeamFlag = "🟦",
             matchDateMillis = now + (25 * 60 * 60 * 1000), phase = Phase.ROUND_OF_16
         )
     )

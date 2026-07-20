@@ -65,9 +65,6 @@ class CreateBolaoViewModel(
     private val _uiState = MutableStateFlow(CreateBolaoUiState())
     val uiState: StateFlow<CreateBolaoUiState> = _uiState.asStateFlow()
 
-    private val _brazilMatches = MutableStateFlow<List<Match>>(emptyList())
-    val brazilMatches: StateFlow<List<Match>> = _brazilMatches.asStateFlow()
-
     private val _allMatches = MutableStateFlow<List<Match>>(emptyList())
     val allMatches: StateFlow<List<Match>> = _allMatches.asStateFlow()
 
@@ -86,35 +83,15 @@ class CreateBolaoViewModel(
             matchRepository.getMatches().collect { matches ->
                 _allMatches.value = matches
                 
-                _brazilMatches.value = matches.filter { m ->
-                    if (m.isFinished) return@filter false
-                    
-                    // Resolve nomes para mata-mata (ex: se um TBD já virou "Brasil")
-                    val (hName, _) = resolveDisplayName(m.id, m.homeTeam, m.homeTeamFlag, matches, true)
-                    val (aName, _) = resolveDisplayName(m.id, m.awayTeam, m.awayTeamFlag, matches, false)
-                    
-                    // Um jogo só conta como "do Brasil" se o Brasil for um dos times JÁ confirmados.
-                    // Não incluímos jogos onde o Brasil é apenas um "candidato" (ex: Venc. Oitava X)
-                    val isHomeBrazil = m.homeTeamCode == "BRA" || 
-                                      m.homeTeam.contains("Brasil", ignoreCase = true) ||
-                                      hName.equals("Brasil", ignoreCase = true)
-                    
-                    val isAwayBrazil = m.awayTeamCode == "BRA" || 
-                                      m.awayTeam.contains("Brasil", ignoreCase = true) ||
-                                      aName.equals("Brasil", ignoreCase = true)
-                    
-                    isHomeBrazil || isAwayBrazil
-                }
-
                 val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
 
                 _isGroupStageAvailable.value = matches.any { 
-                    (it.championshipId == "COPA_2026" || it.championshipId == "LIBERTADORES") && 
+                    it.championshipId == "LIBERTADORES" && 
                     it.phase == Phase.GROUP_STAGE && it.matchDateMillis > now
                 }
 
                 _isKnockoutAvailable.value = matches.any { 
-                    (it.championshipId == "COPA_2026" || it.championshipId == "LIBERTADORES") &&
+                    it.championshipId == "LIBERTADORES" &&
                     it.phase != Phase.GROUP_STAGE && 
                     it.phase != Phase.FRIENDLIES &&
                     it.matchDateMillis > now
@@ -166,14 +143,12 @@ fun CreateBolaoScreen(
     val matchRepository = koinInject<MatchRepository>()
     val viewModel = remember { CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository) }
     val uiState by viewModel.uiState.collectAsState()
-    val brazilMatches by viewModel.brazilMatches.collectAsState()
-    val allMatches by viewModel.allMatches.collectAsState()
     val isGroupStageAvailable by viewModel.isGroupStageAvailable.collectAsState()
     val isKnockoutAvailable by viewModel.isKnockoutAvailable.collectAsState()
 
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var selectedChampionshipId by remember { mutableStateOf("COPA_2026") }
+    var selectedChampionshipId by remember { mutableStateOf("LIBERTADORES") }
     var selectedScope by remember { mutableStateOf(BolaoScope.FULL) }
     var selectedMatchId by remember { mutableStateOf<String?>(null) }
 
@@ -211,23 +186,17 @@ fun CreateBolaoScreen(
     var showSuccessDialog by remember { mutableStateOf(false) }
 
     // Auto-ajuste do scope se a fase de grupos acabar
-    LaunchedEffect(isGroupStageAvailable, isKnockoutAvailable, brazilMatches) {
+    LaunchedEffect(isGroupStageAvailable, isKnockoutAvailable) {
         if (!isGroupStageAvailable && (selectedScope == BolaoScope.FULL || selectedScope == BolaoScope.ONLY_GROUPS)) {
             if (isKnockoutAvailable) {
                 selectedScope = BolaoScope.ONLY_KNOCKOUT
-            } else if (brazilMatches.isNotEmpty()) {
-                selectedScope = BolaoScope.ONLY_BRAZIL
-                if (brazilMatches.size == 1) {
-                    selectedMatchId = brazilMatches.first().id
-                }
             }
         }
     }
 
     // Helpers de Validação
     val nameError = if (nameTouched && name.trim().length < 10) "Nome muito curto (mín. 10)" else null
-    val isScopeValid = if (selectedScope == BolaoScope.ONLY_BRAZIL) brazilMatches.isNotEmpty() else true
-    val isFormValid = name.trim().length in 10..35 && isScopeValid
+    val isFormValid = name.trim().length in 10..35
 
     LaunchedEffect(uiState.createdBolao) {
         if (uiState.createdBolao != null) {
@@ -415,7 +384,7 @@ fun CreateBolaoScreen(
                             val id = championship.id
                             val label = championship.displayName
                             val emoji = championship.emoji
-                            val isAvailable = id == "COPA_2026" || id == "BRASILEIRAO" || id == "LIBERTADORES"
+                            val isAvailable = id == "BRASILEIRAO" || id == "LIBERTADORES" || id == "COPA_BRASIL"
                             val isSelected = selectedChampionshipId == id
                             
                             Surface(
@@ -493,7 +462,6 @@ fun CreateBolaoScreen(
                                                 .filter { scope -> 
                                                     // Filtros de visibilidade do escopo
                                                     when (scope) {
-                                                        BolaoScope.ONLY_BRAZIL -> id == "COPA_2026"
                                                         BolaoScope.PONTOS_CORRIDOS -> false // Definido automaticamente para o Brasileirão
                                                         // Oculta opções que envolvem grupos se a fase de grupos já acabou
                                                         BolaoScope.FULL, BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
@@ -503,7 +471,6 @@ fun CreateBolaoScreen(
                                                 .forEach { scope ->
                                                     val isScopeEnabled = when(scope) {
                                                     BolaoScope.FULL, BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
-                                                    BolaoScope.ONLY_BRAZIL -> brazilMatches.isNotEmpty()
                                                     BolaoScope.ONLY_KNOCKOUT -> isKnockoutAvailable
                                                     BolaoScope.PONTOS_CORRIDOS -> true
                                                 }
@@ -512,7 +479,6 @@ fun CreateBolaoScreen(
                                                     BolaoScope.FULL -> "🏆"
                                                     BolaoScope.ONLY_GROUPS -> "⚽"
                                                     BolaoScope.ONLY_KNOCKOUT -> "⚔️"
-                                                    BolaoScope.ONLY_BRAZIL -> "🇧🇷"
                                                     BolaoScope.PONTOS_CORRIDOS -> "📈"
                                                 }
                                                 
@@ -524,11 +490,7 @@ fun CreateBolaoScreen(
                                                         .border(1.dp, if (isScopeSelected) Neon.copy(alpha = 0.5f) else GlassBorder.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
                                                         .clickable(enabled = isScopeEnabled) { 
                                                             selectedScope = scope
-                                                            if (scope == BolaoScope.ONLY_BRAZIL && brazilMatches.size == 1) {
-                                                                selectedMatchId = brazilMatches.first().id
-                                                            } else {
-                                                                selectedMatchId = null
-                                                            }
+                                                            selectedMatchId = null
                                                         }
                                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                                     verticalAlignment = Alignment.CenterVertically
@@ -546,7 +508,6 @@ fun CreateBolaoScreen(
                                                         )
                                                         
                                                         val errorMsg = when {
-                                                            scope == BolaoScope.ONLY_BRAZIL && !isScopeEnabled -> "(Nenhum jogo futuro)"
                                                             (scope == BolaoScope.FULL || scope == BolaoScope.ONLY_GROUPS) && !isGroupStageAvailable -> "(Fase encerrada)"
                                                             scope == BolaoScope.ONLY_KNOCKOUT && !isScopeEnabled -> "(Mata-mata encerrado)"
                                                             else -> null
@@ -568,72 +529,12 @@ fun CreateBolaoScreen(
                                                         onClick = { 
                                                             if (isScopeEnabled) {
                                                                 selectedScope = scope
-                                                                if (scope == BolaoScope.ONLY_BRAZIL && brazilMatches.size == 1) {
-                                                                    selectedMatchId = brazilMatches.first().id
-                                                                } else {
-                                                                    selectedMatchId = null
-                                                                }
+                                                                selectedMatchId = null
                                                             }
                                                         },
                                                         colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
                                                         modifier = Modifier.size(20.dp)
                                                     )
-                                                }
-
-                                                // Se "Apenas Jogos do Brasil" for selecionado, mostra seletor de jogo
-                                                if (isScopeSelected && scope == BolaoScope.ONLY_BRAZIL && brazilMatches.isNotEmpty()) {
-                                                    Column(
-                                                        modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp),
-                                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                                    ) {
-                                                        // Opção: Todos (Só aparece se houver mais de um jogo)
-                                                        if (brazilMatches.size > 1) {
-                                                            Row(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth()
-                                                                    .clickable { selectedMatchId = null }
-                                                                    .padding(vertical = 4.dp),
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                RadioButton(
-                                                                    selected = selectedMatchId == null,
-                                                                    onClick = { selectedMatchId = null },
-                                                                    colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
-                                                                    modifier = Modifier.size(16.dp)
-                                                                )
-                                                                Spacer(Modifier.width(8.dp))
-                                                                Text("Todos os jogos do Brasil", fontSize = 12.sp, color = if(selectedMatchId == null) Color.White else TextMuted)
-                                                            }
-                                                        }
-
-                                                        brazilMatches.forEach { match ->
-                                                            val (hName, _) = resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, allMatches, true)
-                                                            val (aName, _) = resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
-                                                            val displayTitle = if (hName.isNotBlank() && aName.isNotBlank()) "$hName x $aName" else "${match.homeTeam} x ${match.awayTeam}"
-
-                                                            Row(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth()
-                                                                    .clickable { selectedMatchId = match.id }
-                                                                    .padding(vertical = 4.dp),
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                RadioButton(
-                                                                    selected = selectedMatchId == match.id,
-                                                                    onClick = { selectedMatchId = match.id },
-                                                                    colors = RadioButtonDefaults.colors(selectedColor = Neon, unselectedColor = TextMuted),
-                                                                    modifier = Modifier.size(16.dp)
-                                                                )
-                                                                Spacer(Modifier.width(8.dp))
-                                                                Text(
-                                                                    displayTitle,
-                                                                    fontSize = 12.sp,
-                                                                    color = if(selectedMatchId == match.id) Color.White else TextMuted,
-                                                                    maxLines = 1
-                                                                )
-                                                            }
-                                                        }
-                                                    }
                                                 }
                                             }
                                         }

@@ -23,7 +23,7 @@ private data class BolaoDto(
     val participants: List<String> = emptyList(),
     val pendingParticipants: List<String> = emptyList(),
     val pendingExits: List<String> = emptyList(),
-    val championshipId: String = "COPA_2026",
+    val championshipId: String = "LIBERTADORES",
     val scope: String = "FULL",
     val specificMatchId: String? = null,
     val createdAtMillis: Long = 0L

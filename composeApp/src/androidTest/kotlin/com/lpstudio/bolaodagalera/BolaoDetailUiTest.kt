@@ -40,12 +40,12 @@ class BolaoDetailUiTest {
             }
         }
 
-        // 2. Click to expand a group (e.g., Group I)
-        val groupIHeader = composeTestRule.onNodeWithText("Grupo I", substring = true)
-        groupIHeader.performClick()
+        // 2. Click to expand a group (e.g., Grupo A)
+        val groupAHeader = composeTestRule.onNodeWithText("Grupo A", substring = true)
+        groupAHeader.performClick()
 
-        // 3. Verify it's expanded (France match should be visible)
-        composeTestRule.onNodeWithText("França", substring = true).assertIsDisplayed()
+        // 3. Verify it's expanded (Palmeiras match should be visible)
+        composeTestRule.onNodeWithText("Palmeiras", substring = true).assertIsDisplayed()
 
         // 4. Simulate a refresh or small delay that might trigger a reset
         // In a real test, we would navigate to another screen and back.

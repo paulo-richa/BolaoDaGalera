@@ -415,7 +415,7 @@ private fun InvitationCard(
             
             // Nome do Bolão Minimalista
             Text(
-                text = invitation.bolaoName.ifBlank { "Copa do Mundo 2026" },
+                text = invitation.bolaoName.ifBlank { "Bolão da Galera" },
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
