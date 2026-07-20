@@ -188,7 +188,7 @@ class BolaoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val championshipId = forcedChampionshipId ?: _uiState.value.bolao?.championshipId ?: "LIBERTADORES"
+                val championshipId = forcedChampionshipId ?: _uiState.value.bolao?.championshipId ?: "UNKNOWN"
                 println("BOLAOLOG: Iniciando sincronização ativa para $championshipId...")
                 
                 val currentMatches = _uiState.value.allMatches

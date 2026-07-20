@@ -68,12 +68,6 @@ class CreateBolaoViewModel(
     private val _allMatches = MutableStateFlow<List<Match>>(emptyList())
     val allMatches: StateFlow<List<Match>> = _allMatches.asStateFlow()
 
-    private val _isGroupStageAvailable = MutableStateFlow(true)
-    val isGroupStageAvailable: StateFlow<Boolean> = _isGroupStageAvailable.asStateFlow()
-
-    private val _isKnockoutAvailable = MutableStateFlow(true)
-    val isKnockoutAvailable: StateFlow<Boolean> = _isKnockoutAvailable.asStateFlow()
-
     init {
         loadMatchesData()
     }
@@ -82,21 +76,26 @@ class CreateBolaoViewModel(
         viewModelScope.launch {
             matchRepository.getMatches().collect { matches ->
                 _allMatches.value = matches
-                
-                val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
-
-                _isGroupStageAvailable.value = matches.any { 
-                    it.championshipId == "LIBERTADORES" && 
-                    it.phase == Phase.GROUP_STAGE && it.matchDateMillis > now
-                }
-
-                _isKnockoutAvailable.value = matches.any { 
-                    it.championshipId == "LIBERTADORES" &&
-                    it.phase != Phase.GROUP_STAGE && 
-                    it.phase != Phase.FRIENDLIES &&
-                    it.matchDateMillis > now
-                }
             }
+        }
+    }
+
+    fun isPhaseAvailable(championshipId: String, phase: Phase): Boolean {
+        val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
+        return _allMatches.value.any { 
+            it.championshipId == championshipId && 
+            it.phase == phase && 
+            it.matchDateMillis > now
+        }
+    }
+
+    fun isKnockoutAvailable(championshipId: String): Boolean {
+        val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
+        return _allMatches.value.any { 
+            it.championshipId == championshipId &&
+            it.phase != Phase.GROUP_STAGE && 
+            it.phase != Phase.FRIENDLIES &&
+            it.matchDateMillis > now
         }
     }
 
@@ -143,12 +142,26 @@ fun CreateBolaoScreen(
     val matchRepository = koinInject<MatchRepository>()
     val viewModel = remember { CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository) }
     val uiState by viewModel.uiState.collectAsState()
-    val isGroupStageAvailable by viewModel.isGroupStageAvailable.collectAsState()
-    val isKnockoutAvailable by viewModel.isKnockoutAvailable.collectAsState()
+    val allMatches by viewModel.allMatches.collectAsState()
 
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var selectedChampionshipId by remember { mutableStateOf("LIBERTADORES") }
+    var selectedChampionshipId by remember { mutableStateOf("UNKNOWN") }
+    
+    // Auto-selecionar o primeiro disponível quando carregar
+    LaunchedEffect(Championship.getAll()) {
+        if (selectedChampionshipId == "UNKNOWN") {
+            selectedChampionshipId = Championship.getAll().find { it.isAvailable }?.id ?: "UNKNOWN"
+        }
+    }
+
+    // Calcula disponibilidade reativamente
+    val isGroupStageAvailable = remember(allMatches, selectedChampionshipId) {
+        viewModel.isPhaseAvailable(selectedChampionshipId, Phase.GROUP_STAGE)
+    }
+    val isKnockoutAvailable = remember(allMatches, selectedChampionshipId) {
+        viewModel.isKnockoutAvailable(selectedChampionshipId)
+    }
     var selectedScope by remember { mutableStateOf(BolaoScope.FULL) }
     var selectedMatchId by remember { mutableStateOf<String?>(null) }
 

@@ -15,7 +15,7 @@ data class Bolao(
     val participants: List<String> = emptyList(),
     val pendingParticipants: List<String> = emptyList(), // Usuários aguardando aprovação para entrar
     val pendingExits: List<String> = emptyList(),        // Usuários aguardando aprovação para sair
-    val championshipId: String = "LIBERTADORES", // "LIBERTADORES", "BRASILEIRAO" ou "AMISTOSOS"
+    val championshipId: String = "UNKNOWN", // Carregado dinamicamente
     val scope: BolaoScope = BolaoScope.FULL,
     val specificMatchId: String? = null,
     val createdAtMillis: Long = 0L

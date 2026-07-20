@@ -11,20 +11,20 @@ data class Championship(
     val id: String = "",
     val displayName: String = "",
     val emoji: String = "",
+    val apiCode: String = "",               // Código na API (ex: BSA, CLI)
     val hasStandings: Boolean = false,      // Se exibe a aba de "Tabela"
     val isPointsBased: Boolean = false,    // Se é formato "Pontos Corridos" (ex: Brasileirão)
     val isGroupsAndKnockout: Boolean = false, // Se tem fase de grupos seguida de mata-mata (ex: Libertadores)
+    val isTwoLegged: Boolean = false,       // Se o mata-mata tem jogos de ida e volta
     val isAvailable: Boolean = true         // Se está liberado para criação de novos bolões
 ) {
     companion object {
-        // Fallback para quando os dados ainda não foram carregados ou em caso de erro
+        // Fallback genérico para quando os dados ainda não foram carregados
         val DEFAULT = Championship(
-            id = "LIBERTADORES",
-            displayName = "Libertadores 2026",
-            emoji = "🔥",
-            hasStandings = true,
-            isPointsBased = false,
-            isGroupsAndKnockout = true
+            id = "UNKNOWN",
+            displayName = "Carregando...",
+            emoji = "⌛",
+            isAvailable = false
         )
 
         // Cache local para busca rápida por ID (Sincronizado pelo Repository)
@@ -35,47 +35,9 @@ data class Championship(
         }
 
         fun fromId(id: String?): Championship {
-            return cachedChampionships.find { it.id == id } ?: when(id) {
-                "BRASILEIRAO" -> Championship(
-                    id = "BRASILEIRAO",
-                    displayName = "Brasileirão 2026",
-                    emoji = "🇧🇷",
-                    hasStandings = true,
-                    isPointsBased = true,
-                    isGroupsAndKnockout = false
-                )
-                "COPA_BRASIL" -> Championship(
-                    id = "COPA_BRASIL",
-                    displayName = "Copa do Brasil 2026",
-                    emoji = "⚔️",
-                    hasStandings = false,
-                    isPointsBased = false,
-                    isGroupsAndKnockout = false
-                )
-                "AMISTOSOS" -> Championship(
-                    id = "AMISTOSOS",
-                    displayName = "Amistosos",
-                    emoji = "⚽",
-                    hasStandings = false,
-                    isPointsBased = false,
-                    isGroupsAndKnockout = false
-                )
-                else -> DEFAULT
-            }
+            return cachedChampionships.find { it.id == id } ?: DEFAULT.copy(id = id ?: "UNKNOWN")
         }
 
-        fun getAll(): List<Championship> = cachedChampionships.ifEmpty { 
-            listOf(
-                Championship(
-                    id = "BRASILEIRAO",
-                    displayName = "Brasileirão 2026",
-                    emoji = "🇧🇷",
-                    hasStandings = true,
-                    isPointsBased = true,
-                    isGroupsAndKnockout = false
-                ),
-                DEFAULT
-            )
-        }
+        fun getAll(): List<Championship> = cachedChampionships
     }
 }

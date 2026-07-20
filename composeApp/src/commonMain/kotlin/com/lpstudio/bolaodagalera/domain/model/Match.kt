@@ -19,7 +19,7 @@ data class Match(
     val homeScore: Int? = null,
     val awayScore: Int? = null,
     val status: String? = null,
-    val championshipId: String = "LIBERTADORES",
+    val championshipId: String = "UNKNOWN",
     val matchOrder: Int = 0,
     val isManual: Boolean = false
 ) {
