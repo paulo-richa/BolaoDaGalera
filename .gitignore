@@ -21,3 +21,4 @@ serviceAccountKey.json
 scripts/sync-scores/*.json
 !scripts/sync-scores/package.json
 !scripts/sync-scores/package-lock.json
+serviceAccountKey.json

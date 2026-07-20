@@ -6,4 +6,5 @@ import kotlinx.coroutines.flow.Flow
 interface ChampionshipRepository {
     fun getChampionships(): Flow<List<Championship>>
     suspend fun refreshCache()
+    suspend fun seedChampionships()
 }
