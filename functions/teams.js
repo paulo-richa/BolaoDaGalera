@@ -1,0 +1,42 @@
+const TEAM_DATA = {
+    // BRASILEIRÃO
+    "SE Palmeiras": { name: "Palmeiras", flag: "🏳️", code: "PAL", crest: "https://crests.football-data.org/1765.svg" },
+    "CR Flamengo": { name: "Flamengo", flag: "🏳️", code: "FLA", crest: "https://crests.football-data.org/1783.svg" },
+    "SC Corinthians Paulista": { name: "Corinthians", flag: "🏳️", code: "COR", crest: "https://crests.football-data.org/1779.svg" },
+    "São Paulo FC": { name: "São Paulo", flag: "🏳️", code: "SAO", crest: "https://crests.football-data.org/1768.svg" },
+    "Botafogo FR": { name: "Botafogo", flag: "🏳️", code: "BOT", crest: "https://crests.football-data.org/267.svg" },
+    "Fluminense FC": { name: "Fluminense", flag: "🏳️", code: "FLU", crest: "https://crests.football-data.org/1766.svg" },
+    "CA Mineiro": { name: "Atlético-MG", flag: "🏳️", code: "CAM", crest: "https://crests.football-data.org/1767.svg" },
+    "Grêmio FBPA": { name: "Grêmio", flag: "🏳️", code: "GRE", crest: "https://crests.football-data.org/1769.svg" },
+    "SC Internacional": { name: "Internacional", flag: "🏳️", code: "INT", crest: "https://crests.football-data.org/1771.svg" },
+    "Cruzeiro EC": { name: "Cruzeiro", flag: "🏳️", code: "CRU", crest: "https://crests.football-data.org/1773.svg" },
+    "CR Vasco da Gama": { name: "Vasco", flag: "🏳️", code: "VAS", crest: "https://crests.football-data.org/1780.svg" },
+    "Vasco da Gama": { name: "Vasco", flag: "🏳️", code: "VAS", crest: "https://crests.football-data.org/1780.svg" },
+    "EC Bahia": { name: "Bahia", flag: "🏳️", code: "BAH", crest: "https://crests.football-data.org/1777.svg" },
+    "CA Paranaense": { name: "Athletico-PR", flag: "🏳️", code: "CAP", crest: "https://crests.football-data.org/1770.svg" },
+    "Fortaleza EC": { name: "Fortaleza", flag: "🏳️", code: "FOR", crest: "https://crests.football-data.org/3432.svg" },
+    "EC Vitória": { name: "Vitória", flag: "🏳️", code: "VIT", crest: "https://crests.football-data.org/1772.svg" },
+    "Santos FC": { name: "Santos", flag: "🏳️", code: "SAN", crest: "https://crests.football-data.org/1774.svg" },
+    "RB Bragantino": { name: "Bragantino", flag: "🏳️", code: "RBB", crest: "https://crests.football-data.org/4286.svg" },
+    "Coritiba FBC": { name: "Coritiba", flag: "🏳️", code: "CFC", crest: "https://crests.football-data.org/4241.svg" },
+    "Mirassol FC": { name: "Mirassol", flag: "🏳️", code: "MIR" },
+    "Chapecoense AF": { name: "Chapecoense", flag: "🏳️", code: "CHA" },
+    "Clube do Remo": { name: "Remo", flag: "🏳️", code: "CRE" },
+    // LIBERTADORES
+    "River Plate": { name: "River Plate", flag: "🇦🇷", code: "RIV", crest: "https://crests.football-data.org/430.svg" },
+    "CA Boca Juniors": { name: "Boca Juniors", flag: "🇦🇷", code: "BOC", crest: "https://crests.football-data.org/431.svg" },
+    "Peñarol": { name: "Peñarol", flag: "🇺🇾", code: "PEN", crest: "https://crests.football-data.org/1066.svg" },
+    "Club Nacional de Football": { name: "Nacional", flag: "🇺🇾", code: "NAC", crest: "https://crests.football-data.org/1065.svg" },
+    "Colo Colo": { name: "Colo-Colo", flag: "🇨🇱", code: "COL", crest: "https://crests.football-data.org/1071.svg" },
+    "Olimpia": { name: "Olimpia", flag: "🇵🇾", code: "OLI", crest: "https://crests.football-data.org/1073.svg" },
+    "Cerro Porteño": { name: "Cerro Porteño", flag: "🇵🇾", code: "CCP", crest: "https://crests.football-data.org/1074.svg" },
+    "LDU Quito": { name: "LDU Quito", flag: "🇪🇨", code: "LDU", crest: "https://crests.football-data.org/1075.svg" },
+    "Independiente del Valle": { name: "Ind. del Valle", flag: "🇪🇨", code: "IDV", crest: "https://crests.football-data.org/1076.svg" },
+    "Bolívar": { name: "Bolívar", flag: "🇧🇴", code: "BOL", crest: "https://crests.football-data.org/1077.svg" },
+    "The Strongest": { name: "The Strongest", flag: "🇧🇴", code: "STR", crest: "https://crests.football-data.org/1078.svg" },
+    "San Lorenzo": { name: "San Lorenzo", flag: "🇦🇷", code: "SLO", crest: "https://crests.football-data.org/1079.svg" },
+    "Junior": { name: "Junior", flag: "🇨🇴", code: "JUN", crest: "https://crests.football-data.org/1080.svg" },
+    "Talleres": { name: "Talleres", flag: "🇦🇷", code: "TAL", crest: "https://crests.football-data.org/1081.svg" }
+};
+
+module.exports = { TEAM_DATA };
