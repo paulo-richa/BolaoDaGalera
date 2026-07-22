@@ -1352,12 +1352,7 @@ private fun KnockoutTab(
         }
     }
 
-    val groupStageLastMatchDay = remember(matches) {
-        matches.filter { it.phase == Phase.GROUP_STAGE }
-            .maxOfOrNull { it.matchDateMillis }
-            ?.let { Instant.fromEpochMilliseconds(it).toLocalDateTime(tz).date.atStartOfDayIn(tz).toEpochMilliseconds() } ?: 0L
-    }
-    val isKnockoutUnlocked = now >= groupStageLastMatchDay
+    val isKnockoutUnlocked = true // Liberado para palpites conforme solicitação
 
     val showShadow by remember {
         derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }

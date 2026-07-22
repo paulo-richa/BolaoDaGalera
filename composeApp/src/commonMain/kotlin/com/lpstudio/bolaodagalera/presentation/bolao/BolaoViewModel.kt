@@ -106,25 +106,7 @@ class BolaoViewModel(
                                 }
                             }
 
-                            // INJEÇÃO LOCAL (LIBERTADORES): Garante os 4 cards de Quartas mesmo se o banco estiver vazio
-                            if (championshipId == "LIBERTADORES" && b.scope != BolaoScope.ONLY_GROUPS) {
-                                val currentQfCount = filteredMatches.count { it.phase == Phase.QUARTERFINALS }
-                                if (currentQfCount < 8) {
-                                    val placeholders = mutableListOf<Match>()
-                                    val qfDates = listOf(1788825600000L, 1788912000000L, 1788998400000L, 1789084800000L)
-                                    for (i in 1..4) {
-                                        val idIda = "CLI-2026-QF$i-L1"
-                                        val idVolta = "CLI-2026-QF$i-L2"
-                                        if (filteredMatches.none { it.id == idIda }) {
-                                            placeholders.add(Match(idIda, "Vencedor Oitava $i", "Vencedor Oitava ${9-i}", "TBD", "TBD", "🏳️", "🏳️", null, null, qfDates[i-1], Phase.QUARTERFINALS, "Quartas", null, null, "SCHEDULED", "LIBERTADORES", i))
-                                        }
-                                        if (filteredMatches.none { it.id == idVolta }) {
-                                            placeholders.add(Match(idVolta, "Vencedor Oitava ${9-i}", "Vencedor Oitava $i", "TBD", "TBD", "🏳️", "🏳️", null, null, qfDates[i-1] + 7*24*3600000L, Phase.QUARTERFINALS, "Quartas", null, null, "SCHEDULED", "LIBERTADORES", i))
-                                        }
-                                    }
-                                    filteredMatches = filteredMatches + placeholders
-                                }
-                            }
+                            // INJEÇÃO LOCAL (LIBERTADORES): Removida para priorizar dados reais do Firestore
                             
                             // TRATAMENTO DE DUPLICADOS/GHOSTS
                             filteredMatches = filteredMatches.groupBy { 
