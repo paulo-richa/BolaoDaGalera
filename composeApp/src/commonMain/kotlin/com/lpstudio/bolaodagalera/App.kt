@@ -13,12 +13,8 @@ import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.lpstudio.bolaodagalera.di.appModule
-import com.lpstudio.bolaodagalera.di.fakeAppModule
-import com.lpstudio.bolaodagalera.di.openFootballAppModule
-import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
-import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.presentation.maintenance.MaintenanceScreen
 import com.lpstudio.bolaodagalera.presentation.navigation.NavGraph
 import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
@@ -27,23 +23,12 @@ import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
 
-// ... (constants unchanged)
-
-// ── Configuração de dados (expect/actual para plataformas) ─────────────────────
-expect val USE_FAKE_DATA: Boolean
-expect val USE_OPEN_FOOTBALL: Boolean
+// ── Configuração de dados ─────────────────────
 expect val APP_VERSION: String
 
 @Composable
 fun App() {
-    val module = when {
-        USE_FAKE_DATA     -> fakeAppModule
-        USE_OPEN_FOOTBALL -> openFootballAppModule
-        else              -> appModule
-    }
-    
-    KoinApplication(application = { modules(module) }) {
-        val matchRepository = koinInject<MatchRepository>()
+    KoinApplication(application = { modules(appModule) }) {
         val remoteConfigManager = koinInject<RemoteConfigManager>()
         val authRepository = koinInject<AuthRepository>()
         val championshipRepository = koinInject<ChampionshipRepository>()
@@ -60,8 +45,6 @@ fun App() {
 
                 // Inicia carregamento de campeonatos
                 championshipRepository.refreshCache()
-                // Semeia os jogos iniciais (fake data no iOS, real no Android/Desktop)
-                matchRepository.seedMatchesIfNeeded()
             } catch (e: Exception) {
                 // Falha silenciosa - app continua funcionando
             }

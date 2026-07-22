@@ -23,7 +23,6 @@ interface MatchRepository {
         isManual: Boolean = true
     )
     suspend fun upsertMatch(match: Match)
-    suspend fun seedMatchesIfNeeded()
     
     // Para compatibilidade ou fluxos globais (opcional)
     fun getAllMatches(): Flow<List<Match>> = kotlinx.coroutines.flow.flowOf(emptyList())

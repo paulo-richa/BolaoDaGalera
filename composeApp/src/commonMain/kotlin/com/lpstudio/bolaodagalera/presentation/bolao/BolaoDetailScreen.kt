@@ -129,7 +129,6 @@ fun BolaoDetailScreen(
         onAdminUpdateScore = { matchId, home, away ->
             viewModel.updateMatchScore(matchId, home, away)
         },
-        onSyncMatches = { viewModel.syncMatchesWithApi() },
         onNavigateBack = onNavigateBack
     )
 }
@@ -151,7 +150,6 @@ fun BolaoDetailContent(
     onNavigateToEdit: (bolaoId: String) -> Unit,
     onNavigateToAddParticipants: (bolaoId: String) -> Unit,
     onAdminUpdateScore: (matchId: String, home: Int?, away: Int?) -> Unit,
-    onSyncMatches: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
     var showLeaveDialog by remember { mutableStateOf(false) }
@@ -529,16 +527,18 @@ fun BolaoDetailContent(
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
-                                IconButton(
-                                    onClick = onSyncMatches,
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Refresh,
-                                        contentDescription = "Sincronizar",
-                                        tint = Neon,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                if (isAppOwner) {
+                                    IconButton(
+                                        onClick = { /* Sincronização agora é automática via backend */ },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Refresh,
+                                            contentDescription = "Sincronizar",
+                                            tint = Neon,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
                                 IconButton(
                                     onClick = { onNavigateToEdit(bolaoId) },
@@ -2659,7 +2659,6 @@ fun BolaoDetailScreenPreview() {
             onNavigateToEdit = {},
             onNavigateToAddParticipants = {},
             onAdminUpdateScore = { _, _, _ -> },
-            onSyncMatches = {},
             onNavigateBack = {}
         )
     }

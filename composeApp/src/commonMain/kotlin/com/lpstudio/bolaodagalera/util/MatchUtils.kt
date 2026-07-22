@@ -79,16 +79,7 @@ fun resolveDisplayName(
     if (targetId == null) return Triple(teamName, teamFlag, null)
 
     // 2. Buscar o jogo de origem
-    val m = allMatches.find { it.id == targetId }
-    val seed = com.lpstudio.bolaodagalera.data.seed.allMatches.find { it.id == targetId }
-
-    // Determinar se o que temos no banco é válido (não é TBD)
-    val isDbValid = m != null && 
-                   m.homeTeamCode != "TBD" && 
-                   m.homeTeamCode.isNotBlank() && 
-                   m.homeTeamFlag != "🏳️"
-
-    val matchSource = if (isDbValid) m!! else seed ?: return Triple(teamName, teamFlag, null)
+    val matchSource = allMatches.find { it.id == targetId } ?: return Triple(teamName, teamFlag, null)
 
     // 3. Se o jogo de origem terminou, resolvemos quem passou ou quem perdeu
     if (matchSource.isFinished) {

@@ -105,6 +105,26 @@ class BolaoViewModel(
                                     else -> true
                                 }
                             }
+
+                            // INJEÇÃO LOCAL (LIBERTADORES): Garante os 4 cards de Quartas mesmo se o banco estiver vazio
+                            if (championshipId == "LIBERTADORES" && b.scope != BolaoScope.ONLY_GROUPS) {
+                                val currentQfCount = filteredMatches.count { it.phase == Phase.QUARTERFINALS }
+                                if (currentQfCount < 8) {
+                                    val placeholders = mutableListOf<Match>()
+                                    val qfDates = listOf(1788825600000L, 1788912000000L, 1788998400000L, 1789084800000L)
+                                    for (i in 1..4) {
+                                        val idIda = "CLI-2026-QF$i-L1"
+                                        val idVolta = "CLI-2026-QF$i-L2"
+                                        if (filteredMatches.none { it.id == idIda }) {
+                                            placeholders.add(Match(idIda, "Vencedor Oitava $i", "Vencedor Oitava ${9-i}", "TBD", "TBD", "🏳️", "🏳️", null, null, qfDates[i-1], Phase.QUARTERFINALS, "Quartas", null, null, "SCHEDULED", "LIBERTADORES", i))
+                                        }
+                                        if (filteredMatches.none { it.id == idVolta }) {
+                                            placeholders.add(Match(idVolta, "Vencedor Oitava ${9-i}", "Vencedor Oitava $i", "TBD", "TBD", "🏳️", "🏳️", null, null, qfDates[i-1] + 7*24*3600000L, Phase.QUARTERFINALS, "Quartas", null, null, "SCHEDULED", "LIBERTADORES", i))
+                                        }
+                                    }
+                                    filteredMatches = filteredMatches + placeholders
+                                }
+                            }
                             
                             // TRATAMENTO DE DUPLICADOS/GHOSTS
                             filteredMatches = filteredMatches.groupBy { 
@@ -166,41 +186,6 @@ class BolaoViewModel(
         }
     }
 
-    fun syncMatchesWithApi(forcedChampionshipId: String? = null) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                val championshipId = forcedChampionshipId ?: _uiState.value.bolao?.championshipId ?: "UNKNOWN"
-                println("BOLAOLOG: Iniciando sincronização ativa para $championshipId...")
-                
-                val currentMatches = _uiState.value.allMatches
-                val remoteRepo = com.lpstudio.bolaodagalera.data.remote.FootballDataMatchRepository()
-                val remoteMatches = remoteRepo.getUpdatedMatches(currentMatches, championshipId)
-
-                if (remoteMatches.isEmpty()) {
-                    println("BOLAOLOG: API não retornou jogos para $championshipId.")
-                    _uiState.update { it.copy(isLoading = false) }
-                    return@launch
-                }
-
-                println("BOLAOLOG: API retornou ${remoteMatches.size} jogos. Iniciando escrita no Firestore...")
-
-                var updatedCount = 0
-                remoteMatches.forEach { remoteMatch ->
-                    matchRepository.upsertMatch(remoteMatch)
-                    updatedCount++
-                }
-                
-                _uiState.update { it.copy(
-                    isLoading = false, 
-                    error = "Sincronização finalizada. $updatedCount registros processados."
-                ) }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Erro: ${e.message}", isLoading = false) }
-            }
-        }
-    }
-
     fun approveParticipant(userId: String, approve: Boolean) {
         viewModelScope.launch {
             try {
@@ -219,6 +204,11 @@ class BolaoViewModel(
                 _uiState.update { it.copy(error = e.message) }
             }
         }
+    }
+
+    fun syncMatchesWithApi() {
+        // Implementação do sync (placeholder para acionamento via app se necessário)
+        loadBolao()
     }
 
     fun leaveBolao() {

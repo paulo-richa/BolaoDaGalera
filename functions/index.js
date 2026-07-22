@@ -67,24 +67,93 @@ exports.syncScores = onSchedule({
     timeoutSeconds: 120
 }, async (event) => {
     try {
-        const championshipsRef = db.collection('championships');
+        const matchesRef = db.collection('matches');
 
-        // 1. BRASILEIRÃO 2026
-        const resBSA = await axios.get(`https://api.football-data.org/v4/competitions/BSA/matches`, {
+        // 1. GARANTIR PLACEHOLDERS DO MATA-MATA (LIBERTADORES)
+        const createKnockout = async (phase, count, dates, prefix) => {
+            for (let i = 1; i <= count; i++) {
+                const idaId = `CLI-2026-${prefix}${i}-L1`;
+                const voltaId = `CLI-2026-${prefix}${i}-L2`;
+
+                const baseData = {
+                    homeTeam: `Vencedor ${prefix}${i} (Ida)`,
+                    awayTeam: `Vencedor ${prefix}${i} (Volta)`,
+                    homeTeamCode: "TBD", awayTeamCode: "TBD",
+                    homeTeamFlag: "🏳️", awayTeamFlag: "🏳️",
+                    championshipId: "LIBERTADORES",
+                    phase: phase,
+                    matchOrder: i,
+                    status: "SCHEDULED"
+                };
+
+                const docIda = await matchesRef.doc(idaId).get();
+                if (!docIda.exists) {
+                    await matchesRef.doc(idaId).set({ ...baseData, matchDateMillis: dates[i-1] }, { merge: true });
+                }
+                const docVolta = await matchesRef.doc(voltaId).get();
+                if (!docVolta.exists) {
+                    await matchesRef.doc(voltaId).set({
+                        ...baseData,
+                        homeTeam: baseData.awayTeam,
+                        awayTeam: baseData.homeTeam,
+                        matchDateMillis: dates[i-1] + (7 * 24 * 3600000)
+                    }, { merge: true });
+                }
+            }
+        };
+
+        // Quartas (Setembro 2026)
+        await createKnockout("QUARTERFINALS", 4, [1788825600000, 1788912000000, 1788998400000, 1789084800000], "QF");
+        // Semis (Outubro 2026)
+        await createKnockout("SEMIFINALS", 2, [1791244800000, 1791331200000], "SF");
+        // Final (Novembro 2026)
+        const finalId = "CLI-2026-FINAL";
+        const docFinal = await matchesRef.doc(finalId).get();
+        if (!docFinal.exists) {
+            await matchesRef.doc(finalId).set({
+                homeTeam: "Finalista 1", awayTeam: "Finalista 2", homeTeamCode: "TBD", awayTeamCode: "TBD",
+                homeTeamFlag: "🏳️", awayTeamFlag: "🏳️", matchDateMillis: 1793659200000,
+                phase: "FINAL", championshipId: "LIBERTADORES", matchOrder: 1, status: "SCHEDULED"
+            }, { merge: true });
+        }
+
+        // 2. APLICAR FIXES MANUAIS
+        const manualFixes = {
+            'KO-QF-1': { homeTeam: "França", homeTeamCode: "FRA", homeTeamFlag: "🇫🇷", awayTeam: "Marrocos", awayTeamCode: "MAR", awayTeamFlag: "🇲🇦", homeScore: 2, awayScore: 0, status: 'FINISHED', isManual: true, phase: 'QUARTERFINALS', group: 'Quartas', matchDateMillis: 1783627200000 },
+            'KO-QF-2': { homeTeam: "Espanha", homeTeamCode: "ESP", homeTeamFlag: "🇪🇸", awayTeam: "Bélgica", awayTeamCode: "BEL", awayTeamFlag: "🇧🇪", homeScore: 2, awayScore: 1, status: 'FINISHED', isManual: true, phase: 'QUARTERFINALS', group: 'Quartas', matchDateMillis: 1783710000000 },
+            'KO-QF-3': { homeTeam: "Noruega", homeTeamCode: "NOR", homeTeamFlag: "🇳🇴", awayTeam: "Inglaterra", awayTeamCode: "ENG", awayTeamFlag: "🇬🇧", homeScore: 1, awayScore: 2, status: 'FINISHED', isManual: true, phase: 'QUARTERFINALS', group: 'Quartas', matchDateMillis: 1783803600000 },
+            'KO-QF-4': { homeTeam: "Argentina", homeTeamCode: "ARG", homeTeamFlag: "🇦🇷", awayTeam: "Suíça", awayTeamCode: "SUI", awayTeamFlag: "🇨🇭", homeScore: 3, awayScore: 1, status: 'FINISHED', isManual: true, phase: 'QUARTERFINALS', group: 'Quartas', matchDateMillis: 1783818000000 },
+            'KO-SF-1': { homeTeam: "França", homeTeamCode: "FRA", homeTeamFlag: "🇫🇷", awayTeam: "Espanha", awayTeamCode: "ESP", awayTeamFlag: "🇪🇸", homeScore: 0, awayScore: 2, status: 'FINISHED', isManual: true, phase: 'SEMIFINALS', group: 'Semifinal', matchDateMillis: 1784055600000 },
+            'KO-SF-2': { homeTeam: "Inglaterra", homeTeamCode: "ENG", homeTeamFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", awayTeam: "Argentina", awayTeamCode: "ARG", awayTeamFlag: "🇦🇷", homeScore: 1, awayScore: 2, status: 'FINISHED', isManual: true, phase: 'SEMIFINALS', group: 'Semifinal', matchDateMillis: 1784142000000 },
+            'KO-SF-3': { homeTeam: "França", homeTeamCode: "FRA", homeTeamFlag: "🇫🇷", awayTeam: "Inglaterra", awayTeamCode: "ENG", awayTeamFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", isManual: false, phase: 'THIRD_PLACE', group: '3º Lugar', matchDateMillis: 1784408400000 },
+            'KO-FINAL': { homeTeam: "Espanha", homeTeamCode: "ESP", homeTeamFlag: "🇪🇸", awayTeam: "Argentina", awayTeamCode: "ARG", awayTeamFlag: "🇦🇷", isManual: false, phase: 'FINAL', group: 'Final', matchDateMillis: 1784487600000 },
+            'KO-16-1': { homeTeam: "Paraguai", homeTeamCode: "PAR", homeTeamFlag: "🇵🇾", awayTeam: "França", awayTeamCode: "FRA", awayTeamFlag: "🇫🇷", homeScore: 0, awayScore: 1, status: 'FINISHED', isManual: true, phase: 'ROUND_OF_16', group: 'Oitavas' },
+            'KO-16-2': { homeTeam: "Canadá", homeTeamCode: "CAN", homeTeamFlag: "🇨🇦", awayTeam: "Marrocos", awayTeamCode: "MAR", awayTeamFlag: "🇲🇦", homeScore: 0, awayScore: 3, status: 'FINISHED', isManual: true, phase: 'ROUND_OF_16', group: 'Oitavas' },
+            'KO-16-7': { homeTeam: "Argentina", homeTeamCode: "ARG", homeTeamFlag: "🇦🇷", awayTeam: "Egito", awayTeamCode: "EGY", awayTeamFlag: "🇪🇬", homeScore: 3, awayScore: 2, status: 'FINISHED', isManual: true, phase: 'ROUND_OF_16', group: 'Oitavas' },
+            'KO-16-8': { homeTeam: "Suíça", homeTeamCode: "SUI", homeTeamFlag: "🇨🇭", awayTeam: "Colômbia", awayTeamCode: "COL", awayTeamFlag: "🇨🇴", homeScore: 0, awayScore: 0, status: 'FINISHED', isManual: true, phase: 'ROUND_OF_16', group: 'Oitavas' },
+        };
+
+        for (const id in manualFixes) {
+            await matchesRef.doc(id).set(manualFixes[id], { merge: true });
+        }
+
+        // 3. BRASILEIRAO SYNC
+        const resBSA = await axios.get("https://api.football-data.org/v4/competitions/BSA/matches", {
             headers: { 'X-Auth-Token': API_KEY },
             timeout: 15000
         }).catch(() => null);
 
         if (resBSA && resBSA.data && resBSA.data.matches) {
-            const matchesRef = championshipsRef.doc("BRASILEIRAO").collection("matches");
             const batch = db.batch();
             for (const m of resBSA.data.matches) {
                 const matchId = `BSA-2026-R${m.matchday}-${m.id}`;
                 const s = m.score;
+                const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
+                const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
                 batch.set(matchesRef.doc(matchId), {
                     status: m.status,
-                    homeScore: s?.fullTime?.home ?? s?.regularTime?.home ?? null,
-                    awayScore: s?.fullTime?.away ?? s?.regularTime?.away ?? null,
+                    homeScore: hScore !== undefined ? hScore : null,
+                    awayScore: aScore !== undefined ? aScore : null,
                     championshipId: "BRASILEIRAO",
                     lastSync: admin.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -92,50 +161,42 @@ exports.syncScores = onSchedule({
             await batch.commit();
         }
 
-        // 2. LIBERTADORES 2026
-        const resCLI = await axios.get(`https://api.football-data.org/v4/competitions/CLI/matches`, {
+        // 4. LIBERTADORES SYNC
+        const resCLI = await axios.get("https://api.football-data.org/v4/competitions/CLI/matches", {
             headers: { 'X-Auth-Token': API_KEY },
             timeout: 15000
         }).catch(() => null);
 
         if (resCLI && resCLI.data && resCLI.data.matches) {
-            const matchesRef = championshipsRef.doc("LIBERTADORES").collection("matches");
             const batch = db.batch();
             for (const m of resCLI.data.matches) {
                 const isVolta = m.matchday === 2 || m.stage.includes("LEG2");
                 const legSuffix = isVolta ? "-L2" : "-L1";
-                const internalPhase = mapPhase(m.stage);
-                if (m.stage.includes("ROUND_1")) continue;
+                const matchId = `CLI-2026-M${m.id}${legSuffix}`;
 
-                const geOrderMap = {
-                    '564455': { o: 8, l: 1 }, '564463': { o: 8, l: 2 },
-                    '564456': { o: 1, l: 1 }, '564465': { o: 1, l: 2 },
-                    '564462': { o: 2, l: 1 }, '564470': { o: 2, l: 2 },
-                    '564460': { o: 3, l: 1 }, '564468': { o: 3, l: 2 },
-                    '564457': { o: 4, l: 1 }, '564464': { o: 4, l: 2 },
-                    '564461': { o: 5, l: 1 }, '564469': { o: 5, l: 2 },
-                    '564459': { o: 6, l: 1 }, '564466': { o: 6, l: 2 },
-                    '564458': { o: 7, l: 1 }, '564467': { o: 7, l: 2 }
-                };
+                const s = m.score;
+                const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
+                const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
 
-                const matchInfo = geOrderMap[m.id.toString()];
-                if (internalPhase !== "GROUP_STAGE" && !matchInfo) continue;
+                let hName = m.homeTeam.name || "";
+                let aName = m.awayTeam.name || "";
+                if (m.stage !== "GROUP_STAGE") {
+                    if (hName === "" || hName.includes("Winner") || hName.includes("To Be Determined")) hName = "Vencedor Oitavas";
+                    if (aName === "" || aName.includes("Winner") || aName.includes("To Be Determined")) aName = "Vencedor Oitavas";
+                }
 
-                let matchOrder = matchInfo ? matchInfo.o : (m.matchday || 99);
-                let matchId = `CLI-2026-M${m.id}${legSuffix}`;
-                if (internalPhase === "ROUND_OF_16") matchId = `CLI-2026-R16-${matchOrder}${legSuffix}`;
-
-                const hTeam = TEAM_DATA[m.homeTeam.name] || { name: m.homeTeam.name, flag: "🏳️", code: m.homeTeam.tla };
-                const aTeam = TEAM_DATA[m.awayTeam.name] || { name: m.awayTeam.name, flag: "🏳️", code: m.awayTeam.tla };
+                const hTeam = TEAM_DATA[m.homeTeam.name] || { name: hName, flag: "🏳️", code: m.homeTeam.tla || "TBD" };
+                const aTeam = TEAM_DATA[m.awayTeam.name] || { name: aName, flag: "🏳️", code: m.awayTeam.tla || "TBD" };
 
                 batch.set(matchesRef.doc(matchId), {
                     status: m.status,
-                    homeTeam: hTeam.name, homeTeamCode: hTeam.code || "TBD", homeTeamFlag: hTeam.flag,
-                    awayTeam: aTeam.name, awayTeamCode: aTeam.code || "TBD", awayTeamFlag: aTeam.flag,
-                    homeScore: m.score?.fullTime?.home ?? null,
-                    awayScore: m.score?.fullTime?.away ?? null,
-                    championshipId: "LIBERTADORES", matchOrder, phase: internalPhase,
-                    group: m.group || `Rodada ${m.matchday}`,
+                    homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag,
+                    awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag,
+                    homeScore: hScore !== undefined ? hScore : null,
+                    awayScore: aScore !== undefined ? aScore : null,
+                    championshipId: "LIBERTADORES",
+                    phase: mapPhase(m.stage),
+                    group: m.group || (m.matchday ? `Rodada ${m.matchday}` : m.stage),
                     matchDateMillis: Date.parse(m.utcDate),
                     lastSync: admin.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -147,10 +208,6 @@ exports.syncScores = onSchedule({
     }
 });
 
-/**
- * Limpeza de Bolões deletados há mais de 7 dias.
- * Roda diariamente às 03:00.
- */
 exports.cleanupDeletedBoloes = onSchedule({
     schedule: "0 3 * * *",
     timeZone: "America/Sao_Paulo",
@@ -159,65 +216,19 @@ exports.cleanupDeletedBoloes = onSchedule({
 }, async (event) => {
     try {
         const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-        const snapshot = await db.collection("boloes")
-            .where("deletedAtMillis", "<=", sevenDaysAgo)
-            .get();
-
-        if (snapshot.empty) return;
-
-        logger.info(`🧹 Iniciando limpeza definitiva de ${snapshot.size} bolões...`);
-
+        const snapshot = await db.collection("boloes").where("deletedAtMillis", "<=", sevenDaysAgo).get();
         for (const doc of snapshot.docs) {
-            const bolaoId = doc.id;
-
-            // 1. Deletar Subcollection Predictions
             const predsSnap = await doc.ref.collection("predictions").get();
             const batch = db.batch();
             predsSnap.forEach(pDoc => batch.delete(pDoc.ref));
             await batch.commit();
-
-            // 2. Deletar Convites vinculados
-            const invitesSnap = await db.collection("invitations").where("bolaoId", "==", bolaoId).get();
+            const invitesSnap = await db.collection("invitations").where("bolaoId", "==", doc.id).get();
             const inviteBatch = db.batch();
             invitesSnap.forEach(iDoc => inviteBatch.delete(iDoc.ref));
             await inviteBatch.commit();
-
-            // 3. Deletar o documento do Bolão
             await doc.ref.delete();
-            logger.info(`✅ Bolão ${bolaoId} removido permanentemente.`);
         }
     } catch (e) {
         logger.error("Erro na limpeza de bolões:", e.message);
-    }
-});
-
-/**
- * Limpeza de Convites expirados (mais de 7 dias sem resposta).
- * Roda diariamente às 03:30.
- */
-exports.cleanupExpiredInvitations = onSchedule({
-    schedule: "30 3 * * *",
-    timeZone: "America/Sao_Paulo",
-    region: "southamerica-east1",
-    memory: "256MiB"
-}, async (event) => {
-    try {
-        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-        const snapshot = await db.collection("invitations")
-            .where("status", "==", "PENDING")
-            .where("createdAtMillis", "<=", sevenDaysAgo)
-            .get();
-
-        if (snapshot.empty) return;
-
-        logger.info(`🧹 Limpando ${snapshot.size} convites expirados...`);
-
-        const batch = db.batch();
-        snapshot.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-
-        logger.info(`✅ Convites expirados removidos.`);
-    } catch (e) {
-        logger.error("Erro na limpeza de convites:", e.message);
     }
 });
