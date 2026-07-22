@@ -2095,7 +2095,6 @@ fun MatchCard(
     val isGhostMatch = matchStart < bolaoCreatedAt
 
     val isTbd = (match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD") || 
-                (match.phase != com.lpstudio.bolaodagalera.domain.model.Phase.GROUP_STAGE && (homeDisplayFlag == "🏳️" || awayDisplayFlag == "🏳️")) ||
                 homeDisplayFlag.contains("ou") || 
                 awayDisplayFlag.contains("ou")
 
