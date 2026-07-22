@@ -1,6 +1,5 @@
 package com.lpstudio.bolaodagalera.data.firebase
 
-import com.lpstudio.bolaodagalera.data.seed.allMatches
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
@@ -164,8 +163,4 @@ class FirebaseMatchRepository : MatchRepository {
     override fun getAllMatches(): Flow<List<Match>> = db.collectionGroup("matches").snapshots.map { snap ->
         snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
     }.catch { emit(emptyList()) }
-
-    override suspend fun seedMatchesIfNeeded() {
-        // Agora os jogos são sincronizados via Backend ou script externo para as subcollections
-    }
 }

@@ -1,7 +1,7 @@
 package com.lpstudio.bolaodagalera.di
 
 import com.lpstudio.bolaodagalera.data.firebase.*
-import com.lpstudio.bolaodagalera.data.remote.*
+import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
 import com.lpstudio.bolaodagalera.domain.repository.*
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel

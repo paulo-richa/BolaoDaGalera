@@ -1,6 +1,5 @@
 package com.lpstudio.bolaodagalera.data.fake
 
-import com.lpstudio.bolaodagalera.data.seed.allMatches
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
@@ -11,7 +10,7 @@ import kotlinx.coroutines.flow.update
 
 class FakeMatchRepository : MatchRepository {
 
-    private val _matches = MutableStateFlow(allMatches)
+    private val _matches = MutableStateFlow<List<Match>>(emptyList())
 
     override fun getMatches(championshipId: String): Flow<List<Match>> = 
         _matches.map { it.filter { m -> m.championshipId == championshipId } }
@@ -69,6 +68,4 @@ class FakeMatchRepository : MatchRepository {
             else list + match
         }
     }
-
-    override suspend fun seedMatchesIfNeeded() { /* no-op para fake */ }
 }

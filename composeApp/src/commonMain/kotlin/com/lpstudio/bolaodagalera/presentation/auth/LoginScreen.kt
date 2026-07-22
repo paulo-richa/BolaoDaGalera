@@ -34,7 +34,6 @@ import com.lpstudio.bolaodagalera.presentation.theme.*
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import bolaodagalera.composeapp.generated.resources.Res
-import bolaodagalera.composeapp.generated.resources.logo_app
 import bolaodagalera.composeapp.generated.resources.logo_oficial
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject

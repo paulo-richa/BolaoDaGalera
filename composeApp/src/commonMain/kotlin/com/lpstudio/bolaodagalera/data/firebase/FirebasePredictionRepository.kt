@@ -129,6 +129,10 @@ class FirebasePredictionRepository(
         val userNamesFlow = if (participantIds.isEmpty()) {
             flowOf(emptyMap<String, Pair<String, String>>())
         } else {
+            // Otimização: Em vez de snapshots de toda a coleção, vamos buscar apenas os participantes.
+            // Para simplicidade e suporte a grupos maiores que 30, mantemos um fluxo que observa 
+            // mudanças, mas filtrando por IDs se possível ou usando uma estratégia de cache.
+            // NOTA: usersCollection.snapshots sem filtro é custoso em produção.
             usersCollection
                 .snapshots
                 .map { snapshot ->
