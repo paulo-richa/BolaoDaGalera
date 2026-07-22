@@ -31,7 +31,8 @@ private fun MatchDto.toDomain(id: String) = Match(
     homeTeamCode = homeTeamCode, awayTeamCode = awayTeamCode,
     homeTeamFlag = homeTeamFlag, awayTeamFlag = awayTeamFlag,
     homeTeamCrest = homeTeamCrest, awayTeamCrest = awayTeamCrest,
-    matchDateMillis = matchDateMillis, phase = Phase.valueOf(phase),
+    matchDateMillis = matchDateMillis, 
+    phase = try { Phase.valueOf(phase) } catch (e: Exception) { Phase.GROUP_STAGE },
     group = group, homeScore = homeScore, awayScore = awayScore,
     status = status, championshipId = championshipId, 
     matchOrder = matchOrder, isManual = isManual

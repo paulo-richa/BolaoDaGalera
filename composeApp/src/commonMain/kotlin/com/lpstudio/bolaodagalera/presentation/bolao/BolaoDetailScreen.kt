@@ -2094,11 +2094,10 @@ fun MatchCard(
     // Ninguém poderia ter palpitado nele, então ele deve ser travado.
     val isGhostMatch = matchStart < bolaoCreatedAt
 
-    val isTbd = homeDisplayFlag == "🏳️" || 
+    val isTbd = (match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD") || 
+                (match.phase != com.lpstudio.bolaodagalera.domain.model.Phase.GROUP_STAGE && (homeDisplayFlag == "🏳️" || awayDisplayFlag == "🏳️")) ||
                 homeDisplayFlag.contains("ou") || 
-                awayDisplayFlag == "🏳️" || 
-                awayDisplayFlag.contains("ou") ||
-                match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD"
+                awayDisplayFlag.contains("ou")
 
     val canPredict = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isTbd
 
