@@ -1408,9 +1408,9 @@ private fun KnockoutTab(
                     val basePhaseName = selectedLabel!!.substringBefore(" - ")
                     val isVoltaTab = selectedLabel!!.contains("Volta")
                     
-                    // 1. Pega todos os jogos daquela fase (ex: Oitavas)
+                    // 1. Pega todos os jogos daquela fase exata (evita que Semifinal apareça na Final)
                     val phaseMatches = matches.filter { 
-                        it.phase.label.contains(basePhaseName, ignoreCase = true)
+                        it.phase.label.equals(basePhaseName, ignoreCase = true)
                     }
 
                     // 2. Agrupa os jogos por confronto (Mesma chave de mata-mata)

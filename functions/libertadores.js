@@ -2,21 +2,36 @@ const { API_KEY } = require("./config");
 const { TEAM_DATA } = require("./teams");
 const { mapPhase } = require("./utils");
 const { logger } = require("firebase-functions");
+const { advanceTeams } = require("./knockout");
 
 async function syncLibertadores(db, admin, axios) {
     logger.info("Iniciando sincronização da Libertadores...");
     const matchesRef = db.collection("championships").doc("LIBERTADORES").collection("matches");
 
     try {
-        // 1. GARANTIR PLACEHOLDERS DO MATA-MATA (Apenas se não existirem)
+        // 1. GARANTIR PLACEHOLDERS DO MATA-MATA
         const createKnockout = async (phase, count, dates, prefix) => {
+            const qfMapping = { 1: [1, 8], 2: [2, 7], 3: [3, 6], 4: [4, 5] };
+            const sfMapping = { 1: [1, 4], 2: [2, 3] };
+
             for (let i = 1; i <= count; i++) {
                 const idaId = `CLI-2026-${prefix}${i}-L1`;
                 const voltaId = `CLI-2026-${prefix}${i}-L2`;
 
+                let homeLabel = `Vencedor ${prefix}${i}`;
+                let awayLabel = `Vencedor ${prefix}${i}`;
+
+                if (phase === "QUARTERFINALS") {
+                    homeLabel = `Vencedor Oitava ${qfMapping[i][0]}`;
+                    awayLabel = `Vencedor Oitava ${qfMapping[i][1]}`;
+                } else if (phase === "SEMIFINALS") {
+                    homeLabel = `Vencedor QF ${sfMapping[i][0]}`;
+                    awayLabel = `Vencedor QF ${sfMapping[i][1]}`;
+                }
+
                 const baseData = {
-                    homeTeam: `Vencedor ${prefix}${i} (Ida)`,
-                    awayTeam: `Vencedor ${prefix}${i} (Volta)`,
+                    homeTeam: homeLabel,
+                    awayTeam: awayLabel,
                     homeTeamCode: "TBD", awayTeamCode: "TBD",
                     homeTeamFlag: "🏳️", awayTeamFlag: "🏳️",
                     championshipId: "LIBERTADORES",
@@ -26,11 +41,11 @@ async function syncLibertadores(db, admin, axios) {
                 };
 
                 const docIda = await matchesRef.doc(idaId).get();
-                if (!docIda.exists) {
+                if (!docIda.exists || docIda.data().homeTeamCode === "TBD") {
                     await matchesRef.doc(idaId).set({ ...baseData, matchDateMillis: dates[i-1] }, { merge: true });
                 }
                 const docVolta = await matchesRef.doc(voltaId).get();
-                if (!docVolta.exists) {
+                if (!docVolta.exists || docVolta.data().homeTeamCode === "TBD") {
                     await matchesRef.doc(voltaId).set({
                         ...baseData,
                         homeTeam: baseData.awayTeam,
@@ -46,9 +61,9 @@ async function syncLibertadores(db, admin, axios) {
 
         const finalId = "CLI-2026-FINAL";
         const docFinal = await matchesRef.doc(finalId).get();
-        if (!docFinal.exists) {
+        if (!docFinal.exists || docFinal.data().homeTeamCode === "TBD") {
             await matchesRef.doc(finalId).set({
-                homeTeam: "Finalista 1", awayTeam: "Finalista 2", homeTeamCode: "TBD", awayTeamCode: "TBD",
+                homeTeam: "Vencedor Semi 1", awayTeam: "Vencedor Semi 2", homeTeamCode: "TBD", awayTeamCode: "TBD",
                 homeTeamFlag: "🏳️", awayTeamFlag: "🏳️", matchDateMillis: 1793659200000,
                 phase: "FINAL", championshipId: "LIBERTADORES", matchOrder: 1, status: "SCHEDULED"
             }, { merge: true });
@@ -63,6 +78,12 @@ async function syncLibertadores(db, admin, axios) {
         if (resCLI && resCLI.data && resCLI.data.matches) {
             const batch = db.batch();
             for (const m of resCLI.data.matches) {
+                // IGNORAR JOGOS QUE NÃO SÃO DA FASE DE GRUPOS OU OITAVAS (ROUND_OF_16)
+                // Isso evita que a API crie lixos duplicados nas fases de QF, SF e Final
+                if (m.stage !== "GROUP_STAGE" && m.stage !== "ROUND_OF_16") {
+                    continue;
+                }
+
                 const isVolta = m.matchday === 2 || m.stage.includes("LEG2");
                 const legSuffix = isVolta ? "-L2" : "-L1";
                 const matchId = `CLI-2026-M${m.id}${legSuffix}`;
@@ -96,6 +117,9 @@ async function syncLibertadores(db, admin, axios) {
             }
             await batch.commit();
             logger.info(`Libertadores sincronizada: ${resCLI.data.matches.length} jogos.`);
+
+            // NOVO: Verifica e avança times no mata-mata após a sincronização
+            await advanceTeams(db, admin, "LIBERTADORES");
         }
     } catch (e) {
         logger.error("Erro na sincronização da Libertadores:", e.message);
