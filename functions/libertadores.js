@@ -1,5 +1,5 @@
 const { API_KEY } = require("./config");
-const { TEAM_DATA } = require("./teams");
+const { LIB_TEAMS } = require("./teams_lib");
 const { mapPhase } = require("./utils");
 const { logger } = require("firebase-functions");
 const { advanceTeams } = require("./knockout");
@@ -33,7 +33,7 @@ async function syncLibertadores(db, admin, axios) {
                     homeTeam: homeLabel,
                     awayTeam: awayLabel,
                     homeTeamCode: "TBD", awayTeamCode: "TBD",
-                    homeTeamFlag: "🏳️", awayTeamFlag: "🏳️",
+                    homeTeamFlag: "", awayTeamFlag: "",
                     championshipId: "LIBERTADORES",
                     phase: phase,
                     matchOrder: i,
@@ -64,7 +64,7 @@ async function syncLibertadores(db, admin, axios) {
         if (!docFinal.exists || docFinal.data().homeTeamCode === "TBD") {
             await matchesRef.doc(finalId).set({
                 homeTeam: "Vencedor Semi 1", awayTeam: "Vencedor Semi 2", homeTeamCode: "TBD", awayTeamCode: "TBD",
-                homeTeamFlag: "🏳️", awayTeamFlag: "🏳️", matchDateMillis: 1793659200000,
+                homeTeamFlag: "", awayTeamFlag: "", matchDateMillis: 1793659200000,
                 phase: "FINAL", championshipId: "LIBERTADORES", matchOrder: 1, status: "SCHEDULED"
             }, { merge: true });
         }
@@ -99,13 +99,13 @@ async function syncLibertadores(db, admin, axios) {
                     if (aName === "" || aName.includes("Winner") || aName.includes("To Be Determined")) aName = "Vencedor Oitavas";
                 }
 
-                const hTeam = TEAM_DATA[m.homeTeam.name] || { name: hName, flag: "🏳️", code: m.homeTeam.tla || "TBD" };
-                const aTeam = TEAM_DATA[m.awayTeam.name] || { name: aName, flag: "🏳️", code: m.awayTeam.tla || "TBD" };
+                const hTeam = LIB_TEAMS[m.homeTeam.name] || { name: hName, flag: "", code: m.homeTeam.tla || "TBD" };
+                const aTeam = LIB_TEAMS[m.awayTeam.name] || { name: aName, flag: "", code: m.awayTeam.tla || "TBD" };
 
                 batch.set(matchesRef.doc(matchId), {
                     status: m.status,
-                    homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag,
-                    awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag,
+                    homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: hTeam.crest || null,
+                    awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: aTeam.crest || null,
                     homeScore: hScore !== undefined ? hScore : null,
                     awayScore: aScore !== undefined ? aScore : null,
                     championshipId: "LIBERTADORES",

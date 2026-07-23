@@ -1,40 +1,9 @@
 const { logger } = require("firebase-functions");
+const { LIB_TEAMS } = require("./teams_lib");
 
-const SHORT_NAMES = {
-    "Estudiantes de La Plata": "Estudiantes",
-    "CD Universidad Católica": "Univ. Católica",
-    "CA Rosario Central": "Rosario",
-    "SC Corinthians Paulista": "Corinthians",
-    "SE Palmeiras": "Palmeiras",
-    "CR Flamengo": "Flamengo",
-    "CA Mineiro": "Atlético-MG",
-    "EC Bahia": "Bahia",
-    "Fortaleza EC": "Fortaleza",
-    "Botafogo FR": "Botafogo",
-    "Fluminense FC": "Fluminense",
-    "Cruzeiro EC": "Cruzeiro",
-    "CA Paranaense": "Athletico-PR",
-    "EC Vitória": "Vitória",
-    "Independiente del Valle": "Ind. del Valle",
-    "River Plate": "River Plate",
-    "Peñarol": "Peñarol",
-    "Nacional": "Nacional",
-    "Colo Colo": "Colo-Colo",
-    "Olimpia": "Olimpia",
-    "CA Platense": "Platense",
-    "CD Coquimbo Unido": "Coquimbo",
-    "CS Independiente Rivadavia": "Ind. Rivadavia",
-    "LDU de Quito": "LDU",
-    "Mirassol": "Mirassol",
-    "Club Cerro Porteño": "Cerro Porteño"
-};
-
-function getShortName(fullName) {
-    if (!fullName) return "";
-    if (SHORT_NAMES[fullName]) return SHORT_NAMES[fullName];
-    return fullName.replace("CA ", "").replace("CD ", "").replace("SC ", "").replace("FC ", "").replace("CAR ", "").replace("CS ", "").trim().split(" ").shift();
-}
-
+/**
+ * Lógica para avançar times no mata-mata da Libertadores.
+ */
 async function advanceTeams(db, admin, championshipId) {
     if (championshipId !== "LIBERTADORES") return;
     const matchesRef = db.collection("championships").doc(championshipId).collection("matches");
@@ -56,20 +25,15 @@ async function advanceTeams(db, admin, championshipId) {
                 const winner = determineWinner(ida, volta);
                 if (winner) await updateNextPhase(db, admin, championshipId, "QUARTERFINALS", parseInt(order), winner, true);
             } else if (ida) {
-                // Prioriza as bandeiras (emojis) se existirem
-                const flagA = (ida.homeTeamFlag && ida.homeTeamFlag !== "🏳️") ? ida.homeTeamFlag : getShortName(ida.homeTeam);
-                const flagB = (ida.awayTeamFlag && ida.awayTeamFlag !== "🏳️") ? ida.awayTeamFlag : getShortName(ida.awayTeam);
-
-                const candidates = {
-                    name: `${flagA} ou ${flagB}`,
-                    code: "TBD",
-                    flag: "🏳️"
-                };
+                // Candidatos para as Quartas
+                const nameA = getCleanName(ida.homeTeam);
+                const nameB = getCleanName(ida.awayTeam);
+                const candidates = { name: `${nameA} ou ${nameB}`, code: "TBD", flag: "", crest: null };
                 await updateNextPhase(db, admin, championshipId, "QUARTERFINALS", parseInt(order), candidates, false);
             }
         }
 
-        // 2. QUARTAS -> SEMIS (Apenas se as Quartas já tiverem times definidos ou candidatos)
+        // 2. QUARTAS -> SEMIS
         const matchesQF = allMatches.filter(m => m.phase === "QUARTERFINALS");
         const groupsQF = groupByOrder(matchesQF);
         for (const order in groupsQF) {
@@ -80,22 +44,26 @@ async function advanceTeams(db, admin, championshipId) {
             if (volta && (volta.status === "FINISHED" || volta.homeScore !== null)) {
                 const winner = determineWinner(ida, volta);
                 if (winner) await updateNextPhase(db, admin, championshipId, "SEMIFINALS", parseInt(order), winner, true);
-            } else if (ida && ida.homeTeam !== "TBD" && !ida.homeTeam.startsWith("Vencedor")) {
-                 // Candidatos para as Semis baseados nas Quartas
-                 const flagA = (ida.homeTeamFlag && ida.homeTeamFlag !== "🏳️") ? ida.homeTeamFlag : getShortName(ida.homeTeam);
-                 const flagB = (ida.awayTeamFlag && ida.awayTeamFlag !== "🏳️") ? ida.awayTeamFlag : getShortName(ida.awayTeam);
-                 const candidates = {
-                     name: `${flagA} ou ${flagB}`,
-                     code: "TBD",
-                     flag: "🏳️"
-                 };
-                 await updateNextPhase(db, admin, championshipId, "SEMIFINALS", parseInt(order), candidates, false);
+            } else if (ida && ida.homeTeamCode !== "TBD" && ida.awayTeamCode !== "TBD") {
+                const nameA = getCleanName(ida.homeTeam);
+                const nameB = getCleanName(ida.awayTeam);
+                const candidates = { name: `${nameA} ou ${nameB}`, code: "TBD", flag: "", crest: null };
+                await updateNextPhase(db, admin, championshipId, "SEMIFINALS", parseInt(order), candidates, false);
             }
         }
 
     } catch (e) {
         logger.error("Erro no avanço de chave:", e.message);
     }
+}
+
+function getCleanName(fullName) {
+    if (!fullName) return "";
+    // Busca no LIB_TEAMS pelo nome limpo oficial
+    for (const [key, data] of Object.entries(LIB_TEAMS)) {
+        if (key === fullName || data.name === fullName) return data.name;
+    }
+    return fullName.replace("CA ", "").replace("CD ", "").replace("SC ", "").replace("FC ", "").replace("CR ", "").replace("SE ", "").trim().split(" ").shift();
 }
 
 function groupByOrder(matches) {
@@ -113,8 +81,11 @@ function determineWinner(ida, volta) {
     if (!volta) return null;
     const hScore = (ida?.homeScore || 0) + (volta?.awayScore || 0);
     const aScore = (ida?.awayScore || 0) + (volta?.homeScore || 0);
-    if (hScore > aScore) return { name: ida.homeTeam, code: ida.homeTeamCode, flag: ida.homeTeamFlag };
-    if (aScore > hScore) return { name: ida.awayTeam, code: ida.awayTeamCode, flag: ida.awayTeamFlag };
+
+    if (hScore > aScore) return { name: ida.homeTeam, code: ida.homeTeamCode, flag: ida.homeTeamFlag, crest: ida.homeTeamCrest };
+    if (aScore > hScore) return { name: ida.awayTeam, code: ida.awayTeamCode, flag: ida.awayTeamFlag, crest: ida.awayTeamCrest };
+
+    // Empate no agregado (Pênaltis - simplificação: quem joga em casa na volta passa se não houver info)
     return null;
 }
 
@@ -138,11 +109,13 @@ async function updateNextPhase(db, admin, champId, nextPhase, currentOrder, winn
             if (isHome) {
                 updates.homeTeam = winner.name;
                 updates.homeTeamCode = isFinalWinner ? (winner.code || "TBD") : "TBD";
-                updates.homeTeamFlag = isFinalWinner ? (winner.flag || "🏳️") : "🏳️";
+                updates.homeTeamFlag = winner.flag || "";
+                updates.homeTeamCrest = winner.crest || null;
             } else {
                 updates.awayTeam = winner.name;
                 updates.awayTeamCode = isFinalWinner ? (winner.code || "TBD") : "TBD";
-                updates.awayTeamFlag = isFinalWinner ? (winner.flag || "🏳️") : "🏳️";
+                updates.awayTeamFlag = winner.flag || "";
+                updates.awayTeamCrest = winner.crest || null;
             }
             await doc.ref.update(updates);
         }
