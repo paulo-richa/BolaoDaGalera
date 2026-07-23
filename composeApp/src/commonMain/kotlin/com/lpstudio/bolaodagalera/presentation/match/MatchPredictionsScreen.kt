@@ -433,7 +433,7 @@ private fun TeamCrestCircle(
                     .crossfade(true)
                     .build(),
                 contentDescription = null,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(36.dp),
                 loading = {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Neon)
                 },
