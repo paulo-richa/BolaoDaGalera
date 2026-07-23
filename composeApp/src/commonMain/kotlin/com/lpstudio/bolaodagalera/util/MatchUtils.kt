@@ -1,6 +1,7 @@
 package com.lpstudio.bolaodagalera.util
 
 import com.lpstudio.bolaodagalera.domain.model.Match
+import com.lpstudio.bolaodagalera.domain.model.Phase
 
 /**
  * Resolve o nome de exibição de um time em um jogo de mata-mata.
@@ -16,13 +17,11 @@ fun resolveDisplayName(
 ): Triple<String, String, String?> {
 
     // Se o nome já for de um time real (não for TBD ou "Vencedor..."), usamos ele direto.
-    // Para jogos de fase de grupos, aceitamos a bandeira branca como válida (pode ser erro de mapping).
     val isPlaceholder = teamName == "TBD" || teamName.startsWith("Vencedor") || teamName.startsWith("Perdedor") || teamName.contains("/")
-    if (teamName.isNotBlank() && !isPlaceholder && (teamFlag != "🏳️" || !matchId.startsWith("KO-"))) {
+    if (teamName.isNotBlank() && !isPlaceholder && (teamFlag != "🏳️" || !matchId.contains("KO-"))) {
         val currentMatch = allMatches.find { it.id == matchId }
         val crest = if (isHome) currentMatch?.homeTeamCrest else currentMatch?.awayTeamCrest
         
-        // Limpeza Local de Nomes do Brasileirão
         val cleanedName = teamName
             .replace("CR Vasco da Gama", "Vasco")
             .replace("Vasco da Gama", "Vasco")
@@ -50,28 +49,29 @@ fun resolveDisplayName(
         return Triple(cleanedName, teamFlag, crest)
     }
     
-    val id = matchId.removePrefix("KO-")
-    val hasKo = matchId.startsWith("KO-")
+    val id = matchId
 
     // 1. Determinar o ID do jogo de origem baseado na lógica sequencial
     val targetId = when {
-        id.startsWith("16-") -> {
-            val num = id.substringAfterLast("-").toIntOrNull() ?: 0
+        id.contains("QF") -> {
+            val numStr = id.substringAfter("QF").substring(0, 1)
+            val num = numStr.toIntOrNull() ?: 0
             val originNum = if (isHome) (num * 2 - 1) else (num * 2)
-            if (hasKo) "KO-32-$originNum" else "32-$originNum"
+            val originMatch = allMatches.find { it.phase == Phase.ROUND_OF_16 && it.matchOrder == originNum }
+            originMatch?.id
         }
-        id.startsWith("QF-") -> {
-            val num = id.substringAfterLast("-").toIntOrNull() ?: 0
-            val originNum = if (isHome) (num * 2 - 1) else (num * 2)
-            if (hasKo) "KO-16-$originNum" else "16-$originNum"
+        id.contains("SF") -> {
+            val numStr = id.substringAfter("SF").substring(0, 1)
+            val num = numStr.toIntOrNull() ?: 0
+            val mapping = mapOf(1 to listOf(1, 4), 2 to listOf(2, 3))
+            val originQfOrder = if (isHome) mapping[num]?.get(0) else mapping[num]?.get(1)
+            val originMatch = allMatches.find { it.phase == Phase.QUARTERFINALS && it.matchOrder == originQfOrder && !it.id.contains("-L2") }
+            originMatch?.id
         }
-        id.startsWith("SF-") -> {
-            val num = id.substringAfterLast("-").toIntOrNull() ?: 0
-            val originNum = if (isHome) (num * 2 - 1) else (num * 2)
-            if (hasKo) "KO-QF-$originNum" else "QF-$originNum"
-        }
-        id == "FINAL" || id == "THIRD_PLACE" || id == "SF-3" -> {
-            if (isHome) (if (hasKo) "KO-SF-1" else "SF-1") else (if (hasKo) "KO-SF-2" else "SF-2")
+        id.contains("FINAL") -> {
+            val originSfOrder = if (isHome) 1 else 2
+            val originMatch = allMatches.find { it.phase == Phase.SEMIFINALS && it.matchOrder == originSfOrder && !it.id.contains("-L2") }
+            originMatch?.id
         }
         else -> null
     }
@@ -81,48 +81,33 @@ fun resolveDisplayName(
     // 2. Buscar o jogo de origem
     val matchSource = allMatches.find { it.id == targetId } ?: return Triple(teamName, teamFlag, null)
 
-    // 3. Se o jogo de origem terminou, resolvemos quem passou ou quem perdeu
+    // 3. Se o jogo de origem terminou, resolvemos quem passou
     if (matchSource.isFinished) {
         val hScore = matchSource.homeScore ?: 0
         val aScore = matchSource.awayScore ?: 0
         
-        val isThirdPlace = matchId == "KO-THIRD_PLACE" || matchId == "THIRD_PLACE" || id == "SF-3"
-        
-        // Resolvemos os nomes dos times da origem recursivamente para garantir que não pegamos placeholders
+        // Resolvemos os nomes dos times da origem recursivamente
         val homeRes = resolveDisplayName(matchSource.id, matchSource.homeTeam, matchSource.homeTeamFlag, allMatches, true, depth + 1)
         val awayRes = resolveDisplayName(matchSource.id, matchSource.awayTeam, matchSource.awayTeamFlag, allMatches, false, depth + 1)
 
-        return if (isThirdPlace) {
-            if (hScore < aScore) homeRes else awayRes
-        } else {
-            if (hScore > aScore) homeRes else awayRes
-        }
+        return if (hScore > aScore) homeRes else awayRes
     }
 
-    // 4. Se o jogo não terminou, tentamos resolver os candidatos recursivamente (até profundidade 3 para chegar nos grupos)
+    // 4. Se o jogo não terminou, tentamos resolver os candidatos recursivamente
     if (depth < 3) {
-        val (hResName, hResFlag, hResCrest) = resolveDisplayName(matchSource.id, matchSource.homeTeam, matchSource.homeTeamFlag, allMatches, true, depth + 1)
-        val (aResName, aResFlag, aResCrest) = resolveDisplayName(matchSource.id, matchSource.awayTeam, matchSource.awayTeamFlag, allMatches, false, depth + 1)
+        val (hResName, hResFlag, _) = resolveDisplayName(matchSource.id, matchSource.homeTeam, matchSource.homeTeamFlag, allMatches, true, depth + 1)
+        val (aResName, aResFlag, _) = resolveDisplayName(matchSource.id, matchSource.awayTeam, matchSource.awayTeamFlag, allMatches, false, depth + 1)
 
-        val f1 = if (hResFlag == "🏳️" || hResFlag.isBlank()) "" else hResFlag
-        val f2 = if (aResFlag == "🏳️" || aResFlag.isBlank()) "" else aResFlag
-
-        if (f1.isNotEmpty() && f2.isNotEmpty()) {
-            return Triple("", "$f1 ou $f2", null)
+        if (hResName.isNotBlank() && aResName.isNotBlank()) {
+            val name1 = hResName.split(" ").last()
+            val name2 = aResName.split(" ").last()
+            
+            val display1 = if (hResFlag != "🏳️" && hResFlag.isNotBlank()) hResFlag else name1
+            val display2 = if (aResFlag != "🏳️" && aResFlag.isNotBlank()) aResFlag else name2
+            
+            return Triple("", "$display1 ou $display2", null)
         }
     }
 
-    // 5. Fallback final: Nome do Vencedor Genérico
-    return Triple(getFallbackName(targetId, teamName), teamFlag.ifBlank { "🏳️" }, null)
-}
-
-private fun getFallbackName(targetId: String, teamName: String): String {
-    val isThirdPlace = teamName.startsWith("Perdedor")
-    return when {
-        targetId.contains("32-") -> "Vencedor J32-${targetId.substringAfterLast("-")}"
-        targetId.contains("16-") -> "Vencedor Oitavas ${targetId.substringAfterLast("-")}"
-        targetId.contains("QF-") -> "Vencedor Quartas ${targetId.substringAfterLast("-")}"
-        targetId.contains("SF-") -> if (isThirdPlace) "Perdedor Semifinal ${targetId.substringAfterLast("-")}" else "Vencedor Semifinal ${targetId.substringAfterLast("-")}"
-        else -> teamName
-    }
+    return Triple(teamName, teamFlag.ifBlank { "🏳️" }, null)
 }
