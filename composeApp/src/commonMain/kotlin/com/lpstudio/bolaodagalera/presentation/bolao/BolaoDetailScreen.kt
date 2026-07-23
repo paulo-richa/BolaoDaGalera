@@ -1970,22 +1970,18 @@ private fun TeamIcon(
                 error = {
                     Text(
                         text = flag,
-                        fontSize = if (isTbd) (size.value * 0.5f).sp else (size.value * 0.7f).sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        fontSize = (size.value * 0.7f).sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             )
         } else {
-            // Se não tem escudo e não é TBD (Copa), o usuário prefere não mostrar emojis/círculos
-            if (isTbd) {
-                Text(
-                    text = flag,
-                    fontSize = (size.value * 0.5f).sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
+            // Se não tem escudo, mostra a bandeira/emojis (sempre para garantir visibilidade)
+            Text(
+                text = flag,
+                fontSize = if (isTbd) (size.value * 0.5f).sp else (size.value * 0.7f).sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
