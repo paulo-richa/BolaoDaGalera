@@ -1,4 +1,5 @@
 const { API_KEY } = require("./config");
+const { BR_TEAMS } = require("./teams_br");
 const { logger } = require("firebase-functions");
 
 async function syncBrasileirao(db, admin, axios) {
@@ -19,8 +20,13 @@ async function syncBrasileirao(db, admin, axios) {
                 const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
                 const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
 
+                const hTeam = BR_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD" };
+                const aTeam = BR_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD" };
+
                 batch.set(matchesRef.doc(matchId), {
                     status: m.status,
+                    homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: hTeam.crest || null,
+                    awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: aTeam.crest || null,
                     homeScore: hScore !== undefined ? hScore : null,
                     awayScore: aScore !== undefined ? aScore : null,
                     championshipId: "BRASILEIRAO",

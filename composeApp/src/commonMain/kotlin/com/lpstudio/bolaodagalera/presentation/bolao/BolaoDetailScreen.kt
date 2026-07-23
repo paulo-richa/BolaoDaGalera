@@ -1971,7 +1971,8 @@ private fun TeamIcon(
                     Text(
                         text = flag,
                         fontSize = (size.value * 0.7f).sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             )
@@ -1980,7 +1981,8 @@ private fun TeamIcon(
             Text(
                 text = flag,
                 fontSize = if (isTbd) (size.value * 0.5f).sp else (size.value * 0.7f).sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
         }
     }
