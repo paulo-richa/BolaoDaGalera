@@ -1449,7 +1449,7 @@ private fun KnockoutTab(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (phaseMatches.isEmpty() && selectedPhase == Phase.FRIENDLIES) {
                     item {
@@ -1459,43 +1459,19 @@ private fun KnockoutTab(
                     }
                 }
 
-                if (selectedPhase == Phase.FRIENDLIES) {
-                    items(phaseMatches, key = { it.id }) { match ->
-                        MatchCard(
-                            match = match,
-                            prediction = predictions[match.id],
-                            isAdmin = isAdmin,
-                            bolaoCreatedAt = bolaoCreatedAt,
-                            forceLocked = !isKnockoutUnlocked,
-                            showSocialBadge = showSocialBadge,
-                            allMatches = matches,
-                            onClick = { onMatchClick(match.id) },
-                            onShowAllPredictions = { onShowAllPredictions(match) },
-                            onAdminUpdateScore = { onAdminUpdateScore(match) }
-                        )
-                    }
-                } else {
-                    val pairs = phaseMatches.chunked(2)
-                    items(pairs.size) { index ->
-                        val pair = pairs[index]
-                        val m1 = pair[0]
-                        val m2 = pair.getOrNull(1)
-
-                        KnockoutBracketPair(
-                            match1 = m1,
-                            match2 = m2,
-                            prediction1 = predictions[m1.id],
-                            prediction2 = m2?.let { predictions[it.id] },
-                            isAdmin = isAdmin,
-                            bolaoCreatedAt = bolaoCreatedAt,
-                            forceLocked = !isKnockoutUnlocked,
-                            showSocialBadge = showSocialBadge,
-                            allMatches = matches,
-                            onMatchClick = onMatchClick,
-                            onShowAllPredictions = onShowAllPredictions,
-                            onAdminUpdateScore = onAdminUpdateScore
-                        )
-                    }
+                items(phaseMatches, key = { it.id }) { match ->
+                    MatchCard(
+                        match = match,
+                        prediction = predictions[match.id],
+                        isAdmin = isAdmin,
+                        bolaoCreatedAt = bolaoCreatedAt,
+                        forceLocked = !isKnockoutUnlocked,
+                        showSocialBadge = showSocialBadge,
+                        allMatches = matches,
+                        onClick = { onMatchClick(match.id) },
+                        onShowAllPredictions = { onShowAllPredictions(match) },
+                        onAdminUpdateScore = { onAdminUpdateScore(match) }
+                    )
                 }
             }
 
@@ -1528,101 +1504,6 @@ private fun KnockoutTab(
     }
 }
 
-@Composable
-private fun KnockoutBracketPair(
-    match1: Match,
-    match2: Match?,
-    prediction1: Prediction?,
-    prediction2: Prediction?,
-    isAdmin: Boolean,
-    bolaoCreatedAt: Long,
-    forceLocked: Boolean,
-    showSocialBadge: Boolean = true,
-    allMatches: List<Match> = emptyList(),
-    onMatchClick: (String) -> Unit,
-    onShowAllPredictions: (Match) -> Unit,
-    onAdminUpdateScore: (Match) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            MatchCard(
-                match = match1,
-                prediction = prediction1,
-                isAdmin = isAdmin,
-                bolaoCreatedAt = bolaoCreatedAt,
-                forceLocked = forceLocked,
-                showSocialBadge = showSocialBadge,
-                allMatches = allMatches,
-                onClick = { onMatchClick(match1.id) },
-                onShowAllPredictions = { onShowAllPredictions(match1) },
-                onAdminUpdateScore = { onAdminUpdateScore(match1) }
-            )
-            
-            if (match2 != null) {
-                Spacer(Modifier.height(12.dp))
-                MatchCard(
-                    match = match2,
-                    prediction = prediction2,
-                    isAdmin = isAdmin,
-                    bolaoCreatedAt = bolaoCreatedAt,
-                    forceLocked = forceLocked,
-                    showSocialBadge = showSocialBadge,
-                    allMatches = allMatches,
-                    onClick = { onMatchClick(match2.id) },
-                    onShowAllPredictions = { onShowAllPredictions(match2) },
-                    onAdminUpdateScore = { onAdminUpdateScore(match2) }
-                )
-            }
-        }
-
-        if (match2 != null) {
-            // Desenha a "chave" de conexão
-            Box(
-                modifier = Modifier
-                    .width(32.dp)
-                    .height(120.dp) // Altura aproximada para cobrir os dois cards + spacer
-                    .padding(start = 8.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val w = size.width
-                    val h = size.height
-                    val path = androidx.compose.ui.graphics.Path().apply {
-                        // Linha superior (meio do 1º card)
-                        moveTo(0f, h * 0.25f)
-                        lineTo(w * 0.6f, h * 0.25f)
-                        // Linha vertical de conexão
-                        lineTo(w * 0.6f, h * 0.75f)
-                        // Linha inferior (meio do 2º card)
-                        lineTo(0f, h * 0.75f)
-                        // Linha que sai para a próxima fase
-                        moveTo(w * 0.6f, h * 0.5f)
-                        lineTo(w, h * 0.5f)
-                    }
-                    drawPath(
-                        path = path,
-                        color = Neon.copy(alpha = 0.4f),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = 2.dp.toPx(),
-                            cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                            join = androidx.compose.ui.graphics.StrokeJoin.Round
-                        )
-                    )
-                    
-                    // Ponto de conexão
-                    drawCircle(
-                        color = Neon,
-                        radius = 3.dp.toPx(),
-                        center = androidx.compose.ui.geometry.Offset(w, h * 0.5f)
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun KnockoutPhaseSelector(
