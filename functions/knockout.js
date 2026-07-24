@@ -95,10 +95,10 @@ async function updateNextPhase(db, admin, champId, nextPhase, currentOrder, winn
     let isHome = true;
 
     if (nextPhase === "QUARTERFINALS") {
-        const mapping = { 1: [1, true], 8: [1, false], 2: [2, true], 7: [2, false], 3: [3, true], 6: [3, false], 4: [4, true], 5: [4, false] };
+        const mapping = { 1: [1, true], 2: [1, false], 3: [2, true], 4: [2, false], 5: [3, true], 6: [3, false], 7: [4, true], 8: [4, false] };
         if (mapping[currentOrder]) [targetOrder, isHome] = mapping[currentOrder];
     } else if (nextPhase === "SEMIFINALS") {
-        const mapping = { 1: [1, true], 4: [1, false], 2: [2, true], 3: [2, false] };
+        const mapping = { 1: [1, true], 2: [1, false], 3: [2, true], 4: [2, false] };
         if (mapping[currentOrder]) [targetOrder, isHome] = mapping[currentOrder];
     }
 
