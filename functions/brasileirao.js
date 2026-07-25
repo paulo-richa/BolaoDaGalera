@@ -20,13 +20,24 @@ async function syncBrasileirao(db, admin, axios) {
                 const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
                 const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
 
-                const hTeam = BR_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD" };
-                const aTeam = BR_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD" };
+                const hTeam = BR_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD", crest: null };
+                const aTeam = BR_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD", crest: null };
+
+                // PROTEÇÃO: Priorizar biblioteca segura para evitar links do Wikipedia/Wikimedia
+                let homeCrest = hTeam.crest;
+                if (!homeCrest && m.homeTeam.crest && !m.homeTeam.crest.includes("wikimedia.org") && !m.homeTeam.crest.includes("wikipedia.org")) {
+                    homeCrest = m.homeTeam.crest;
+                }
+
+                let awayCrest = aTeam.crest;
+                if (!awayCrest && m.awayTeam.crest && !m.awayTeam.crest.includes("wikimedia.org") && !m.awayTeam.crest.includes("wikipedia.org")) {
+                    awayCrest = m.awayTeam.crest;
+                }
 
                 batch.set(matchesRef.doc(matchId), {
                     status: m.status,
-                    homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: hTeam.crest || null,
-                    awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: aTeam.crest || null,
+                    homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: homeCrest,
+                    awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: awayCrest,
                     homeScore: hScore !== undefined ? hScore : null,
                     awayScore: aScore !== undefined ? aScore : null,
                     championshipId: "BRASILEIRAO",

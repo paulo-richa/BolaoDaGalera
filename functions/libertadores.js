@@ -101,14 +101,20 @@ async function syncLibertadores(db, admin, axios) {
                 const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
                 const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
 
-                const hTeam = LIB_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD", crest: m.homeTeam.crest };
-                const aTeam = LIB_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD", crest: m.awayTeam.crest };
+                const hTeam = LIB_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD", crest: null };
+                const aTeam = LIB_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD", crest: null };
 
-                // PROTEÇÃO: Evitar links do Wikipedia que são bloqueados no Android
-                let homeCrest = hTeam.crest || m.homeTeam.crest || null;
-                let awayCrest = aTeam.crest || m.awayTeam.crest || null;
-                if (homeCrest && homeCrest.includes("wikimedia.org")) homeCrest = null;
-                if (awayCrest && awayCrest.includes("wikimedia.org")) awayCrest = null;
+                // PROTEÇÃO TOTAL: Nossa biblioteca é a única fonte confiável de escudos para o Android.
+                // Só usamos o escudo da API se nossa lib for nula E o escudo da API não for bloqueado.
+                let homeCrest = hTeam.crest;
+                if (!homeCrest && m.homeTeam.crest && !m.homeTeam.crest.includes("wikimedia.org") && !m.homeTeam.crest.includes("wikipedia.org")) {
+                    homeCrest = m.homeTeam.crest;
+                }
+
+                let awayCrest = aTeam.crest;
+                if (!awayCrest && m.awayTeam.crest && !m.awayTeam.crest.includes("wikimedia.org") && !m.awayTeam.crest.includes("wikipedia.org")) {
+                    awayCrest = m.awayTeam.crest;
+                }
 
                 const phase = mapPhase(m.stage);
 
