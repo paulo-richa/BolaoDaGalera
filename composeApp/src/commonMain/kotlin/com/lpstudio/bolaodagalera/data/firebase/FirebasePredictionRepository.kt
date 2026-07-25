@@ -28,15 +28,13 @@ private fun PredictionDto.toDomain(id: String) = Prediction(
 )
 
 @Serializable
-private data class MatchScoreDto(
-    val homeScore: Int? = null,
-    val awayScore: Int? = null
-)
-
-@Serializable
-private data class UserNamesDto(
-    val name: String = "",
-    val nickname: String = ""
+private data class RankingDto(
+    val userId: String = "",
+    val userName: String = "",
+    val userNickname: String = "",
+    val totalPoints: Int = 0,
+    val totalExactScores: Int = 0,
+    val totalCorrectResults: Int = 0
 )
 
 class FirebasePredictionRepository(
@@ -44,42 +42,58 @@ class FirebasePredictionRepository(
 ) : PredictionRepository {
 
     private val db = Firebase.firestore
-    private val usersCollection = db.collection("users")
 
     private fun getPredictionsCollection(bolaoId: String) = 
         db.collection("boloes").document(bolaoId).collection("predictions")
 
-    override fun getUserPredictions(userId: String, bolaoId: String): Flow<List<Prediction>> {
+    private fun getRankingsCollection(bolaoId: String) =
+        db.collection("boloes").document(bolaoId).collection("rankings")
+
+    override fun getUserPredictions(userId: String, bolaoId: String): Flow<List<Prediction>> = try {
         val query = if (bolaoId.isEmpty()) {
             db.collectionGroup("predictions").where { "userId" equalTo userId }
         } else {
             getPredictionsCollection(bolaoId).where { "userId" equalTo userId }
         }
         
-        return query.snapshots
+        query.snapshots
             .map { snapshot ->
                 snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
             }
-            .catch { emit(emptyList()) }
+            .catch { e ->
+                println("BOLAOLOG: Erro no getUserPredictions: ${e.message}")
+                emit(emptyList())
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico no getUserPredictions: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(emptyList())
     }
 
-    override fun getBolaoAllPredictions(bolaoId: String): Flow<List<Prediction>> {
-        return getPredictionsCollection(bolaoId)
+    override fun getBolaoAllPredictions(bolaoId: String): Flow<List<Prediction>> = try {
+        getPredictionsCollection(bolaoId)
             .snapshots
             .map { snapshot ->
                 snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
             }
-            .catch { emit(emptyList()) }
+            .catch { e ->
+                println("BOLAOLOG: Erro ao observar todos os palpites do bolão $bolaoId: ${e.message}")
+                emit(emptyList()) 
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar todos os palpites do bolão $bolaoId: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(emptyList())
     }
 
     override suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction? {
-        val snapshot = getPredictionsCollection(bolaoId)
-            .where { "userId" equalTo userId }
-            .where { "matchId" equalTo matchId }
-            .get()
-        return snapshot.documents.firstOrNull()?.let { doc ->
-            doc.data<PredictionDto>().toDomain(doc.id)
-        }
+        return try {
+            val snapshot = getPredictionsCollection(bolaoId)
+                .where { "userId" equalTo userId }
+                .where { "matchId" equalTo matchId }
+                .get()
+            snapshot.documents.firstOrNull()?.let { doc ->
+                doc.data<PredictionDto>().toDomain(doc.id)
+            }
+        } catch (e: Exception) { null }
     }
 
     override suspend fun savePrediction(prediction: Prediction) {
@@ -112,81 +126,54 @@ class FirebasePredictionRepository(
         } catch (e: Exception) { }
     }
 
-    override fun getRanking(bolaoId: String, championshipId: String, participantIds: List<String>): Flow<List<RankingEntry>> {
-        val predictionsFlow = getBolaoAllPredictions(bolaoId)
-
-        // Escopa a busca de placares apenas para o campeonato do bolão
-        val matchScoresFlow = db.collection("championships").document(championshipId).collection("matches")
+    override fun getRanking(bolaoId: String, championshipId: String, participantIds: List<String>): Flow<List<RankingEntry>> = try {
+        getRankingsCollection(bolaoId)
             .snapshots
             .map { snapshot ->
-                snapshot.documents.associate { doc ->
-                    val dto = doc.data<MatchScoreDto>()
-                    doc.id to (dto.homeScore to dto.awayScore)
+                val entries = snapshot.documents.map { doc ->
+                    val dto = doc.data<RankingDto>()
+                    RankingEntry(
+                        userId = dto.userId,
+                        userName = dto.userName,
+                        userNickname = dto.userNickname,
+                        points = dto.totalPoints,
+                        exactScores = dto.totalExactScores,
+                        correctResults = dto.totalCorrectResults
+                    )
+                }.toMutableList()
+
+                // Se houver participantes que ainda não estão no ranking (ex: recém-entraram),
+                // adicionamos eles com 0 pontos para aparecerem na lista.
+                // O nome real será enriquecido pelo ViewModel buscando na coleção de users.
+                val existingIds = entries.map { it.userId }.toSet()
+                participantIds.forEach { pid ->
+                    if (pid !in existingIds) {
+                        entries.add(
+                            RankingEntry(
+                                userId = pid,
+                                userName = "",
+                                userNickname = "",
+                                points = 0,
+                                exactScores = 0,
+                                correctResults = 0
+                            )
+                        )
+                    }
                 }
-            }
-            .catch { emit(emptyMap()) }
 
-        val userNamesFlow = if (participantIds.isEmpty()) {
-            flowOf(emptyMap<String, Pair<String, String>>())
-        } else {
-            // Otimização: Em vez de snapshots de toda a coleção, vamos buscar apenas os participantes.
-            // Para simplicidade e suporte a grupos maiores que 30, mantemos um fluxo que observa 
-            // mudanças, mas filtrando por IDs se possível ou usando uma estratégia de cache.
-            // NOTA: usersCollection.snapshots sem filtro é custoso em produção.
-            usersCollection
-                .snapshots
-                .map { snapshot ->
-                    snapshot.documents
-                        .filter { it.id in participantIds }
-                        .associate { doc ->
-                            val dto = doc.data<UserNamesDto>()
-                            doc.id to (dto.name to dto.nickname)
-                        }
-                }
-                .catch { emit(emptyMap()) }
-        }
-
-        return combine(predictionsFlow, matchScoresFlow, userNamesFlow) { predictions, matchScores, userNames ->
-            val userStats = mutableMapOf<String, Triple<Int, Int, Int>>() // points, exact, correct
-
-            participantIds.forEach { userId ->
-                userStats[userId] = Triple(0, 0, 0)
-            }
-
-            predictions.forEach { prediction ->
-                if (prediction.userId !in userStats) return@forEach
-
-                val (homeScore, awayScore) = matchScores[prediction.matchId] ?: return@forEach
-                if (homeScore == null || awayScore == null) return@forEach
-
-                val points = calculatePointsUseCase(prediction, homeScore, awayScore)
-                val isExact = points == 3 
-                val isCorrectResult = points == 1
-
-                val current = userStats[prediction.userId] ?: Triple(0, 0, 0)
-                userStats[prediction.userId] = Triple(
-                    current.first + points,
-                    current.second + if (isExact) 1 else 0,
-                    current.third + if (isCorrectResult) 1 else 0
+                entries.sortedWith(
+                    compareByDescending<RankingEntry> { it.points }
+                        .thenByDescending { it.exactScores }
+                        .thenByDescending { it.correctResults }
+                        .thenBy { it.userName.lowercase() }
                 )
             }
-
-            userStats.map { (userId, stats) ->
-                val (name, nick) = userNames[userId] ?: ("Usuário" to "")
-                RankingEntry(
-                    userId = userId,
-                    userName = name,
-                    userNickname = nick,
-                    points = stats.first,
-                    exactScores = stats.second,
-                    correctResults = stats.third
-                )
-            }.sortedWith(
-                compareByDescending<RankingEntry> { it.points }
-                    .thenByDescending { it.exactScores }
-                    .thenByDescending { it.correctResults }
-                    .thenBy { it.userName.lowercase() }
-            )
-        }
+            .catch { e -> 
+                println("BOLAOLOG: Erro ao ler ranking remoto do bolão $bolaoId: ${e.message}")
+                emit(emptyList()) 
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao ler ranking remoto do bolão $bolaoId: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(emptyList())
     }
 }

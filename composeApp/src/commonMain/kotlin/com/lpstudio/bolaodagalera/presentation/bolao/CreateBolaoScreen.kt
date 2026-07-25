@@ -81,22 +81,25 @@ class CreateBolaoViewModel(
     }
 
     fun isPhaseAvailable(championshipId: String, phase: Phase): Boolean {
+        val matches = _allMatches.value.filter { it.championshipId == championshipId && it.phase == phase }
+        if (matches.isEmpty()) return false
+        
         val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
-        return _allMatches.value.any { 
-            it.championshipId == championshipId && 
-            it.phase == phase && 
-            it.matchDateMillis > now
-        }
+        // A fase está disponível se nenhum jogo começou ainda
+        return matches.all { it.matchDateMillis > now }
     }
 
     fun isKnockoutAvailable(championshipId: String): Boolean {
-        val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
-        return _allMatches.value.any { 
+        val matches = _allMatches.value.filter { 
             it.championshipId == championshipId &&
             it.phase != Phase.GROUP_STAGE && 
-            it.phase != Phase.FRIENDLIES &&
-            it.matchDateMillis > now
+            it.phase != Phase.FRIENDLIES
         }
+        if (matches.isEmpty()) return false
+        
+        val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
+        // O mata-mata está disponível se nenhum jogo dele começou ainda
+        return matches.all { it.matchDateMillis > now }
     }
 
     fun create(
@@ -198,12 +201,29 @@ fun CreateBolaoScreen(
     val launcherProvider = rememberLauncherProvider()
     var showSuccessDialog by remember { mutableStateOf(false) }
 
-    // Auto-ajuste do scope se a fase de grupos acabar
-    LaunchedEffect(isGroupStageAvailable, isKnockoutAvailable) {
-        if (!isGroupStageAvailable && (selectedScope == BolaoScope.FULL || selectedScope == BolaoScope.ONLY_GROUPS)) {
-            if (isKnockoutAvailable) {
-                selectedScope = BolaoScope.ONLY_KNOCKOUT
+    // Auto-ajuste do scope se a fase de grupos ou mata-mata acabar/começar
+    LaunchedEffect(isGroupStageAvailable, isKnockoutAvailable, selectedChampionshipId) {
+        val champ = Championship.fromId(selectedChampionshipId)
+        if (champ.isPointsBased) {
+            selectedScope = BolaoScope.PONTOS_CORRIDOS
+            return@LaunchedEffect
+        }
+
+        val isFullValid = isGroupStageAvailable && isKnockoutAvailable
+        val isOnlyGroupsValid = isGroupStageAvailable
+        val isOnlyKnockoutValid = isKnockoutAvailable
+
+        when (selectedScope) {
+            BolaoScope.FULL -> if (!isFullValid) {
+                selectedScope = if (isOnlyGroupsValid) BolaoScope.ONLY_GROUPS else if (isOnlyKnockoutValid) BolaoScope.ONLY_KNOCKOUT else BolaoScope.FULL
             }
+            BolaoScope.ONLY_GROUPS -> if (!isOnlyGroupsValid) {
+                selectedScope = if (isOnlyKnockoutValid) BolaoScope.ONLY_KNOCKOUT else BolaoScope.ONLY_GROUPS
+            }
+            BolaoScope.ONLY_KNOCKOUT -> if (!isOnlyKnockoutValid) {
+                selectedScope = if (isOnlyGroupsValid) BolaoScope.ONLY_GROUPS else BolaoScope.ONLY_KNOCKOUT
+            }
+            else -> {}
         }
     }
 
@@ -396,7 +416,6 @@ fun CreateBolaoScreen(
                         championships.forEach { championship ->
                             val id = championship.id
                             val label = championship.displayName
-                            val emoji = championship.emoji
                             val isAvailable = championship.isAvailable
                             val isSelected = selectedChampionshipId == id
                             
@@ -423,7 +442,6 @@ fun CreateBolaoScreen(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
-                                            Text(emoji, fontSize = 20.sp)
                                             Column {
                                                 Text(
                                                     label,
@@ -473,20 +491,22 @@ fun CreateBolaoScreen(
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                             BolaoScope.entries
                                                 .filter { scope -> 
-                                                    // Filtros de visibilidade do escopo
+                                                    // Filtros de visibilidade do escopo baseados no campeonato e datas
                                                     when (scope) {
-                                                        BolaoScope.PONTOS_CORRIDOS -> false // Definido automaticamente para o Brasileirão
-                                                        // Oculta opções que envolvem grupos se a fase de grupos já acabou
-                                                        BolaoScope.FULL, BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
+                                                        BolaoScope.PONTOS_CORRIDOS -> false
+                                                        BolaoScope.ONLY_GROUPS -> championship.isGroupsAndKnockout && isGroupStageAvailable
+                                                        BolaoScope.ONLY_KNOCKOUT -> (championship.isGroupsAndKnockout || !championship.isPointsBased) && isKnockoutAvailable
+                                                        BolaoScope.FULL -> championship.isGroupsAndKnockout && isGroupStageAvailable && isKnockoutAvailable
                                                         else -> true
                                                     }
                                                 }
                                                 .forEach { scope ->
                                                     val isScopeEnabled = when(scope) {
-                                                    BolaoScope.FULL, BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
-                                                    BolaoScope.ONLY_KNOCKOUT -> isKnockoutAvailable
-                                                    BolaoScope.PONTOS_CORRIDOS -> true
-                                                }
+                                                        BolaoScope.FULL -> isGroupStageAvailable && isKnockoutAvailable
+                                                        BolaoScope.ONLY_GROUPS -> isGroupStageAvailable
+                                                        BolaoScope.ONLY_KNOCKOUT -> isKnockoutAvailable
+                                                        BolaoScope.PONTOS_CORRIDOS -> true
+                                                    }
                                                 val isScopeSelected = selectedScope == scope && isScopeEnabled
                                                 val scopeEmoji = when(scope) {
                                                     BolaoScope.FULL -> "🏆"

@@ -387,8 +387,9 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
             // Name
             Column(modifier = Modifier.weight(1f)) {
                 val displayName = entry.userNickname.ifBlank { entry.userName }
+                val label = if (isCurrentUser) "$displayName (Você)" else displayName
                 Text(
-                    text = if (isCurrentUser) "$displayName (Você)" else displayName,
+                    text = label,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -496,47 +497,11 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
         "$d/$m"
     }
 
-    val (hName, hFlag) = remember(hit.match.id, hit.match.homeTeam, hit.match.homeTeamFlag, allMatches) {
+    val (hName, _) = remember(hit.match.id, hit.match.homeTeam, hit.match.homeTeamFlag, allMatches) {
         resolveDisplayName(hit.match.id, hit.match.homeTeam, hit.match.homeTeamFlag, allMatches, true)
     }
-    val (aName, aFlag) = remember(hit.match.id, hit.match.awayTeam, hit.match.awayTeamFlag, allMatches) {
+    val (aName, _) = remember(hit.match.id, hit.match.awayTeam, hit.match.awayTeamFlag, allMatches) {
         resolveDisplayName(hit.match.id, hit.match.awayTeam, hit.match.awayTeamFlag, allMatches, false)
-    }
-
-    val hAnnotatedFlag = remember(hFlag) {
-        if (hFlag.contains(" ou ")) {
-            buildAnnotatedString {
-                val parts = hFlag.split(" ou ")
-                parts.forEachIndexed { index, part ->
-                    append(part)
-                    if (index < parts.size - 1) {
-                        withStyle(style = SpanStyle(fontSize = 11.sp, fontWeight = FontWeight.Normal)) {
-                            append(" ou ")
-                        }
-                    }
-                }
-            }
-        } else {
-            AnnotatedString(hFlag)
-        }
-    }
-
-    val aAnnotatedFlag = remember(aFlag) {
-        if (aFlag.contains(" ou ")) {
-            buildAnnotatedString {
-                val parts = aFlag.split(" ou ")
-                parts.forEachIndexed { index, part ->
-                    append(part)
-                    if (index < parts.size - 1) {
-                        withStyle(style = SpanStyle(fontSize = 11.sp, fontWeight = FontWeight.Normal)) {
-                            append(" ou ")
-                        }
-                    }
-                }
-            }
-        } else {
-            AnnotatedString(aFlag)
-        }
     }
 
     val accentColor = if (hit.points == 3) Neon else Gold
@@ -548,26 +513,30 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
         border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = hAnnotatedFlag, fontSize = 16.sp)
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "$hName x $aName",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(text = aAnnotatedFlag, fontSize = 16.sp)
-                }
-                
-                val groupText = hit.match.group?.let { "Grupo $it • " } ?: ""
                 Text(
-                    text = "$groupText$date • Placar: ${hit.match.homeScore}x${hit.match.awayScore}",
+                    text = "$hName x $aName",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                
+                Spacer(Modifier.height(4.dp))
+
+                val groupInfo = hit.match.group?.let { g ->
+                    val clean = g.replace("Grupo", "", ignoreCase = true)
+                                 .replace("Rodada", "", ignoreCase = true)
+                                 .trim()
+                    if (clean.toIntOrNull() != null) "Rodada $clean" else "Grupo $clean"
+                } ?: ""
+                
+                val separator = if (groupInfo.isNotEmpty()) " • " else ""
+                
+                Text(
+                    text = "$groupInfo$separator$date • Placar: ${hit.match.homeScore}x${hit.match.awayScore}",
                     fontSize = 11.sp,
                     color = TextMuted
                 )

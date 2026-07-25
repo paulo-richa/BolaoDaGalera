@@ -35,17 +35,28 @@ class FirebaseAuthRepository : AuthRepository {
             _cachedUser = null
             flowOf(null)
         } else {
-            usersCollection.document(firebaseUser.uid).snapshots.map { doc ->
-                val user = if (doc.exists) {
-                    val dto = doc.data<UserDto>()
-                    User(firebaseUser.uid, dto.name, dto.email, dto.phone, dto.nickname, dto.username)
-                } else {
-                    User(firebaseUser.uid, firebaseUser.displayName ?: "Usuário", firebaseUser.email ?: "", "", "", "")
+            try {
+                usersCollection.document(firebaseUser.uid).snapshots.map { doc ->
+                    val user = if (doc.exists) {
+                        val dto = doc.data<UserDto>()
+                        User(firebaseUser.uid, dto.name, dto.email, dto.phone, dto.nickname, dto.username)
+                    } else {
+                        User(firebaseUser.uid, firebaseUser.displayName ?: "Usuário", firebaseUser.email ?: "", "", "", "")
+                    }
+                    _cachedUser = user
+                    user as User?
+                }.catch { e ->
+                    println("BOLAOLOG: Erro no snapshots de user: ${e.message}")
+                    emit(null) 
                 }
-                _cachedUser = user
-                user as User?
-            }.catch { emit(null) }
+            } catch (e: Exception) {
+                println("BOLAOLOG: Erro crítico ao iniciar snapshots de user: ${e.message}")
+                flowOf(null)
+            }
         }
+    }.catch { e ->
+        println("BOLAOLOG: Erro no authStateFlow: ${e.message}")
+        emit(null)
     }
 
     override suspend fun signIn(email: String, password: String): User {

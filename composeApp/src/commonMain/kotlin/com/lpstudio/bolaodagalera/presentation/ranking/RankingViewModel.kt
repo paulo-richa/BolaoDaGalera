@@ -34,7 +34,7 @@ class RankingViewModel(
     private val predictionRepository: PredictionRepository,
     private val bolaoRepository: BolaoRepository,
     private val matchRepository: MatchRepository,
-    authRepository: AuthRepository,
+    private val authRepository: AuthRepository,
     private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
     private val bolaoId: String
 ) : ViewModel() {
@@ -57,29 +57,65 @@ class RankingViewModel(
     private fun loadData() {
         viewModelScope.launch {
             try {
-                val bolao = bolaoRepository.getBolao(bolaoId)
-                val championshipId = bolao.championshipId
-                pointsExact = bolao.pointsExactScore
-                pointsWinner = bolao.pointsWinnerOrDraw
-
-                // Ranking em tempo real
-                predictionRepository.getRanking(bolaoId, championshipId, bolao.participants)
-                    .onEach { entries ->
-                        _uiState.update { it.copy(entries = entries, isLoading = false) }
+                // Observa Bolão, Jogos e Palpites simultaneamente para cálculo em tempo real
+                bolaoRepository.getBolaoFlow(bolaoId).flatMapLatest { bolao ->
+                    val participants = bolao.participants
+                    pointsExact = bolao.pointsExactScore
+                    pointsWinner = bolao.pointsWinnerOrDraw
+                    
+                    combine(
+                        matchRepository.getMatches(bolao.championshipId),
+                        predictionRepository.getBolaoAllPredictions(bolaoId),
+                        flow { emit(authRepository.getUsers(participants)) }
+                    ) { matches, predictions, users ->
+                        allMatches = matches
+                        allPredictions = predictions
+                        val userMap = users.associateBy { it.id }
+                        
+                        // Calcula o ranking localmente com base nos placares atuais (Live)
+                        participants.map { userId ->
+                            val user = userMap[userId]
+                            val userPredictions = predictions.filter { it.userId == userId }
+                            
+                            var totalPoints = 0
+                            var exactScores = 0
+                            var correctResults = 0
+                            
+                            userPredictions.forEach { pred ->
+                                val match = matches.find { it.id == pred.matchId }
+                                if (match != null && match.homeScore != null && match.awayScore != null) {
+                                    val pts = calculatePointsUseCase(
+                                        pred, 
+                                        match.homeScore!!, 
+                                        match.awayScore!!, 
+                                        pointsExact, 
+                                        pointsWinner
+                                    )
+                                    totalPoints += pts
+                                    if (pts == pointsExact) exactScores++
+                                    else if (pts == pointsWinner) correctResults++
+                                }
+                            }
+                            
+                            RankingEntry(
+                                userId = userId,
+                                userName = user?.name ?: "Usuário",
+                                userNickname = user?.nickname?.ifBlank { "" } ?: "",
+                                points = totalPoints,
+                                exactScores = exactScores,
+                                correctResults = correctResults
+                            )
+                        }.sortedWith(
+                            compareByDescending<RankingEntry> { it.points }
+                                .thenByDescending { it.exactScores }
+                                .thenByDescending { it.correctResults }
+                                .thenBy { it.userName.lowercase() }
+                        )
                     }
-                    .catch { e ->
-                        _uiState.update { it.copy(error = e.message, isLoading = false) }
-                    }
-                    .launchIn(viewModelScope)
-
-                // Outros dados (jogos e palpites)
-                combine(
-                    matchRepository.getMatches(championshipId),
-                    predictionRepository.getBolaoAllPredictions(bolaoId)
-                ) { matches, predictions ->
-                    allMatches = matches
-                    allPredictions = predictions
-                    _uiState.update { it.copy(allMatches = matches) }
+                }.onEach { entries ->
+                    _uiState.update { it.copy(entries = entries, isLoading = false) }
+                }.catch { e ->
+                    _uiState.update { it.copy(error = e.message, isLoading = false) }
                 }.launchIn(viewModelScope)
 
             } catch (e: Exception) {
@@ -93,11 +129,11 @@ class RankingViewModel(
             .filter { it.userId == entry.userId }
             .mapNotNull { pred ->
                 val match = allMatches.find { it.id == pred.matchId }
-                if (match?.isFinished == true && match.homeScore != null && match.awayScore != null) {
+                if (match != null && match.homeScore != null && match.awayScore != null) {
                     val points = calculatePointsUseCase(
                         pred, 
-                        match.homeScore, 
-                        match.awayScore,
+                        match.homeScore!!, 
+                        match.awayScore!!,
                         pointsExact,
                         pointsWinner
                     )

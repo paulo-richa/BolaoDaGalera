@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsSoccer
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,9 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.Neon
+import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
 
 @Composable
-fun MaintenanceScreen() {
+fun MaintenanceScreen(onLogout: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition()
     
     // Animação de Rotação (Bola girando)
@@ -123,5 +123,16 @@ fun MaintenanceScreen() {
             lineHeight = 24.sp,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        TextButton(onClick = onLogout) {
+            Text(
+                "Sair da conta",
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }

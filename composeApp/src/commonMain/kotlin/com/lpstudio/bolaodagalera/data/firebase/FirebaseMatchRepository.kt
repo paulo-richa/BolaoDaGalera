@@ -8,6 +8,7 @@ import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -82,16 +83,23 @@ class FirebaseMatchRepository : MatchRepository {
         }
     }
 
-    override fun getMatches(championshipId: String): Flow<List<Match>> = 
+    override fun getMatches(championshipId: String): Flow<List<Match>> = try {
         getMatchesCollection(championshipId).snapshots.map { snap ->
             try {
                 snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
             } catch (e: Exception) {
                 emptyList()
             }
-        }.catch { emit(emptyList()) }
+        }.catch { e ->
+            println("BOLAOLOG: Erro ao observar matches de $championshipId: ${e.message}")
+            emit(emptyList())
+        }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar matches de $championshipId: ${e.message}")
+        flowOf(emptyList<Match>())
+    }
 
-    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> = 
+    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> = try {
         getMatchesCollection(championshipId)
             .where { "phase" equalTo phase.name }
             .snapshots
@@ -101,7 +109,14 @@ class FirebaseMatchRepository : MatchRepository {
                 } catch (e: Exception) {
                     emptyList()
                 }
-            }.catch { emit(emptyList()) }
+            }.catch { e ->
+                println("BOLAOLOG: Erro ao observar matches por fase de $championshipId: ${e.message}")
+                emit(emptyList())
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar matches por fase de $championshipId: ${e.message}")
+        flowOf(emptyList<Match>())
+    }
 
     override suspend fun getMatch(championshipId: String, matchId: String): Match {
         val doc = getMatchesCollection(championshipId).document(matchId).get()
@@ -161,7 +176,15 @@ class FirebaseMatchRepository : MatchRepository {
         }
     }
 
-    override fun getAllMatches(): Flow<List<Match>> = db.collectionGroup("matches").snapshots.map { snap ->
-        snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
-    }.catch { emit(emptyList()) }
+    override fun getAllMatches(): Flow<List<Match>> = try {
+        db.collectionGroup("matches").snapshots.map { snap ->
+            snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
+        }.catch { e ->
+            println("BOLAOLOG: Erro no getAllMatches: ${e.message}")
+            emit(emptyList())
+        }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico no getAllMatches: ${e.message}")
+        flowOf(emptyList<Match>())
+    }
 }

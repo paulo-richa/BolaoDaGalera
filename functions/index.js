@@ -10,6 +10,36 @@ const db = admin.firestore();
 const { syncBrasileirao } = require("./brasileirao");
 const { syncLibertadores } = require("./libertadores");
 const { cleanupDeletedBoloes, cleanupExpiredInvitations } = require("./cleanup");
+const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onRequest } = require("firebase-functions/v2/https");
+
+/**
+ * Gatilho: Quando um jogo é atualizado no Firestore.
+ * Se o jogo estiver finalizado, calcula os rankings.
+ */
+exports.onMatchUpdate = onDocumentWritten("championships/{championshipId}/matches/{matchId}", async (event) => {
+    const afterData = event.data.after.data();
+    if (!afterData) return;
+
+    if (afterData.status === "FINISHED" && afterData.homeScore !== null && afterData.awayScore !== null) {
+        await updateMatchRankings(db, admin, event.params.championshipId, event.params.matchId, {
+            homeScore: afterData.homeScore,
+            awayScore: afterData.awayScore
+        });
+    }
+});
+
+/**
+ * Endpoint para forçar a recalculação de todos os rankings (Útil após migrações).
+ */
+exports.recalculateAllRankings = onRequest({ timeoutSeconds: 540, memory: "512MiB" }, async (req, res) => {
+    const boloes = await db.collection("boloes").get();
+    for (const bDoc of boloes.docs) {
+        await fullRecalculateRanking(db, admin, bDoc.id);
+    }
+    res.send("Rankings recalculados com sucesso.");
+});
 
 /**
  * Sincronização Geral de Jogos e Resultados.

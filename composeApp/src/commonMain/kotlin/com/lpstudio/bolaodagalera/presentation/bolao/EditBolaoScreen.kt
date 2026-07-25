@@ -29,6 +29,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
+import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
@@ -276,15 +277,15 @@ fun EditBolaoScreen(
                     .imePadding()
                     .padding(horizontal = 20.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
 
                 // Basic Info Section
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("DADOS GERAIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
                     
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         BolaoTextField(
                             value = name,
                             onValueChange = { if (it.length <= 35) name = it },
@@ -292,23 +293,23 @@ fun EditBolaoScreen(
                             isError = nameError != null
                         )
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             if (nameError != null) {
-                                Text(nameError, color = ErrorRed, fontSize = 11.sp)
+                                Text(nameError, color = ErrorRed, fontSize = 10.sp)
                             } else {
                                 Spacer(Modifier.width(1.dp))
                             }
                             Text(
                                 "${name.length}/35",
                                 color = if (name.length < 10 || name.length > 35) ErrorRed else TextSubtle,
-                                fontSize = 11.sp
+                                fontSize = 10.sp
                             )
                         }
                     }
 
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         OutlinedTextField(
                             value = description,
                             onValueChange = { if (it.length <= 115) description = it },
@@ -327,88 +328,94 @@ fun EditBolaoScreen(
                         Text(
                             "${description.length}/115",
                             color = if (description.length >= 115) ErrorRed else TextSubtle,
-                            fontSize = 11.sp,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 10.sp,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                             textAlign = TextAlign.End
                         )
                     }
+                }
 
-                    // Scope Section
-                    uiState.bolao?.let { originalBolao ->
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("TIPO DO BOLÃO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
-                            
-                            val isOnlyGroups = originalBolao.scope == BolaoScope.ONLY_GROUPS
-                            val isFull = originalBolao.scope == BolaoScope.FULL
-                            val isLeague = originalBolao.scope == BolaoScope.PONTOS_CORRIDOS
-                            val canEditScope = (isOnlyGroups || (isFull && !isKnockoutStarted)) && !isLeague
-                            
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .border(1.dp, if (canEditScope) Neon.copy(alpha = 0.5f) else GlassBorder.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
-                                color = NavyCard
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
+                // Scope Section
+                uiState.bolao?.let { originalBolao ->
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("TIPO DO BOLÃO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
+                        
+                        val championship = Championship.fromId(originalBolao.championshipId)
+                        val isOnlyGroups = originalBolao.scope == BolaoScope.ONLY_GROUPS
+                        val isFull = originalBolao.scope == BolaoScope.FULL
+                        val isLeague = originalBolao.scope == BolaoScope.PONTOS_CORRIDOS || championship.isPointsBased
+                        val canEditScope = (isOnlyGroups || (isFull && !isKnockoutStarted)) && !isLeague && championship.isGroupsAndKnockout
+                        
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(1.dp, if (canEditScope) Neon.copy(alpha = 0.5f) else GlassBorder.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                            color = NavyCard
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text(
+                                        when {
+                                            championship.isPointsBased -> "📈"
+                                            selectedScope == BolaoScope.FULL -> "🏆"
+                                            selectedScope == BolaoScope.ONLY_GROUPS -> "⚽"
+                                            selectedScope == BolaoScope.ONLY_KNOCKOUT -> "⚔️"
+                                            else -> "🏆"
+                                        },
+                                        fontSize = 18.sp
+                                    )
+                                    Text(
+                                        if (championship.isPointsBased) "Pontos Corridos" else selectedScope.label,
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                if (canEditScope) {
+                                    Spacer(Modifier.height(12.dp))
                                     Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Neon.copy(alpha = 0.1f))
+                                            .clickable { 
+                                                selectedScope = if (selectedScope == BolaoScope.ONLY_GROUPS) BolaoScope.FULL else BolaoScope.ONLY_GROUPS
+                                            }
+                                            .padding(12.dp),
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Text(
-                                            when(selectedScope) {
-                                                BolaoScope.FULL -> "🏆"
-                                                BolaoScope.ONLY_GROUPS -> "⚽"
-                                                BolaoScope.ONLY_KNOCKOUT -> "⚔️"
-                                                BolaoScope.PONTOS_CORRIDOS -> "📈"
-                                            },
-                                            fontSize = 18.sp
-                                        )
-                                        Text(
-                                            selectedScope.label,
-                                            color = Color.White,
-                                            fontSize = 14.sp,
+                                            "Incluir fase de Mata-Mata",
+                                            color = Neon,
+                                            fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold
                                         )
-                                    }
-
-                                    if (canEditScope) {
-                                        Spacer(Modifier.height(12.dp))
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(Neon.copy(alpha = 0.1f))
-                                                .clickable { 
-                                                    selectedScope = if (selectedScope == BolaoScope.ONLY_GROUPS) BolaoScope.FULL else BolaoScope.ONLY_GROUPS
-                                                }
-                                                .padding(12.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                "Incluir fase de Mata-Mata",
-                                                color = Neon,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Switch(
-                                                checked = selectedScope == BolaoScope.FULL,
-                                                onCheckedChange = { 
-                                                    selectedScope = if (it) BolaoScope.FULL else BolaoScope.ONLY_GROUPS 
-                                                },
-                                                colors = SwitchDefaults.colors(checkedThumbColor = Neon, checkedTrackColor = Neon.copy(alpha = 0.3f))
-                                            )
-                                        }
-                                    } else {
-                                        Text(
-                                            if (isFull && isKnockoutStarted) "O Mata-Mata já está em andamento e não pode ser removido." 
-                                            else "O tipo deste bolão não pode ser alterado.",
-                                            fontSize = 10.sp,
-                                            color = TextSubtle,
-                                            modifier = Modifier.padding(top = 8.dp)
+                                        Switch(
+                                            checked = selectedScope == BolaoScope.FULL,
+                                            onCheckedChange = { 
+                                                selectedScope = if (it) BolaoScope.FULL else BolaoScope.ONLY_GROUPS 
+                                            },
+                                            colors = SwitchDefaults.colors(checkedThumbColor = Neon, checkedTrackColor = Neon.copy(alpha = 0.3f))
                                         )
                                     }
+                                } else {
+                                    val labelText = when {
+                                        championship.isPointsBased -> "Este campeonato segue o formato de pontos corridos."
+                                        isFull && isKnockoutStarted -> "O Mata-Mata já está em andamento e não pode ser removido."
+                                        else -> "O tipo deste bolão não pode ser alterado."
+                                    }
+                                    Text(
+                                        labelText,
+                                        fontSize = 10.sp,
+                                        color = TextSubtle,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
                                 }
                             }
                         }
@@ -416,7 +423,7 @@ fun EditBolaoScreen(
                 }
 
                 // Scoring System Section
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("SISTEMA DE PONTUAÇÃO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
                     
                     Row(
@@ -462,12 +469,13 @@ fun EditBolaoScreen(
                         text = "Salvar Alterações",
                         isLoading = uiState.isLoading,
                         enabled = isFormValid && !uiState.isLoading,
+                        modifier = Modifier.padding(top = 4.dp),
                         onClick = { viewModel.update(name, description, selectedScope, pointsExact, pointsWinner) }
                     )
                 }
 
                 // Participants Section
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,

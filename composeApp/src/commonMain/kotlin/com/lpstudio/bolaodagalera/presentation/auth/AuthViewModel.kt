@@ -58,7 +58,14 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 val exists = authRepository.isEmailInUse(email.trim())
                 _uiState.update { it.copy(isLoading = false, emailExists = exists, checkedEmail = email.trim()) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
+                val msg = e.message?.lowercase() ?: ""
+                // Se for erro de permissão, assume que o e-mail existe para permitir tentativa de login
+                // Isso resolve o problema de regras do Firestore que exigem auth para queries.
+                if (msg.contains("permission") || msg.contains("permissão")) {
+                    _uiState.update { it.copy(isLoading = false, emailExists = true, checkedEmail = email.trim()) }
+                } else {
+                    _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
+                }
             }
         }
     }
@@ -214,6 +221,8 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 "A senha é muito fraca. Use pelo menos 6 caracteres."
             msg.contains("invalid-email") ->
                 "O formato do e-mail é inválido."
+            msg.contains("permission") || msg.contains("permissão") ->
+                "Aguardando autenticação para acessar dados. Tente novamente em instantes."
             else -> "Ocorreu um erro inesperado. Por favor, tente novamente."
         }
     }
