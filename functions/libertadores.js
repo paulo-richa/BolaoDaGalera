@@ -104,6 +104,12 @@ async function syncLibertadores(db, admin, axios) {
                 const hTeam = LIB_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD", crest: m.homeTeam.crest };
                 const aTeam = LIB_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD", crest: m.awayTeam.crest };
 
+                // PROTEÇÃO: Evitar links do Wikipedia que são bloqueados no Android
+                let homeCrest = hTeam.crest || m.homeTeam.crest || null;
+                let awayCrest = aTeam.crest || m.awayTeam.crest || null;
+                if (homeCrest && homeCrest.includes("wikimedia.org")) homeCrest = null;
+                if (awayCrest && awayCrest.includes("wikimedia.org")) awayCrest = null;
+
                 const phase = mapPhase(m.stage);
 
                 // matchOrder baseado no ID para manter a ordem da API
@@ -111,8 +117,8 @@ async function syncLibertadores(db, admin, axios) {
 
                 batch.set(matchesRef.doc(matchId), {
                     status: m.status,
-                    homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: hTeam.crest || m.homeTeam.crest || null,
-                    awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: aTeam.crest || m.awayTeam.crest || null,
+                    homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: homeCrest,
+                    awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: awayCrest,
                     homeScore: hScore !== undefined ? hScore : null,
                     awayScore: aScore !== undefined ? aScore : null,
                     championshipId: "LIBERTADORES",
