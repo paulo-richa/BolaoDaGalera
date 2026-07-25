@@ -36,6 +36,9 @@ class HomeViewModel(
 
     private val readNotificationIds = MutableStateFlow<Set<String>>(emptySet())
     private var dataCollectionJob: kotlinx.coroutines.Job? = null
+    
+    // Cache de todos os convites (sem o distinctBy) para facilitar a limpeza ao aceitar
+    private var allInvitationsCache: List<Invitation> = emptyList()
 
     init {
         authRepository.authStateFlow.onEach { user ->
@@ -47,6 +50,8 @@ class HomeViewModel(
                 _uiState.update { it.copy(user = user) }
                 loadUserData(user)
             }
+        }.catch { e ->
+            println("BOLAOLOG: Erro no authStateFlow: ${e.message}")
         }.launchIn(viewModelScope)
     }
 
@@ -57,10 +62,10 @@ class HomeViewModel(
             invitationRepository.getInvitationsForUser(user.username.trim().lowercase()),
             invitationRepository.getInvitationsForUser(user.phone.filter { it.isDigit() })
         ) { list1, list2, list3, list4 ->
-            (list1 + list2 + list3 + list4)
-                .filter { it.id.isNotBlank() }
-                .distinctBy { it.bolaoId } // Garante apenas 1 convite por bolão
-        }
+            val all = (list1 + list2 + list3 + list4).filter { it.id.isNotBlank() }
+            allInvitationsCache = all
+            all.distinctBy { it.bolaoId } // Garante apenas 1 convite por bolão na UI
+        }.catch { emit(emptyList()) }
 
         // Carrega Bolões, Jogos, Palpites, Convites e IDs lidos
         dataCollectionJob = combine(
@@ -159,6 +164,9 @@ class HomeViewModel(
                 hasUnreadNotifications = hasUnread,
                 isLoading = false 
             ) }
+        }.catch { e ->
+            println("BOLAOLOG: Erro no dataCollectionJob: ${e.message}")
+            _uiState.update { it.copy(isLoading = false, error = "Erro ao carregar dados.") }
         }.launchIn(viewModelScope)
     }
 
@@ -167,46 +175,62 @@ class HomeViewModel(
         readNotificationIds.value = readNotificationIds.value + allIds
     }
 
-    fun respondToInvitation(invitationId: String, accept: Boolean) {
+    fun respondToInvitation(invitationId: String, accept: Boolean, onSuccess: () -> Unit = {}) {
         val user = authRepository.currentUser ?: return
         val currentInvitations = uiState.value.invitations
         val targetInvitation = currentInvitations.find { it.id == invitationId } ?: return
         val bolaoId = targetInvitation.bolaoId
 
+        println("BOLAOLOG: [HomeVM] respondToInvitation iniciada. InvId: $invitationId, Accept: $accept, BolaoId: $bolaoId")
+
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             try {
+                // 1. Se aceitou, adiciona ao bolão primeiro
                 if (accept) {
+                    println("BOLAOLOG: [HomeVM] Chamando addParticipantDirectly...")
                     bolaoRepository.addParticipantDirectly(bolaoId, user.id)
+                    println("BOLAOLOG: [HomeVM] addParticipantDirectly concluído.")
                 }
                 
-                // Encontra TODOS os convites pendentes que este usuário tem para ESTE bolão específico
-                // (Seja convite por e-mail, por ID ou por telefone)
-                val userIdentifiers = setOf(
-                    user.id,
-                    user.email.trim().lowercase(),
-                    user.username.trim().lowercase(),
-                    user.phone.filter { it.isDigit() }
-                ).filter { it.isNotBlank() }
-
-                // Busca no banco todos os convites pendentes para este bolão que batam com os IDs do usuário
-                val allRelatedInvitations = invitationRepository.getInvitationsForUser(user.id).first() +
-                                           invitationRepository.getInvitationsForUser(user.email.trim().lowercase()).first() +
-                                           invitationRepository.getInvitationsForUser(user.username.trim().lowercase()).first() +
-                                           invitationRepository.getInvitationsForUser(user.phone.filter { it.isDigit() }).first()
-
-                val toResolve = allRelatedInvitations
-                    .filter { it.bolaoId == bolaoId && it.status == InvitationStatus.PENDING }
+                // 2. Resolve (deleta) todos os convites pendentes deste usuário para este bolão
+                val toResolve = (allInvitationsCache + targetInvitation)
+                    .filter { it.bolaoId == bolaoId }
                     .distinctBy { it.id }
 
-                // Resolve todos de uma vez
-                withTimeout(5000) {
-                    toResolve.forEach { inv ->
-                        invitationRepository.respondToInvitation(inv.id, accept)
-                    }
+                println("BOLAOLOG: [HomeVM] Encontrados ${toResolve.size} convites para resolver.")
+
+                toResolve.forEach { inv ->
+                    println("BOLAOLOG: [HomeVM] Deletando convite ${inv.id}...")
+                    invitationRepository.respondToInvitation(inv.id, accept)
+                    println("BOLAOLOG: [HomeVM] Convite ${inv.id} deletado.")
+                }
+
+                // 3. Limpeza local imediata
+                allInvitationsCache = allInvitationsCache.filter { inv -> 
+                    inv.bolaoId != bolaoId 
+                }
+                _uiState.update { it.copy(
+                    invitations = it.invitations.filter { inv -> inv.bolaoId != bolaoId },
+                    isLoading = false
+                ) }
+                println("BOLAOLOG: [HomeVM] Estado UI atualizado (convites filtrados).")
+
+                // 4. Só navega após o sucesso total
+                if (accept) {
+                    println("BOLAOLOG: [HomeVM] Chamando callback de sucesso para navegação.")
+                    onSuccess()
                 }
 
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                println("BOLAOLOG: [HomeVM] ERRO ao processar convite: ${e.message}")
+                
+                val msg = e.message?.lowercase() ?: ""
+                val friendly = if (msg.contains("permission")) 
+                    "Erro de permissão ao aceitar convite. Verifique se você já está no bolão."
+                else "Não foi possível processar o convite. Tente novamente."
+                
+                _uiState.update { it.copy(error = friendly, isLoading = false) }
             }
         }
     }

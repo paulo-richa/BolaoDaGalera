@@ -516,7 +516,7 @@ fun BolaoDetailContent(
                                 ) {
                                     Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = TextMuted, modifier = Modifier.size(20.dp))
                                 }
-                                IconButton(
+                               IconButton(
                                     onClick = { onNavigateToAddParticipants(bolaoId) },
                                     modifier = Modifier.size(36.dp)
                                 ) {
@@ -526,19 +526,6 @@ fun BolaoDetailContent(
                                         tint = Neon,
                                         modifier = Modifier.size(20.dp)
                                     )
-                                }
-                                if (isAppOwner) {
-                                    IconButton(
-                                        onClick = { /* Sincronização agora é automática via backend */ },
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Refresh,
-                                            contentDescription = "Sincronizar",
-                                            tint = Neon,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
                                 }
                                 IconButton(
                                     onClick = { onNavigateToEdit(bolaoId) },

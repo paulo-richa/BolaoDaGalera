@@ -52,9 +52,10 @@ fun HomeScreen(
             notifications = uiState.notifications,
             onDismiss = { showNotifications = false },
             onAcceptInvitation = { invId, bolaoId ->
-                viewModel.respondToInvitation(invId, true)
-                showNotifications = false
-                onNavigateToBolao(bolaoId)
+                viewModel.respondToInvitation(invId, true, onSuccess = {
+                    showNotifications = false
+                    onNavigateToBolao(bolaoId)
+                })
             },
             onDeclineInvitation = { invId ->
                 viewModel.respondToInvitation(invId, false)
@@ -67,6 +68,21 @@ fun HomeScreen(
             .fillMaxSize()
             .background(DeepNavy)
     ) {
+        uiState.error?.let {
+            Snackbar(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 90.dp, start = 16.dp, end = 16.dp),
+                containerColor = ErrorRed,
+                contentColor = Color.White,
+                action = {
+                    TextButton(onClick = { viewModel.clearError() }) {
+                        Text("OK", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            ) {
+                Text(it)
+            }
+        }
+
         Column(Modifier.fillMaxSize()) {
             // ── Premium Hero Header ──────────────────────────────────────────
             Box(
@@ -269,8 +285,9 @@ fun HomeScreen(
                                 InvitationCard(
                                     invitation = invitation,
                                     onAccept = { 
-                                        viewModel.respondToInvitation(invitation.id, true)
-                                        onNavigateToBolao(invitation.bolaoId)
+                                        viewModel.respondToInvitation(invitation.id, true, onSuccess = {
+                                            onNavigateToBolao(invitation.bolaoId)
+                                        })
                                     },
                                     onDecline = { viewModel.respondToInvitation(invitation.id, false) }
                                 )
@@ -517,7 +534,7 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                 
                 // Championship Label
                 val championship = com.lpstudio.bolaodagalera.domain.model.Championship.fromId(bolao.championshipId)
-                val champLabel = "${championship.displayName} ${championship.emoji}"
+                val champLabel = championship.displayName
 
                 // Code (Plain text below title)
                 Text(

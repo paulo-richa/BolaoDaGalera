@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 import com.lpstudio.bolaodagalera.di.appModule
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
@@ -32,26 +33,31 @@ fun App() {
         val remoteConfigManager = koinInject<RemoteConfigManager>()
         val authRepository = koinInject<AuthRepository>()
         val championshipRepository = koinInject<ChampionshipRepository>()
+        val scope = rememberCoroutineScope()
         
         val isMaintenanceMode by remoteConfigManager.isMaintenanceMode.collectAsState()
         val currentUser by authRepository.authStateFlow.collectAsState(initial = authRepository.currentUser)
         
-        val shouldShowMaintenance = isMaintenanceMode && currentUser?.email != "paulo.richa@hotmail.com"
+        val shouldShowMaintenance = currentUser != null && 
+                isMaintenanceMode && 
+                currentUser?.email != "paulo.richa@hotmail.com" && 
+                currentUser?.email != "pedro-richa@hotmail.com"
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(currentUser) {
             try {
-                // Ativa verificação de manutenção primeiro
+                // Remote Config pode ser buscado sem login
                 remoteConfigManager.fetchAndActivate()
 
-                // Inicia carregamento de campeonatos
-                championshipRepository.refreshCache()
+                // Operações no Firestore DEVEM aguardar login para evitar PERMISSION_DENIED
+                if (currentUser != null) {
+                    // Inicia carregamento de campeonatos e mantém cache atualizado
+                    championshipRepository.refreshCache()
+                    championshipRepository.getChampionships().collect { }
+                }
             } catch (e: Exception) {
-                // Falha silenciosa - app continua funcionando
+                // Falha silenciosa
             }
         }
-        
-        // Inicia observação dos campeonatos para manter o cache atualizado
-        val championships by championshipRepository.getChampionships().collectAsState(initial = emptyList())
 
         AppTheme {
             Column(
@@ -69,7 +75,9 @@ fun App() {
                 )
                 Box(Modifier.weight(1f)) {
                     if (shouldShowMaintenance) {
-                        MaintenanceScreen()
+                        MaintenanceScreen(onLogout = {
+                            scope.launch { authRepository.signOut() }
+                        })
                     } else {
                         NavGraph()
                     }

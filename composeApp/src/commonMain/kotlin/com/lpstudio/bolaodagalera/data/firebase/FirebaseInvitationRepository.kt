@@ -39,8 +39,8 @@ class FirebaseInvitationRepository(
     private val db = Firebase.firestore
     private val collection = db.collection("invitations")
 
-    override fun getInvitationsForUser(identifier: String): Flow<List<Invitation>> {
-        return collection
+    override fun getInvitationsForUser(identifier: String): Flow<List<Invitation>> = try {
+        collection
             .where { "inviteeIdentifier" equalTo identifier }
             .where { "status" equalTo "PENDING" }
             .snapshots
@@ -49,7 +49,13 @@ class FirebaseInvitationRepository(
                     doc.data<InvitationDto>().toDomain(doc.id)
                 }
             }
-            .catch { emit(emptyList()) }
+            .catch { e ->
+                println("BOLAOLOG: Erro ao observar convites: ${e.message}")
+                emit(emptyList())
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar convites: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(emptyList())
     }
 
     override suspend fun sendInvitation(

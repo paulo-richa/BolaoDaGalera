@@ -93,7 +93,21 @@ class BolaoViewModel(
                             predictionRepository.getUserPredictions(currentUserId, bolaoId),
                             predictionRepository.getBolaoAllPredictions(bolaoId),
                             participantsFlow.flatMapLatest { participants ->
-                                predictionRepository.getRanking(bolaoId, championshipId, participants)
+                                combine(
+                                    predictionRepository.getRanking(bolaoId, championshipId, participants),
+                                    flow { emit(authRepository.getUsers(participants)) }
+                                ) { ranking, users ->
+                                    val userMap = users.associateBy { it.id }
+                                    ranking.map { entry ->
+                                        val user = userMap[entry.userId]
+                                        if (user != null && (entry.userName.isBlank() || entry.userName == "Novo Participante" || entry.userName == "Usuário")) {
+                                            entry.copy(
+                                                userName = user.name,
+                                                userNickname = user.nickname.ifBlank { user.username }
+                                            )
+                                        } else entry
+                                    }
+                                }
                             }
                         ) { b, matches, predictions, allPredictions, ranking ->
                             // 1. Filtrar por Escopo
@@ -149,7 +163,12 @@ class BolaoViewModel(
                             ) }
                         }
                     }
-                }.collect()
+                }
+                .catch { e ->
+                    println("BOLAOLOG: Erro no observeMatchesPredictionsAndRanking: ${e.message}")
+                    _uiState.update { it.copy(error = "Erro ao carregar dados do bolão.", isLoading = false) }
+                }
+                .collect { }
         }
     }
 

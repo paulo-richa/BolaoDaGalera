@@ -7,21 +7,31 @@ import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.catch
 
 class FirebaseChampionshipRepository : ChampionshipRepository {
     private val db = Firebase.firestore
     private val collection = db.collection("championships")
 
-    override fun getChampionships(): Flow<List<Championship>> = collection
-        .snapshots
-        .map { snap ->
-            snap.documents.map { doc ->
-                doc.data<Championship>().copy(id = doc.id)
+    override fun getChampionships(): Flow<List<Championship>> = try {
+        collection
+            .snapshots
+            .map { snap ->
+                snap.documents.map { doc ->
+                    doc.data<Championship>().copy(id = doc.id)
+                }
             }
-        }
-        .onEach { list ->
-            Championship.setCache(list)
-        }
+            .onEach { list ->
+                Championship.setCache(list)
+            }
+            .catch { e ->
+                println("BOLAOLOG: Erro ao observar campeonatos: ${e.message}")
+                emit(emptyList<Championship>())
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar campeonatos: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(emptyList<Championship>())
+    }
 
     override suspend fun refreshCache() {
         try {
