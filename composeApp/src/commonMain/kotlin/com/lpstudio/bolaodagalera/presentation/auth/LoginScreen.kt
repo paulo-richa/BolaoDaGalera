@@ -41,7 +41,7 @@ import org.koin.compose.koinInject
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit
+    onNavigateToRegister: (String?) -> Unit
 ) {
     val viewModel: AuthViewModel = koinInject()
     val uiState by viewModel.uiState.collectAsState()
@@ -248,7 +248,7 @@ fun LoginScreen(
                             
                             BolaoButton(
                                 text = "CRIAR CONTA AGORA",
-                                onClick = onNavigateToRegister
+                                onClick = { onNavigateToRegister(email) }
                             )
                         }
                     }

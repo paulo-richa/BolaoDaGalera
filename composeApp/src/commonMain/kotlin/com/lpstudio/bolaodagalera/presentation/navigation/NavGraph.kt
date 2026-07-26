@@ -96,12 +96,14 @@ fun NavGraph() {
                         popUpTo(Login) { inclusive = true }
                     }
                 },
-                onNavigateToRegister = { navController.navigate(Register) }
+                onNavigateToRegister = { email -> navController.navigate(Register(email)) }
             )
         }
 
-        composable<Register> {
+        composable<Register> { backStackEntry ->
+            val route = backStackEntry.toRoute<Register>()
             RegisterScreen(
+                initialEmail = route.email ?: "",
                 onRegisterSuccess = {
                     navController.navigate(Home) {
                         popUpTo(Login) { inclusive = true }
