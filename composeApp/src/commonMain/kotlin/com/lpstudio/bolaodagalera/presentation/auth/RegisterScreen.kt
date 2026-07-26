@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
@@ -32,6 +33,7 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
+    initialEmail: String = "",
     onRegisterSuccess: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
@@ -42,22 +44,22 @@ fun RegisterScreen(
     var username by remember { mutableStateOf("") }
     var nickname by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(initialEmail) }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     
     // Estados para controlar se o campo já foi interagido (para não mostrar erro logo de cara)
     var nameTouched by remember { mutableStateOf(false) }
-    var usernameTouched by remember { mutableStateOf(false) }
     var nicknameTouched by remember { mutableStateOf(false) }
     var phoneTouched by remember { mutableStateOf(false) }
-    var emailTouched by remember { mutableStateOf(false) }
+    var emailTouched by remember { mutableStateOf(initialEmail.isNotBlank()) }
     var passwordTouched by remember { mutableStateOf(false) }
     var confirmPasswordTouched by remember { mutableStateOf(false) }
     
     var isGeneratingUsername by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
 
@@ -72,7 +74,6 @@ fun RegisterScreen(
                 val generated = viewModel.generateAvailableUsername(name)
                 if (generated.isNotBlank()) {
                     username = generated
-                    usernameTouched = true
                 }
             } catch (e: Exception) { }
             isGeneratingUsername = false
@@ -99,15 +100,6 @@ fun RegisterScreen(
         }
     } else null
 
-    val usernameError = if (usernameTouched) {
-        when {
-            username.isBlank() -> "ID obrigatório"
-            username.length <= 4 -> "Mínimo 5 letras"
-            !username.all { it.isLetter() } -> "Use apenas letras (sem números ou símbolos)"
-            else -> null
-        }
-    } else null
-    
     val emailError = if (emailTouched) {
         val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$"
         if (email.isBlank() || !email.matches(emailRegex.toRegex())) "E-mail inválido" else null
@@ -126,8 +118,8 @@ fun RegisterScreen(
     
     val confirmPasswordError = if (confirmPasswordTouched && confirmPassword != password) "As senhas não coincidem" else null
 
-    val isFormValid = name.isNotBlank() && username.isNotBlank() && email.isNotBlank() && password.length >= 6 && 
-                     confirmPassword == password && nameError == null && usernameError == null && emailError == null &&
+    val isFormValid = name.isNotBlank() && email.isNotBlank() && password.length >= 6 && 
+                     confirmPassword == password && nameError == null && emailError == null &&
                      phoneError == null && nicknameError == null
 
     Box(
@@ -319,10 +311,23 @@ fun RegisterScreen(
 
                     BolaoButton(
                         text = "Criar conta",
-                        isLoading = uiState.isLoading,
-                        enabled = isFormValid && !uiState.isLoading,
+                        isLoading = uiState.isLoading || isGeneratingUsername,
+                        enabled = isFormValid && !uiState.isLoading && !isGeneratingUsername,
                         onClick = {
-                            viewModel.register(email, password, name, phone, nickname, username)
+                            if (username.isBlank()) {
+                                // Caso o usuário tenha sido muito rápido, gera o ID agora
+                                scope.launch {
+                                    isGeneratingUsername = true
+                                    val generated = viewModel.generateAvailableUsername(name)
+                                    username = generated
+                                    isGeneratingUsername = false
+                                    if (username.isNotBlank()) {
+                                        viewModel.register(email, password, name, phone, nickname, username)
+                                    }
+                                }
+                            } else {
+                                viewModel.register(email, password, name, phone, nickname, username)
+                            }
                         }
                     )
                 }

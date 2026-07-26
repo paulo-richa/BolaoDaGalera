@@ -58,13 +58,14 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 val exists = authRepository.isEmailInUse(email.trim())
                 _uiState.update { it.copy(isLoading = false, emailExists = exists, checkedEmail = email.trim()) }
             } catch (e: Exception) {
-                val msg = e.message?.lowercase() ?: ""
-                // Se for erro de permissão, assume que o e-mail existe para permitir tentativa de login
-                // Isso resolve o problema de regras do Firestore que exigem auth para queries.
-                if (msg.contains("permission") || msg.contains("permissão")) {
-                    _uiState.update { it.copy(isLoading = false, emailExists = true, checkedEmail = email.trim()) }
-                } else {
-                    _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
+                // Se der erro de verificação (ex: rede ou proteção de enumeração), 
+                // não podemos afirmar nada. Resetamos o estado e mostramos um erro amigável.
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false, 
+                        emailExists = null, 
+                        error = "Não foi possível verificar seu e-mail agora. Tente prosseguir normalmente ou verifique sua conexão."
+                    )
                 }
             }
         }
@@ -165,42 +166,49 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     suspend fun generateAvailableUsername(fullName: String): String {
         val parts = fullName.trim().lowercase()
-            .replace(Regex("[^a-z\\s]"), "") // Remove acentos e símbolos se necessário, simplificado aqui
+            .replace(Regex("[^a-z\\s]"), "") // Remove acentos e símbolos simplificadamente
             .split(" ")
             .filter { it.length >= 2 }
         
-        if (parts.size < 2) return ""
+        if (parts.isEmpty()) return ""
 
         val firstName = parts[0]
-        val secondName = parts[1]
+        val secondName = parts.getOrNull(1) ?: ""
         val lastPart = parts.last()
 
-        // 1. Primeiro + Segundo
-        var candidate = firstName + secondName
-        if (!authRepository.isUsernameInUse(candidate)) return candidate
-
-        // 2. Primeiro + Terceiro, Quarto... até o último
-        for (i in 2 until parts.size) {
-            candidate = firstName + parts[i]
-            if (!authRepository.isUsernameInUse(candidate)) return candidate
+        val candidates = mutableListOf<String>()
+        if (secondName.isNotEmpty()) {
+            candidates.add(firstName + secondName)
+            candidates.add(firstName + "." + secondName)
+            candidates.add(firstName.take(1) + secondName)
         }
-
-        // 3. Inicial do primeiro + Segundo
-        candidate = firstName.take(1) + secondName
-        if (!authRepository.isUsernameInUse(candidate)) return candidate
-
-        // 4. Inicial do primeiro + Inicial do segundo + Último
+        candidates.add(firstName)
         if (parts.size >= 3) {
-            candidate = firstName.take(1) + secondName.take(1) + lastPart
-            if (!authRepository.isUsernameInUse(candidate)) return candidate
+            candidates.add(firstName.take(1) + secondName.take(1) + lastPart)
         }
 
-        // 5. Aleatório (Nome + Número)
-        do {
-            candidate = firstName + kotlin.random.Random.nextInt(100, 999).toString()
-        } while (authRepository.isUsernameInUse(candidate))
-        
-        return candidate
+        // Tenta os candidatos pré-definidos
+        for (candidate in candidates) {
+            try {
+                if (!authRepository.isUsernameInUse(candidate)) return candidate
+            } catch (e: Exception) {
+                // Se der erro de permissão por estar deslogado, retorna o primeiro como sugestão
+                return candidates.firstOrNull() ?: firstName
+            }
+        }
+
+        // Fallback com números aleatórios caso nenhum esteja livre
+        return try {
+            var finalCandidate: String
+            var attempts = 0
+            do {
+                finalCandidate = firstName + kotlin.random.Random.nextInt(100, 999).toString()
+                attempts++
+            } while (attempts < 5 && authRepository.isUsernameInUse(finalCandidate))
+            finalCandidate
+        } catch (e: Exception) {
+            firstName + kotlin.random.Random.nextInt(100, 999).toString()
+        }
     }
 
     private fun friendlyError(e: Exception): String {

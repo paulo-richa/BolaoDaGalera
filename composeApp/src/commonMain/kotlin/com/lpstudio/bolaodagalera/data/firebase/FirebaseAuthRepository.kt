@@ -133,26 +133,51 @@ class FirebaseAuthRepository : AuthRepository {
     }
 
     override suspend fun isEmailInUse(email: String): Boolean {
-        val snapshot = usersCollection.where { "email" equalTo email }.get()
-        return !snapshot.documents.isEmpty()
+        return try {
+            // Tenta usar o método do Auth que não exige permissões de Firestore
+            val methods = auth.fetchSignInMethodsForEmail(email)
+            methods.isNotEmpty()
+        } catch (e: Exception) {
+            // Fallback para Firestore apenas se o Auth falhar ou não estiver disponível
+            try {
+                val snapshot = usersCollection.where { "email" equalTo email }.get()
+                !snapshot.documents.isEmpty()
+            } catch (e2: Exception) {
+                // Se ambos falharem, relança a exceção original para o ViewModel tratar
+                throw e
+            }
+        }
     }
 
     override suspend fun isPhoneInUse(phone: String): Boolean {
         if (phone.isBlank()) return false
-        val snapshot = usersCollection.where { "phone" equalTo phone }.get()
-        return !snapshot.documents.isEmpty()
+        return try {
+            val snapshot = usersCollection.where { "phone" equalTo phone }.get()
+            !snapshot.documents.isEmpty()
+        } catch (e: Exception) {
+            // Se não puder verificar (ex: falta de permissão por estar deslogado), assume falso e deixa o fluxo seguir
+            false
+        }
     }
 
     override suspend fun isNicknameInUse(nickname: String): Boolean {
         if (nickname.isBlank()) return false
-        val snapshot = usersCollection.where { "nickname" equalTo nickname }.get()
-        return !snapshot.documents.isEmpty()
+        return try {
+            val snapshot = usersCollection.where { "nickname" equalTo nickname }.get()
+            !snapshot.documents.isEmpty()
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override suspend fun isUsernameInUse(username: String): Boolean {
         if (username.isBlank()) return false
-        val snapshot = usersCollection.where { "username" equalTo username.lowercase() }.get()
-        return !snapshot.documents.isEmpty()
+        return try {
+            val snapshot = usersCollection.where { "username" equalTo username.lowercase() }.get()
+            !snapshot.documents.isEmpty()
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override suspend fun sendPasswordResetEmail(email: String) {
