@@ -97,6 +97,13 @@ async function syncLibertadores(db, admin, axios) {
                 const legSuffix = isKnockout ? (isVolta ? "-L2" : "-L1") : "";
                 const matchId = `CLI-2026-M${m.id}${legSuffix}`;
 
+                // 1. Tratamento de Jogos Adiados, Cancelados ou Suspensos
+                // Removemos do banco para evitar que jogos "fantasmas" apareçam no App
+                if (['POSTPONED', 'CANCELLED', 'SUSPENDED'].includes(m.status)) {
+                    batch.delete(matchesRef.doc(matchId));
+                    continue;
+                }
+
                 const s = m.score;
                 const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
                 const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
