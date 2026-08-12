@@ -215,35 +215,52 @@ fun BolaoDetailContent(
     }
 
     // Lógica para interceptar o botão voltar do sistema
-    val currentTabName = tabs.getOrNull(selectedTab) ?: ""
-    
-    // Identifica se estamos na visualização "HOJE" de qualquer uma das abas de jogos
-    val isAtHoje = when (currentTabName) {
-        "Grupos", "Jogos" -> selectedRound == 0
-        "Mata-Mata" -> selectedPhase == com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES
-        else -> false
-    }
-    
-    // A aba principal é sempre a primeira (pode ser Grupos, Jogos ou Mata-Mata dependendo do bolão)
     val isFirstTab = selectedTab == 0
-    val isMainTab = isFirstTab && isAtHoje
+
+    // Lógica para definir a Rodada "Padrão" (evita telas vazias ao abrir ou voltar)
+    val defaultRound = remember(uiState.matches) {
+        val matchesGroupStage = uiState.matches.filter { it.phase == Phase.GROUP_STAGE }
+        if (matchesGroupStage.isEmpty()) return@remember 0
+        
+        val tz = TimeZone.currentSystemDefault()
+        val now = TimeSource.nowMillis()
+        val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+        
+        val hasMatchToday = matchesGroupStage.any { 
+            Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == todayDate 
+        }
+
+        if (hasMatchToday) 0 
+        else {
+            val upcomingRound = matchesGroupStage
+                .filter { !it.isFinished && it.matchDateMillis > now }
+                .minByOrNull { it.matchDateMillis }
+                ?.groupRound()
+            upcomingRound ?: matchesGroupStage.maxByOrNull { it.matchDateMillis }?.groupRound() ?: 1
+        }
+    }
+
+    // A aba principal é a primeira aba na visualização padrão (Hoje ou Rodada Atual)
+    val isMainTab = isFirstTab && selectedRound == defaultRound && 
+                   (selectedPhase == com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES || selectedPhase == null)
     
     com.lpstudio.bolaodagalera.CommonBackHandler(enabled = !isMainTab) {
         if (!isFirstTab) {
-            // Se não estiver na primeira aba (ex: está no Ranking), volta para a aba de jogos
             selectedTab = 0
         }
         
-        // Em qualquer caso, reseta os filtros para garantir que a visualização seja a "HOJE"
-        if (selectedRound != 0) selectedRound = 0
-        if (selectedPhase != com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES) {
+        // Garante que os filtros voltem para o padrão (Rodada atual com jogos)
+        if (selectedRound != defaultRound) {
+            selectedRound = defaultRound
+        }
+        if (selectedPhase != com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES && selectedPhase != null) {
             selectedPhase = com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES
         }
     }
 
     var hasAutoSelectedTab by rememberSaveable(bolaoId) { mutableStateOf(false) }
 
-    // Auto-selecionar Ranking se todos os jogos acabaram, ou HOJE/Rodada se houver jogos (para a aba de Grupos)
+    // Auto-selecionar Ranking se todos os jogos acabaram, ou a rodada "mais relevante" para agora
     LaunchedEffect(uiState.matches) {
         if (uiState.matches.isEmpty()) return@LaunchedEffect
         
@@ -261,25 +278,9 @@ fun BolaoDetailContent(
             hasAutoSelectedTab = true
         }
 
-        // 2. Lógica de Rodada/Hoje para a aba de Grupos
-        if (selectedRound != 0) return@LaunchedEffect
-        
-        val tz = TimeZone.currentSystemDefault()
-        val now = TimeSource.nowMillis()
-        val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
-        
-        val hasMatchToday = uiState.matches.filter { it.phase == Phase.GROUP_STAGE }.any { 
-            val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
-            mDate == todayDate 
-        }
-
-        if (!hasMatchToday) {
-            val currentRound = uiState.matches
-                .filter { it.phase == Phase.GROUP_STAGE && !it.isFinished }
-                .minByOrNull { it.matchDateMillis }
-                ?.groupRound() ?: uiState.matches.filter { it.phase == Phase.GROUP_STAGE }.minOfOrNull { it.groupRound() } ?: 1
-            
-            selectedRound = currentRound
+        // 2. Lógica de Rodada Inteligente (Executa apenas na primeira carga)
+        if (selectedRound == 0 && defaultRound != 0) {
+            selectedRound = defaultRound
         }
     }
 
@@ -1578,6 +1579,22 @@ private fun RodadaSelector(
 ) {
     val sortedRounds = remember(unlocked) { unlocked.sorted() }
     val listState = rememberLazyListState()
+
+    // Faz o scroll para a rodada selecionada ficar à esquerda
+    LaunchedEffect(selected, sortedRounds) {
+        if (sortedRounds.isEmpty()) return@LaunchedEffect
+        val targetIndex = when {
+            selected == 0 && showHoje -> 0
+            selected > 0 -> {
+                val idx = sortedRounds.indexOf(selected)
+                if (idx != -1) (if (showHoje) idx + 1 else idx) else -1
+            }
+            else -> -1
+        }
+        if (targetIndex != -1) {
+            listState.animateScrollToItem(targetIndex)
+        }
+    }
 
     androidx.compose.foundation.lazy.LazyRow(
         state = listState,
