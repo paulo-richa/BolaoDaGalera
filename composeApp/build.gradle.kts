@@ -33,6 +33,10 @@ kotlin {
         }
         pod("FirebaseAuth")
         pod("FirebaseFirestore")
+        pod("FirebaseRemoteConfig")
+        pod("Google-Mobile-Ads-SDK") {
+            moduleName = "GoogleMobileAds"
+        }
     }
 
     sourceSets {
@@ -42,6 +46,7 @@ kotlin {
             implementation(libs.androidx.core.splashscreen)
             implementation(libs.koin.android)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.play.services.ads)
             
             // UI Testing
             // Note: In KMP, some people use commonTest, but for Compose Android is easiest

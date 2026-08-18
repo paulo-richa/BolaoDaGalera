@@ -21,14 +21,19 @@ import com.lpstudio.bolaodagalera.presentation.navigation.NavGraph
 import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
+import com.lpstudio.bolaodagalera.util.AdManager
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
 
 // ── Configuração de dados ─────────────────────
-expect val APP_VERSION: String
 
 @Composable
 fun App() {
+    // Pré-carrega anúncios (Interstitiais)
+    LaunchedEffect(Unit) {
+        AdManager.prepare()
+    }
+    
     KoinApplication(application = { modules(appModule) }) {
         val remoteConfigManager = koinInject<RemoteConfigManager>()
         val authRepository = koinInject<AuthRepository>()

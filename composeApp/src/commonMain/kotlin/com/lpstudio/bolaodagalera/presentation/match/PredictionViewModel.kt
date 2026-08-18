@@ -8,6 +8,7 @@ import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
+import com.lpstudio.bolaodagalera.util.PredictionAdCounter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -77,6 +78,7 @@ class PredictionViewModel(
                     awayScore = awayScore
                 )
                 predictionRepository.savePrediction(prediction)
+                PredictionAdCounter.incrementAndShowIfNecessary()
                 _uiState.update { it.copy(isSaved = true, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message ?: "Erro ao salvar palpite", isLoading = false) }

@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -69,9 +70,13 @@ fun MatchPredictionsScreen(
     
     val hReal = match?.homeScore ?: 0
     val aReal = match?.awayScore ?: 0
-    val isFinished = match?.isFinished ?: false
     val matchDate = match?.matchDateMillis ?: 0L
-    val isActuallyFinished = match?.status == "FINISHED" || match?.status == "PENALTIES" || match?.status == "PAUSED_PENALTIES" || (isFinished && now > (matchDate + 7200_000L))
+    // Forçamos o estado "Finalizado" se o jogo começou há mais de 3 horas e tem placar
+    val isActuallyFinished = match?.status == "FINISHED" || 
+                             match?.status == "PENALTIES" || 
+                             match?.status == "PAUSED_PENALTIES" || 
+                             (match?.homeScore != null && match?.awayScore != null && now > (matchDate + 3 * 3600_000L))
+    
     val hasStarted = now >= matchDate
     val isAdminViewingBeforeStart = isOwner && !hasStarted
 
@@ -271,7 +276,25 @@ fun MatchPredictionsScreen(
                                 )
                                 if (hName.isNotEmpty()) {
                                     Spacer(Modifier.height(8.dp))
-                                    Text(hName, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                                    var fontSize by remember(hName) { mutableIntStateOf(13) }
+                                    var readyToDraw by remember(hName) { mutableStateOf(false) }
+                                    Text(
+                                        hName,
+                                        color = Color.White,
+                                        fontSize = fontSize.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        modifier = Modifier.drawWithContent { if (readyToDraw) drawContent() },
+                                        onTextLayout = { result ->
+                                            if (result.hasVisualOverflow && fontSize > 8) {
+                                                fontSize -= 1
+                                            } else {
+                                                readyToDraw = true
+                                            }
+                                        }
+                                    )
                                 }
                             }
 
@@ -337,7 +360,25 @@ fun MatchPredictionsScreen(
                                 )
                                 if (aName.isNotEmpty()) {
                                     Spacer(Modifier.height(8.dp))
-                                    Text(aName, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                                    var fontSize by remember(aName) { mutableIntStateOf(13) }
+                                    var readyToDraw by remember(aName) { mutableStateOf(false) }
+                                    Text(
+                                        aName,
+                                        color = Color.White,
+                                        fontSize = fontSize.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        modifier = Modifier.drawWithContent { if (readyToDraw) drawContent() },
+                                        onTextLayout = { result ->
+                                            if (result.hasVisualOverflow && fontSize > 8) {
+                                                fontSize -= 1
+                                            } else {
+                                                readyToDraw = true
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         }
