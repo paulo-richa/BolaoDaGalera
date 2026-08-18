@@ -11,6 +11,8 @@ Pod::Spec.new do |spec|
     spec.ios.deployment_target    = '16.0'
     spec.dependency 'FirebaseAuth'
     spec.dependency 'FirebaseFirestore'
+    spec.dependency 'FirebaseRemoteConfig'
+    spec.dependency 'Google-Mobile-Ads-SDK'
     if !Dir.exist?('build/cocoapods/framework/ComposeApp.framework') || Dir.empty?('build/cocoapods/framework/ComposeApp.framework')
         raise "
         Kotlin framework 'ComposeApp' doesn't exist yet, so a proper Xcode project can't be generated.
@@ -44,5 +46,5 @@ Pod::Spec.new do |spec|
             SCRIPT
         }
     ]
-    spec.resources = ['build\compose\cocoapods\compose-resources']
+    spec.resources = ['build/compose/cocoapods/compose-resources']
 end

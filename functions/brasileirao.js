@@ -19,11 +19,9 @@ async function syncBrasileirao(db, admin, axios) {
 
         const currentMatchday = compRes.data.currentSeason.currentMatchday;
         // 2. Sincronizar as últimas 3 rodadas (atual, anterior e a retrasada)
-        // Isso cobre jogos adiados ou correções tardias da API
         const roundsToSync = [currentMatchday, currentMatchday - 1, currentMatchday - 2].filter(r => r > 0);
 
         // 3. BUSCA ADICIONAL: Verificar se existem jogos "travados" no nosso banco
-        // Busca jogos que não estão FINISHED e nem POSTPONED nas últimas semanas
         const pendingMatchesSnapshot = await matchesRef
             .where('status', 'in', ['IN_PLAY', 'TIMED', 'LIVE'])
             .limit(10)
@@ -31,13 +29,13 @@ async function syncBrasileirao(db, admin, axios) {
 
         const pendingRounds = pendingMatchesSnapshot.docs.map(doc => {
             const data = doc.data();
-            // Extrair a rodada do ID (ex: BSA-2026-R22-...) ou do campo se existir
             const match = doc.id.match(/-R(\d+)-/);
             return match ? parseInt(match[1]) : null;
         }).filter(r => r !== null && !roundsToSync.includes(r));
 
-        // Unir as rodadas atuais com as rodadas que possuem jogos pendentes
         const allRoundsToSync = [...new Set([...roundsToSync, ...pendingRounds])];
+
+        const now = Date.now();
 
         for (const rd of allRoundsToSync) {
             logger.info(`Sincronizando Rodada ${rd}...`);
@@ -53,17 +51,13 @@ async function syncBrasileirao(db, admin, axios) {
                 for (const m of resBSA.data.matches) {
                     const matchId = `BSA-2026-R${m.matchday}-${m.id}`;
 
-                    // Verificar se os dados já existem
                     const doc = await matchesRef.doc(matchId).get();
                     const existing = doc.exists ? doc.data() : null;
 
-                    // 1. Tratamento de Jogos Adiados, Cancelados ou Suspensos
-                    // Se o jogo não vai acontecer agora, removemos do banco para limpar a rodada
                     if (['POSTPONED', 'CANCELLED', 'SUSPENDED'].includes(m.status)) {
                         if (existing) {
                             batch.delete(matchesRef.doc(matchId));
                             hasUpdates = true;
-                            logger.info(`Limpando jogo ${m.status}: ${matchId} (${m.homeTeam.name} x ${m.awayTeam.name})`);
                         }
                         continue;
                     }
@@ -71,12 +65,19 @@ async function syncBrasileirao(db, admin, axios) {
                     const s = m.score;
                     const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
                     const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
-
                     const newHScore = hScore !== undefined ? hScore : null;
                     const newAScore = aScore !== undefined ? aScore : null;
 
-                    // Só adiciona ao batch se houver mudança de status ou placar
-                    if (!existing || existing.status !== m.status || existing.homeScore !== newHScore || existing.awayScore !== newAScore) {
+                    // LÓGICA DE SEGURANÇA: Se o jogo começou há mais de 4 horas e tem placar,
+                    // forçamos o status para FINISHED mesmo que a API ainda diga IN_PLAY.
+                    const matchTime = Date.parse(m.utcDate);
+                    let targetStatus = m.status;
+                    if (m.status !== "FINISHED" && (now - matchTime > 4 * 3600000) && newHScore !== null && newAScore !== null) {
+                        targetStatus = "FINISHED";
+                        logger.info(`Forçando encerramento manual via sync: ${matchId}`);
+                    }
+
+                    if (!existing || existing.status !== targetStatus || existing.homeScore !== newHScore || existing.awayScore !== newAScore) {
                         const hTeam = BR_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD", crest: null };
                         const aTeam = BR_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD", crest: null };
 
@@ -84,12 +85,15 @@ async function syncBrasileirao(db, admin, axios) {
                         let awayCrest = aTeam.crest || (m.awayTeam.crest && !m.awayTeam.crest.includes("wikipedia") ? m.awayTeam.crest : null);
 
                         batch.set(matchesRef.doc(matchId), {
-                            status: m.status,
+                            status: targetStatus,
                             homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: homeCrest,
                             awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: awayCrest,
                             homeScore: newHScore,
                             awayScore: newAScore,
                             championshipId: "BRASILEIRAO",
+                            phase: "GROUP_STAGE",
+                            group: `Rodada ${m.matchday}`,
+                            matchDateMillis: matchTime,
                             lastSync: admin.firestore.FieldValue.serverTimestamp()
                         }, { merge: true });
                         hasUpdates = true;
@@ -98,9 +102,7 @@ async function syncBrasileirao(db, admin, axios) {
 
                 if (hasUpdates) {
                     await batch.commit();
-                    logger.info(`Rodada ${rd} atualizada com sucesso.`);
-                } else {
-                    logger.info(`Rodada ${rd} sem alterações.`);
+                    logger.info(`Rodada ${rd} atualizada.`);
                 }
             }
         }
