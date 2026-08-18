@@ -31,9 +31,15 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
         }
-        pod("FirebaseAuth")
-        pod("FirebaseFirestore")
-        pod("FirebaseRemoteConfig")
+        pod("FirebaseAuth") {
+            linkOnly = true
+        }
+        pod("FirebaseFirestore") {
+            linkOnly = true
+        }
+        pod("FirebaseRemoteConfig") {
+            linkOnly = true
+        }
         pod("Google-Mobile-Ads-SDK") {
             moduleName = "GoogleMobileAds"
         }
