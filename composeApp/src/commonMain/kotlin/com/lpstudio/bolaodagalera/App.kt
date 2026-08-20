@@ -29,15 +29,23 @@ import org.koin.compose.koinInject
 
 @Composable
 fun App() {
-    // Pré-carrega anúncios (Interstitiais)
-    LaunchedEffect(Unit) {
-        AdManager.prepare()
-    }
-    
     KoinApplication(application = { modules(appModule) }) {
         val remoteConfigManager = koinInject<RemoteConfigManager>()
         val authRepository = koinInject<AuthRepository>()
         val championshipRepository = koinInject<ChampionshipRepository>()
+        
+        val showAds by remoteConfigManager.showAds.collectAsState()
+
+        // Atualiza o estado global de anúncios para o AdManager (interstitials)
+        LaunchedEffect(showAds) {
+            AdManager.setEnabled(showAds)
+        }
+
+        // Pré-carrega anúncios (Interstitiais) se estiverem ativados
+        LaunchedEffect(Unit) {
+            AdManager.prepare()
+        }
+        
         val scope = rememberCoroutineScope()
         
         val isMaintenanceMode by remoteConfigManager.isMaintenanceMode.collectAsState()
@@ -65,29 +73,33 @@ fun App() {
         }
 
         AppTheme {
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .background(DeepNavy)
-                    .navigationBarsPadding() // Resolve sobreposição em todas as telas
-            ) {
-                // Background sólido para a status bar para dar destaque aos ícones
-                Spacer(
+            CompositionLocalProvider(LocalAdsEnabled provides showAds) {
+                Column(
                     Modifier
-                        .fillMaxWidth()
-                        .windowInsetsTopHeight(WindowInsets.statusBars)
+                        .fillMaxSize()
                         .background(DeepNavy)
-                )
-                Box(Modifier.weight(1f)) {
-                    if (shouldShowMaintenance) {
-                        MaintenanceScreen(onLogout = {
-                            scope.launch { authRepository.signOut() }
-                        })
-                    } else {
-                        NavGraph()
+                        .navigationBarsPadding() // Resolve sobreposição em todas as telas
+                ) {
+                    // Background sólido para a status bar para dar destaque aos ícones
+                    Spacer(
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsTopHeight(WindowInsets.statusBars)
+                            .background(DeepNavy)
+                    )
+                    Box(Modifier.weight(1f)) {
+                        if (shouldShowMaintenance) {
+                            MaintenanceScreen(onLogout = {
+                                scope.launch { authRepository.signOut() }
+                            })
+                        } else {
+                            NavGraph()
+                        }
                     }
                 }
             }
         }
     }
 }
+
+val LocalAdsEnabled = staticCompositionLocalOf { true }

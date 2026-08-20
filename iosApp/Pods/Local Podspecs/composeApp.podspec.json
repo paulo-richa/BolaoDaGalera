@@ -1,6 +1,6 @@
 {
   "name": "composeApp",
-  "version": "2.8.0",
+  "version": "3.2.0",
   "homepage": "https://github.com/lpstudio",
   "source": {
     "http": ""
@@ -14,8 +14,18 @@
     "ios": "16.0"
   },
   "dependencies": {
-    "FirebaseAuth": [],
-    "FirebaseFirestore": []
+    "FirebaseAuth": [
+
+    ],
+    "FirebaseFirestore": [
+
+    ],
+    "FirebaseRemoteConfig": [
+
+    ],
+    "Google-Mobile-Ads-SDK": [
+
+    ]
   },
   "xcconfig": {
     "ENABLE_USER_SCRIPT_SANDBOXING": "NO"

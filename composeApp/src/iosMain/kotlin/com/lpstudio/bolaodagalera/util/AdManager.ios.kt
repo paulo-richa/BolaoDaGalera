@@ -11,6 +11,14 @@ import platform.UIKit.UIViewController
 actual object AdManager {
     private var interstitial: GADInterstitialAd? = null
     private var isLoading = false
+    private var isEnabled = true
+
+    actual fun setEnabled(enabled: Boolean) {
+        isEnabled = enabled
+        if (!enabled) {
+            interstitial = null
+        }
+    }
 
     init {
         println("AdManager: Initializing")
@@ -22,7 +30,7 @@ actual object AdManager {
     }
 
     private fun loadInterstitial() {
-        if (isLoading || interstitial != null) return
+        if (!isEnabled || isLoading || interstitial != null) return
         
         isLoading = true
         println("AdManager: Starting to load interstitial with ID: $ADMOB_IOS_INTERSTITIAL_ID")
@@ -51,6 +59,7 @@ actual object AdManager {
     }
 
     actual fun showInterstitial() {
+        if (!isEnabled) return
         val rootViewController = getRootViewController()
         val ad = interstitial
         

@@ -35,6 +35,7 @@ fun MainScreen(
     onNavigateToBolao: (String) -> Unit,
     onNavigateToCreateBolao: () -> Unit,
     onNavigateToJoinBolao: () -> Unit,
+    onNavigateToHelp: () -> Unit,
     onSignOut: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -77,6 +78,7 @@ fun MainScreen(
                     onNavigateToAccount = { selectedTab = 1 }
                 )
                 1 -> ProfileScreen(
+                    onNavigateToHelp = onNavigateToHelp,
                     onNavigateBack = { selectedTab = 0 },
                     onSignOut = onSignOut
                 )

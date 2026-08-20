@@ -34,3 +34,6 @@ data class MatchPredictions(val bolaoId: String, val matchId: String)
 
 @Serializable
 object Profile
+
+@Serializable
+object Help

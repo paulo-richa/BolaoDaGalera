@@ -11,6 +11,14 @@ import java.lang.ref.WeakReference
 actual object AdManager {
     private var interstitialAd: InterstitialAd? = null
     private var activityRef: WeakReference<Activity>? = null
+    private var isEnabled = true
+
+    actual fun setEnabled(enabled: Boolean) {
+        isEnabled = enabled
+        if (!enabled) {
+            interstitialAd = null
+        }
+    }
 
     fun init(activity: Activity) {
         activityRef = WeakReference(activity)
@@ -25,6 +33,7 @@ actual object AdManager {
     }
 
     private fun loadInterstitial() {
+        if (!isEnabled) return
         val activity = activityRef?.get() ?: return
         val adRequest = AdRequest.Builder().build()
         
@@ -45,6 +54,7 @@ actual object AdManager {
     }
 
     actual fun showInterstitial() {
+        if (!isEnabled) return
         val activity = activityRef?.get() ?: return
         val ad = interstitialAd
         

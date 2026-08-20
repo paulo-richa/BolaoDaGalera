@@ -128,6 +128,7 @@ class FirebaseMatchRepository : MatchRepository {
             mapOf(
                 "homeScore" to homeScore, 
                 "awayScore" to awayScore,
+                "status" to "FINISHED", // Garante que o status mude para finalizado
                 "isManual" to isManual
             ),
             merge = true

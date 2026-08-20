@@ -28,6 +28,7 @@ import com.lpstudio.bolaodagalera.presentation.bolao.CreateBolaoScreen
 import com.lpstudio.bolaodagalera.presentation.bolao.JoinBolaoScreen
 import com.lpstudio.bolaodagalera.presentation.home.HomeScreen
 import com.lpstudio.bolaodagalera.presentation.match.PredictionScreen
+import com.lpstudio.bolaodagalera.presentation.help.HelpScreen
 import org.koin.compose.koinInject
 
 @Composable
@@ -43,11 +44,8 @@ fun NavGraph() {
         return
     }
 
-    // Definimos a rota inicial apenas uma vez quando o estado de auth é verificado.
-    // Isso evita que o NavHost reinicie do zero ao fazer logout.
     val startDestination = remember { if (authUiState.user != null) Home else Login }
 
-    // --- Lógica de Reset ao voltar do Background ---
     var lastBackgroundTime by remember { mutableStateOf<Long?>(null) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -59,8 +57,6 @@ fun NavGraph() {
                 lastBackgroundTime?.let { bgTime ->
                     val now = TimeSource.nowMillis()
                     val diffMillis = now - bgTime
-                    
-                    // Se ficou mais de 10 minutos (600.000 ms) fora, volta para a Home
                     if (diffMillis >= 600_000 && authUiState.user != null) {
                         navController.navigate(Home) {
                             popUpTo(0) { inclusive = true }
@@ -78,7 +74,6 @@ fun NavGraph() {
 
     LaunchedEffect(authUiState.user) {
         if (authUiState.user == null && authUiState.isAuthChecked) {
-            // Logout detectado: Limpa toda a pilha e volta para o Login de forma estável.
             navController.navigate(Login) {
                 popUpTo(navController.graph.id) {
                     inclusive = true
@@ -118,14 +113,16 @@ fun NavGraph() {
                 onNavigateToBolao = { bolaoId -> navController.navigate(BolaoDetail(bolaoId)) },
                 onNavigateToCreateBolao = { navController.navigate(CreateBolao) },
                 onNavigateToJoinBolao = { navController.navigate(JoinBolao()) },
-                onSignOut = { /* O LaunchedEffect acima cuidará do logout global */ }
+                onNavigateToHelp = { navController.navigate(Help) },
+                onSignOut = { }
             )
         }
 
         composable<Profile> {
             ProfileScreen(
+                onNavigateToHelp = { navController.navigate(Help) },
                 onNavigateBack = { navController.popBackStack() },
-                onSignOut = { /* O LaunchedEffect acima cuidará do logout global */ }
+                onSignOut = { }
             )
         }
 
@@ -191,6 +188,7 @@ fun NavGraph() {
                 onNavigateToAddParticipants = { bolaoId ->
                     navController.navigate(AddParticipants(bolaoId))
                 },
+                onNavigateToHelp = { navController.navigate(Help) },
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -228,6 +226,10 @@ fun NavGraph() {
                 matchId = route.matchId,
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+
+        composable<Help> {
+            HelpScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

@@ -7,7 +7,6 @@ async function syncBrasileirao(db, admin, axios) {
     const matchesRef = db.collection("championships").doc("BRASILEIRAO").collection("matches");
 
     try {
-        // 1. Obter detalhes da competição para saber a rodada atual
         const compRes = await axios.get("https://api.football-data.org/v4/competitions/BSA", {
             headers: { 'X-Auth-Token': API_KEY }
         }).catch(() => null);
@@ -18,23 +17,19 @@ async function syncBrasileirao(db, admin, axios) {
         }
 
         const currentMatchday = compRes.data.currentSeason.currentMatchday;
-        // 2. Sincronizar as últimas 3 rodadas (atual, anterior e a retrasada)
         const roundsToSync = [currentMatchday, currentMatchday - 1, currentMatchday - 2].filter(r => r > 0);
 
-        // 3. BUSCA ADICIONAL: Verificar se existem jogos "travados" no nosso banco
         const pendingMatchesSnapshot = await matchesRef
             .where('status', 'in', ['IN_PLAY', 'TIMED', 'LIVE'])
             .limit(10)
             .get();
 
         const pendingRounds = pendingMatchesSnapshot.docs.map(doc => {
-            const data = doc.data();
             const match = doc.id.match(/-R(\d+)-/);
             return match ? parseInt(match[1]) : null;
         }).filter(r => r !== null && !roundsToSync.includes(r));
 
         const allRoundsToSync = [...new Set([...roundsToSync, ...pendingRounds])];
-
         const now = Date.now();
 
         for (const rd of allRoundsToSync) {
@@ -54,6 +49,9 @@ async function syncBrasileirao(db, admin, axios) {
                     const doc = await matchesRef.doc(matchId).get();
                     const existing = doc.exists ? doc.data() : null;
 
+                    // TRAVA DE SEGURANÇA: Se já foi editado manualmente, o robô não mexe mais
+                    if (existing && existing.isManual) continue;
+
                     if (['POSTPONED', 'CANCELLED', 'SUSPENDED'].includes(m.status)) {
                         if (existing) {
                             batch.delete(matchesRef.doc(matchId));
@@ -63,31 +61,25 @@ async function syncBrasileirao(db, admin, axios) {
                     }
 
                     const s = m.score;
-                    const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
-                    const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
+                    const hScore = s?.regularTime?.home ?? s?.fullTime?.home;
+                    const aScore = s?.regularTime?.away ?? s?.fullTime?.away;
                     const newHScore = hScore !== undefined ? hScore : null;
                     const newAScore = aScore !== undefined ? aScore : null;
 
-                    // LÓGICA DE SEGURANÇA: Se o jogo começou há mais de 4 horas e tem placar,
-                    // forçamos o status para FINISHED mesmo que a API ainda diga IN_PLAY.
                     const matchTime = Date.parse(m.utcDate);
                     let targetStatus = m.status;
                     if (m.status !== "FINISHED" && (now - matchTime > 4 * 3600000) && newHScore !== null && newAScore !== null) {
                         targetStatus = "FINISHED";
-                        logger.info(`Forçando encerramento manual via sync: ${matchId}`);
                     }
 
                     if (!existing || existing.status !== targetStatus || existing.homeScore !== newHScore || existing.awayScore !== newAScore) {
                         const hTeam = BR_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD", crest: null };
                         const aTeam = BR_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD", crest: null };
 
-                        let homeCrest = hTeam.crest || (m.homeTeam.crest && !m.homeTeam.crest.includes("wikipedia") ? m.homeTeam.crest : null);
-                        let awayCrest = aTeam.crest || (m.awayTeam.crest && !m.awayTeam.crest.includes("wikipedia") ? m.awayTeam.crest : null);
-
                         batch.set(matchesRef.doc(matchId), {
                             status: targetStatus,
-                            homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: homeCrest,
-                            awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: awayCrest,
+                            homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: hTeam.crest || m.homeTeam.crest,
+                            awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: aTeam.crest || m.awayTeam.crest,
                             homeScore: newHScore,
                             awayScore: newAScore,
                             championshipId: "BRASILEIRAO",

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +34,7 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    onNavigateToHelp: () -> Unit,
     onNavigateBack: () -> Unit,
     onSignOut: () -> Unit
 ) {
@@ -290,6 +292,11 @@ fun ProfileScreen(
                         onClick = { 
                             launcherProvider.shareText("Vem jogar o Bolão da Galera comigo! ⚽ Baixe agora e crie seu bolão.\n\nDisponível na Google Play: https://play.google.com/store/apps/details?id=com.lpstudio.bolaodagalera")
                         }
+                    )
+                    ProfileOptionItem(
+                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                        title = "Ajuda e Regras",
+                        onClick = onNavigateToHelp
                     )
                     ProfileOptionItem(
                         icon = Icons.Default.Person,
