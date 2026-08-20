@@ -183,7 +183,12 @@ class BolaoViewModel(
     fun updateMatchScore(matchId: String, home: Int?, away: Int?) {
         val championshipId = _uiState.value.bolao?.championshipId ?: return
         viewModelScope.launch {
-            matchRepository.updateMatchScore(championshipId, matchId, home, away)
+            try {
+                matchRepository.updateMatchScore(championshipId, matchId, home, away)
+            } catch (e: Exception) {
+                println("BOLAOLOG: Erro ao atualizar placar manual: ${e.message}")
+                _uiState.update { it.copy(error = "Você não tem permissão para alterar placares oficiais.") }
+            }
         }
     }
 

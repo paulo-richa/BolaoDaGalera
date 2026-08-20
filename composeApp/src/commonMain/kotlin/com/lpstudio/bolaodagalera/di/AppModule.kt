@@ -20,6 +20,7 @@ val appModule = module {
     single<InvitationRepository>{ FirebaseInvitationRepository(get()) }
     single<PredictionRepository>{ FirebasePredictionRepository(get()) }
     single<ChampionshipRepository>{ FirebaseChampionshipRepository() }
+    single<SupportRepository>{ FirebaseSupportRepository() }
 
     // Remote Config
     single { RemoteConfigManager() }

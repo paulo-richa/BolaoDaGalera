@@ -13,6 +13,10 @@ async function syncLibertadores(db, admin, axios) {
             for (let i = 1; i <= count; i++) {
                 const idaId = `CLI-2026-${prefix}${i}-L1`;
                 const voltaId = `CLI-2026-${prefix}${i}-L2`;
+
+                const doc = await matchesRef.doc(idaId).get();
+                if (doc.exists && doc.data().isManual) continue;
+
                 const baseData = {
                     homeTeam: "A definir", awayTeam: "A definir", homeTeamCode: "TBD", awayTeamCode: "TBD",
                     homeTeamFlag: "", awayTeamFlag: "", championshipId: "LIBERTADORES", phase: phase, matchOrder: i, status: "SCHEDULED"
@@ -24,11 +28,15 @@ async function syncLibertadores(db, admin, axios) {
 
         await createKnockout("QUARTERFINALS", 4, [1788825600000, 1788912000000, 1788998400000, 1789084800000], "QF");
         await createKnockout("SEMIFINALS", 2, [1791244800000, 1791331200000], "SF");
-        await matchesRef.doc("CLI-2026-FINAL").set({
-            homeTeam: "A definir", awayTeam: "A definir", homeTeamCode: "TBD", awayTeamCode: "TBD",
-            homeTeamFlag: "", awayTeamFlag: "", matchDateMillis: 1793659200000,
-            phase: "FINAL", championshipId: "LIBERTADORES", matchOrder: 1, status: "SCHEDULED"
-        }, { merge: true });
+
+        const finalDoc = await matchesRef.doc("CLI-2026-FINAL").get();
+        if (!finalDoc.exists || !finalDoc.data().isManual) {
+            await matchesRef.doc("CLI-2026-FINAL").set({
+                homeTeam: "A definir", awayTeam: "A definir", homeTeamCode: "TBD", awayTeamCode: "TBD",
+                homeTeamFlag: "", awayTeamFlag: "", matchDateMillis: 1793659200000,
+                phase: "FINAL", championshipId: "LIBERTADORES", matchOrder: 1, status: "SCHEDULED"
+            }, { merge: true });
+        }
 
         // 2. SINCRONIZAÇÃO COM A API
         const resCLI = await axios.get("https://api.football-data.org/v4/competitions/CLI/matches", {
@@ -64,17 +72,33 @@ async function syncLibertadores(db, admin, axios) {
                 }
 
                 const matchId = `CLI-2026-M${m.id}${isKnockout ? (isVolta ? "-L2" : "-L1") : ""}`;
+
+                // VERIFICAÇÃO DE EDIÇÃO MANUAL (EXISTENTE)
+                const currentDoc = await matchesRef.doc(matchId).get();
+                if (currentDoc.exists && currentDoc.data().isManual) {
+                    continue;
+                }
+
                 if (['POSTPONED', 'CANCELLED', 'SUSPENDED'].includes(m.status)) {
                     batch.delete(matchesRef.doc(matchId));
                     continue;
                 }
 
                 const s = m.score;
-                const hScore = s?.fullTime?.home ?? s?.regularTime?.home;
-                const aScore = s?.fullTime?.away ?? s?.regularTime?.away;
-                const matchTime = Date.parse(m.utcDate);
+                // LÓGICA DE PLACAR: Priorizar regularTime para pegar os 90 minutos
+                let hScore, aScore;
+                if (s && s.duration === "REGULAR") {
+                    hScore = s.fullTime.home;
+                    aScore = s.fullTime.away;
+                } else if (s && (s.duration === "PENALTY_SHOOTOUT" || s.duration === "EXTRA_TIME")) {
+                    hScore = s.regularTime.home;
+                    aScore = s.regularTime.away;
+                } else {
+                    hScore = s?.fullTime?.home;
+                    aScore = s?.fullTime?.away;
+                }
 
-                // LÓGICA DE SEGURANÇA INTEGRADA
+                const matchTime = Date.parse(m.utcDate);
                 let targetStatus = m.status;
                 if (m.status !== "FINISHED" && (now - matchTime > 4 * 3600000) && hScore !== undefined && aScore !== undefined) {
                     targetStatus = "FINISHED";

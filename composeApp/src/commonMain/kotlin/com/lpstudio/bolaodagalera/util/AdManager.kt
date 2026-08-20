@@ -1,6 +1,7 @@
 package com.lpstudio.bolaodagalera.util
 
 expect object AdManager {
+    fun setEnabled(enabled: Boolean)
     fun prepare()
     fun showInterstitial()
 }
