@@ -13,40 +13,40 @@ fun resolveDisplayName(
     teamFlag: String,
     allMatches: List<Match>,
     isHome: Boolean,
-    depth: Int = 0
+    depth: Int = 0,
 ): Triple<String, String, String?> {
-
     // Se o nome já for de um time real (não for TBD ou "Vencedor..."), usamos ele direto.
     // O Backend agora é responsável por enviar o nome já limpo/curto.
     val isPlaceholder = teamName == "TBD" || teamName.startsWith("Vencedor") || teamName.startsWith("Perdedor") || teamName.contains("/") || teamName.contains(" ou ")
-    
+
     if (teamName.isNotBlank() && !isPlaceholder) {
         val currentMatch = allMatches.find { it.id == matchId }
         val crest = if (isHome) currentMatch?.homeTeamCrest else currentMatch?.awayTeamCrest
         return Triple(teamName, teamFlag, crest)
     }
-    
+
     val id = matchId
 
     // 1. Determinar o ID do jogo de origem baseado na lógica sequencial
-    val targetId = when {
-        id.contains("QF") -> {
-            val num = id.filter { it.isDigit() }.firstOrNull()?.toString()?.toIntOrNull() ?: 0
-            val originNum = if (isHome) (num * 2 - 1) else (num * 2)
-            allMatches.find { it.phase == Phase.ROUND_OF_16 && it.matchOrder == originNum }?.id
+    val targetId =
+        when {
+            id.contains("QF") -> {
+                val num = id.filter { it.isDigit() }.firstOrNull()?.toString()?.toIntOrNull() ?: 0
+                val originNum = if (isHome) (num * 2 - 1) else (num * 2)
+                allMatches.find { it.phase == Phase.ROUND_OF_16 && it.matchOrder == originNum }?.id
+            }
+            id.contains("SF") -> {
+                val num = id.filter { it.isDigit() }.firstOrNull()?.toString()?.toIntOrNull() ?: 0
+                val mapping = mapOf(1 to listOf(1, 4), 2 to listOf(2, 3))
+                val originQfOrder = if (isHome) mapping[num]?.get(0) else mapping[num]?.get(1)
+                allMatches.find { it.phase == Phase.QUARTERFINALS && it.matchOrder == originQfOrder && !it.id.contains("-L2") }?.id
+            }
+            id.contains("FINAL") -> {
+                val originSfOrder = if (isHome) 1 else 2
+                allMatches.find { it.phase == Phase.SEMIFINALS && it.matchOrder == originSfOrder && !it.id.contains("-L2") }?.id
+            }
+            else -> null
         }
-        id.contains("SF") -> {
-            val num = id.filter { it.isDigit() }.firstOrNull()?.toString()?.toIntOrNull() ?: 0
-            val mapping = mapOf(1 to listOf(1, 4), 2 to listOf(2, 3))
-            val originQfOrder = if (isHome) mapping[num]?.get(0) else mapping[num]?.get(1)
-            allMatches.find { it.phase == Phase.QUARTERFINALS && it.matchOrder == originQfOrder && !it.id.contains("-L2") }?.id
-        }
-        id.contains("FINAL") -> {
-            val originSfOrder = if (isHome) 1 else 2
-            allMatches.find { it.phase == Phase.SEMIFINALS && it.matchOrder == originSfOrder && !it.id.contains("-L2") }?.id
-        }
-        else -> null
-    }
 
     if (targetId == null) return Triple(teamName, teamFlag, null)
 
@@ -65,8 +65,24 @@ fun resolveDisplayName(
 
     // 4. Se o jogo não terminou, tentamos resolver os candidatos recursivamente
     if (depth < 3) {
-        val (hResName, _, _) = resolveDisplayName(matchSource.id, matchSource.homeTeam, matchSource.homeTeamFlag, allMatches, true, depth + 1)
-        val (aResName, _, _) = resolveDisplayName(matchSource.id, matchSource.awayTeam, matchSource.awayTeamFlag, allMatches, false, depth + 1)
+        val (hResName, _, _) =
+            resolveDisplayName(
+                matchSource.id,
+                matchSource.homeTeam,
+                matchSource.homeTeamFlag,
+                allMatches,
+                true,
+                depth + 1,
+            )
+        val (aResName, _, _) =
+            resolveDisplayName(
+                matchSource.id,
+                matchSource.awayTeam,
+                matchSource.awayTeamFlag,
+                allMatches,
+                false,
+                depth + 1,
+            )
 
         if (hResName.isNotBlank() && aResName.isNotBlank()) {
             // O App apenas formata a exibição do "OU", os nomes vêm do backend

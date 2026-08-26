@@ -6,29 +6,27 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import com.lpstudio.bolaodagalera.util.TimeSource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import androidx.navigation.navDeepLink
-import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
-import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
+import androidx.navigation.toRoute
 import com.lpstudio.bolaodagalera.presentation.MainScreen
+import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
 import com.lpstudio.bolaodagalera.presentation.auth.LoginScreen
 import com.lpstudio.bolaodagalera.presentation.auth.ProfileScreen
 import com.lpstudio.bolaodagalera.presentation.auth.RegisterScreen
 import com.lpstudio.bolaodagalera.presentation.bolao.AddParticipantsScreen
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoDetailScreen
-import com.lpstudio.bolaodagalera.presentation.bolao.EditBolaoScreen
 import com.lpstudio.bolaodagalera.presentation.bolao.CreateBolaoScreen
+import com.lpstudio.bolaodagalera.presentation.bolao.EditBolaoScreen
 import com.lpstudio.bolaodagalera.presentation.bolao.JoinBolaoScreen
-import com.lpstudio.bolaodagalera.presentation.home.HomeScreen
-import com.lpstudio.bolaodagalera.presentation.match.PredictionScreen
 import com.lpstudio.bolaodagalera.presentation.help.HelpScreen
+import com.lpstudio.bolaodagalera.presentation.match.PredictionScreen
+import com.lpstudio.bolaodagalera.util.TimeSource
 import org.koin.compose.koinInject
 
 @Composable
@@ -50,22 +48,23 @@ fun NavGraph() {
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                lastBackgroundTime = TimeSource.nowMillis()
-            } else if (event == Lifecycle.Event.ON_RESUME) {
-                lastBackgroundTime?.let { bgTime ->
-                    val now = TimeSource.nowMillis()
-                    val diffMillis = now - bgTime
-                    if (diffMillis >= 600_000 && authUiState.user != null) {
-                        navController.navigate(Home) {
-                            popUpTo(0) { inclusive = true }
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_STOP) {
+                    lastBackgroundTime = TimeSource.nowMillis()
+                } else if (event == Lifecycle.Event.ON_RESUME) {
+                    lastBackgroundTime?.let { bgTime ->
+                        val now = TimeSource.nowMillis()
+                        val diffMillis = now - bgTime
+                        if (diffMillis >= 600_000 && authUiState.user != null) {
+                            navController.navigate(Home) {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
                     }
+                    lastBackgroundTime = null
                 }
-                lastBackgroundTime = null
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.addObserver(observer)
@@ -83,7 +82,6 @@ fun NavGraph() {
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
-
         composable<Login> {
             LoginScreen(
                 onLoginSuccess = {
@@ -91,7 +89,7 @@ fun NavGraph() {
                         popUpTo(Login) { inclusive = true }
                     }
                 },
-                onNavigateToRegister = { email -> navController.navigate(Register(email)) }
+                onNavigateToRegister = { email -> navController.navigate(Register(email)) },
             )
         }
 
@@ -104,7 +102,7 @@ fun NavGraph() {
                         popUpTo(Login) { inclusive = true }
                     }
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 
@@ -114,7 +112,7 @@ fun NavGraph() {
                 onNavigateToCreateBolao = { navController.navigate(CreateBolao) },
                 onNavigateToJoinBolao = { navController.navigate(JoinBolao()) },
                 onNavigateToHelp = { navController.navigate(Help) },
-                onSignOut = { }
+                onSignOut = { },
             )
         }
 
@@ -122,7 +120,7 @@ fun NavGraph() {
             ProfileScreen(
                 onNavigateToHelp = { navController.navigate(Help) },
                 onNavigateBack = { navController.popBackStack() },
-                onSignOut = { }
+                onSignOut = { },
             )
         }
 
@@ -136,23 +134,24 @@ fun NavGraph() {
                 onNavigateToAddParticipants = { bolaoId ->
                     navController.navigate(AddParticipants(bolaoId))
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 
         composable<JoinBolao>(
-            deepLinks = listOf(
-                navDeepLink<JoinBolao>(basePath = "https://bolaodagalera.app/invite"),
-                navDeepLink<JoinBolao>(basePath = "http://bolaodagalera.app/invite"),
-                navDeepLink<JoinBolao>(basePath = "https://www.bolaodagalera.app/invite"),
-                navDeepLink<JoinBolao>(basePath = "https://bolaodagalera-bb002.web.app/invite"),
-                navDeepLink<JoinBolao>(basePath = "http://bolaodagalera-bb002.web.app/invite"),
-                navDeepLink { uriPattern = "bolaodagalera://invite?code={code}" }
-            )
+            deepLinks =
+                listOf(
+                    navDeepLink<JoinBolao>(basePath = "https://bolaodagalera.app/invite"),
+                    navDeepLink<JoinBolao>(basePath = "http://bolaodagalera.app/invite"),
+                    navDeepLink<JoinBolao>(basePath = "https://www.bolaodagalera.app/invite"),
+                    navDeepLink<JoinBolao>(basePath = "https://bolaodagalera-bb002.web.app/invite"),
+                    navDeepLink<JoinBolao>(basePath = "http://bolaodagalera-bb002.web.app/invite"),
+                    navDeepLink { uriPattern = "bolaodagalera://invite?code={code}" },
+                ),
         ) { backStackEntry ->
             val route = backStackEntry.toRoute<JoinBolao>()
             val codeFromDeepLink = route.code ?: ""
-            
+
             JoinBolaoScreen(
                 initialCode = codeFromDeepLink,
                 onJoined = { bolaoId ->
@@ -160,7 +159,7 @@ fun NavGraph() {
                         popUpTo(Home)
                     }
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 
@@ -168,7 +167,7 @@ fun NavGraph() {
             val route = backStackEntry.toRoute<AddParticipants>()
             AddParticipantsScreen(
                 bolaoId = route.bolaoId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 
@@ -189,7 +188,7 @@ fun NavGraph() {
                     navController.navigate(AddParticipants(bolaoId))
                 },
                 onNavigateToHelp = { navController.navigate(Help) },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 
@@ -205,7 +204,7 @@ fun NavGraph() {
                         popUpTo(Home) { inclusive = true }
                     }
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 
@@ -215,7 +214,7 @@ fun NavGraph() {
                 bolaoId = route.bolaoId,
                 matchId = route.matchId,
                 onSaved = { navController.popBackStack() },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 
@@ -224,7 +223,7 @@ fun NavGraph() {
             com.lpstudio.bolaodagalera.presentation.match.MatchPredictionsScreen(
                 bolaoId = route.bolaoId,
                 matchId = route.matchId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 

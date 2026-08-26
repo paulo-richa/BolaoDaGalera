@@ -5,11 +5,17 @@ import androidx.compose.ui.Modifier
 import com.lpstudio.bolaodagalera.LocalAdsEnabled
 
 @Composable
-fun AdBanner(modifier: Modifier = Modifier, adId: String) {
+fun AdBanner(
+    modifier: Modifier = Modifier,
+    adId: String,
+) {
     if (LocalAdsEnabled.current) {
         AdBannerNative(modifier = modifier, adId = adId)
     }
 }
 
 @Composable
-expect fun AdBannerNative(modifier: Modifier = Modifier, adId: String)
+expect fun AdBannerNative(
+    modifier: Modifier = Modifier,
+    adId: String,
+)

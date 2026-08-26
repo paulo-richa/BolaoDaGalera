@@ -36,7 +36,7 @@ actual object AdManager {
         if (!isEnabled) return
         val activity = activityRef?.get() ?: return
         val adRequest = AdRequest.Builder().build()
-        
+
         InterstitialAd.load(
             activity,
             ADMOB_ANDROID_INTERSTITIAL_ID,
@@ -49,7 +49,7 @@ actual object AdManager {
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     interstitialAd = null
                 }
-            }
+            },
         )
     }
 
@@ -57,7 +57,7 @@ actual object AdManager {
         if (!isEnabled) return
         val activity = activityRef?.get() ?: return
         val ad = interstitialAd
-        
+
         if (ad != null) {
             ad.show(activity)
             interstitialAd = null // Consume the ad

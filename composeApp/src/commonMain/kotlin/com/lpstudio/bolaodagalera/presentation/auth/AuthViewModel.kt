@@ -21,11 +21,10 @@ data class AuthUiState(
     val successMessage: String? = null,
     val isAuthChecked: Boolean = false,
     val emailExists: Boolean? = null,
-    val checkedEmail: String = ""
+    val checkedEmail: String = "",
 )
 
 class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
-
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
@@ -35,7 +34,10 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         }.launchIn(viewModelScope)
     }
 
-    fun login(email: String, password: String) {
+    fun login(
+        email: String,
+        password: String,
+    ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
             try {
@@ -58,13 +60,13 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 val exists = authRepository.isEmailInUse(email.trim())
                 _uiState.update { it.copy(isLoading = false, emailExists = exists, checkedEmail = email.trim()) }
             } catch (e: Exception) {
-                // Se der erro de verificação (ex: rede ou proteção de enumeração), 
+                // Se der erro de verificação (ex: rede ou proteção de enumeração),
                 // não podemos afirmar nada. Resetamos o estado e mostramos um erro amigável.
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
-                        isLoading = false, 
-                        emailExists = null, 
-                        error = "Não foi possível verificar seu e-mail agora. Tente prosseguir normalmente ou verifique sua conexão."
+                        isLoading = false,
+                        emailExists = null,
+                        error = "Não foi possível verificar seu e-mail agora. Tente prosseguir normalmente ou verifique sua conexão.",
                     )
                 }
             }
@@ -75,7 +77,14 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         _uiState.update { it.copy(emailExists = null, checkedEmail = "") }
     }
 
-    fun register(email: String, password: String, name: String, phone: String, nickname: String, username: String) {
+    fun register(
+        email: String,
+        password: String,
+        name: String,
+        phone: String,
+        nickname: String,
+        username: String,
+    ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
@@ -96,7 +105,15 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                     return@launch
                 }
 
-                val user = authRepository.register(email.trim(), password, name.trim(), phone.trim(), nickname.trim(), username.trim().lowercase())
+                val user =
+                    authRepository.register(
+                        email.trim(),
+                        password,
+                        name.trim(),
+                        phone.trim(),
+                        nickname.trim(),
+                        username.trim().lowercase(),
+                    )
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
@@ -104,7 +121,11 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         }
     }
 
-    fun updateProfile(name: String, phone: String, nickname: String) {
+    fun updateProfile(
+        name: String,
+        phone: String,
+        nickname: String,
+    ) {
         viewModelScope.launch {
             val currentUser = _uiState.value.user
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -120,16 +141,20 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                             _uiState.update { it.copy(isLoading = false, error = "Este telefone já está em uso.") }
                             return@launch
                         }
-                    } catch (e: Exception) { /* Segue se der timeout na checagem */ }
+                    } catch (e: Exception) {
+                        // Segue se der timeout na checagem
+                    }
                 }
-                
+
                 if (newNickname.isNotBlank() && newNickname != currentUser?.nickname) {
                     try {
                         if (authRepository.isNicknameInUse(newNickname)) {
                             _uiState.update { it.copy(isLoading = false, error = "Este apelido já está em uso.") }
                             return@launch
                         }
-                    } catch (e: Exception) { /* Segue se der timeout na checagem */ }
+                    } catch (e: Exception) {
+                        // Segue se der timeout na checagem
+                    }
                 }
 
                 authRepository.updateProfile(newName, newPhone, newNickname)
@@ -165,11 +190,12 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
     fun clearError() = _uiState.update { it.copy(error = null, successMessage = null) }
 
     suspend fun generateAvailableUsername(fullName: String): String {
-        val parts = fullName.trim().lowercase()
-            .replace(Regex("[^a-z\\s]"), "") // Remove acentos e símbolos simplificadamente
-            .split(" ")
-            .filter { it.length >= 2 }
-        
+        val parts =
+            fullName.trim().lowercase()
+                .replace(Regex("[^a-z\\s]"), "") // Remove acentos e símbolos simplificadamente
+                .split(" ")
+                .filter { it.length >= 2 }
+
         if (parts.isEmpty()) return ""
 
         val firstName = parts[0]
@@ -217,11 +243,11 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         return when {
             msg.contains("incorrect") || msg.contains("invalid-credential") || msg.contains("password") || msg.contains("wrong") ->
                 "E-mail ou senha incorretos. Verifique os dados e tente novamente."
-            msg.contains("user-not-found") || msg.contains("no user") -> 
+            msg.contains("user-not-found") || msg.contains("no user") ->
                 "Usuário não encontrado. Crie uma conta para acessar."
-            msg.contains("email-already") || msg.contains("email já") || msg.contains("collision") || msg.contains("already-in-use") -> 
+            msg.contains("email-already") || msg.contains("email já") || msg.contains("collision") || msg.contains("already-in-use") ->
                 "Este e-mail já está sendo usado em outra conta."
-            msg.contains("network") || msg.contains("connection") || msg.contains("timeout") -> 
+            msg.contains("network") || msg.contains("connection") || msg.contains("timeout") ->
                 "Erro de conexão. Verifique sua internet e tente novamente."
             msg.contains("too many requests") || msg.contains("blocked") ->
                 "Muitas tentativas falhas. Sua conta foi temporariamente bloqueada por segurança."

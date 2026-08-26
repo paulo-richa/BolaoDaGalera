@@ -7,8 +7,6 @@ import com.lpstudio.bolaodagalera.domain.repository.*
 import com.lpstudio.bolaodagalera.util.TimeSource
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -20,7 +18,7 @@ data class HomeUiState(
     val notifications: List<Notification> = emptyList(),
     val hasUnreadNotifications: Boolean = false,
     val isLoading: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class HomeViewModel(
@@ -28,22 +26,21 @@ class HomeViewModel(
     private val bolaoRepository: BolaoRepository,
     private val matchRepository: MatchRepository,
     private val invitationRepository: InvitationRepository,
-    private val predictionRepository: PredictionRepository
+    private val predictionRepository: PredictionRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val readNotificationIds = MutableStateFlow<Set<String>>(emptySet())
     private var dataCollectionJob: kotlinx.coroutines.Job? = null
-    
+
     // Cache de todos os convites (sem o distinctBy) para facilitar a limpeza ao aceitar
     private var allInvitationsCache: List<Invitation> = emptyList()
 
     init {
         authRepository.authStateFlow.onEach { user ->
             dataCollectionJob?.cancel() // Cancela fluxos ativos ao mudar de estado de auth
-            
+
             if (user == null) {
                 _uiState.update { it.copy(user = null, isLoading = false, boloes = emptyList(), invitations = emptyList()) }
             } else {
@@ -56,118 +53,123 @@ class HomeViewModel(
     }
 
     private fun loadUserData(user: User) {
-        val invitationsFlow = combine(
-            invitationRepository.getInvitationsForUser(user.email.trim().lowercase()),
-            invitationRepository.getInvitationsForUser(user.id),
-            invitationRepository.getInvitationsForUser(user.username.trim().lowercase()),
-            invitationRepository.getInvitationsForUser(user.phone.filter { it.isDigit() })
-        ) { list1, list2, list3, list4 ->
-            val all = (list1 + list2 + list3 + list4).filter { it.id.isNotBlank() }
-            allInvitationsCache = all
-            all.distinctBy { it.bolaoId } // Garante apenas 1 convite por bolão na UI
-        }.catch { emit(emptyList()) }
+        val invitationsFlow =
+            combine(
+                invitationRepository.getInvitationsForUser(user.email.trim().lowercase()),
+                invitationRepository.getInvitationsForUser(user.id),
+                invitationRepository.getInvitationsForUser(user.username.trim().lowercase()),
+                invitationRepository.getInvitationsForUser(user.phone.filter { it.isDigit() }),
+            ) { list1, list2, list3, list4 ->
+                val all = (list1 + list2 + list3 + list4).filter { it.id.isNotBlank() }
+                allInvitationsCache = all
+                all.distinctBy { it.bolaoId } // Garante apenas 1 convite por bolão na UI
+            }.catch { emit(emptyList()) }
 
         // Carrega Bolões, Jogos, Palpites, Convites e IDs lidos
-        dataCollectionJob = combine(
-            bolaoRepository.getUserBoloes(user.id),
-            matchRepository.getAllMatches(),
-            predictionRepository.getUserPredictions(user.id, ""),
-            invitationsFlow,
-            readNotificationIds
-        ) { boloes, matches, predictions, invitations, readIds ->
-            
-            val allGenerated = mutableListOf<Notification>()
+        dataCollectionJob =
+            combine(
+                bolaoRepository.getUserBoloes(user.id),
+                matchRepository.getAllMatches(),
+                predictionRepository.getUserPredictions(user.id, ""),
+                invitationsFlow,
+                readNotificationIds,
+            ) { boloes, matches, predictions, invitations, readIds ->
 
-            // 1. Notificações de Convite
-            invitations.forEach { invitation ->
-                val id = "invitation_${invitation.id}"
-                allGenerated.add(
-                    Notification(
-                        id = id,
-                        title = "Novo Convite! 📩",
-                        message = "${invitation.inviterName} te convidou para o bolão '${invitation.bolaoName}'.",
-                        timestamp = invitation.createdAtMillis,
-                        type = NotificationType.INVITATION,
-                        isRead = readIds.contains(id),
-                        bolaoId = invitation.bolaoId
-                    )
-                )
-            }
+                val allGenerated = mutableListOf<Notification>()
 
-            // 1.1 Notificações de Solicitações (Admin)
-            boloes.filter { it.ownerId == user.id }.forEach { bolao ->
-                bolao.pendingParticipants.forEach { pUserId ->
-                    val id = "join_req_${bolao.id}_$pUserId"
+                // 1. Notificações de Convite
+                invitations.forEach { invitation ->
+                    val id = "invitation_${invitation.id}"
                     allGenerated.add(
                         Notification(
                             id = id,
-                            title = "Pedido para entrar 👤",
-                            message = "Alguém quer entrar no seu bolão '${bolao.name}'.",
-                            timestamp = TimeSource.nowMillis(),
-                            type = NotificationType.JOIN_REQUEST,
+                            title = "Novo Convite! 📩",
+                            message = "${invitation.inviterName} te convidou para o bolão '${invitation.bolaoName}'.",
+                            timestamp = invitation.createdAtMillis,
+                            type = NotificationType.INVITATION,
                             isRead = readIds.contains(id),
-                            bolaoId = bolao.id,
-                            matchId = pUserId // Reuso matchId para guardar o userId do solicitante
-                        )
+                            bolaoId = invitation.bolaoId,
+                        ),
                     )
                 }
-                bolao.pendingExits.forEach { pUserId ->
-                    val id = "exit_req_${bolao.id}_$pUserId"
-                    allGenerated.add(
-                        Notification(
-                            id = id,
-                            title = "Pedido para sair 🚩",
-                            message = "Alguém quer sair do seu bolão '${bolao.name}'.",
-                            timestamp = TimeSource.nowMillis(),
-                            type = NotificationType.EXIT_REQUEST,
-                            isRead = readIds.contains(id),
-                            bolaoId = bolao.id,
-                            matchId = pUserId // Reuso matchId para guardar o userId do solicitante
+
+                // 1.1 Notificações de Solicitações (Admin)
+                boloes.filter { it.ownerId == user.id }.forEach { bolao ->
+                    bolao.pendingParticipants.forEach { pUserId ->
+                        val id = "join_req_${bolao.id}_$pUserId"
+                        allGenerated.add(
+                            Notification(
+                                id = id,
+                                title = "Pedido para entrar 👤",
+                                message = "Alguém quer entrar no seu bolão '${bolao.name}'.",
+                                timestamp = TimeSource.nowMillis(),
+                                type = NotificationType.JOIN_REQUEST,
+                                isRead = readIds.contains(id),
+                                bolaoId = bolao.id,
+                                matchId = pUserId, // Reuso matchId para guardar o userId do solicitante
+                            ),
                         )
+                    }
+                    bolao.pendingExits.forEach { pUserId ->
+                        val id = "exit_req_${bolao.id}_$pUserId"
+                        allGenerated.add(
+                            Notification(
+                                id = id,
+                                title = "Pedido para sair 🚩",
+                                message = "Alguém quer sair do seu bolão '${bolao.name}'.",
+                                timestamp = TimeSource.nowMillis(),
+                                type = NotificationType.EXIT_REQUEST,
+                                isRead = readIds.contains(id),
+                                bolaoId = bolao.id,
+                                matchId = pUserId, // Reuso matchId para guardar o userId do solicitante
+                            ),
+                        )
+                    }
+                }
+
+                // 2. Notificações de Lembrete de Jogos
+                val today = Instant.fromEpochMilliseconds(TimeSource.nowMillis()).toLocalDateTime(TimeZone.currentSystemDefault()).date
+                val matchesToday =
+                    matches.filter {
+                        Instant.fromEpochMilliseconds(it.matchDateMillis)
+                            .toLocalDateTime(TimeZone.currentSystemDefault()).date == today
+                    }
+
+                if (matchesToday.isNotEmpty()) {
+                    val predictionMatchIds = predictions.map { it.matchId }.toSet()
+                    val missingCount = matchesToday.count { it.id !in predictionMatchIds }
+
+                    if (missingCount > 0) {
+                        val id = "reminder_today_$today"
+                        allGenerated.add(
+                            Notification(
+                                id = id,
+                                title = "Jogos de Hoje! ⚽",
+                                message = "Você tem $missingCount jogo(s) hoje sem palpite. Não perca pontos!",
+                                timestamp = TimeSource.nowMillis(),
+                                type = NotificationType.MATCH_REMINDER,
+                                isRead = readIds.contains(id),
+                            ),
+                        )
+                    }
+                }
+
+                val sortedNotifications = allGenerated.sortedByDescending { n -> n.timestamp }
+                val hasUnread = sortedNotifications.any { !it.isRead }
+
+                _uiState.update {
+                    it.copy(
+                        boloes = boloes,
+                        invitations = invitations,
+                        notifications = sortedNotifications,
+                        hasUnreadNotifications = hasUnread,
+                        isLoading = false,
                     )
                 }
-            }
-            
-            // 2. Notificações de Lembrete de Jogos
-            val today = Instant.fromEpochMilliseconds(TimeSource.nowMillis()).toLocalDateTime(TimeZone.currentSystemDefault()).date
-            val matchesToday = matches.filter { 
-                Instant.fromEpochMilliseconds(it.matchDateMillis)
-                    .toLocalDateTime(TimeZone.currentSystemDefault()).date == today
-            }
-
-            if (matchesToday.isNotEmpty()) {
-                val predictionMatchIds = predictions.map { it.matchId }.toSet()
-                val missingCount = matchesToday.count { it.id !in predictionMatchIds }
-                
-                if (missingCount > 0) {
-                    val id = "reminder_today_${today}"
-                    allGenerated.add(
-                        Notification(
-                            id = id,
-                            title = "Jogos de Hoje! ⚽",
-                            message = "Você tem $missingCount jogo(s) hoje sem palpite. Não perca pontos!",
-                            timestamp = TimeSource.nowMillis(),
-                            type = NotificationType.MATCH_REMINDER,
-                            isRead = readIds.contains(id)
-                        )
-                    )
-                }
-            }
-
-            val sortedNotifications = allGenerated.sortedByDescending { n -> n.timestamp }
-            val hasUnread = sortedNotifications.any { !it.isRead }
-
-            _uiState.update { it.copy(
-                boloes = boloes, 
-                invitations = invitations,
-                notifications = sortedNotifications,
-                hasUnreadNotifications = hasUnread,
-                isLoading = false 
-            ) }
-        }.catch { e ->
-            println("BOLAOLOG: Erro no dataCollectionJob: ${e.message}")
-            _uiState.update { it.copy(isLoading = false, error = "Erro ao carregar dados.") }
-        }.launchIn(viewModelScope)
+            }.catch { e ->
+                println("BOLAOLOG: Erro no dataCollectionJob: ${e.message}")
+                _uiState.update { it.copy(isLoading = false, error = "Erro ao carregar dados.") }
+            }.launchIn(viewModelScope)
     }
 
     fun markAllNotificationsAsRead() {
@@ -175,7 +177,11 @@ class HomeViewModel(
         readNotificationIds.value = readNotificationIds.value + allIds
     }
 
-    fun respondToInvitation(invitationId: String, accept: Boolean, onSuccess: () -> Unit = {}) {
+    fun respondToInvitation(
+        invitationId: String,
+        accept: Boolean,
+        onSuccess: () -> Unit = {},
+    ) {
         val user = authRepository.currentUser ?: return
         val currentInvitations = uiState.value.invitations
         val targetInvitation = currentInvitations.find { it.id == invitationId } ?: return
@@ -192,11 +198,12 @@ class HomeViewModel(
                     bolaoRepository.addParticipantDirectly(bolaoId, user.id)
                     println("BOLAOLOG: [HomeVM] addParticipantDirectly concluído.")
                 }
-                
+
                 // 2. Resolve (deleta) todos os convites pendentes deste usuário para este bolão
-                val toResolve = (allInvitationsCache + targetInvitation)
-                    .filter { it.bolaoId == bolaoId }
-                    .distinctBy { it.id }
+                val toResolve =
+                    (allInvitationsCache + targetInvitation)
+                        .filter { it.bolaoId == bolaoId }
+                        .distinctBy { it.id }
 
                 println("BOLAOLOG: [HomeVM] Encontrados ${toResolve.size} convites para resolver.")
 
@@ -207,13 +214,16 @@ class HomeViewModel(
                 }
 
                 // 3. Limpeza local imediata
-                allInvitationsCache = allInvitationsCache.filter { inv -> 
-                    inv.bolaoId != bolaoId 
+                allInvitationsCache =
+                    allInvitationsCache.filter { inv ->
+                        inv.bolaoId != bolaoId
+                    }
+                _uiState.update {
+                    it.copy(
+                        invitations = it.invitations.filter { inv -> inv.bolaoId != bolaoId },
+                        isLoading = false,
+                    )
                 }
-                _uiState.update { it.copy(
-                    invitations = it.invitations.filter { inv -> inv.bolaoId != bolaoId },
-                    isLoading = false
-                ) }
                 println("BOLAOLOG: [HomeVM] Estado UI atualizado (convites filtrados).")
 
                 // 4. Só navega após o sucesso total
@@ -221,21 +231,27 @@ class HomeViewModel(
                     println("BOLAOLOG: [HomeVM] Chamando callback de sucesso para navegação.")
                     onSuccess()
                 }
-
             } catch (e: Exception) {
                 println("BOLAOLOG: [HomeVM] ERRO ao processar convite: ${e.message}")
-                
+
                 val msg = e.message?.lowercase() ?: ""
-                val friendly = if (msg.contains("permission")) 
-                    "Erro de permissão ao aceitar convite. Verifique se você já está no bolão."
-                else "Não foi possível processar o convite. Tente novamente."
-                
+                val friendly =
+                    if (msg.contains("permission")) {
+                        "Erro de permissão ao aceitar convite. Verifique se você já está no bolão."
+                    } else {
+                        "Não foi possível processar o convite. Tente novamente."
+                    }
+
                 _uiState.update { it.copy(error = friendly, isLoading = false) }
             }
         }
     }
 
-    fun respondToJoinRequest(bolaoId: String, userId: String, approve: Boolean) {
+    fun respondToJoinRequest(
+        bolaoId: String,
+        userId: String,
+        approve: Boolean,
+    ) {
         viewModelScope.launch {
             try {
                 bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
@@ -245,7 +261,11 @@ class HomeViewModel(
         }
     }
 
-    fun respondToExitRequest(bolaoId: String, userId: String, approve: Boolean) {
+    fun respondToExitRequest(
+        bolaoId: String,
+        userId: String,
+        approve: Boolean,
+    ) {
         viewModelScope.launch {
             try {
                 bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)

@@ -5,10 +5,29 @@ import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import kotlinx.coroutines.flow.Flow
 
 interface PredictionRepository {
-    fun getUserPredictions(userId: String, bolaoId: String): Flow<List<Prediction>>
+    fun getUserPredictions(
+        userId: String,
+        bolaoId: String,
+    ): Flow<List<Prediction>>
+
     fun getBolaoAllPredictions(bolaoId: String): Flow<List<Prediction>>
-    suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction?
+
+    suspend fun getUserPredictionForMatch(
+        userId: String,
+        bolaoId: String,
+        matchId: String,
+    ): Prediction?
+
     suspend fun savePrediction(prediction: Prediction)
-    suspend fun deleteUserPredictions(userId: String, bolaoId: String)
-    fun getRanking(bolaoId: String, championshipId: String, participantIds: List<String>): Flow<List<RankingEntry>>
+
+    suspend fun deleteUserPredictions(
+        userId: String,
+        bolaoId: String,
+    )
+
+    fun getRanking(
+        bolaoId: String,
+        championshipId: String,
+        participantIds: List<String>,
+    ): Flow<List<RankingEntry>>
 }

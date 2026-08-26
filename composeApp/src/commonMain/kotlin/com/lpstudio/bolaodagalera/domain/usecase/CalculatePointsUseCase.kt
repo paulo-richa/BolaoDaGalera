@@ -8,7 +8,7 @@ class CalculatePointsUseCase {
         actualHome: Int,
         actualAway: Int,
         pointsExact: Int = 3,
-        pointsWinnerOrDraw: Int = 1
+        pointsWinnerOrDraw: Int = 1,
     ): Int {
         val isExact = prediction.homeScore == actualHome && prediction.awayScore == actualAway
         if (isExact) return pointsExact
@@ -21,10 +21,16 @@ class CalculatePointsUseCase {
 }
 
 enum class MatchResult {
-    HOME_WIN, AWAY_WIN, DRAW;
+    HOME_WIN,
+    AWAY_WIN,
+    DRAW,
+    ;
 
     companion object {
-        fun fromScores(home: Int, away: Int) = when {
+        fun fromScores(
+            home: Int,
+            away: Int,
+        ) = when {
             home > away -> HOME_WIN
             home < away -> AWAY_WIN
             else -> DRAW

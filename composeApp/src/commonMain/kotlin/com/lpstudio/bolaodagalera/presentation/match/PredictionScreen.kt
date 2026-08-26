@@ -5,9 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,34 +19,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import kotlin.random.Random
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.LocalPlatformContext
+import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.presentation.theme.*
-import kotlinx.coroutines.delay
-import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
+import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +49,7 @@ fun PredictionScreen(
     bolaoId: String,
     matchId: String,
     onSaved: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val viewModel: PredictionViewModel = koinInject(parameters = { parametersOf(bolaoId, matchId) })
     val uiState by viewModel.uiState.collectAsState()
@@ -83,10 +78,11 @@ fun PredictionScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DeepNavy)
-            .systemBarsPadding()
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(DeepNavy)
+                .systemBarsPadding(),
     ) {
         when {
             uiState.isLoading && uiState.match == null -> {
@@ -100,54 +96,59 @@ fun PredictionScreen(
                 val allMatches = uiState.allMatches
                 val scrollState = rememberScrollState()
 
-                val (homeDisplayName, homeDisplayFlag, homeResolvedCrest) = remember(match.id, match.homeTeam, match.homeTeamFlag, allMatches) {
-                    resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, allMatches, true)
-                }
-                val (awayDisplayName, awayDisplayFlag, awayResolvedCrest) = remember(match.id, match.awayTeam, match.awayTeamFlag, allMatches) {
-                    resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
-                }
+                val (homeDisplayName, homeDisplayFlag, homeResolvedCrest) =
+                    remember(match.id, match.homeTeam, match.homeTeamFlag, allMatches) {
+                        resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, allMatches, true)
+                    }
+                val (awayDisplayName, awayDisplayFlag, awayResolvedCrest) =
+                    remember(match.id, match.awayTeam, match.awayTeamFlag, allMatches) {
+                        resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
+                    }
 
                 Column(modifier = Modifier.fillMaxSize()) {
                     Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .verticalScroll(scrollState),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .verticalScroll(scrollState),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         // ── Stadium header ────────────────────────────────────────
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(GradientHero)
-                                .padding(top = 16.dp, bottom = 24.dp, start = 8.dp, end = 20.dp)
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .background(GradientHero)
+                                    .padding(top = 16.dp, bottom = 24.dp, start = 8.dp, end = 20.dp),
                         ) {
                             Column {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     IconButton(onClick = onNavigateBack, modifier = Modifier.size(44.dp)) {
                                         Icon(
                                             Icons.AutoMirrored.Filled.ArrowBack,
                                             contentDescription = "Voltar",
                                             tint = Color.White,
-                                            modifier = Modifier.size(24.dp)
+                                            modifier = Modifier.size(24.dp),
                                         )
                                     }
                                     Spacer(Modifier.weight(1f))
                                     match.group?.let { group ->
                                         Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(NavyElevated)
-                                                .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
-                                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            modifier =
+                                                Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(NavyElevated)
+                                                    .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
+                                                    .padding(horizontal = 12.dp, vertical = 6.dp),
                                         ) {
                                             Text(
                                                 "Grupo $group • ${match.phase.label}",
                                                 fontSize = 11.sp,
                                                 color = TextMuted,
-                                                fontWeight = FontWeight.Bold
+                                                fontWeight = FontWeight.Bold,
                                             )
                                         }
                                     }
@@ -157,16 +158,17 @@ fun PredictionScreen(
 
                                 // Teams display
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp),
                                     horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     TeamHero(
                                         flag = homeDisplayFlag,
                                         name = homeDisplayName,
-                                        crestUrl = homeResolvedCrest ?: match.homeTeamCrest
+                                        crestUrl = homeResolvedCrest ?: match.homeTeamCrest,
                                     )
 
                                     Text(
@@ -175,13 +177,13 @@ fun PredictionScreen(
                                         fontWeight = FontWeight.Black,
                                         color = TextMuted.copy(alpha = 0.4f),
                                         modifier = Modifier.padding(bottom = 36.dp),
-                                        letterSpacing = 2.sp
+                                        letterSpacing = 2.sp,
                                     )
 
                                     TeamHero(
                                         flag = awayDisplayFlag,
                                         name = awayDisplayName,
-                                        crestUrl = awayResolvedCrest ?: match.awayTeamCrest
+                                        crestUrl = awayResolvedCrest ?: match.awayTeamCrest,
                                     )
                                 }
                             }
@@ -195,36 +197,37 @@ fun PredictionScreen(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White,
-                            letterSpacing = 0.5.sp
+                            letterSpacing = 0.5.sp,
                         )
                         Spacer(Modifier.height(24.dp))
 
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 40.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 40.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             ScoreStepper(
                                 value = homeScore,
                                 onIncrement = { homeScore++ },
                                 onDecrement = { if (homeScore > 0) homeScore-- },
-                                teamName = homeDisplayName
+                                teamName = homeDisplayName,
                             )
 
                             Text(
                                 "×",
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextMuted
+                                color = TextMuted,
                             )
 
                             ScoreStepper(
                                 value = awayScore,
                                 onIncrement = { awayScore++ },
                                 onDecrement = { if (awayScore > 0) awayScore-- },
-                                teamName = awayDisplayName
+                                teamName = awayDisplayName,
                             )
                         }
 
@@ -232,35 +235,36 @@ fun PredictionScreen(
 
                         // ── Points info ───────────────────────────────────────────
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(NavyCard)
-                                .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(NavyCard)
+                                    .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
+                                    .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                                horizontalArrangement = Arrangement.SpaceEvenly,
                             ) {
                                 PointBadge(
-                                    emoji = "🎯", 
-                                    pts = (uiState.bolao?.pointsExactScore ?: 3).toString(), 
-                                    label = "Placar exato"
+                                    emoji = "🎯",
+                                    pts = (uiState.bolao?.pointsExactScore ?: 3).toString(),
+                                    label = "Placar exato",
                                 )
                                 VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
                                 PointBadge(
-                                    emoji = "✅", 
-                                    pts = (uiState.bolao?.pointsWinnerOrDraw ?: 1).toString(), 
-                                    label = "Resultado certo"
+                                    emoji = "✅",
+                                    pts = (uiState.bolao?.pointsWinnerOrDraw ?: 1).toString(),
+                                    label = "Resultado certo",
                                 )
                                 VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
                                 PointBadge(
-                                    emoji = "❌", 
-                                    pts = "0", 
-                                    label = "Errou"
+                                    emoji = "❌",
+                                    pts = "0",
+                                    label = "Errou",
                                 )
                             }
 
@@ -269,14 +273,14 @@ fun PredictionScreen(
                             Row(
                                 verticalAlignment = Alignment.Top,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.padding(horizontal = 4.dp)
+                                modifier = Modifier.padding(horizontal = 4.dp),
                             ) {
                                 Text("⏱️", fontSize = 14.sp)
                                 Text(
                                     "Regra: O placar válido para o bolão é o do tempo normal + prorrogação. Pênaltis não são contabilizados.",
                                     fontSize = 11.sp,
                                     color = TextMuted,
-                                    lineHeight = 15.sp
+                                    lineHeight = 15.sp,
                                 )
                             }
                         }
@@ -292,15 +296,16 @@ fun PredictionScreen(
 
                     // ── Save button (Sticky) ──────────────────────────────────
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .padding(bottom = 24.dp, top = 8.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .padding(bottom = 24.dp, top = 8.dp),
                     ) {
                         GradientSaveButton(
                             text = if (uiState.existingPrediction != null) "Atualizar palpite" else "Salvar palpite",
                             isLoading = uiState.isLoading,
-                            onClick = { viewModel.savePrediction(userId, homeScore, awayScore) }
+                            onClick = { viewModel.savePrediction(userId, homeScore, awayScore) },
                         )
                     }
                 }
@@ -318,33 +323,36 @@ private fun SuccessOverlay() {
     var startAnim by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (startAnim) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        )
+        animationSpec =
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow,
+            ),
     )
 
-    val confettiParticles = remember {
-        List(30) {
-            ConfettiState(
-                color = listOf(Neon, Gold, Color.Cyan, PinkNeon).random(),
-                angle = Random.nextFloat() * 360f,
-                speed = Random.nextFloat() * 15f + 10f,
-                rotationSpeed = Random.nextFloat() * 10f - 5f
-            )
+    val confettiParticles =
+        remember {
+            List(30) {
+                ConfettiState(
+                    color = listOf(Neon, Gold, Color.Cyan, PinkNeon).random(),
+                    angle = Random.nextFloat() * 360f,
+                    speed = Random.nextFloat() * 15f + 10f,
+                    rotationSpeed = Random.nextFloat() * 10f - 5f,
+                )
+            }
         }
-    }
 
     LaunchedEffect(Unit) {
         startAnim = true
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.8f))
-            .clickable(enabled = false) {},
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.8f))
+                .clickable(enabled = false) {},
+        contentAlignment = Alignment.Center,
     ) {
         // Confetti
         if (startAnim) {
@@ -355,25 +363,26 @@ private fun SuccessOverlay() {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .scale(scale)
-                    .drawBehind {
-                        drawCircle(
-                            color = Neon,
-                            style = Stroke(width = 4.dp.toPx())
-                        )
-                    }
-                    .padding(12.dp)
-                    .clip(CircleShape)
-                    .background(Neon.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(120.dp)
+                        .scale(scale)
+                        .drawBehind {
+                            drawCircle(
+                                color = Neon,
+                                style = Stroke(width = 4.dp.toPx()),
+                            )
+                        }
+                        .padding(12.dp)
+                        .clip(CircleShape)
+                        .background(Neon.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Default.Check,
                     contentDescription = null,
                     tint = Neon,
-                    modifier = Modifier.size(72.dp)
+                    modifier = Modifier.size(72.dp),
                 )
             }
             Spacer(Modifier.height(32.dp))
@@ -382,13 +391,13 @@ private fun SuccessOverlay() {
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp
+                letterSpacing = 2.sp,
             )
             Text(
                 "Boa sorte na torcida!",
                 color = TextMuted,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
         }
     }
@@ -398,7 +407,7 @@ private data class ConfettiState(
     val color: Color,
     val angle: Float,
     val speed: Float,
-    val rotationSpeed: Float
+    val rotationSpeed: Float,
 )
 
 @Composable
@@ -407,10 +416,11 @@ private fun ConfettiPiece(state: ConfettiState) {
     val progress by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        )
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(2000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
     )
 
     val xOffset = remember(progress) { (kotlin.math.cos(state.angle) * state.speed * progress * 100) }
@@ -418,60 +428,67 @@ private fun ConfettiPiece(state: ConfettiState) {
     val rotation = remember(progress) { state.rotationSpeed * progress * 360f }
 
     Box(
-        modifier = Modifier
-            .graphicsLayer {
-                translationX = xOffset
-                translationY = yOffset
-                rotationZ = rotation
-                alpha = 1f - progress
-                scaleX = 1f - progress
-                scaleY = 1f - progress
-            }
-            .size(8.dp)
-            .background(state.color, RoundedCornerShape(2.dp))
+        modifier =
+            Modifier
+                .graphicsLayer {
+                    translationX = xOffset
+                    translationY = yOffset
+                    rotationZ = rotation
+                    alpha = 1f - progress
+                    scaleX = 1f - progress
+                    scaleY = 1f - progress
+                }
+                .size(8.dp)
+                .background(state.color, RoundedCornerShape(2.dp)),
     )
 }
 
-
 @Composable
-private fun TeamHero(flag: String, name: String, crestUrl: String?) {
-    val annotatedFlag = remember(flag) {
-        if (flag.contains(" ou ")) {
-            buildAnnotatedString {
-                val parts = flag.split(" ou ")
-                parts.forEachIndexed { index, part ->
-                    append(part)
-                    if (index < parts.size - 1) {
-                        withStyle(style = SpanStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal)) {
-                            append(" ou ")
+private fun TeamHero(
+    flag: String,
+    name: String,
+    crestUrl: String?,
+) {
+    val annotatedFlag =
+        remember(flag) {
+            if (flag.contains(" ou ")) {
+                buildAnnotatedString {
+                    val parts = flag.split(" ou ")
+                    parts.forEachIndexed { index, part ->
+                        append(part)
+                        if (index < parts.size - 1) {
+                            withStyle(style = SpanStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal)) {
+                                append(" ou ")
+                            }
                         }
                     }
                 }
+            } else {
+                AnnotatedString(flag)
             }
-        } else {
-            AnnotatedString(flag)
         }
-    }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(120.dp)
+        modifier = Modifier.width(120.dp),
     ) {
         Box(
-            modifier = Modifier
-                .size(86.dp)
-                .clip(CircleShape)
-                .background(NavyElevated)
-                .border(2.dp, GlassBorder, CircleShape),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(86.dp)
+                    .clip(CircleShape)
+                    .background(NavyElevated)
+                    .border(2.dp, GlassBorder, CircleShape),
+            contentAlignment = Alignment.Center,
         ) {
             if (!crestUrl.isNullOrBlank()) {
                 SubcomposeAsyncImage(
-                    model = ImageRequest.Builder(LocalPlatformContext.current)
-                        .data(crestUrl)
-                        .decoderFactory(SvgDecoder.Factory())
-                        .crossfade(true)
-                        .build(),
+                    model =
+                        ImageRequest.Builder(LocalPlatformContext.current)
+                            .data(crestUrl)
+                            .decoderFactory(SvgDecoder.Factory())
+                            .crossfade(true)
+                            .build(),
                     contentDescription = null,
                     modifier = Modifier.size(56.dp),
                     loading = {
@@ -481,15 +498,15 @@ private fun TeamHero(flag: String, name: String, crestUrl: String?) {
                         Text(
                             text = annotatedFlag,
                             fontSize = 24.sp,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
-                    }
+                    },
                 )
             } else {
                 Text(
                     text = annotatedFlag,
                     fontSize = 24.sp,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -502,7 +519,7 @@ private fun TeamHero(flag: String, name: String, crestUrl: String?) {
             color = Color.White,
             textAlign = TextAlign.Center,
             maxLines = 2,
-            lineHeight = 18.sp
+            lineHeight = 18.sp,
         )
     }
 }
@@ -512,18 +529,19 @@ private fun ScoreStepper(
     value: Int,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
-    teamName: String
+    teamName: String,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         // + button
         Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(Color.Transparent)
-                .border(1.dp, Neon.copy(alpha = 0.5f), CircleShape)
-                .clickable(onClick = onIncrement),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.Transparent)
+                    .border(1.dp, Neon.copy(alpha = 0.5f), CircleShape)
+                    .clickable(onClick = onIncrement),
+            contentAlignment = Alignment.Center,
         ) {
             Text("+", fontSize = 24.sp, fontWeight = FontWeight.Medium, color = Neon)
         }
@@ -532,18 +550,19 @@ private fun ScoreStepper(
 
         // Score display
         Box(
-            modifier = Modifier
-                .size(84.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(NavyElevated)
-                .border(1.dp, GlassBorder, RoundedCornerShape(20.dp)),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(84.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(NavyElevated)
+                    .border(1.dp, GlassBorder, RoundedCornerShape(20.dp)),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 "$value",
                 fontSize = 42.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White
+                color = Color.White,
             )
         }
 
@@ -551,19 +570,20 @@ private fun ScoreStepper(
 
         // – button
         Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(Color.Transparent)
-                .border(1.dp, if (value > 0) TextMuted.copy(alpha = 0.5f) else GlassBorder, CircleShape)
-                .clickable(enabled = value > 0, onClick = onDecrement),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.Transparent)
+                    .border(1.dp, if (value > 0) TextMuted.copy(alpha = 0.5f) else GlassBorder, CircleShape)
+                    .clickable(enabled = value > 0, onClick = onDecrement),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 "–",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (value > 0) TextMuted else TextSubtle
+                color = if (value > 0) TextMuted else TextSubtle,
             )
         }
 
@@ -574,16 +594,20 @@ private fun ScoreStepper(
             fontSize = 11.sp,
             color = TextMuted,
             textAlign = TextAlign.Center,
-            maxLines = 1
+            maxLines = 1,
         )
     }
 }
 
 @Composable
-private fun PointBadge(emoji: String, pts: String, label: String) {
+private fun PointBadge(
+    emoji: String,
+    pts: String,
+    label: String,
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(vertical = 4.dp)
+        modifier = Modifier.padding(vertical = 4.dp),
     ) {
         Text(emoji, fontSize = 22.sp)
         Spacer(Modifier.height(6.dp))
@@ -591,15 +615,15 @@ private fun PointBadge(emoji: String, pts: String, label: String) {
             "$pts pt${if (pts != "1") "s" else ""}",
             fontSize = 15.sp,
             fontWeight = FontWeight.Black,
-            color = Color.White
+            color = Color.White,
         )
         Spacer(Modifier.height(2.dp))
         Text(
-            label, 
-            fontSize = 10.sp, 
-            color = TextMuted, 
+            label,
+            fontSize = 10.sp,
+            color = TextMuted,
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
         )
     }
 }
@@ -608,29 +632,30 @@ private fun PointBadge(emoji: String, pts: String, label: String) {
 private fun GradientSaveButton(
     text: String,
     isLoading: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(GradientPrimary)
-            .clickable(enabled = !isLoading, onClick = onClick),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(GradientPrimary)
+                .clickable(enabled = !isLoading, onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(24.dp),
                 strokeWidth = 2.5.dp,
-                color = DeepNavy
+                color = DeepNavy,
             )
         } else {
             Text(
                 text,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = DeepNavy
+                color = DeepNavy,
             )
         }
     }

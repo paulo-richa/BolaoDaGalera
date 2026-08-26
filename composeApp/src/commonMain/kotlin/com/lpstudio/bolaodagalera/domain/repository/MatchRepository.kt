@@ -6,9 +6,25 @@ import kotlinx.coroutines.flow.Flow
 
 interface MatchRepository {
     fun getMatches(championshipId: String): Flow<List<Match>>
-    fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>>
-    suspend fun getMatch(championshipId: String, matchId: String): Match
-    suspend fun updateMatchScore(championshipId: String, matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean = true)
+
+    fun getMatchesByPhase(
+        championshipId: String,
+        phase: Phase,
+    ): Flow<List<Match>>
+
+    suspend fun getMatch(
+        championshipId: String,
+        matchId: String,
+    ): Match
+
+    suspend fun updateMatchScore(
+        championshipId: String,
+        matchId: String,
+        homeScore: Int?,
+        awayScore: Int?,
+        isManual: Boolean = true,
+    )
+
     suspend fun updateMatchTeams(
         championshipId: String,
         matchId: String,
@@ -20,10 +36,11 @@ interface MatchRepository {
         awayTeamFlag: String,
         dateMillis: Long? = null,
         status: String? = null,
-        isManual: Boolean = true
+        isManual: Boolean = true,
     )
+
     suspend fun upsertMatch(match: Match)
-    
+
     // Para compatibilidade ou fluxos globais (opcional)
     fun getAllMatches(): Flow<List<Match>> = kotlinx.coroutines.flow.flowOf(emptyList())
 }

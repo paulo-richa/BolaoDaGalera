@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlin.time.Duration.Companion.minutes
 
 class RemoteConfigManager {
-
     private val remoteConfig = Firebase.remoteConfig
 
     private val _isMaintenanceMode = MutableStateFlow(false)
@@ -24,7 +23,7 @@ class RemoteConfigManager {
             }
             remoteConfig.setDefaults(
                 "maintenance_mode" to false,
-                "show_ads" to true
+                "show_ads" to true,
             )
             remoteConfig.fetchAndActivate()
             _isMaintenanceMode.value = remoteConfig.getValue("maintenance_mode").asBoolean()

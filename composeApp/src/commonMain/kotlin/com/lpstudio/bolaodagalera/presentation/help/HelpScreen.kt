@@ -26,6 +26,7 @@ import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +34,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
     val supportRepository = koinInject<SupportRepository>()
     val authRepository = koinInject<AuthRepository>()
     val scope = rememberCoroutineScope()
-    
+
     var message by remember { mutableStateOf("") }
     var isSending by remember { mutableStateOf(false) }
     var showSuccess by remember { mutableStateOf(false) }
@@ -44,7 +45,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
     // Reset da tela de sucesso após 3 segundos
     LaunchedEffect(showSuccess) {
         if (showSuccess) {
-            kotlinx.coroutines.delay(3000)
+            kotlinx.coroutines.delay(3000.milliseconds)
             showSuccess = false
         }
     }
@@ -67,18 +68,18 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                                     supportRepository.sendSupportTicket(
                                         userId = user?.id ?: "anonymous",
                                         userEmail = user?.email ?: "no-email",
-                                        message = message
+                                        message = message,
                                     )
                                     message = "" // Limpa o texto após sucesso
                                     showSuccess = true
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     showErrorDialog = true
                                 } finally {
                                     isSending = false
                                 }
                             }
                         }
-                    }
+                    },
                 ) {
                     Text("SIM, ENVIAR", color = Neon, fontWeight = FontWeight.Bold)
                 }
@@ -89,7 +90,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                 }
             },
             containerColor = NavyCard,
-            shape = RoundedCornerShape(24.dp)
+            shape = RoundedCornerShape(24.dp),
         )
     }
 
@@ -105,7 +106,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                 }
             },
             containerColor = NavyCard,
-            shape = RoundedCornerShape(24.dp)
+            shape = RoundedCornerShape(24.dp),
         )
     }
 
@@ -118,41 +119,44 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DeepNavy,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = DeepNavy,
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White,
+                    ),
             )
         },
-        containerColor = DeepNavy
+        containerColor = DeepNavy,
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             // Tabs Personalizadas
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(NavyCard)
-                    .padding(4.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(NavyCard)
+                        .padding(4.dp),
             ) {
                 listOf("Regras", "FAQ", "Suporte").forEachIndexed { index, label ->
                     val selected = selectedTab == index
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (selected) Neon else Color.Transparent)
-                            .clickable { selectedTab = index }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (selected) Neon else Color.Transparent)
+                                .clickable { selectedTab = index }
+                                .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = label,
                             color = if (selected) DeepNavy else TextMuted,
                             fontSize = 14.sp,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                         )
                     }
                 }
@@ -162,17 +166,17 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                 when (selectedTab) {
                     0 -> RulesSection()
                     1 -> FaqSection()
-                    2 -> SupportSection(
-                        message = message,
-                        onMessageChange = { message = it },
-                        isSending = isSending,
-                        showSuccess = showSuccess,
-                        onSend = {
+                    2 ->
+                        SupportSection(
+                            message = message,
+                            onMessageChange = { message = it },
+                            isSending = isSending,
+                            showSuccess = showSuccess,
+                        ) {
                             if (message.isNotBlank()) {
                                 showConfirmDialog = true
                             }
                         }
-                    )
                 }
             }
         }
@@ -184,37 +188,38 @@ private fun RulesSection() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             RuleCard(
                 title = "Como Funciona a Pontuação?",
                 description = "O objetivo é acertar o placar dos jogos. Existem dois níveis de acerto:",
-                points = listOf(
-                    "3 PONTOS: Acerto exato do placar (Ex: Você palpitou 2x1 e o jogo foi 2x1).",
-                    "1 PONTO: Acerto do vencedor ou empate, mas erro no número de gols (Ex: Você palpitou 2x1, mas o jogo foi 1x0)."
-                )
+                points =
+                    listOf(
+                        "3 PONTOS: Acerto exato do placar (Ex: Você palpitou 2x1 e o jogo foi 2x1).",
+                        "1 PONTO: Acerto do vencedor ou empate, mas erro no número de gols (Ex: Você palpitou 2x1, mas o jogo foi 1x0).",
+                    ),
             )
         }
         item {
             RuleCard(
                 title = "Tempo de Jogo",
                 description = "Atenção! Vale apenas o resultado do tempo normal (90 minutos + acréscimos).",
-                extra = "Gols em prorrogação ou disputa de pênaltis não são contabilizados no nosso app."
+                extra = "Gols em prorrogação ou disputa de pênaltis não são contabilizados no nosso app.",
             )
         }
         item {
             RuleCard(
                 title = "Prazo para Palpites",
                 description = "Você pode enviar ou alterar seu palpite até 1 minuto antes do início oficial da partida.",
-                extra = "Após o fechamento, os palpites ficam bloqueados para edição."
+                extra = "Após o fechamento, os palpites ficam bloqueados para edição.",
             )
         }
         item {
             RuleCard(
                 title = "Criação de Bolões",
                 description = "Qualquer usuário pode criar um bolão e convidar amigos através do código único gerado.",
-                extra = "O criador do bolão é o Administrador e tem o poder de aceitar novos membros."
+                extra = "O criador do bolão é o Administrador e tem o poder de aceitar novos membros.",
             )
         }
     }
@@ -222,17 +227,18 @@ private fun RulesSection() {
 
 @Composable
 private fun FaqSection() {
-    val faqs = listOf(
-        "Como entro em um bolão?" to "Basta clicar em 'Entrar com código' na tela inicial e digitar o código compartilhado pelo seu amigo.",
-        "Meus pontos não atualizaram, o que fazer?" to "Os rankings são atualizados automaticamente alguns minutos após o encerramento oficial do jogo pela nossa API. Caso haja um atraso incomum, o suporte do aplicativo monitora e ajusta os placares reais para garantir a pontuação correta.",
-        "Posso participar de quantos bolões?" to "Não há limite! Você pode participar de quantos bolões desejar simultaneamente.",
-        "Esqueci minha senha, como recupero?" to "Na tela de login, utilize a opção 'Esqueci minha senha' para receber um link de redefinição no seu e-mail cadastrado."
-    )
+    val faqs =
+        listOf(
+            "Como entro em um bolão?" to "Basta clicar em 'Entrar com código' na tela inicial e digitar o código compartilhado pelo seu amigo.",
+            "Meus pontos não atualizaram, o que fazer?" to "Os rankings são atualizados automaticamente alguns minutos após o encerramento oficial do jogo pela nossa API. Caso haja um atraso incomum, o suporte do aplicativo monitora e ajusta os placares reais para garantir a pontuação correta.",
+            "Posso participar de quantos bolões?" to "Não há limite! Você pode participar de quantos bolões desejar simultaneamente.",
+            "Esqueci minha senha, como recupero?" to "Na tela de login, utilize a opção 'Esqueci minha senha' para receber um link de redefinição no seu e-mail cadastrado.",
+        )
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(faqs) { (question, answer) ->
             var expanded by remember { mutableStateOf(false) }
@@ -240,7 +246,7 @@ private fun FaqSection() {
                 color = NavyElevated,
                 shape = RoundedCornerShape(16.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
-                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -249,12 +255,12 @@ private fun FaqSection() {
                             modifier = Modifier.weight(1f),
                             color = Color.White,
                             fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Icon(
                             imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                             contentDescription = null,
-                            tint = Neon
+                            tint = Neon,
                         )
                     }
                     AnimatedVisibility(visible = expanded) {
@@ -263,7 +269,7 @@ private fun FaqSection() {
                             color = TextMuted,
                             fontSize = 14.sp,
                             lineHeight = 20.sp,
-                            modifier = Modifier.padding(top = 12.dp)
+                            modifier = Modifier.padding(top = 12.dp),
                         )
                     }
                 }
@@ -278,16 +284,16 @@ private fun SupportSection(
     onMessageChange: (String) -> Unit,
     isSending: Boolean,
     showSuccess: Boolean,
-    onSend: () -> Unit
+    onSend: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (showSuccess) {
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.CheckCircle, null, tint = Neon, modifier = Modifier.size(64.dp))
@@ -298,32 +304,33 @@ private fun SupportSection(
             }
         } else {
             Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Neon.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Neon.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Default.MailOutline, contentDescription = null, tint = Neon, modifier = Modifier.size(32.dp))
             }
-            
+
             Spacer(Modifier.height(20.dp))
-            
+
             Text(
                 "Precisa de ajuda ou tem uma sugestão?",
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
-            
+
             Text(
                 "Descreva sua situação abaixo e clique em enviar. Nossa equipe receberá sua mensagem diretamente.",
                 color = TextMuted,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
-                lineHeight = 20.sp
+                lineHeight = 20.sp,
             )
 
             OutlinedTextField(
@@ -332,24 +339,25 @@ private fun SupportSection(
                 modifier = Modifier.fillMaxWidth().height(160.dp),
                 placeholder = { Text("Reclamação, pedido de ajuda ou sugestão...", color = TextMuted) },
                 enabled = !isSending,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Neon,
-                    unfocusedBorderColor = GlassBorder,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    cursorColor = Neon
-                ),
-                shape = RoundedCornerShape(16.dp)
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Neon,
+                        unfocusedBorderColor = GlassBorder,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Neon,
+                    ),
+                shape = RoundedCornerShape(16.dp),
             )
-            
+
             Spacer(Modifier.height(24.dp))
-            
+
             if (isSending) {
                 CircularProgressIndicator(color = Neon)
             } else {
                 BolaoButton(
                     text = "ENVIAR SOLICITAÇÃO",
-                    onClick = onSend
+                    onClick = onSend,
                 )
             }
         }
@@ -361,18 +369,18 @@ private fun RuleCard(
     title: String,
     description: String,
     points: List<String> = emptyList(),
-    extra: String? = null
+    extra: String? = null,
 ) {
     Surface(
         color = NavyElevated,
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(title, color = Neon, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Text(description, color = Color.White, fontSize = 14.sp, lineHeight = 20.sp)
-            
+
             if (points.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 points.forEach { point ->
@@ -382,15 +390,16 @@ private fun RuleCard(
                     }
                 }
             }
-            
+
             if (extra != null) {
                 Spacer(Modifier.height(12.dp))
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Gold.copy(alpha = 0.1f))
-                        .padding(12.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Gold.copy(alpha = 0.1f))
+                            .padding(12.dp),
                 ) {
                     Text(extra, color = Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }

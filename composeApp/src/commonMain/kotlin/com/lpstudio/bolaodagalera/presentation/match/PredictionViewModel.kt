@@ -12,8 +12,8 @@ import com.lpstudio.bolaodagalera.util.PredictionAdCounter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class PredictionUiState(
@@ -23,7 +23,7 @@ data class PredictionUiState(
     val existingPrediction: Prediction? = null,
     val isLoading: Boolean = true,
     val isSaved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class PredictionViewModel(
@@ -31,9 +31,8 @@ class PredictionViewModel(
     private val predictionRepository: PredictionRepository,
     private val bolaoRepository: BolaoRepository,
     private val bolaoId: String,
-    private val matchId: String
+    private val matchId: String,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(PredictionUiState())
     val uiState: StateFlow<PredictionUiState> = _uiState.asStateFlow()
 
@@ -42,23 +41,24 @@ class PredictionViewModel(
             try {
                 val bolao = bolaoRepository.getBolao(bolaoId)
                 val championshipId = bolao.championshipId
-                
+
                 val match = matchRepository.getMatch(championshipId, matchId)
-                val allMatches = try {
-                    matchRepository.getMatches(championshipId).first()
-                } catch (e: Exception) {
-                    emptyList<Match>()
-                }
+                val allMatches =
+                    try {
+                        matchRepository.getMatches(championshipId).first()
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
                 val prediction = predictionRepository.getUserPredictionForMatch(userId, bolaoId, matchId)
 
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
                         match = match,
                         allMatches = allMatches,
                         bolao = bolao,
-                        existingPrediction = prediction, 
-                        isLoading = false
-                    ) 
+                        existingPrediction = prediction,
+                        isLoading = false,
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
@@ -66,17 +66,22 @@ class PredictionViewModel(
         }
     }
 
-    fun savePrediction(userId: String, homeScore: Int, awayScore: Int) {
+    fun savePrediction(
+        userId: String,
+        homeScore: Int,
+        awayScore: Int,
+    ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val prediction = Prediction(
-                    userId = userId,
-                    bolaoId = bolaoId,
-                    matchId = matchId,
-                    homeScore = homeScore,
-                    awayScore = awayScore
-                )
+                val prediction =
+                    Prediction(
+                        userId = userId,
+                        bolaoId = bolaoId,
+                        matchId = matchId,
+                        homeScore = homeScore,
+                        awayScore = awayScore,
+                    )
                 predictionRepository.savePrediction(prediction)
                 PredictionAdCounter.incrementAndShowIfNecessary()
                 _uiState.update { it.copy(isSaved = true, isLoading = false) }

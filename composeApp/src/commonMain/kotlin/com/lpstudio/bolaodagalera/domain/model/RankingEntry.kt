@@ -9,5 +9,5 @@ data class RankingEntry(
     val userNickname: String = "",
     val points: Int,
     val exactScores: Int,
-    val correctResults: Int
+    val correctResults: Int,
 )
