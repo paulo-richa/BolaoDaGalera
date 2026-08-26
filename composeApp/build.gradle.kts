@@ -24,7 +24,7 @@ kotlin {
     cocoapods {
         summary = "Bolão da Galera Shared Module"
         homepage = "https://github.com/lpstudio"
-        version = "3.2.1"
+        version = "3.2.3"
         ios.deploymentTarget = "16.0"
         podfile = project.file("../iosApp/Podfile")
         framework {
@@ -116,8 +116,8 @@ android {
         applicationId = "com.lpstudio.bolaodagalera"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 26
-        versionName = "3.2.2"
+        versionCode = 27
+        versionName = "3.2.3"
     }
     packaging {
         resources {
@@ -136,7 +136,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com" 
-                releaseNotes = "v3.2.1 (Build 25): Central de Ajuda, suporte via Firestore e melhorias na sincronização de placares."
+                releaseNotes = "v3.2.3 (Build 27): AdMob Android de produção e melhorias de validação."
             }
         }
         getByName("debug") {
@@ -144,7 +144,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com"
-                releaseNotes = "v3.2.1 (Build 25): Central de Ajuda, suporte via Firestore e melhorias na sincronização de placares."
+                releaseNotes = "v3.2.3 (Build 27): AdMob Android de produção e melhorias de validação."
             }
         }
     }
