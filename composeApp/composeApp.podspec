@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'composeApp'
-    spec.version                  = '3.2.0'
+    spec.version                  = '3.2.1'
     spec.homepage                 = 'https://github.com/lpstudio'
     spec.source                   = { :http=> ''}
     spec.authors                  = ''
