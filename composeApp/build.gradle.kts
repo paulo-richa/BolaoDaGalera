@@ -24,7 +24,7 @@ kotlin {
     cocoapods {
         summary = "Bolão da Galera Shared Module"
         homepage = "https://github.com/lpstudio"
-        version = "3.2.0"
+        version = "3.2.1"
         ios.deploymentTarget = "16.0"
         podfile = project.file("../iosApp/Podfile")
         framework {
@@ -116,8 +116,8 @@ android {
         applicationId = "com.lpstudio.bolaodagalera"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 24
-        versionName = "3.2.0"
+        versionCode = 26
+        versionName = "3.2.2"
     }
     packaging {
         resources {
@@ -136,7 +136,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com" 
-                releaseNotes = "v3.2.0 (Build 24): Fluxo de autenticação estável, geração automática de ID e correções de permissão no Firestore."
+                releaseNotes = "v3.2.1 (Build 25): Central de Ajuda, suporte via Firestore e melhorias na sincronização de placares."
             }
         }
         getByName("debug") {
@@ -144,7 +144,7 @@ android {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com"
-                releaseNotes = "v3.2.0 (Build 24): Fluxo de autenticação estável, geração automática de ID e correções de permissão no Firestore."
+                releaseNotes = "v3.2.1 (Build 25): Central de Ajuda, suporte via Firestore e melhorias na sincronização de placares."
             }
         }
     }

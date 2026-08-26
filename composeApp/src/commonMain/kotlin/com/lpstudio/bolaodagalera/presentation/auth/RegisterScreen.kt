@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
+import com.lpstudio.bolaodagalera.util.ValidationUtils
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,23 +88,15 @@ fun RegisterScreen(
     LaunchedEffect(uiState.user) { if (uiState.user != null) onRegisterSuccess() }
 
     // Helpers de Validação
-    fun isValidFullName(n: String): Boolean {
-        val parts = n.trim().split(" ").filter { it.isNotBlank() }
-        return parts.size >= 2 && parts.all { it.length >= 2 }
-    }
-
     val nameError = if (nameTouched) {
         when {
             name.isBlank() -> "Nome obrigatório"
-            !isValidFullName(name) -> "Digite seu nome e sobrenome"
+            !ValidationUtils.isValidFullName(name) -> "Digite seu nome e sobrenome"
             else -> null
         }
     } else null
 
-    val emailError = if (emailTouched) {
-        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$"
-        if (email.isBlank() || !email.matches(emailRegex.toRegex())) "E-mail inválido" else null
-    } else null
+    val emailError = if (emailTouched) ValidationUtils.validateEmail(email) else null
     
     val phoneError = if (phoneTouched && phone.isNotBlank()) {
         val digits = phone.filter { it.isDigit() }

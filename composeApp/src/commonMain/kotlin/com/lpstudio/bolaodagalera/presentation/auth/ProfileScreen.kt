@@ -29,6 +29,7 @@ import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.UserAvatar
 import com.lpstudio.bolaodagalera.util.getInitials
+import com.lpstudio.bolaodagalera.util.ValidationUtils
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,13 +57,7 @@ fun ProfileScreen(
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
 
-    // Helpers de Validação
-    fun isValidFullName(n: String): Boolean {
-        val parts = n.trim().split(" ").filter { it.isNotBlank() }
-        return parts.size >= 2 && parts.all { it.length >= 2 }
-    }
-
-    val isNameValid = isValidFullName(name)
+    val isNameValid = ValidationUtils.isValidFullName(name)
 
     LaunchedEffect(uiState.successMessage) {
         uiState.successMessage?.let {

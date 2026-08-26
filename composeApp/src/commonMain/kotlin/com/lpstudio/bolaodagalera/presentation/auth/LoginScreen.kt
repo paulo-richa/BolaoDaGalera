@@ -35,6 +35,7 @@ import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import bolaodagalera.composeapp.generated.resources.Res
 import bolaodagalera.composeapp.generated.resources.logo_oficial
+import com.lpstudio.bolaodagalera.util.ValidationUtils
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 
@@ -66,10 +67,7 @@ fun LoginScreen(
     }
 
     // Helpers de Validação
-    val emailError = if (emailTouched) {
-        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$"
-        if (email.isBlank() || !email.matches(emailRegex.toRegex())) "E-mail inválido" else null
-    } else null
+    val emailError = if (emailTouched) ValidationUtils.validateEmail(email) else null
     
     val passwordError = if (passwordTouched && password.length < 6) "Mínimo 6 caracteres" else null
 
