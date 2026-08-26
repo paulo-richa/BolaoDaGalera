@@ -21,7 +21,7 @@ data class Match(
     val status: String? = null,
     val championshipId: String = "UNKNOWN",
     val matchOrder: Int = 0,
-    val isManual: Boolean = false
+    val isManual: Boolean = false,
 ) {
     val isFinished: Boolean get() = status == "FINISHED"
     val isUpcoming: Boolean get() = status == "TIMED" || status == "SCHEDULED" || status == null
@@ -50,6 +50,11 @@ data class Match(
         // Legado (GS-A-1, GS-B-3, etc)
         // Cada grupo tem 6 jogos (3 rodadas de 2 jogos cada)
         val n = id.substringAfterLast("-").toIntOrNull() ?: return 0
-        return when (n) { 1, 2 -> 1; 3, 4 -> 2; 5, 6 -> 3; else -> 0 }
+        return when (n) {
+            1, 2 -> 1
+            3, 4 -> 2
+            5, 6 -> 3
+            else -> 0
+        }
     }
 }

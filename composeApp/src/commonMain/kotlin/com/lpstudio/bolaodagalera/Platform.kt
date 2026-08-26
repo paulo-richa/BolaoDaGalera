@@ -15,10 +15,22 @@ expect fun SystemAppearance(isDark: Boolean)
 expect fun rememberLauncherProvider(): LauncherProvider
 
 @Composable
-expect fun CommonBackHandler(enabled: Boolean = true, onBack: () -> Unit)
+expect fun CommonBackHandler(
+    enabled: Boolean = true,
+    onBack: () -> Unit,
+)
 
 interface LauncherProvider {
     fun shareText(text: String)
-    fun sendEmail(address: String, subject: String, body: String)
-    fun sendWhatsApp(phone: String, text: String)
+
+    fun sendEmail(
+        address: String,
+        subject: String,
+        body: String,
+    )
+
+    fun sendWhatsApp(
+        phone: String,
+        text: String,
+    )
 }

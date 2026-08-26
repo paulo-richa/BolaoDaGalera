@@ -9,38 +9,39 @@ import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
 import com.lpstudio.bolaodagalera.presentation.match.PredictionViewModel
 import com.lpstudio.bolaodagalera.presentation.ranking.RankingViewModel
-import org.koin.compose.viewmodel.dsl.viewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val appModule = module {
-    // Repositories (Firebase Production)
-    single<AuthRepository>      { FirebaseAuthRepository() }
-    single<BolaoRepository>     { FirebaseBolaoRepository() }
-    single<MatchRepository>     { FirebaseMatchRepository() }
-    single<InvitationRepository>{ FirebaseInvitationRepository(get()) }
-    single<PredictionRepository>{ FirebasePredictionRepository(get()) }
-    single<ChampionshipRepository>{ FirebaseChampionshipRepository() }
-    single<SupportRepository>{ FirebaseSupportRepository() }
+val appModule =
+    module {
+        // Repositories (Firebase Production)
+        single<AuthRepository> { FirebaseAuthRepository() }
+        single<BolaoRepository> { FirebaseBolaoRepository() }
+        single<MatchRepository> { FirebaseMatchRepository() }
+        single<InvitationRepository> { FirebaseInvitationRepository(get()) }
+        single<PredictionRepository> { FirebasePredictionRepository(get()) }
+        single<ChampionshipRepository> { FirebaseChampionshipRepository() }
+        single<SupportRepository> { FirebaseSupportRepository() }
 
-    // Remote Config
-    single { RemoteConfigManager() }
+        // Remote Config
+        single { RemoteConfigManager() }
 
-    // UseCases
-    single { CalculatePointsUseCase() }
+        // UseCases
+        single { CalculatePointsUseCase() }
 
-    // ViewModels
-    viewModel { AuthViewModel(get<AuthRepository>()) }
-    viewModel { HomeViewModel(get<AuthRepository>(), get<BolaoRepository>(), get<MatchRepository>(), get<InvitationRepository>(), get<PredictionRepository>()) }
-    viewModel { (bolaoId: String) -> BolaoViewModel(get<BolaoRepository>(), get<MatchRepository>(), get<PredictionRepository>(), get<AuthRepository>(), bolaoId) }
-    viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get<MatchRepository>(), get<PredictionRepository>(), get<BolaoRepository>(), bolaoId, matchId) }
-    viewModel { (bolaoId: String) -> 
-        RankingViewModel(
-            predictionRepository = get<PredictionRepository>(),
-            bolaoRepository = get<BolaoRepository>(),
-            matchRepository = get<MatchRepository>(),
-            authRepository = get<AuthRepository>(),
-            calculatePointsUseCase = get<CalculatePointsUseCase>(),
-            bolaoId = bolaoId
-        )
+        // ViewModels
+        viewModel { AuthViewModel(get()) }
+        viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
+        viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId) }
+        viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), bolaoId, matchId) }
+        viewModel { (bolaoId: String) ->
+            RankingViewModel(
+                predictionRepository = get(),
+                bolaoRepository = get(),
+                matchRepository = get(),
+                authRepository = get(),
+                calculatePointsUseCase = get(),
+                bolaoId = bolaoId,
+            )
+        }
     }
-}

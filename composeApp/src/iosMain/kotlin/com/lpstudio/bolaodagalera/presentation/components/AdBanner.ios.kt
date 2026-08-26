@@ -9,7 +9,10 @@ import platform.UIKit.UIView
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
-actual fun AdBannerNative(modifier: Modifier, adId: String) {
+actual fun AdBannerNative(
+    modifier: Modifier,
+    adId: String,
+) {
     UIKitView(
         factory = {
             val banner = cocoapods.Google_Mobile_Ads_SDK.GADBannerView()
@@ -19,6 +22,6 @@ actual fun AdBannerNative(modifier: Modifier, adId: String) {
             banner as UIView
         },
         modifier = modifier,
-        update = { _ -> }
+        update = { _ -> },
     )
 }

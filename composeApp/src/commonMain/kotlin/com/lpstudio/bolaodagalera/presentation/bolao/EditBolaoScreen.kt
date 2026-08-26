@@ -1,6 +1,5 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
-import androidx.compose.runtime.Immutable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,20 +7,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,8 +31,8 @@ import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
-import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
+import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,14 +49,14 @@ data class EditBolaoUiState(
     val isLoading: Boolean = false,
     val isDeleted: Boolean = false,
     val showSuccessMessage: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class EditBolaoViewModel(
     private val bolaoRepository: BolaoRepository,
     private val authRepository: AuthRepository,
     private val matchRepository: MatchRepository,
-    private val bolaoId: String
+    private val bolaoId: String,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EditBolaoUiState())
     val uiState: StateFlow<EditBolaoUiState> = _uiState.asStateFlow()
@@ -78,20 +76,23 @@ class EditBolaoViewModel(
             try {
                 val bolao = bolaoRepository.getBolao(bolaoId)
                 val participants = authRepository.getUsers(bolao.participants)
-                _uiState.update { it.copy(
-                    bolao = bolao,
-                    participants = participants,
-                    isLoading = false
-                ) }
+                _uiState.update {
+                    it.copy(
+                        bolao = bolao,
+                        participants = participants,
+                        isLoading = false,
+                    )
+                }
 
                 // Check knockout status for this specific championship
                 matchRepository.getMatches(bolao.championshipId).collect { matches ->
                     val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
-                    val knockoutStarted = matches.any { 
-                        it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.GROUP_STAGE && 
-                        it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES &&
-                        (it.isFinished || now >= it.matchDateMillis)
-                    }
+                    val knockoutStarted =
+                        matches.any {
+                            it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.GROUP_STAGE &&
+                                it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES &&
+                                (it.isFinished || now >= it.matchDateMillis)
+                        }
                     _isKnockoutStarted.value = knockoutStarted
                 }
             } catch (e: Exception) {
@@ -100,7 +101,13 @@ class EditBolaoViewModel(
         }
     }
 
-    fun update(name: String, description: String, scope: BolaoScope, pointsExact: Int, pointsWinner: Int) {
+    fun update(
+        name: String,
+        description: String,
+        scope: BolaoScope,
+        pointsExact: Int,
+        pointsWinner: Int,
+    ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
@@ -150,7 +157,7 @@ fun EditBolaoScreen(
     bolaoId: String,
     onNavigateToAddParticipants: (String) -> Unit,
     onBolaoDeleted: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val bolaoRepository = koinInject<BolaoRepository>()
     val authRepository = koinInject<AuthRepository>()
@@ -204,7 +211,7 @@ fun EditBolaoScreen(
             title = { Text("Excluir Bolão?", color = Color.White, fontWeight = FontWeight.Bold) },
             text = { Text("Esta ação não pode ser desfeita. Todos os participantes e palpites serão removidos.", color = TextMuted) },
             confirmButton = {
-                TextButton(onClick = { 
+                TextButton(onClick = {
                     showDeleteDialog = false
                     viewModel.delete()
                 }) {
@@ -215,7 +222,7 @@ fun EditBolaoScreen(
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancelar", color = TextMuted)
                 }
-            }
+            },
         )
     }
 
@@ -224,9 +231,14 @@ fun EditBolaoScreen(
             onDismissRequest = { participantToRemove = null },
             containerColor = NavyCard,
             title = { Text("Remover Participante?", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = { Text("Tem certeza que deseja remover ${user.name} deste bolão? Ele perderá todos os palpites feitos.", color = TextMuted) },
+            text = {
+                Text(
+                    "Tem certeza que deseja remover ${user.name} deste bolão? Ele perderá todos os palpites feitos.",
+                    color = TextMuted,
+                )
+            },
             confirmButton = {
-                TextButton(onClick = { 
+                TextButton(onClick = {
                     viewModel.removeParticipant(user.id)
                     participantToRemove = null
                 }) {
@@ -237,7 +249,7 @@ fun EditBolaoScreen(
                 TextButton(onClick = { participantToRemove = null }) {
                     Text("Cancelar", color = TextMuted)
                 }
-            }
+            },
         )
     }
 
@@ -261,9 +273,9 @@ fun EditBolaoScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                windowInsets = WindowInsets(top = 0.dp)
+                windowInsets = WindowInsets(top = 0.dp),
             )
-        }
+        },
     ) { padding ->
         if (uiState.isLoading && uiState.bolao == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -271,30 +283,31 @@ fun EditBolaoScreen(
             }
         } else {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .imePadding()
-                    .padding(horizontal = 20.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .imePadding()
+                        .padding(horizontal = 20.dp)
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 Spacer(Modifier.height(8.dp))
 
                 // Basic Info Section
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("DADOS GERAIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
-                    
+
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         BolaoTextField(
                             value = name,
                             onValueChange = { if (it.length <= 35) name = it },
                             label = "Nome do Bolão",
-                            isError = nameError != null
+                            isError = nameError != null,
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             if (nameError != null) {
                                 Text(nameError, color = ErrorRed, fontSize = 10.sp)
@@ -304,7 +317,7 @@ fun EditBolaoScreen(
                             Text(
                                 "${name.length}/35",
                                 color = if (name.length < 10 || name.length > 35) ErrorRed else TextSubtle,
-                                fontSize = 10.sp
+                                fontSize = 10.sp,
                             )
                         }
                     }
@@ -316,21 +329,22 @@ fun EditBolaoScreen(
                             label = { Text("Descrição", color = TextMuted) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Neon,
-                                unfocusedBorderColor = GlassBorder,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedContainerColor = NavyElevated,
-                                unfocusedContainerColor = NavyCard
-                            )
+                            colors =
+                                OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Neon,
+                                    unfocusedBorderColor = GlassBorder,
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedContainerColor = NavyElevated,
+                                    unfocusedContainerColor = NavyCard,
+                                ),
                         )
                         Text(
                             "${description.length}/115",
                             color = if (description.length >= 115) ErrorRed else TextSubtle,
                             fontSize = 10.sp,
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                            textAlign = TextAlign.End
+                            textAlign = TextAlign.End,
                         )
                     }
                 }
@@ -339,24 +353,29 @@ fun EditBolaoScreen(
                 uiState.bolao?.let { originalBolao ->
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("TIPO DO BOLÃO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
-                        
+
                         val championship = Championship.fromId(originalBolao.championshipId)
                         val isOnlyGroups = originalBolao.scope == BolaoScope.ONLY_GROUPS
                         val isFull = originalBolao.scope == BolaoScope.FULL
                         val isLeague = originalBolao.scope == BolaoScope.PONTOS_CORRIDOS || championship.isPointsBased
                         val canEditScope = (isOnlyGroups || (isFull && !isKnockoutStarted)) && !isLeague && championship.isGroupsAndKnockout
-                        
+
                         Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .border(1.dp, if (canEditScope) Neon.copy(alpha = 0.5f) else GlassBorder.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
-                            color = NavyCard
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(
+                                        1.dp,
+                                        if (canEditScope) Neon.copy(alpha = 0.5f) else GlassBorder.copy(alpha = 0.3f),
+                                        RoundedCornerShape(12.dp),
+                                    ),
+                            color = NavyCard,
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 ) {
                                     Text(
                                         when {
@@ -366,55 +385,61 @@ fun EditBolaoScreen(
                                             selectedScope == BolaoScope.ONLY_KNOCKOUT -> "⚔️"
                                             else -> "🏆"
                                         },
-                                        fontSize = 18.sp
+                                        fontSize = 18.sp,
                                     )
                                     Text(
                                         if (championship.isPointsBased) "Pontos Corridos" else selectedScope.label,
                                         color = Color.White,
                                         fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
                                     )
                                 }
 
                                 if (canEditScope) {
                                     Spacer(Modifier.height(12.dp))
                                     Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Neon.copy(alpha = 0.1f))
-                                            .clickable { 
-                                                selectedScope = if (selectedScope == BolaoScope.ONLY_GROUPS) BolaoScope.FULL else BolaoScope.ONLY_GROUPS
-                                            }
-                                            .padding(12.dp),
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(Neon.copy(alpha = 0.1f))
+                                                .clickable {
+                                                    selectedScope = if (selectedScope == BolaoScope.ONLY_GROUPS) BolaoScope.FULL else BolaoScope.ONLY_GROUPS
+                                                }
+                                                .padding(12.dp),
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
+                                        horizontalArrangement = Arrangement.SpaceBetween,
                                     ) {
                                         Text(
                                             "Incluir fase de Mata-Mata",
                                             color = Neon,
                                             fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
                                         )
                                         Switch(
                                             checked = selectedScope == BolaoScope.FULL,
-                                            onCheckedChange = { 
-                                                selectedScope = if (it) BolaoScope.FULL else BolaoScope.ONLY_GROUPS 
+                                            onCheckedChange = {
+                                                selectedScope = if (it) BolaoScope.FULL else BolaoScope.ONLY_GROUPS
                                             },
-                                            colors = SwitchDefaults.colors(checkedThumbColor = Neon, checkedTrackColor = Neon.copy(alpha = 0.3f))
+                                            colors =
+                                                SwitchDefaults.colors(
+                                                    checkedThumbColor = Neon,
+                                                    checkedTrackColor = Neon.copy(alpha = 0.3f),
+                                                ),
                                         )
                                     }
                                 } else {
-                                    val labelText = when {
-                                        championship.isPointsBased -> "Este campeonato segue o formato de pontos corridos."
-                                        isFull && isKnockoutStarted -> "O Mata-Mata já está em andamento e não pode ser removido."
-                                        else -> "O tipo deste bolão não pode ser alterado."
-                                    }
+                                    val labelText =
+                                        when {
+                                            championship.isPointsBased -> "Este campeonato segue o formato de pontos corridos."
+                                            isFull && isKnockoutStarted -> "O Mata-Mata já está em andamento e não pode ser removido."
+                                            else -> "O tipo deste bolão não pode ser alterado."
+                                        }
                                     Text(
                                         labelText,
                                         fontSize = 10.sp,
                                         color = TextSubtle,
-                                        modifier = Modifier.padding(top = 8.dp)
+                                        modifier = Modifier.padding(top = 8.dp),
                                     )
                                 }
                             }
@@ -425,22 +450,22 @@ fun EditBolaoScreen(
                 // Scoring System Section
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("SISTEMA DE PONTUAÇÃO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         ScoreInput(
                             label = "🎯 Placar Exato",
                             value = pointsExact,
                             onValueChange = { pointsExact = it },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                         ScoreInput(
                             label = "✅ Resultado Certo",
                             value = pointsWinner,
                             onValueChange = { pointsWinner = it },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                     }
 
@@ -448,19 +473,19 @@ fun EditBolaoScreen(
                     Surface(
                         color = Color.White.copy(alpha = 0.05f),
                         shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder.copy(alpha = 0.5f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder.copy(alpha = 0.5f)),
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.Top,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             Text("⏱️", fontSize = 14.sp)
                             Text(
                                 "O placar válido é o do tempo normal + prorrogação. Pênaltis não contam para a pontuação.",
                                 fontSize = 11.sp,
                                 color = TextMuted,
-                                lineHeight = 15.sp
+                                lineHeight = 15.sp,
                             )
                         }
                     }
@@ -470,7 +495,7 @@ fun EditBolaoScreen(
                         isLoading = uiState.isLoading,
                         enabled = isFormValid && !uiState.isLoading,
                         modifier = Modifier.padding(top = 4.dp),
-                        onClick = { viewModel.update(name, description, selectedScope, pointsExact, pointsWinner) }
+                        onClick = { viewModel.update(name, description, selectedScope, pointsExact, pointsWinner) },
                     )
                 }
 
@@ -479,12 +504,12 @@ fun EditBolaoScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text("PARTICIPANTES", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
                         TextButton(
                             onClick = { onNavigateToAddParticipants(bolaoId) },
-                            contentPadding = PaddingValues(0.dp)
+                            contentPadding = PaddingValues(0.dp),
                         ) {
                             Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp), tint = Neon)
                             Spacer(Modifier.width(4.dp))
@@ -497,43 +522,44 @@ fun EditBolaoScreen(
                     sortedParticipants.forEach { participant ->
                         val isOwner = participant.id == uiState.bolao?.ownerId
                         val isSelf = participant.id == viewModel.currentUserId
-                        
+
                         Surface(
                             color = NavyCard,
                             shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+                            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
                         ) {
                             Row(
                                 modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Box(
-                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(if(isOwner) Neon else NavyElevated),
-                                    contentAlignment = Alignment.Center
+                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(if (isOwner) Neon else NavyElevated),
+                                    contentAlignment = Alignment.Center,
                                 ) {
-                                    Text(if(isOwner) "👑" else "👤", fontSize = 14.sp)
+                                    Text(if (isOwner) "👑" else "👤", fontSize = 14.sp)
                                 }
                                 Spacer(Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = when {
-                                            isOwner && isSelf -> "${participant.name} (Você/Dono)"
-                                            isSelf -> "${participant.name} (Você)"
-                                            else -> participant.name
-                                        },
+                                        text =
+                                            when {
+                                                isOwner && isSelf -> "${participant.name} (Você/Dono)"
+                                                isSelf -> "${participant.name} (Você)"
+                                                else -> participant.name
+                                            },
                                         color = Color.White,
                                         fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
                                     )
                                     if (participant.nickname.isNotBlank()) {
                                         Text(
                                             text = "@${participant.nickname.lowercase()}",
                                             color = TextMuted,
-                                            fontSize = 11.sp
+                                            fontSize = 11.sp,
                                         )
                                     }
                                 }
-                                
+
                                 if (!isOwner && viewModel.currentUserId == uiState.bolao?.ownerId) {
                                     IconButton(onClick = { participantToRemove = participant }) {
                                         Icon(Icons.Default.Delete, "Remover", tint = ErrorRed.copy(alpha = 0.7f))
@@ -558,46 +584,47 @@ private fun ScoreInput(
     label: String,
     value: Int,
     onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(label, fontSize = 12.sp, color = TextMuted)
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(NavyCard)
-                .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
-                .padding(4.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(NavyCard)
+                    .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
+                    .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             IconButton(
                 onClick = { if (value > 1) onValueChange(value - 1) },
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(36.dp),
             ) {
                 Text("-", color = Neon, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
-            
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = value.toString(),
                     color = Color.White,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
                 )
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = if (value == 1) "ponto" else "pontos",
                     color = TextMuted,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
 
             IconButton(
                 onClick = { onValueChange(value + 1) },
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(36.dp),
             ) {
                 Text("+", color = Neon, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }

@@ -4,8 +4,8 @@ import cocoapods.Google_Mobile_Ads_SDK.*
 import com.lpstudio.bolaodagalera.ADMOB_IOS_INTERSTITIAL_ID
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.UIKit.UIApplication
-import platform.UIKit.UIWindow
 import platform.UIKit.UIViewController
+import platform.UIKit.UIWindow
 
 @OptIn(ExperimentalForeignApi::class)
 actual object AdManager {
@@ -31,10 +31,10 @@ actual object AdManager {
 
     private fun loadInterstitial() {
         if (!isEnabled || isLoading || interstitial != null) return
-        
+
         isLoading = true
         println("AdManager: Starting to load interstitial with ID: $ADMOB_IOS_INTERSTITIAL_ID")
-        
+
         GADInterstitialAd.loadWithAdUnitID(
             adUnitID = ADMOB_IOS_INTERSTITIAL_ID,
             request = GADRequest(),
@@ -46,15 +46,16 @@ actual object AdManager {
                 } else {
                     println("AdManager: Failed to load interstitial: ${error.localizedDescription}")
                 }
-            }
+            },
         )
     }
 
     private fun getRootViewController(): UIViewController? {
         // Tenta pegar a window ativa de forma mais robusta para SwiftUI
-        val window = UIApplication.sharedApplication.windows.filterIsInstance<UIWindow>().firstOrNull { it.isKeyWindow() }
-            ?: UIApplication.sharedApplication.keyWindow
-        
+        val window =
+            UIApplication.sharedApplication.windows.filterIsInstance<UIWindow>().firstOrNull { it.isKeyWindow() }
+                ?: UIApplication.sharedApplication.keyWindow
+
         return window?.rootViewController
     }
 
@@ -62,9 +63,9 @@ actual object AdManager {
         if (!isEnabled) return
         val rootViewController = getRootViewController()
         val ad = interstitial
-        
+
         println("AdManager: Attempting to show interstitial. Ad present: ${ad != null}, VC present: ${rootViewController != null}")
-        
+
         if (ad != null && rootViewController != null) {
             ad.presentFromRootViewController(rootViewController)
             interstitial = null

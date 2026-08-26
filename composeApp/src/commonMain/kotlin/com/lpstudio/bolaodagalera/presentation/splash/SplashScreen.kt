@@ -27,10 +27,11 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
     var startAnimation by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (startAnimation) 1.1f else 0.8f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        )
+        animationSpec =
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow,
+            ),
     )
 
     LaunchedEffect(Unit) {
@@ -40,37 +41,41 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DeepNavy),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(DeepNavy),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             // Logo Central
             Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .scale(scale)
-                    .drawBehind {
-                        drawCircle(
-                            brush = Brush.radialGradient(
-                                colors = listOf(Neon.copy(alpha = 0.2f), Color.Transparent),
-                            ),
-                            radius = size.maxDimension * 0.8f
-                        )
-                    },
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(120.dp)
+                        .scale(scale)
+                        .drawBehind {
+                            drawCircle(
+                                brush =
+                                    Brush.radialGradient(
+                                        colors = listOf(Neon.copy(alpha = 0.2f), Color.Transparent),
+                                    ),
+                                radius = size.maxDimension * 0.8f,
+                            )
+                        },
+                contentAlignment = Alignment.Center,
             ) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(GradientPrimary)
-                        .border(2.dp, Neon.copy(alpha = 0.5f), CircleShape),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(GradientPrimary)
+                            .border(2.dp, Neon.copy(alpha = 0.5f), CircleShape),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text("⚽", fontSize = 60.sp)
                 }
@@ -83,15 +88,15 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
-                letterSpacing = 2.sp
+                letterSpacing = 2.sp,
             )
-            
+
             Text(
                 "CRIE SEU TIME, DÊ SEU PALPITE",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = Neon,
-                letterSpacing = 2.sp
+                letterSpacing = 2.sp,
             )
 
             Spacer(Modifier.height(48.dp))
@@ -99,24 +104,26 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
             // Thin Neon Loading Bar
             Box(modifier = Modifier.width(180.dp)) {
                 LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .clip(CircleShape),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .clip(CircleShape),
                     color = Neon,
-                    trackColor = Color.White.copy(alpha = 0.1f)
+                    trackColor = Color.White.copy(alpha = 0.1f),
                 )
             }
         }
-        
+
         Text(
             "LP STUDIO",
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 32.dp),
             fontSize = 10.sp,
             color = TextSubtle,
-            letterSpacing = 1.sp
+            letterSpacing = 1.sp,
         )
     }
 }

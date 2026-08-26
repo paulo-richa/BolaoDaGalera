@@ -1,0 +1,27 @@
+#!/bin/sh
+
+echo "Running static analysis checks..."
+
+# Run ktlint
+./gradlew ktlintCheck
+if [ $? -ne 0 ]; then
+    echo "ktlint failed. Please fix formatting issues."
+    exit 1
+fi
+
+# Run detekt
+./gradlew detekt
+if [ $? -ne 0 ]; then
+    echo "detekt failed. Please fix code style issues."
+    exit 1
+fi
+
+# Run Android Lint
+./gradlew lint
+if [ $? -ne 0 ]; then
+    echo "Android Lint failed. Please fix issues."
+    exit 1
+fi
+
+echo "Static analysis passed!"
+exit 0

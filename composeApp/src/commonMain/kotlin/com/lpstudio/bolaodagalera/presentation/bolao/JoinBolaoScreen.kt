@@ -1,6 +1,5 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
-import androidx.compose.runtime.Immutable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -13,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,11 +24,11 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,12 +44,12 @@ data class JoinBolaoUiState(
     val joinedBolao: Bolao? = null,
     val requestSent: Boolean = false,
     val alreadyMemberBolaoId: String? = null,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class JoinBolaoViewModel(
     private val bolaoRepository: BolaoRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(JoinBolaoUiState())
     val uiState: StateFlow<JoinBolaoUiState> = _uiState.asStateFlow()
@@ -61,7 +61,7 @@ class JoinBolaoViewModel(
             try {
                 // Agora usamos requestJoinBolao para que o dono precise aceitar
                 val bolao = bolaoRepository.requestJoinBolao(code.trim().uppercase(), userId)
-                
+
                 if (userId in bolao.participants) {
                     // Regra 4: Já é membro, sinaliza para navegar direto
                     _uiState.update { it.copy(alreadyMemberBolaoId = bolao.id, isLoading = false) }
@@ -81,7 +81,7 @@ class JoinBolaoViewModel(
 fun JoinBolaoScreen(
     initialCode: String = "",
     onJoined: (String) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val bolaoRepository = koinInject<BolaoRepository>()
     val authRepository = koinInject<AuthRepository>()
@@ -89,7 +89,7 @@ fun JoinBolaoScreen(
     val uiState by viewModel.uiState.collectAsState()
     var code by remember(initialCode) { mutableStateOf(initialCode) }
     var codeTouched by remember(initialCode) { mutableStateOf(initialCode.isNotEmpty()) }
-    
+
     val codeError = if (codeTouched && code.length < 6) "Código deve ter 6 caracteres" else null
 
     LaunchedEffect(initialCode) {
@@ -109,37 +109,39 @@ fun JoinBolaoScreen(
             onDismissRequest = onNavigateBack,
             containerColor = DeepNavy,
             title = { Text("Solicitação Enviada!", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = { 
+            text = {
                 Text(
                     "O dono do bolão recebeu seu convite. Aguarde a aprovação dele para começar a palpitar!",
-                    color = TextMuted
-                ) 
+                    color = TextMuted,
+                )
             },
             confirmButton = {
                 BolaoButton(
                     text = "OK",
-                    onClick = onNavigateBack
+                    onClick = onNavigateBack,
                 )
-            }
+            },
         )
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(GradientBg)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(GradientBg),
     ) {
         // Glow
         Box(
-            modifier = Modifier
-                .size(300.dp)
-                .align(Alignment.Center)
-                .offset(y = (-80).dp)
-                .background(
-                    androidx.compose.ui.graphics.Brush.radialGradient(
-                        listOf(Gold.copy(alpha = 0.08f), Color.Transparent)
-                    )
-                )
+            modifier =
+                Modifier
+                    .size(300.dp)
+                    .align(Alignment.Center)
+                    .offset(y = (-80).dp)
+                    .background(
+                        androidx.compose.ui.graphics.Brush.radialGradient(
+                            listOf(Gold.copy(alpha = 0.08f), Color.Transparent),
+                        ),
+                    ),
         )
 
         Scaffold(
@@ -154,24 +156,25 @@ fun JoinBolaoScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Voltar",
-                                tint = Color.White
+                                tint = Color.White,
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 )
-            }
+            },
         ) { padding ->
             val scrollState = rememberScrollState()
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .imePadding()
-                    .padding(horizontal = 28.dp)
-                    .verticalScroll(scrollState),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .imePadding()
+                        .padding(horizontal = 28.dp)
+                        .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Text("🔑", fontSize = 64.sp)
                 Spacer(Modifier.height(16.dp))
@@ -180,7 +183,7 @@ fun JoinBolaoScreen(
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
@@ -188,28 +191,29 @@ fun JoinBolaoScreen(
                     fontSize = 14.sp,
                     color = TextMuted,
                     textAlign = TextAlign.Center,
-                    lineHeight = 20.sp
+                    lineHeight = 20.sp,
                 )
 
                 Spacer(Modifier.height(36.dp))
 
                 // Code input card
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(GlassWhite)
-                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(GlassWhite)
+                            .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
+                            .padding(24.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         OutlinedTextField(
                             value = code,
-                            onValueChange = { 
+                            onValueChange = {
                                 if (it.length <= 6) code = it.uppercase()
                                 codeTouched = true
                             },
@@ -217,32 +221,36 @@ fun JoinBolaoScreen(
                             modifier = Modifier.fillMaxWidth(),
                             isError = codeError != null,
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Gold,
-                                unfocusedBorderColor = Color(0xFF2A3D55),
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                cursorColor = Gold,
-                                focusedContainerColor = NavyElevated,
-                                unfocusedContainerColor = NavyCard,
-                                errorBorderColor = ErrorRed,
-                                errorLabelColor = ErrorRed,
-                            ),
-                            keyboardOptions = KeyboardOptions(
-                                capitalization = KeyboardCapitalization.Characters,
-                                imeAction = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = { if (code.length == 6) viewModel.join(code) }
-                            ),
+                            colors =
+                                OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Gold,
+                                    unfocusedBorderColor = Color(0xFF2A3D55),
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    cursorColor = Gold,
+                                    focusedContainerColor = NavyElevated,
+                                    unfocusedContainerColor = NavyCard,
+                                    errorBorderColor = ErrorRed,
+                                    errorLabelColor = ErrorRed,
+                                ),
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Characters,
+                                    imeAction = ImeAction.Done,
+                                ),
+                            keyboardActions =
+                                KeyboardActions(
+                                    onDone = { if (code.length == 6) viewModel.join(code) },
+                                ),
                             singleLine = true,
-                            textStyle = TextStyle(
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 10.sp,
-                                textAlign = TextAlign.Center,
-                                color = Gold
-                            )
+                            textStyle =
+                                TextStyle(
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 10.sp,
+                                    textAlign = TextAlign.Center,
+                                    color = Gold,
+                                ),
                         )
 
                         codeError?.let { Text(it, color = ErrorRed, fontSize = 11.sp) }
@@ -250,16 +258,17 @@ fun JoinBolaoScreen(
                         // Char counter dots
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             for (i in 0 until 6) {
                                 val filled = i < code.length
                                 Box(
-                                    modifier = Modifier
-                                        .size(if (filled) 10.dp else 8.dp)
-                                        .clip(RoundedCornerShape(50))
-                                        .background(if (filled) Gold else NavyElevated)
-                                        .border(1.dp, if (filled) Gold else GlassBorder, RoundedCornerShape(50))
+                                    modifier =
+                                        Modifier
+                                            .size(if (filled) 10.dp else 8.dp)
+                                            .clip(RoundedCornerShape(50))
+                                            .background(if (filled) Gold else NavyElevated)
+                                            .border(1.dp, if (filled) Gold else GlassBorder, RoundedCornerShape(50)),
                                 )
                             }
                         }
@@ -277,7 +286,7 @@ fun JoinBolaoScreen(
                     isLoading = uiState.isLoading,
                     enabled = code.length == 6 && !uiState.isLoading,
                     gradient = GradientGold,
-                    onClick = { viewModel.join(code) }
+                    onClick = { viewModel.join(code) },
                 )
 
                 if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {

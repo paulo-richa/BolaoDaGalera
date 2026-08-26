@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleServices)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
     id("com.google.firebase.appdistribution")
     kotlin("native.cocoapods")
 }
@@ -53,7 +55,7 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.play.services.ads)
-            
+
             // UI Testing
             // Note: In KMP, some people use commonTest, but for Compose Android is easiest
         }
@@ -67,8 +69,8 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
-            //implementation(libs.androidx.lifecycle.viewmodelCompose)
-            //implementation(libs.androidx.lifecycle.runtimeCompose)
+            // implementation(libs.androidx.lifecycle.viewmodelCompose)
+            // implementation(libs.androidx.lifecycle.runtimeCompose)
             // Firebase KMP (GitLive SDK)
             // The Firebase BOM will be provided at the module-level dependencies
             // block (outside the kotlin { } sourceSets) because using
@@ -130,12 +132,12 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             firebaseAppDistribution {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
-                testers = "paulo.richa@hotmail.com" 
+                testers = "paulo.richa@hotmail.com"
                 releaseNotes = "v3.2.3 (Build 27): AdMob Android de produção e melhorias de validação."
             }
         }
@@ -153,6 +155,15 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+        checkDependencies = true
+        abortOnError = true
+        ignoreWarnings = false
+        showAll = true
+        explainIssues = true
+    }
 }
 
 dependencies {
@@ -167,3 +178,18 @@ dependencies {
     androidTestImplementation(libs.compose.ui.test.junit4)
 }
 
+detekt {
+    toolVersion = libs.versions.detekt.get()
+    config.setFrom(file("../config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+    allRules = false
+}
+
+ktlint {
+    android.set(true)
+    ignoreFailures.set(false)
+    reporters {
+        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN)
+        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)
+    }
+}

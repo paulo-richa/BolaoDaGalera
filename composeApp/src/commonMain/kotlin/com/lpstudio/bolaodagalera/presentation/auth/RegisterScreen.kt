@@ -20,27 +20,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
-import com.lpstudio.bolaodagalera.presentation.theme.*
-import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
+import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
+import com.lpstudio.bolaodagalera.presentation.theme.*
 import com.lpstudio.bolaodagalera.util.ValidationUtils
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     initialEmail: String = "",
     onRegisterSuccess: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val viewModel: AuthViewModel = koinInject()
     val uiState by viewModel.uiState.collectAsState()
-    
+
     var name by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var nickname by remember { mutableStateOf("") }
@@ -48,7 +49,7 @@ fun RegisterScreen(
     var email by remember { mutableStateOf(initialEmail) }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    
+
     // Estados para controlar se o campo já foi interagido (para não mostrar erro logo de cara)
     var nameTouched by remember { mutableStateOf(false) }
     var nicknameTouched by remember { mutableStateOf(false) }
@@ -56,7 +57,7 @@ fun RegisterScreen(
     var emailTouched by remember { mutableStateOf(initialEmail.isNotBlank()) }
     var passwordTouched by remember { mutableStateOf(false) }
     var confirmPasswordTouched by remember { mutableStateOf(false) }
-    
+
     var isGeneratingUsername by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
@@ -67,16 +68,17 @@ fun RegisterScreen(
     // Lógica de Geração Automática de ID
     LaunchedEffect(name) {
         val parts = name.trim().split(" ").filter { it.isNotBlank() }
-        if (parts.size >= 2 && !isGeneratingUsername) {
+        if ((parts.size >= 2) && !isGeneratingUsername) {
             // Pequeno delay para não disparar a cada tecla se a pessoa digitar rápido
-            kotlinx.coroutines.delay(800)
+            kotlinx.coroutines.delay(800.milliseconds)
             isGeneratingUsername = true
             try {
                 val generated = viewModel.generateAvailableUsername(name)
                 if (generated.isNotBlank()) {
                     username = generated
                 }
-            } catch (e: Exception) { }
+            } catch (_: Exception) {
+            }
             isGeneratingUsername = false
         }
     }
@@ -88,37 +90,48 @@ fun RegisterScreen(
     LaunchedEffect(uiState.user) { if (uiState.user != null) onRegisterSuccess() }
 
     // Helpers de Validação
-    val nameError = if (nameTouched) {
-        when {
-            name.isBlank() -> "Nome obrigatório"
-            !ValidationUtils.isValidFullName(name) -> "Digite seu nome e sobrenome"
-            else -> null
+    val nameError =
+        if (nameTouched) {
+            when {
+                name.isBlank() -> "Nome obrigatório"
+                !ValidationUtils.isValidFullName(name) -> "Digite seu nome e sobrenome"
+                else -> null
+            }
+        } else {
+            null
         }
-    } else null
 
     val emailError = if (emailTouched) ValidationUtils.validateEmail(email) else null
-    
-    val phoneError = if (phoneTouched && phone.isNotBlank()) {
-        val digits = phone.filter { it.isDigit() }
-        if (digits.length < 10) "Telefone inválido (mín. 10 dígitos)" else null
-    } else null
-    
-    val nicknameError = if (nicknameTouched && nickname.isNotBlank()) {
-        if (!nickname.all { it.isLetterOrDigit() }) "Use apenas letras e números" else null
-    } else null
-    
+
+    val phoneError =
+        if (phoneTouched && phone.isNotBlank()) {
+            val digits = phone.filter { it.isDigit() }
+            if (digits.length < 10) "Telefone inválido (mín. 10 dígitos)" else null
+        } else {
+            null
+        }
+
+    val nicknameError =
+        if (nicknameTouched && nickname.isNotBlank()) {
+            if (!nickname.all { it.isLetterOrDigit() }) "Use apenas letras e números" else null
+        } else {
+            null
+        }
+
     val passwordError = if (passwordTouched && password.length < 6) "Mínimo 6 caracteres" else null
-    
+
     val confirmPasswordError = if (confirmPasswordTouched && confirmPassword != password) "As senhas não coincidem" else null
 
-    val isFormValid = name.isNotBlank() && email.isNotBlank() && password.length >= 6 && 
-                     confirmPassword == password && nameError == null && emailError == null &&
-                     phoneError == null && nicknameError == null
+    val isFormValid =
+        name.isNotBlank() && email.isNotBlank() && password.length >= 6 &&
+            confirmPassword == password && nameError == null && emailError == null &&
+            phoneError == null && nicknameError == null
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(GradientBg)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(GradientBg),
     ) {
         Scaffold(
             containerColor = Color.Transparent,
@@ -128,7 +141,7 @@ fun RegisterScreen(
                         Text(
                             "Criar conta",
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
                         )
                     },
                     navigationIcon = {
@@ -136,122 +149,156 @@ fun RegisterScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Voltar",
-                                tint = Color.White
+                                tint = Color.White,
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                        ),
                 )
-            }
+            },
         ) { padding ->
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 28.dp)
-                    .verticalScroll(scrollState),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 28.dp)
+                        .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Spacer(Modifier.height(12.dp))
 
                 Text(
                     "Bem-vindo ao",
                     color = TextMuted,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
                 )
                 Text(
                     "Bolão da Galera",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
+                    color = Color.White,
                 )
 
                 Spacer(Modifier.height(32.dp))
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(GlassWhite)
-                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(GlassWhite)
+                            .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
+                            .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     // Campo Nome
                     Column {
                         BolaoTextField(
                             value = name,
-                            onValueChange = { 
+                            onValueChange = {
                                 if (it.length <= 50) name = it
                                 nameTouched = true
                             },
                             label = "Nome Completo",
                             isError = nameError != null,
-                            keyboardOptions = KeyboardOptions(
-                                capitalization = KeyboardCapitalization.Words,
-                                imeAction = ImeAction.Next
-                            ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Words,
+                                    imeAction = ImeAction.Next,
+                                ),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         )
-                        nameError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
+                        nameError?.let {
+                            Text(
+                                it,
+                                color = ErrorRed,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                            )
+                        }
                     }
 
                     // Campo Email - Movido para baixo do nome
                     Column {
                         BolaoTextField(
                             value = email,
-                            onValueChange = { 
+                            onValueChange = {
                                 if (it.length <= 60) email = it.lowercase().trim()
                                 emailTouched = true
                             },
                             label = "E-mail (ex: joaosilva@gmail.com)",
                             isError = emailError != null,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Email,
-                                capitalization = KeyboardCapitalization.None,
-                                imeAction = ImeAction.Next
-                            ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    keyboardType = KeyboardType.Email,
+                                    capitalization = KeyboardCapitalization.None,
+                                    imeAction = ImeAction.Next,
+                                ),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         )
-                        emailError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
+                        emailError?.let {
+                            Text(
+                                it,
+                                color = ErrorRed,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                            )
+                        }
                     }
 
                     // Campo Apelido
                     Column {
                         BolaoTextField(
                             value = nickname,
-                            onValueChange = { 
+                            onValueChange = {
                                 if (it.length <= 20) nickname = it
                                 nicknameTouched = true
                             },
                             label = "Apelido (opcional, ex: Fofinho)",
                             isError = nicknameError != null,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         )
-                        nicknameError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
+                        nicknameError?.let {
+                            Text(
+                                it,
+                                color = ErrorRed,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                            )
+                        }
                     }
 
                     // Campo Telefone
                     Column {
                         BolaoTextField(
                             value = phone,
-                            onValueChange = { 
+                            onValueChange = {
                                 if (it.length <= 15) phone = it
                                 phoneTouched = true
                             },
                             label = "Telefone (opcional, ex: 11987654321)",
                             isError = phoneError != null,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Phone,
-                                imeAction = ImeAction.Next
-                            ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    keyboardType = KeyboardType.Phone,
+                                    imeAction = ImeAction.Next,
+                                ),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         )
-                        phoneError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
+                        phoneError?.let {
+                            Text(
+                                it,
+                                color = ErrorRed,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                            )
+                        }
                     }
 
                     // Campo Email - Removido daqui pois foi movido para cima
@@ -260,40 +307,56 @@ fun RegisterScreen(
                     Column {
                         BolaoTextField(
                             value = password,
-                            onValueChange = { 
+                            onValueChange = {
                                 if (it.length <= 30) password = it
                                 passwordTouched = true
                             },
                             label = "Senha (min. 6 caracteres)",
                             isPassword = true,
                             isError = passwordError != null,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Password,
-                                imeAction = ImeAction.Next
-                            ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    keyboardType = KeyboardType.Password,
+                                    imeAction = ImeAction.Next,
+                                ),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         )
-                        passwordError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
+                        passwordError?.let {
+                            Text(
+                                it,
+                                color = ErrorRed,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                            )
+                        }
                     }
 
                     // Campo Confirmar Senha
                     Column {
                         BolaoTextField(
                             value = confirmPassword,
-                            onValueChange = { 
+                            onValueChange = {
                                 if (it.length <= 30) confirmPassword = it
                                 confirmPasswordTouched = true
                             },
                             label = "Confirmar senha",
                             isPassword = true,
                             isError = confirmPasswordError != null,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Password,
-                                imeAction = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    keyboardType = KeyboardType.Password,
+                                    imeAction = ImeAction.Done,
+                                ),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                         )
-                        confirmPasswordError?.let { Text(it, color = ErrorRed, fontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, top = 4.dp)) }
+                        confirmPasswordError?.let {
+                            Text(
+                                it,
+                                color = ErrorRed,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                            )
+                        }
                     }
 
                     uiState.error?.let {
@@ -306,23 +369,22 @@ fun RegisterScreen(
                         text = "Criar conta",
                         isLoading = uiState.isLoading || isGeneratingUsername,
                         enabled = isFormValid && !uiState.isLoading && !isGeneratingUsername,
-                        onClick = {
-                            if (username.isBlank()) {
-                                // Caso o usuário tenha sido muito rápido, gera o ID agora
-                                scope.launch {
-                                    isGeneratingUsername = true
-                                    val generated = viewModel.generateAvailableUsername(name)
-                                    username = generated
-                                    isGeneratingUsername = false
-                                    if (username.isNotBlank()) {
-                                        viewModel.register(email, password, name, phone, nickname, username)
-                                    }
+                    ) {
+                        if (username.isBlank()) {
+                            // Caso o usuário tenha sido muito rápido, gera o ID agora
+                            scope.launch {
+                                isGeneratingUsername = true
+                                val generated = viewModel.generateAvailableUsername(name)
+                                username = generated
+                                isGeneratingUsername = false
+                                if (username.isNotBlank()) {
+                                    viewModel.register(email, password, name, phone, nickname, username)
                                 }
-                            } else {
-                                viewModel.register(email, password, name, phone, nickname, username)
                             }
+                        } else {
+                            viewModel.register(email, password, name, phone, nickname, username)
                         }
-                    )
+                    }
                 }
 
                 Spacer(Modifier.height(32.dp))

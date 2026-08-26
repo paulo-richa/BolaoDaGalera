@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.flowOf
 
 class FakeChampionshipRepository : ChampionshipRepository {
     override fun getChampionships(): Flow<List<Championship>> = flowOf(Championship.getAll())
+
     override suspend fun refreshCache() {
         Championship.setCache(Championship.getAll())
     }

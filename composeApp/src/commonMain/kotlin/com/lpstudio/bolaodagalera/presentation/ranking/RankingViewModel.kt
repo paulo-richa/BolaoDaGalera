@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 data class ParticipantHit(
     val match: Match,
     val prediction: Prediction,
-    val points: Int
+    val points: Int,
 )
 
 data class RankingUiState(
@@ -27,7 +27,7 @@ data class RankingUiState(
     val selectedParticipantHits: List<ParticipantHit> = emptyList(),
     val selectedParticipantName: String = "",
     val isLoading: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class RankingViewModel(
@@ -36,9 +36,8 @@ class RankingViewModel(
     private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
     private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
-    private val bolaoId: String
+    private val bolaoId: String,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(RankingUiState())
     val uiState: StateFlow<RankingUiState> = _uiState.asStateFlow()
 
@@ -62,54 +61,58 @@ class RankingViewModel(
                     val participants = bolao.participants
                     pointsExact = bolao.pointsExactScore
                     pointsWinner = bolao.pointsWinnerOrDraw
-                    
+
                     combine(
                         matchRepository.getMatches(bolao.championshipId),
                         predictionRepository.getBolaoAllPredictions(bolaoId),
-                        flow { emit(authRepository.getUsers(participants)) }
+                        flow { emit(authRepository.getUsers(participants)) },
                     ) { matches, predictions, users ->
                         allMatches = matches
                         allPredictions = predictions
                         val userMap = users.associateBy { it.id }
-                        
+
                         // Calcula o ranking localmente com base nos placares atuais (Live)
                         participants.map { userId ->
                             val user = userMap[userId]
                             val userPredictions = predictions.filter { it.userId == userId }
-                            
+
                             var totalPoints = 0
                             var exactScores = 0
                             var correctResults = 0
-                            
+
                             userPredictions.forEach { pred ->
                                 val match = matches.find { it.id == pred.matchId }
                                 if (match != null && match.homeScore != null && match.awayScore != null) {
-                                    val pts = calculatePointsUseCase(
-                                        pred, 
-                                        match.homeScore!!, 
-                                        match.awayScore!!, 
-                                        pointsExact, 
-                                        pointsWinner
-                                    )
+                                    val pts =
+                                        calculatePointsUseCase(
+                                            pred,
+                                            match.homeScore!!,
+                                            match.awayScore!!,
+                                            pointsExact,
+                                            pointsWinner,
+                                        )
                                     totalPoints += pts
-                                    if (pts == pointsExact) exactScores++
-                                    else if (pts == pointsWinner) correctResults++
+                                    if (pts == pointsExact) {
+                                        exactScores++
+                                    } else if (pts == pointsWinner) {
+                                        correctResults++
+                                    }
                                 }
                             }
-                            
+
                             RankingEntry(
                                 userId = userId,
                                 userName = user?.name ?: "Usuário",
                                 userNickname = user?.nickname?.ifBlank { "" } ?: "",
                                 points = totalPoints,
                                 exactScores = exactScores,
-                                correctResults = correctResults
+                                correctResults = correctResults,
                             )
                         }.sortedWith(
                             compareByDescending<RankingEntry> { it.points }
                                 .thenByDescending { it.exactScores }
                                 .thenByDescending { it.correctResults }
-                                .thenBy { it.userName.lowercase() }
+                                .thenBy { it.userName.lowercase() },
                         )
                     }
                 }.onEach { entries ->
@@ -117,7 +120,6 @@ class RankingViewModel(
                 }.catch { e ->
                     _uiState.update { it.copy(error = e.message, isLoading = false) }
                 }.launchIn(viewModelScope)
-
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
@@ -125,29 +127,37 @@ class RankingViewModel(
     }
 
     fun selectParticipant(entry: RankingEntry) {
-        val hits = allPredictions
-            .filter { it.userId == entry.userId }
-            .mapNotNull { pred ->
-                val match = allMatches.find { it.id == pred.matchId }
-                if (match != null && match.homeScore != null && match.awayScore != null) {
-                    val points = calculatePointsUseCase(
-                        pred, 
-                        match.homeScore!!, 
-                        match.awayScore!!,
-                        pointsExact,
-                        pointsWinner
-                    )
-                    if (points > 0) {
-                        ParticipantHit(match, pred, points)
-                    } else null
-                } else null
-            }
-            .sortedByDescending { it.match.matchDateMillis }
+        val hits =
+            allPredictions
+                .filter { it.userId == entry.userId }
+                .mapNotNull { pred ->
+                    val match = allMatches.find { it.id == pred.matchId }
+                    if (match != null && match.homeScore != null && match.awayScore != null) {
+                        val points =
+                            calculatePointsUseCase(
+                                pred,
+                                match.homeScore!!,
+                                match.awayScore!!,
+                                pointsExact,
+                                pointsWinner,
+                            )
+                        if (points > 0) {
+                            ParticipantHit(match, pred, points)
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                }
+                .sortedByDescending { it.match.matchDateMillis }
 
-        _uiState.update { it.copy(
-            selectedParticipantHits = hits,
-            selectedParticipantName = entry.userNickname.ifBlank { entry.userName }
-        ) }
+        _uiState.update {
+            it.copy(
+                selectedParticipantHits = hits,
+                selectedParticipantName = entry.userNickname.ifBlank { entry.userName },
+            )
+        }
     }
 
     fun clearSelectedParticipant() {
