@@ -10,7 +10,6 @@ const db = admin.firestore();
 const { syncBrasileirao } = require("./brasileirao");
 const { syncLibertadores } = require("./libertadores");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
-const { advanceTeams } = require("./knockout");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
@@ -32,11 +31,6 @@ exports.onMatchUpdate = onDocumentWritten("championships/{championshipId}/matche
             homeScore: afterData.homeScore,
             awayScore: afterData.awayScore
         });
-
-        // Se for jogo de mata-mata, avança os times na chave
-        if (event.params.championshipId === "LIBERTADORES") {
-            await advanceTeams(db, admin, event.params.championshipId);
-        }
     }
 });
 
@@ -54,12 +48,16 @@ exports.recalculateAllRankings = onRequest({ timeoutSeconds: 540, memory: "512Mi
 /**
  * Sincronização Manual da Libertadores via HTTP (Zero custos).
  * Chamada pelo GitHub Actions (agendamento externo, gratuito).
+ *
+ * Fonte única de verdade: football-data.org. Não calculamos/adivinhamos
+ * quem avança de fase aqui — só gravamos exatamente o que a API manda.
+ * Quando a API publicar o próximo confronto, o sync normal já traz os
+ * times e a data certos.
  */
 exports.syncLibertadoresHTTP = onRequest({ secrets: [footballDataApiKey] }, async (req, res) => {
     try {
         logger.info("📡 Sincronizando Libertadores (HTTP)");
         await syncLibertadores(db, admin, axios);
-        await advanceTeams(db, admin, "LIBERTADORES");
         logger.info("✅ Sincronização concluída");
         return res.json({ status: "success", message: "Libertadores sincronizada" });
     } catch (error) {
