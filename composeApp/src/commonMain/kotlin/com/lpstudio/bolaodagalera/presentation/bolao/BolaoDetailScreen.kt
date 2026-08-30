@@ -2073,7 +2073,10 @@ fun MatchCard(
 
             if (!(isFin && hasPrediction)) {
                 Text(
-                    text = formatMatchDate(match.matchDateMillis),
+                    // Enquanto o confronto não estiver confirmado (times TBD), não
+                    // mostra a data mesmo que a API já tenha publicado uma para o
+                    // "slot" da fase - evita sugerir um confronto que ainda não existe.
+                    text = if (isTbd) "Data a definir" else formatMatchDate(match.matchDateMillis),
                     fontSize = 9.sp,
                     color = Color.White,
                     letterSpacing = 0.2.sp,
