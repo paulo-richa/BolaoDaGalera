@@ -6,6 +6,7 @@ name: Sync Scores (Brasileirão + Libertadores)
 #     (30 min antes até 30 min depois do início). Se sim, faz um loop
 #     interno chamando o sync a cada ~60s até o próximo disparo do cron,
 #     simulando sincronização "a cada 1 minuto" durante jogos.
+# Reativação do agendamento após suspensão por inatividade (2026-08-30).
 on:
   schedule:
     - cron: "0 5,12,17,21 * * *"  # 02h,09h,14h,18h BRT -> 05h,12h,17h,21h UTC
