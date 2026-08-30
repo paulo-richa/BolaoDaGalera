@@ -32,6 +32,9 @@ data class Match(
      */
     fun isStuck(now: Long): Boolean = !isFinished && now > (matchDateMillis + 48 * 3600_000L)
 
+    /** A API/avanço automático de chave ainda não definiu quando esse jogo acontece. */
+    val hasNoConfirmedDate: Boolean get() = matchDateMillis == NO_DATE_MILLIS
+
     fun groupRound(): Int {
         // Prioridade 1: ID do Brasileirão (Mais confiável que o campo 'group' vindo da API)
         if (id.contains("-R")) {
@@ -54,5 +57,18 @@ data class Match(
             5, 6 -> 3
             else -> 0
         }
+    }
+
+    companion object {
+        /**
+         * Sentinela para "sem data confirmada ainda" (ex.: mata-mata cujo
+         * time avançou mas a API ainda não publicou a data do confronto).
+         * Usa um valor bem distante no futuro (em vez de 0/epoch) para que
+         * as comparações de "já passou / está ao vivo / está travado" não
+         * tratem o jogo como se já tivesse ocorrido em 1970, e para que a
+         * ordenação por data mantenha esses jogos depois dos que já têm
+         * data real, sem overflow em somas como matchDateMillis + 48h.
+         */
+        const val NO_DATE_MILLIS = 9_999_999_999_999L
     }
 }

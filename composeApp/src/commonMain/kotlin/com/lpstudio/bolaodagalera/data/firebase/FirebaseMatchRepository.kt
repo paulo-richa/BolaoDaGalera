@@ -21,7 +21,7 @@ private data class MatchDto(
     val awayTeamFlag: String = "",
     val homeTeamCrest: String? = null,
     val awayTeamCrest: String? = null,
-    val matchDateMillis: Long = 0L,
+    val matchDateMillis: Long = Match.NO_DATE_MILLIS,
     val phase: String = "",
     val group: String? = null,
     val homeScore: Int? = null,
