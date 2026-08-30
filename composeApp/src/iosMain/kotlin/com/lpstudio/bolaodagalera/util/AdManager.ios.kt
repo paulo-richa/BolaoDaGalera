@@ -1,6 +1,7 @@
 package com.lpstudio.bolaodagalera.util
 
-import cocoapods.Google_Mobile_Ads_SDK.*
+import cocoapods.Google_Mobile_Ads_SDK.GADInterstitialAd
+import cocoapods.Google_Mobile_Ads_SDK.GADRequest
 import com.lpstudio.bolaodagalera.ADMOB_IOS_INTERSTITIAL_ID
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.UIKit.UIApplication
@@ -46,7 +47,7 @@ actual object AdManager {
                 } else {
                     println("AdManager: Failed to load interstitial: ${error.localizedDescription}")
                 }
-            },
+            }
         )
     }
 

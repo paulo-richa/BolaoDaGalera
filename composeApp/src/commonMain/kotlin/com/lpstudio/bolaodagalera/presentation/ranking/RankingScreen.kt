@@ -3,13 +3,35 @@ package com.lpstudio.bolaodagalera.presentation.ranking
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,7 +46,13 @@ import androidx.compose.ui.window.DialogProperties
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.presentation.components.UserAvatar
-import com.lpstudio.bolaodagalera.presentation.theme.*
+import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
+import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
+import com.lpstudio.bolaodagalera.presentation.theme.Gold
+import com.lpstudio.bolaodagalera.presentation.theme.NavyCard
+import com.lpstudio.bolaodagalera.presentation.theme.NavyElevated
+import com.lpstudio.bolaodagalera.presentation.theme.Neon
+import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.getInitials
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import kotlinx.datetime.Instant
@@ -47,16 +75,16 @@ fun RankingScreen(bolaoId: String) {
                 showHitsDialog = false
                 viewModel.clearSelectedParticipant()
             },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Surface(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(28.dp),
                 color = DeepNavy,
-                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
+                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
             ) {
                 ParticipantHitsContent(
                     name = uiState.selectedParticipantName,
@@ -65,7 +93,7 @@ fun RankingScreen(bolaoId: String) {
                     onClose = {
                         showHitsDialog = false
                         viewModel.clearSelectedParticipant()
-                    },
+                    }
                 )
             }
         }
@@ -80,7 +108,7 @@ fun RankingScreen(bolaoId: String) {
         uiState.entries.isEmpty() && uiState.error == null ->
             Box(
                 Modifier.fillMaxSize().padding(32.dp),
-                contentAlignment = Alignment.Center,
+                contentAlignment = Alignment.Center
             ) {
                 Text("Nenhum participante encontrado", color = TextMuted)
             }
@@ -90,7 +118,7 @@ fun RankingScreen(bolaoId: String) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 60.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // ── Podium Section ───────────────────────────────────────────────
                     if (uiState.entries.size >= 3) {
@@ -104,7 +132,7 @@ fun RankingScreen(bolaoId: String) {
                                 onEntryClick = {
                                     viewModel.selectParticipant(it)
                                     showHitsDialog = true
-                                },
+                                }
                             )
                             Spacer(Modifier.height(20.dp))
                         }
@@ -115,30 +143,30 @@ fun RankingScreen(bolaoId: String) {
                         Surface(
                             color = NavyCard.copy(alpha = 0.5f),
                             shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     "#",
                                     modifier = Modifier.width(30.dp),
                                     fontSize = 11.sp,
                                     color = TextMuted,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     "PARTICIPANTE",
                                     modifier = Modifier.weight(1f),
                                     fontSize = 11.sp,
                                     color = TextMuted,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Bold
                                 )
 
                                 Row(
                                     modifier = Modifier.width(110.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
                                         "PTS",
@@ -146,7 +174,7 @@ fun RankingScreen(bolaoId: String) {
                                         fontSize = 11.sp,
                                         color = TextMuted,
                                         fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center,
+                                        textAlign = TextAlign.Center
                                     )
                                     Text("🎯", modifier = Modifier.width(30.dp), fontSize = 12.sp, textAlign = TextAlign.Center)
                                     Text("✅", modifier = Modifier.width(30.dp), fontSize = 12.sp, textAlign = TextAlign.Center)
@@ -160,7 +188,7 @@ fun RankingScreen(bolaoId: String) {
                     itemsIndexed(
                         items = uiState.entries,
                         key = { _, entry -> "rank-${entry.userId}" },
-                        contentType = { _, _ -> "ranking-row" },
+                        contentType = { _, _ -> "ranking-row" }
                     ) { index, entry ->
                         RankingRow(
                             position = index + 1,
@@ -169,7 +197,7 @@ fun RankingScreen(bolaoId: String) {
                             onClick = {
                                 viewModel.selectParticipant(entry)
                                 showHitsDialog = true
-                            },
+                            }
                         )
                     }
 
@@ -178,21 +206,21 @@ fun RankingScreen(bolaoId: String) {
                         Spacer(Modifier.height(24.dp))
                         Column(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 4.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(NavyCard.copy(alpha = 0.4f))
-                                    .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-                                    .padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(NavyCard.copy(alpha = 0.4f))
+                                .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
                                 "CRITÉRIOS DE DESEMPATE",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Black,
                                 color = Color.White.copy(alpha = 0.5f),
-                                letterSpacing = 1.5.sp,
+                                letterSpacing = 1.5.sp
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("🎯", fontSize = 14.sp)
@@ -217,21 +245,21 @@ fun RankingScreen(bolaoId: String) {
                 // Sombra/Blur no topo
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(20.dp)
-                            .background(Brush.verticalGradient(listOf(DeepNavy, Color.Transparent)))
-                            .align(Alignment.TopCenter),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(20.dp)
+                        .background(Brush.verticalGradient(listOf(DeepNavy, Color.Transparent)))
+                        .align(Alignment.TopCenter)
                 )
 
                 // Sombra/Blur na base
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                            .background(Brush.verticalGradient(listOf(Color.Transparent, DeepNavy)))
-                            .align(Alignment.BottomCenter),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, DeepNavy)))
+                        .align(Alignment.BottomCenter)
                 )
             }
     }
@@ -243,40 +271,40 @@ private fun Podium(
     second: RankingEntry,
     third: RankingEntry,
     currentUserId: String,
-    onEntryClick: (RankingEntry) -> Unit,
+    onEntryClick: (RankingEntry) -> Unit
 ) {
     Box(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-        contentAlignment = Alignment.BottomCenter,
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        contentAlignment = Alignment.BottomCenter
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Bottom,
+            verticalAlignment = Alignment.Bottom
         ) {
             PodiumPillar(
                 entry = second,
                 position = 2,
                 isCurrentUser = second.userId == currentUserId,
                 height = 100.dp,
-                modifier = Modifier.weight(1f).clickable { onEntryClick(second) },
+                modifier = Modifier.weight(1f).clickable { onEntryClick(second) }
             )
             PodiumPillar(
                 entry = first,
                 position = 1,
                 isCurrentUser = first.userId == currentUserId,
                 height = 140.dp,
-                modifier = Modifier.weight(1.1f).clickable { onEntryClick(first) },
+                modifier = Modifier.weight(1.1f).clickable { onEntryClick(first) }
             )
             PodiumPillar(
                 entry = third,
                 position = 3,
                 isCurrentUser = third.userId == currentUserId,
                 height = 85.dp,
-                modifier = Modifier.weight(1f).clickable { onEntryClick(third) },
+                modifier = Modifier.weight(1f).clickable { onEntryClick(third) }
             )
         }
     }
@@ -288,7 +316,7 @@ private fun PodiumPillar(
     position: Int,
     isCurrentUser: Boolean,
     height: androidx.compose.ui.unit.Dp,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val accentColor =
         when (position) {
@@ -306,7 +334,7 @@ private fun PodiumPillar(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier,
+        modifier = modifier
     ) {
         // Avatar with crown for #1
         Box(contentAlignment = Alignment.TopCenter) {
@@ -314,7 +342,7 @@ private fun PodiumPillar(
                 initials = entry.userName.getInitials(),
                 size = if (position == 1) 64.dp else 52.dp,
                 fontSize = if (position == 1) 24.sp else 20.sp,
-                borderColor = if (isCurrentUser) Neon else accentColor.copy(alpha = 0.5f),
+                borderColor = if (isCurrentUser) Neon else accentColor.copy(alpha = 0.5f)
             )
             if (position == 1) {
                 Text("👑", modifier = Modifier.offset(y = (-18).dp), fontSize = 20.sp)
@@ -328,7 +356,7 @@ private fun PodiumPillar(
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = if (isCurrentUser) Neon else Color.White,
-            maxLines = 1,
+            maxLines = 1
         )
 
         Spacer(Modifier.height(12.dp))
@@ -339,20 +367,20 @@ private fun PodiumPillar(
             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(height),
+            Modifier
+                .fillMaxWidth()
+                .height(height)
         ) {
             Box(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(accentColor.copy(alpha = 0.15f), Color.Transparent),
-                            ),
-                        ),
-                contentAlignment = Alignment.Center,
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(accentColor.copy(alpha = 0.15f), Color.Transparent)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(medal, fontSize = 16.sp)
@@ -361,14 +389,14 @@ private fun PodiumPillar(
                         text = entry.points.toString(),
                         fontSize = if (position == 1) 24.sp else 20.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color.White,
+                        color = Color.White
                     )
                     Text(
                         "PONTOS",
                         fontSize = 8.sp,
                         fontWeight = FontWeight.Bold,
                         color = accentColor,
-                        letterSpacing = 1.sp,
+                        letterSpacing = 1.sp
                     )
                 }
             }
@@ -377,12 +405,7 @@ private fun PodiumPillar(
 }
 
 @Composable
-private fun RankingRow(
-    position: Int,
-    entry: RankingEntry,
-    isCurrentUser: Boolean,
-    onClick: () -> Unit,
-) {
+private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolean, onClick: () -> Unit) {
     val surfaceColor = if (isCurrentUser) NavyElevated else NavyCard
     val borderColor = if (isCurrentUser) Neon.copy(alpha = 0.5f) else GlassBorder
 
@@ -390,24 +413,24 @@ private fun RankingRow(
         color = surfaceColor,
         shape = RoundedCornerShape(16.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
         Row(
             modifier =
-                Modifier
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            Modifier
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // Position
             Box(
                 modifier = Modifier.width(30.dp),
-                contentAlignment = Alignment.CenterStart,
+                contentAlignment = Alignment.CenterStart
             ) {
                 Text(
                     text = position.toString(),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (position <= 3) Gold else TextMuted,
+                    color = if (position <= 3) Gold else TextMuted
                 )
             }
 
@@ -416,7 +439,7 @@ private fun RankingRow(
                 initials = entry.userName.getInitials(),
                 size = 36.dp,
                 fontSize = 14.sp,
-                borderColor = if (isCurrentUser) Neon else Neon.copy(alpha = 0.3f),
+                borderColor = if (isCurrentUser) Neon else Neon.copy(alpha = 0.3f)
             )
 
             Spacer(Modifier.width(12.dp))
@@ -430,7 +453,7 @@ private fun RankingRow(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    maxLines = 1,
+                    maxLines = 1
                 )
             }
 
@@ -438,7 +461,7 @@ private fun RankingRow(
             Row(
                 modifier = Modifier.width(110.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = entry.points.toString(),
@@ -446,21 +469,21 @@ private fun RankingRow(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Black,
                     color = if (isCurrentUser) Neon else Color.White,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Center
                 )
                 Text(
                     text = entry.exactScores.toString(),
                     modifier = Modifier.width(30.dp),
                     fontSize = 13.sp,
                     color = TextMuted,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Center
                 )
                 Text(
                     text = entry.correctResults.toString(),
                     modifier = Modifier.width(30.dp),
                     fontSize = 13.sp,
                     color = TextMuted,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -468,29 +491,24 @@ private fun RankingRow(
 }
 
 @Composable
-private fun ParticipantHitsContent(
-    name: String,
-    hits: List<ParticipantHit>,
-    allMatches: List<Match>,
-    onClose: () -> Unit,
-) {
+private fun ParticipantHitsContent(name: String, hits: List<ParticipantHit>, allMatches: List<Match>, onClose: () -> Unit) {
     Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
     ) {
         Text(
             text = "Acertos de $name",
             fontSize = 20.sp,
             fontWeight = FontWeight.Black,
-            color = Color.White,
+            color = Color.White
         )
         val totalPoints = hits.sumOf { it.points }
         Text(
             text = "$totalPoints pontos ganhos em ${hits.size} palpites",
             fontSize = 13.sp,
-            color = TextMuted,
+            color = TextMuted
         )
 
         Spacer(Modifier.height(24.dp))
@@ -498,14 +516,14 @@ private fun ParticipantHitsContent(
         if (hits.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                contentAlignment = Alignment.Center,
+                contentAlignment = Alignment.Center
             ) {
                 Text("Nenhum acerto registrado ainda.", color = TextMuted, fontSize = 14.sp)
             }
         } else {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp)
             ) {
                 items(hits.size) { index ->
                     val hit = hits[index]
@@ -518,7 +536,7 @@ private fun ParticipantHitsContent(
 
         TextButton(
             onClick = onClose,
-            modifier = Modifier.align(Alignment.End),
+            modifier = Modifier.align(Alignment.End)
         ) {
             Text("Fechar", color = Neon, fontWeight = FontWeight.Bold)
         }
@@ -526,10 +544,7 @@ private fun ParticipantHitsContent(
 }
 
 @Composable
-private fun HitItem(
-    hit: ParticipantHit,
-    allMatches: List<Match>,
-) {
+private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
     val date =
         remember(hit.match.matchDateMillis) {
             val dt =
@@ -555,18 +570,18 @@ private fun HitItem(
         modifier = Modifier.fillMaxWidth(),
         color = accentColor.copy(alpha = 0.08f),
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "$hName x $aName",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = Color.White
                 )
 
                 Spacer(Modifier.height(4.dp))
@@ -585,7 +600,7 @@ private fun HitItem(
                 Text(
                     text = "$groupInfo$separator$date • Placar: ${hit.match.homeScore}x${hit.match.awayScore}",
                     fontSize = 11.sp,
-                    color = TextMuted,
+                    color = TextMuted
                 )
             }
 
@@ -597,13 +612,13 @@ private fun HitItem(
                         fontSize = 8.sp,
                         fontWeight = FontWeight.Black,
                         color = TextMuted,
-                        letterSpacing = 0.5.sp,
+                        letterSpacing = 0.5.sp
                     )
                     Text(
                         text = "${hit.prediction.homeScore}x${hit.prediction.awayScore}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color.White,
+                        color = Color.White
                     )
                 }
 
@@ -612,17 +627,17 @@ private fun HitItem(
                 // Pontos
                 Box(
                     modifier =
-                        Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(accentColor),
-                    contentAlignment = Alignment.Center,
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(accentColor),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "+${hit.points}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Black,
-                        color = DeepNavy,
+                        color = DeepNavy
                     )
                 }
             }

@@ -1,0 +1,183 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // uid do administrador (Paulo) — único autorizado a escrever placares oficiais
+    function isAdmin() {
+      return request.auth != null && request.auth.uid == "Uf3tNfKKE3hnQ7xhLxaZpW1QyIC2";
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 1. USUÁRIOS
+    // NOTA: mantido como antes (leitura aberta a qualquer logado) porque o App
+    // usa isso para mostrar nome/apelido de outros participantes em rankings e
+    // listas de bolão (authRepository.getUsers(...)). Isso também expõe email e
+    // telefone de qualquer usuário a qualquer outro usuário logado. Corrigir de
+    // verdade exige separar o documento em um perfil público (nome/apelido) e um
+    // privado (email/telefone) — mudança de modelo de dados, não só de regra.
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 2. BOLÕES
+    match /boloes/{bolaoId} {
+      // NOTA: leitura aberta a qualquer logado é necessária hoje porque o fluxo
+      // de "entrar por código" faz uma query direta no Firestore filtrando por
+      // "code" (FirebaseBolaoRepository.joinBolao/requestJoinBolao). Isso expõe
+      // o código de convite de QUALQUER bolão a QUALQUER usuário logado — não dá
+      // para fechar isso só na regra sem quebrar essa busca. A correção real é
+      // mover a busca por código para uma Cloud Function (Admin SDK, ignora
+      // regras), que aí sim permite travar a leitura direta do documento.
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+
+      // Dono pode alterar qualquer campo.
+      // Usuário comum só pode mexer no próprio uid dentro de participants/
+      // pendingParticipants/pendingExits (entrar, sair, aceitar convite direto,
+      // cancelar pedido) — nenhum outro campo, e nenhum outro uid, pode mudar
+      // nessa via. Isso cobre requestJoinBolao, requestLeaveBolao e
+      // addParticipantDirectly (usado ao aceitar um convite).
+      //
+      // RESÍDUO CONHECIDO: como a leitura de /boloes/{bolaoId} precisa ficar
+      // aberta a qualquer logado (ver nota acima sobre o código de convite),
+      // e esta regra permite entrar direto em "participants" sem aprovação do
+      // dono, um usuário tecnicamente capaz de listar bolões arbitrários
+      // poderia se autoadicionar a qualquer bolão sem convite. O fluxo do App
+      // sempre passa por convite/código antes de chamar isso, mas a regra em
+      // si não impõe essa exigência. Fecha de vez só migrando join/accept
+      // para uma Cloud Function (Admin SDK) — mesma correção do item #2.
+      allow update: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid ||
+        isSelfMembershipRequestOnly()
+      );
+
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      function isSelfMembershipRequestOnly() {
+        let before = resource.data;
+        let after = request.resource.data;
+        let uid = request.auth.uid;
+        return after.diff(before).affectedKeys().hasOnly(['participants', 'pendingParticipants', 'pendingExits']) &&
+          after.ownerId == before.ownerId &&
+          after.code == before.code &&
+          after.participants.removeAll([uid]) == before.participants.removeAll([uid]) &&
+          after.pendingParticipants.removeAll([uid]) == before.pendingParticipants.removeAll([uid]) &&
+          after.pendingExits.removeAll([uid]) == before.pendingExits.removeAll([uid]);
+      }
+
+      function isParticipant() {
+        return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/boloes/$(bolaoId)).data.participants;
+      }
+
+      // PALPITES: leitura restrita ao próprio autor ou a participantes do bolão
+      // (antes havia uma regra "read: if auth" liberando geral, que também
+      // anulava a regra restritiva definida mais abaixo para collection group).
+      // Escrita só do dono do palpite, e só antes do jogo começar — impede
+      // editar o placar depois que a partida já rolou.
+      match /predictions/{predictionId} {
+        allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isParticipant());
+
+        allow create: if isSignedIn() &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.bolaoId == bolaoId &&
+          isBeforeMatchStart(request.resource.data.matchId);
+
+        allow update: if isSignedIn() &&
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == resource.data.userId &&
+          request.resource.data.matchId == resource.data.matchId &&
+          request.resource.data.bolaoId == resource.data.bolaoId &&
+          isBeforeMatchStart(resource.data.matchId);
+
+        allow delete: if false;
+
+        function isBeforeMatchStart(matchId) {
+          let champId = get(/databases/$(database)/documents/boloes/$(bolaoId)).data.championshipId;
+          let match = get(/databases/$(database)/documents/championships/$(champId)/matches/$(matchId)).data;
+          return match.matchDateMillis == null || request.time.toMillis() < match.matchDateMillis;
+        }
+      }
+
+      // RANKINGS: a pontuação real só é calculada pela Cloud Function (Admin
+      // SDK, ignora regras). O cliente só pode criar/reiniciar o PRÓPRIO
+      // registro zerado (initializeRankingEntry, chamado ao entrar no bolão) —
+      // nunca gravar um valor de pontos diferente de zero. Isso fecha a brecha
+      // de fabricar pontuação, sem quebrar a inicialização do ranking.
+      match /rankings/{rankingUserId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() &&
+          request.auth.uid == rankingUserId &&
+          request.resource.data.userId == rankingUserId &&
+          request.resource.data.totalPoints == 0 &&
+          request.resource.data.totalExactScores == 0 &&
+          request.resource.data.totalCorrectResults == 0 &&
+          request.resource.data.matchesPlayed == 0;
+      }
+    }
+
+    // 3. CONVITES
+    // Antes, qualquer logado podia ler/editar/apagar o convite de QUALQUER
+    // pessoa. Agora só quem é o destinatário do convite (por uid, email,
+    // username ou telefone do próprio perfil) pode ler/aceitar/recusar/apagar.
+    match /invitations/{inviteId} {
+      allow create: if isSignedIn();
+
+      allow read: if isSignedIn() && isMyInvitation(resource.data.inviteeIdentifier);
+
+      // Só permite mudar o campo "status" (aceitar/recusar), nada mais.
+      allow update: if isSignedIn() &&
+        isMyInvitation(resource.data.inviteeIdentifier) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+
+      allow delete: if isSignedIn() && isMyInvitation(resource.data.inviteeIdentifier);
+
+      function isMyInvitation(identifier) {
+        let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+        return identifier == request.auth.uid ||
+          identifier == request.auth.token.email ||
+          identifier == profile.email ||
+          identifier == profile.username ||
+          identifier == profile.phone ||
+          // Convites por telefone: o perfil guarda o telefone "cru" (como
+          // digitado no cadastro), mas o convite e a busca usam só dígitos
+          // (trimmedId.filter { it.isDigit() }). Sem função de regex-replace
+          // nas regras do Firestore, não dá pra normalizar aqui dentro. Para
+          // não quebrar a caixa de convites por telefone, mantemos aberto
+          // para identifiers só numéricos (mesmo comportamento de antes) até
+          // o campo "phone" ser normalizado para dígitos na gravação do
+          // perfil (aí sim dá pra travar isso também).
+          identifier.matches('^[0-9]+$');
+      }
+    }
+
+    // 4. CAMPEONATOS E JOGOS: leitura para todos, escrita apenas para o Admin
+    match /championships/{champId} {
+      allow read: if isSignedIn();
+
+      match /matches/{matchId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+      }
+    }
+
+    // Collection group: consultas globais de jogos (usadas pelo App/Functions)
+    match /{path=**}/matches/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 5. SUPORTE: qualquer logado pode abrir chamado; só autor ou Admin leem
+    match /support_tickets/{ticketId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin()
+      );
+    }
+  }
+}

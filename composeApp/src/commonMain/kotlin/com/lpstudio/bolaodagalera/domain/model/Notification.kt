@@ -13,14 +13,25 @@ data class Notification(
     val type: NotificationType,
     val isRead: Boolean = false,
     val matchId: String? = null,
-    val bolaoId: String? = null,
+    val bolaoId: String? = null
 )
 
 enum class NotificationType {
-    MATCH_REMINDER, // Lembrete de jogo para palpitar
-    RESULT_READY, // Placar atualizado e pontos somados
-    INVITATION, // Novo convite para bolão
-    JOIN_REQUEST, // Admin: Alguém quer entrar no seu bolão
-    EXIT_REQUEST, // Admin: Alguém quer sair do seu bolão
-    SYSTEM, // Avisos gerais
+    // Lembrete de jogo para palpitar
+    MATCH_REMINDER,
+
+    // Placar atualizado e pontos somados
+    RESULT_READY,
+
+    // Novo convite para bolão
+    INVITATION,
+
+    // Admin: Alguém quer entrar no seu bolão
+    JOIN_REQUEST,
+
+    // Admin: Alguém quer sair do seu bolão
+    EXIT_REQUEST,
+
+    // Avisos gerais
+    SYSTEM
 }

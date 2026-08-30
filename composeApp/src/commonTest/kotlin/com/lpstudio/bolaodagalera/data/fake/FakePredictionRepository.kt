@@ -13,31 +13,26 @@ import kotlinx.coroutines.flow.update
 
 class FakePredictionRepository(
     private val matchRepository: MatchRepository,
-    private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
+    private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase()
 ) : PredictionRepository {
-    private val _predictions = MutableStateFlow<List<Prediction>>(emptyList())
+    private val predictionsState = MutableStateFlow<List<Prediction>>(emptyList())
 
     private val userNames =
         mapOf(
-            "pauloricha" to ("Paulo Teste Silva" to "Paulão"),
+            "pauloricha" to ("Paulo Teste Silva" to "Paulão")
         )
 
-    override fun getUserPredictions(
-        userId: String,
-        bolaoId: String,
-    ): Flow<List<Prediction>> = _predictions.map { it.filter { p -> p.userId == userId && p.bolaoId == bolaoId } }
+    override fun getUserPredictions(userId: String, bolaoId: String): Flow<List<Prediction>> =
+        predictionsState.map { it.filter { p -> p.userId == userId && p.bolaoId == bolaoId } }
 
     override fun getBolaoAllPredictions(bolaoId: String): Flow<List<Prediction>> =
-        _predictions.map { it.filter { p -> p.bolaoId == bolaoId } }
+        predictionsState.map { it.filter { p -> p.bolaoId == bolaoId } }
 
-    override suspend fun getUserPredictionForMatch(
-        userId: String,
-        bolaoId: String,
-        matchId: String,
-    ): Prediction? = _predictions.value.firstOrNull { it.userId == userId && it.bolaoId == bolaoId && it.matchId == matchId }
+    override suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction? =
+        predictionsState.value.firstOrNull { it.userId == userId && it.bolaoId == bolaoId && it.matchId == matchId }
 
     override suspend fun savePrediction(prediction: Prediction) {
-        _predictions.update { list ->
+        predictionsState.update { list ->
             val existing =
                 list.firstOrNull {
                     it.userId == prediction.userId && it.bolaoId == prediction.bolaoId && it.matchId == prediction.matchId
@@ -50,23 +45,16 @@ class FakePredictionRepository(
         }
     }
 
-    override suspend fun deleteUserPredictions(
-        userId: String,
-        bolaoId: String,
-    ) {
-        _predictions.update { list ->
+    override suspend fun deleteUserPredictions(userId: String, bolaoId: String) {
+        predictionsState.update { list ->
             list.filterNot { it.userId == userId && it.bolaoId == bolaoId }
         }
     }
 
-    override fun getRanking(
-        bolaoId: String,
-        championshipId: String,
-        participantIds: List<String>,
-    ): Flow<List<RankingEntry>> {
+    override fun getRanking(bolaoId: String, championshipId: String, participantIds: List<String>): Flow<List<RankingEntry>> {
         return combine(
             getBolaoAllPredictions(bolaoId),
-            matchRepository.getMatches(championshipId),
+            matchRepository.getMatches(championshipId)
         ) { predictions, matches ->
             val matchScores = matches.associate { it.id to (it.homeScore to it.awayScore) }
             val userStats = mutableMapOf<String, Triple<Int, Int, Int>>() // points, exact, correct
@@ -90,7 +78,7 @@ class FakePredictionRepository(
                     Triple(
                         current.first + points,
                         current.second + if (isExact) 1 else 0,
-                        current.third + if (isCorrect) 1 else 0,
+                        current.third + if (isCorrect) 1 else 0
                     )
             }
 
@@ -102,13 +90,13 @@ class FakePredictionRepository(
                     userNickname = nick,
                     points = stats.first,
                     exactScores = stats.second,
-                    correctResults = stats.third,
+                    correctResults = stats.third
                 )
             }.sortedWith(
                 compareByDescending<RankingEntry> { it.points }
                     .thenByDescending { it.exactScores }
                     .thenByDescending { it.correctResults }
-                    .thenBy { it.userName.lowercase() },
+                    .thenBy { it.userName.lowercase() }
             )
         }
     }

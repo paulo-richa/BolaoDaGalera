@@ -14,7 +14,7 @@ data class TeamStanding(
     val lost: Int = 0,
     val goalsFor: Int = 0,
     val goalsAgainst: Int = 0,
-    val points: Int = 0,
+    val points: Int = 0
 ) {
     val goalDifference: Int get() = goalsFor - goalsAgainst
 }
@@ -41,15 +41,15 @@ object StandingsCalculator {
                     goalsFor = currentH.goalsFor + h,
                     goalsAgainst = currentH.goalsAgainst + a,
                     points =
-                        currentH.points + (
-                            if (h > a) {
-                                3
-                            } else if (h == a) {
-                                1
-                            } else {
-                                0
-                            }
-                        ),
+                    currentH.points + (
+                        if (h > a) {
+                            3
+                        } else if (h == a) {
+                            1
+                        } else {
+                            0
+                        }
+                        )
                 )
 
             // Away Team
@@ -66,15 +66,15 @@ object StandingsCalculator {
                     goalsFor = currentA.goalsFor + a,
                     goalsAgainst = currentA.goalsAgainst + h,
                     points =
-                        currentA.points + (
-                            if (a > h) {
-                                3
-                            } else if (a == h) {
-                                1
-                            } else {
-                                0
-                            }
-                        ),
+                    currentA.points + (
+                        if (a > h) {
+                            3
+                        } else if (a == h) {
+                            1
+                        } else {
+                            0
+                        }
+                        )
                 )
         }
 
@@ -82,7 +82,7 @@ object StandingsCalculator {
             compareByDescending<TeamStanding> { it.points }
                 .thenByDescending { it.won }
                 .thenByDescending { it.goalDifference }
-                .thenByDescending { it.goalsFor },
+                .thenByDescending { it.goalsFor }
         )
     }
 }

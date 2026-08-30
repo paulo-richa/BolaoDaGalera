@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
 class FakeBolaoRepository : BolaoRepository {
-    private val _boloes =
+    private val boloesState =
         MutableStateFlow(
             listOf(
                 Bolao(
@@ -18,20 +18,23 @@ class FakeBolaoRepository : BolaoRepository {
                     description = "Libertadores 2026 🔥",
                     pointsExactScore = 3,
                     pointsWinnerOrDraw = 1,
-                    code = "LIB26",
+                    code = "LIB026",
                     ownerId = "pauloricha",
                     participants = listOf("pauloricha", "user-2", "u3", "u4", "u5", "u6", "u7", "u8", "u9"),
                     createdAtMillis = 1781136000000L,
-                    championshipId = "LIBERTADORES",
-                ),
-            ),
+                    championshipId = "LIBERTADORES"
+                )
+            )
         )
 
-    override fun getUserBoloes(userId: String): Flow<List<Bolao>> = _boloes.map { list -> list.filter { userId in it.participants } }
+    /** Quando != null, a próxima chamada a createBolao lança esta exceção (para simular erros). */
+    var createBolaoException: Exception? = null
 
-    override fun getBolaoFlow(bolaoId: String): Flow<Bolao> = _boloes.map { list -> list.first { it.id == bolaoId } }
+    override fun getUserBoloes(userId: String): Flow<List<Bolao>> = boloesState.map { list -> list.filter { userId in it.participants } }
 
-    override suspend fun getBolao(bolaoId: String): Bolao = _boloes.value.first { it.id == bolaoId }
+    override fun getBolaoFlow(bolaoId: String): Flow<Bolao> = boloesState.map { list -> list.first { it.id == bolaoId } }
+
+    override suspend fun getBolao(bolaoId: String): Bolao = boloesState.value.first { it.id == bolaoId }
 
     override suspend fun createBolao(
         name: String,
@@ -41,12 +44,13 @@ class FakeBolaoRepository : BolaoRepository {
         scope: BolaoScope,
         specificMatchId: String?,
         pointsExactScore: Int,
-        pointsWinnerOrDraw: Int,
+        pointsWinnerOrDraw: Int
     ): Bolao {
+        createBolaoException?.let { throw it }
         val code = ('A'..'Z').shuffled().take(3).joinToString("") + (100..999).random()
         val newBolao =
             Bolao(
-                id = "bolao-${_boloes.value.size + 1}",
+                id = "bolao-${boloesState.value.size + 1}",
                 name = name,
                 description = description,
                 pointsExactScore = pointsExactScore,
@@ -57,34 +61,27 @@ class FakeBolaoRepository : BolaoRepository {
                 championshipId = championshipId,
                 scope = scope,
                 specificMatchId = specificMatchId,
-                createdAtMillis = 1781136000000L,
+                createdAtMillis = 1781136000000L
             )
-        _boloes.update { it + newBolao }
+        boloesState.update { it + newBolao }
         return newBolao
     }
 
-    override suspend fun requestLeaveBolao(
-        bolaoId: String,
-        userId: String,
-    ) {
-        _boloes.update { list ->
+    override suspend fun requestLeaveBolao(bolaoId: String, userId: String) {
+        boloesState.update { list ->
             list.map { if (it.id == bolaoId) it.copy(pendingExits = it.pendingExits + userId) else it }
         }
     }
 
-    override suspend fun approveLeaveRequest(
-        bolaoId: String,
-        userId: String,
-        approve: Boolean,
-    ) {
-        _boloes.update { list ->
+    override suspend fun approveLeaveRequest(bolaoId: String, userId: String, approve: Boolean) {
+        boloesState.update { list ->
             list.map { bolao ->
                 if (bolao.id == bolaoId) {
                     val newPending = bolao.pendingExits - userId
                     if (approve) {
                         bolao.copy(
                             participants = bolao.participants - userId,
-                            pendingExits = newPending,
+                            pendingExits = newPending
                         )
                     } else {
                         bolao.copy(pendingExits = newPending)
@@ -96,42 +93,30 @@ class FakeBolaoRepository : BolaoRepository {
         }
     }
 
-    override suspend fun joinBolao(
-        code: String,
-        userId: String,
-    ): Bolao {
-        return requestJoinBolao(code, userId)
-    }
+    override suspend fun joinBolao(code: String, userId: String): Bolao = requestJoinBolao(code, userId)
 
-    override suspend fun requestJoinBolao(
-        code: String,
-        userId: String,
-    ): Bolao {
+    override suspend fun requestJoinBolao(code: String, userId: String): Bolao {
         val bolao =
-            _boloes.value.firstOrNull { it.code.equals(code, ignoreCase = true) }
+            boloesState.value.firstOrNull { it.code.equals(code, ignoreCase = true) }
                 ?: error("Bolão não encontrado com o código $code")
 
         if (userId !in bolao.participants && userId !in bolao.pendingParticipants) {
-            _boloes.update { list ->
+            boloesState.update { list ->
                 list.map { if (it.id == bolao.id) it.copy(pendingParticipants = it.pendingParticipants + userId) else it }
             }
         }
-        return _boloes.value.first { it.id == bolao.id }
+        return boloesState.value.first { it.id == bolao.id }
     }
 
-    override suspend fun approveJoinRequest(
-        bolaoId: String,
-        userId: String,
-        approve: Boolean,
-    ) {
-        _boloes.update { list ->
+    override suspend fun approveJoinRequest(bolaoId: String, userId: String, approve: Boolean) {
+        boloesState.update { list ->
             list.map { bolao ->
                 if (bolao.id == bolaoId) {
                     val newPending = bolao.pendingParticipants - userId
                     if (approve) {
                         bolao.copy(
                             participants = bolao.participants + userId,
-                            pendingParticipants = newPending,
+                            pendingParticipants = newPending
                         )
                     } else {
                         bolao.copy(pendingParticipants = newPending)
@@ -143,11 +128,8 @@ class FakeBolaoRepository : BolaoRepository {
         }
     }
 
-    override suspend fun addParticipantDirectly(
-        bolaoId: String,
-        userId: String,
-    ) {
-        _boloes.update { list ->
+    override suspend fun addParticipantDirectly(bolaoId: String, userId: String) {
+        boloesState.update { list ->
             list.map { bolao ->
                 if (bolao.id == bolaoId) {
                     if (userId !in bolao.participants) {
@@ -162,11 +144,8 @@ class FakeBolaoRepository : BolaoRepository {
         }
     }
 
-    override suspend fun leaveBolao(
-        bolaoId: String,
-        userId: String,
-    ) {
-        _boloes.update { list ->
+    override suspend fun leaveBolao(bolaoId: String, userId: String) {
+        boloesState.update { list ->
             list.map { if (it.id == bolaoId) it.copy(participants = it.participants - userId) else it }
         }
     }
@@ -177,9 +156,9 @@ class FakeBolaoRepository : BolaoRepository {
         description: String,
         scope: BolaoScope,
         pointsExactScore: Int,
-        pointsWinnerOrDraw: Int,
+        pointsWinnerOrDraw: Int
     ) {
-        _boloes.update { list ->
+        boloesState.update { list ->
             list.map {
                 if (it.id == bolaoId) {
                     it.copy(
@@ -187,7 +166,7 @@ class FakeBolaoRepository : BolaoRepository {
                         description = description,
                         scope = scope,
                         pointsExactScore = pointsExactScore,
-                        pointsWinnerOrDraw = pointsWinnerOrDraw,
+                        pointsWinnerOrDraw = pointsWinnerOrDraw
                     )
                 } else {
                     it
@@ -197,13 +176,10 @@ class FakeBolaoRepository : BolaoRepository {
     }
 
     override suspend fun deleteBolao(bolaoId: String) {
-        _boloes.update { list -> list.filter { it.id != bolaoId } }
+        boloesState.update { list -> list.filter { it.id != bolaoId } }
     }
 
-    override suspend fun removeParticipant(
-        bolaoId: String,
-        userId: String,
-    ) {
+    override suspend fun removeParticipant(bolaoId: String, userId: String) {
         leaveBolao(bolaoId, userId)
     }
 }

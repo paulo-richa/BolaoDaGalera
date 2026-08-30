@@ -19,9 +19,9 @@ private val globalInvitations =
                 inviterName = "Jogador Teste",
                 inviteeIdentifier = "amigo@email.com",
                 status = InvitationStatus.PENDING,
-                createdAtMillis = 0L,
-            ),
-        ),
+                createdAtMillis = 0L
+            )
+        )
     )
 
 class FakeInvitationRepository : InvitationRepository {
@@ -37,12 +37,7 @@ class FakeInvitationRepository : InvitationRepository {
         }
     }
 
-    override suspend fun sendInvitation(
-        bolaoId: String,
-        bolaoName: String,
-        inviterName: String,
-        inviteeIdentifier: String,
-    ) {
+    override suspend fun sendInvitation(bolaoId: String, bolaoName: String, inviterName: String, inviteeIdentifier: String) {
         val newInvitation =
             Invitation(
                 id = "inv-${globalInvitations.value.size + 1}",
@@ -51,15 +46,12 @@ class FakeInvitationRepository : InvitationRepository {
                 inviterName = inviterName,
                 inviteeIdentifier = inviteeIdentifier,
                 status = InvitationStatus.PENDING,
-                createdAtMillis = TimeSource.nowMillis(),
+                createdAtMillis = TimeSource.nowMillis()
             )
         globalInvitations.value = globalInvitations.value + newInvitation
     }
 
-    override suspend fun respondToInvitation(
-        invitationId: String,
-        accept: Boolean,
-    ) {
+    override suspend fun respondToInvitation(invitationId: String, accept: Boolean) {
         globalInvitations.value =
             globalInvitations.value.map {
                 if (it.id == invitationId) {

@@ -20,7 +20,7 @@ object ValidationUtils {
             "outlook.con" to "outlook.com",
             "yahoo.coom" to "yahoo.com",
             "yahoo.con" to "yahoo.com",
-            "icloud.coom" to "icloud.com",
+            "icloud.coom" to "icloud.com"
         )
 
     fun validateEmail(email: String): String? {

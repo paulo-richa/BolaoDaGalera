@@ -18,9 +18,7 @@ async function check(championshipId = "LIBERTADORES") {
 
     matches.forEach(doc => {
         const data = doc.data();
-        if (data.status !== "FINISHED") {
-            console.log("Jogo pendente:", doc.id, "Status:", data.status, "Time:", data.homeTeam);
-        }
+        console.log(`Match: ${doc.id} | Phase: ${data.phase} | Order: ${data.matchOrder} | ${data.homeTeam} vs ${data.awayTeam}`);
     });
 
     process.exit();

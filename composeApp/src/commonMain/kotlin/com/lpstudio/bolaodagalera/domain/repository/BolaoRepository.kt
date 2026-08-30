@@ -19,45 +19,22 @@ interface BolaoRepository {
         scope: BolaoScope = BolaoScope.FULL,
         specificMatchId: String? = null,
         pointsExactScore: Int = 3,
-        pointsWinnerOrDraw: Int = 1,
+        pointsWinnerOrDraw: Int = 1
     ): Bolao
 
-    suspend fun requestJoinBolao(
-        code: String,
-        userId: String,
-    ): Bolao
+    suspend fun requestJoinBolao(code: String, userId: String): Bolao
 
-    suspend fun approveJoinRequest(
-        bolaoId: String,
-        userId: String,
-        approve: Boolean,
-    )
+    suspend fun approveJoinRequest(bolaoId: String, userId: String, approve: Boolean)
 
-    suspend fun requestLeaveBolao(
-        bolaoId: String,
-        userId: String,
-    )
+    suspend fun requestLeaveBolao(bolaoId: String, userId: String)
 
-    suspend fun approveLeaveRequest(
-        bolaoId: String,
-        userId: String,
-        approve: Boolean,
-    )
+    suspend fun approveLeaveRequest(bolaoId: String, userId: String, approve: Boolean)
 
-    suspend fun joinBolao(
-        code: String,
-        userId: String,
-    ): Bolao
+    suspend fun joinBolao(code: String, userId: String): Bolao
 
-    suspend fun addParticipantDirectly(
-        bolaoId: String,
-        userId: String,
-    )
+    suspend fun addParticipantDirectly(bolaoId: String, userId: String)
 
-    suspend fun leaveBolao(
-        bolaoId: String,
-        userId: String,
-    )
+    suspend fun leaveBolao(bolaoId: String, userId: String)
 
     suspend fun updateBolao(
         bolaoId: String,
@@ -65,13 +42,10 @@ interface BolaoRepository {
         description: String,
         scope: BolaoScope,
         pointsExactScore: Int,
-        pointsWinnerOrDraw: Int,
+        pointsWinnerOrDraw: Int
     )
 
     suspend fun deleteBolao(bolaoId: String)
 
-    suspend fun removeParticipant(
-        bolaoId: String,
-        userId: String,
-    )
+    suspend fun removeParticipant(bolaoId: String, userId: String)
 }

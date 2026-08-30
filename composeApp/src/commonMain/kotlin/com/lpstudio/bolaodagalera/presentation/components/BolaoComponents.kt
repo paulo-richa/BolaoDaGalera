@@ -2,12 +2,21 @@ package com.lpstudio.bolaodagalera.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +30,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lpstudio.bolaodagalera.presentation.theme.*
+import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
+import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
+import com.lpstudio.bolaodagalera.presentation.theme.GradientPrimary
+import com.lpstudio.bolaodagalera.presentation.theme.NavyCard
+import com.lpstudio.bolaodagalera.presentation.theme.NavyElevated
+import com.lpstudio.bolaodagalera.presentation.theme.Neon
+import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 
 @Composable
 fun UserAvatar(
@@ -30,16 +45,16 @@ fun UserAvatar(
     size: Dp = 40.dp,
     fontSize: TextUnit = 14.sp,
     isOwner: Boolean = false,
-    borderColor: Color = Neon,
+    borderColor: Color = Neon
 ) {
     Box(
         modifier =
-            modifier
-                .size(size)
-                .clip(CircleShape)
-                .background(DeepNavy)
-                .border(1.5.dp, borderColor, CircleShape),
-        contentAlignment = Alignment.Center,
+        modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(DeepNavy)
+            .border(1.5.dp, borderColor, CircleShape),
+        contentAlignment = Alignment.Center
     ) {
         if (isOwner) {
             Text("👑", fontSize = (size.value * 0.5).sp)
@@ -48,7 +63,7 @@ fun UserAvatar(
                 text = initials,
                 color = Color.White,
                 fontSize = fontSize,
-                fontWeight = FontWeight.Black,
+                fontWeight = FontWeight.Black
             )
         }
     }
@@ -64,7 +79,7 @@ fun BolaoTextField(
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
         value = value,
@@ -75,26 +90,26 @@ fun BolaoTextField(
         shape = RoundedCornerShape(12.dp),
         isError = isError,
         colors =
-            OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Neon,
-                unfocusedBorderColor = Color(0xFF2A3D55),
-                focusedTextColor = Color.White,
-                unfocusedTextColor = if (enabled) Color.White else TextMuted,
-                cursorColor = Neon,
-                focusedContainerColor = NavyElevated,
-                unfocusedContainerColor = NavyCard,
-                disabledContainerColor = NavyCard.copy(alpha = 0.5f),
-                disabledBorderColor = Color(0xFF2A3D55).copy(alpha = 0.5f),
-                disabledTextColor = TextMuted,
-                disabledLabelColor = TextMuted.copy(alpha = 0.5f),
-                errorBorderColor = ErrorRed,
-                errorLabelColor = ErrorRed,
-                errorCursorColor = ErrorRed,
-            ),
+        OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Neon,
+            unfocusedBorderColor = Color(0xFF2A3D55),
+            focusedTextColor = Color.White,
+            unfocusedTextColor = if (enabled) Color.White else TextMuted,
+            cursorColor = Neon,
+            focusedContainerColor = NavyElevated,
+            unfocusedContainerColor = NavyCard,
+            disabledContainerColor = NavyCard.copy(alpha = 0.5f),
+            disabledBorderColor = Color(0xFF2A3D55).copy(alpha = 0.5f),
+            disabledTextColor = TextMuted,
+            disabledLabelColor = TextMuted.copy(alpha = 0.5f),
+            errorBorderColor = ErrorRed,
+            errorLabelColor = ErrorRed,
+            errorCursorColor = ErrorRed
+        ),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        singleLine = true,
+        singleLine = true
     )
 }
 
@@ -105,40 +120,40 @@ fun BolaoButton(
     isLoading: Boolean = false,
     enabled: Boolean = true,
     gradient: Brush = GradientPrimary,
-    onClick: () -> Unit,
+    onClick: () -> Unit
 ) {
     Box(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(if (enabled) gradient else Brush.horizontalGradient(listOf(NavyElevated, NavyElevated))),
-        contentAlignment = Alignment.Center,
+        modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (enabled) gradient else Brush.horizontalGradient(listOf(NavyElevated, NavyElevated))),
+        contentAlignment = Alignment.Center
     ) {
         Button(
             onClick = onClick,
             enabled = enabled,
             modifier = Modifier.fillMaxSize(),
             colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent,
-                    disabledContainerColor = Color.Transparent,
-                ),
-            elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp),
+            ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent
+            ),
+            elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(22.dp),
                     strokeWidth = 2.5.dp,
-                    color = Color.White,
+                    color = Color.White
                 )
             } else {
                 Text(
                     text,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = if (enabled) DeepNavy else TextMuted,
+                    color = if (enabled) DeepNavy else TextMuted
                 )
             }
         }

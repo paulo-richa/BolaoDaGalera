@@ -3,7 +3,14 @@ package com.lpstudio.bolaodagalera.presentation.navigation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -89,7 +96,7 @@ fun NavGraph() {
                         popUpTo(Login) { inclusive = true }
                     }
                 },
-                onNavigateToRegister = { email -> navController.navigate(Register(email)) },
+                onNavigateToRegister = { email -> navController.navigate(Register(email)) }
             )
         }
 
@@ -102,7 +109,7 @@ fun NavGraph() {
                         popUpTo(Login) { inclusive = true }
                     }
                 },
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -112,7 +119,7 @@ fun NavGraph() {
                 onNavigateToCreateBolao = { navController.navigate(CreateBolao) },
                 onNavigateToJoinBolao = { navController.navigate(JoinBolao()) },
                 onNavigateToHelp = { navController.navigate(Help) },
-                onSignOut = { },
+                onSignOut = { }
             )
         }
 
@@ -120,7 +127,7 @@ fun NavGraph() {
             ProfileScreen(
                 onNavigateToHelp = { navController.navigate(Help) },
                 onNavigateBack = { navController.popBackStack() },
-                onSignOut = { },
+                onSignOut = { }
             )
         }
 
@@ -134,20 +141,20 @@ fun NavGraph() {
                 onNavigateToAddParticipants = { bolaoId ->
                     navController.navigate(AddParticipants(bolaoId))
                 },
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable<JoinBolao>(
             deepLinks =
-                listOf(
-                    navDeepLink<JoinBolao>(basePath = "https://bolaodagalera.app/invite"),
-                    navDeepLink<JoinBolao>(basePath = "http://bolaodagalera.app/invite"),
-                    navDeepLink<JoinBolao>(basePath = "https://www.bolaodagalera.app/invite"),
-                    navDeepLink<JoinBolao>(basePath = "https://bolaodagalera-bb002.web.app/invite"),
-                    navDeepLink<JoinBolao>(basePath = "http://bolaodagalera-bb002.web.app/invite"),
-                    navDeepLink { uriPattern = "bolaodagalera://invite?code={code}" },
-                ),
+            listOf(
+                navDeepLink<JoinBolao>(basePath = "https://bolaodagalera.app/invite"),
+                navDeepLink<JoinBolao>(basePath = "http://bolaodagalera.app/invite"),
+                navDeepLink<JoinBolao>(basePath = "https://www.bolaodagalera.app/invite"),
+                navDeepLink<JoinBolao>(basePath = "https://bolaodagalera-bb002.web.app/invite"),
+                navDeepLink<JoinBolao>(basePath = "http://bolaodagalera-bb002.web.app/invite"),
+                navDeepLink { uriPattern = "bolaodagalera://invite?code={code}" }
+            )
         ) { backStackEntry ->
             val route = backStackEntry.toRoute<JoinBolao>()
             val codeFromDeepLink = route.code ?: ""
@@ -159,7 +166,7 @@ fun NavGraph() {
                         popUpTo(Home)
                     }
                 },
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -167,7 +174,7 @@ fun NavGraph() {
             val route = backStackEntry.toRoute<AddParticipants>()
             AddParticipantsScreen(
                 bolaoId = route.bolaoId,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -188,7 +195,7 @@ fun NavGraph() {
                     navController.navigate(AddParticipants(bolaoId))
                 },
                 onNavigateToHelp = { navController.navigate(Help) },
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -204,7 +211,7 @@ fun NavGraph() {
                         popUpTo(Home) { inclusive = true }
                     }
                 },
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -214,7 +221,7 @@ fun NavGraph() {
                 bolaoId = route.bolaoId,
                 matchId = route.matchId,
                 onSaved = { navController.popBackStack() },
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -223,7 +230,7 @@ fun NavGraph() {
             com.lpstudio.bolaodagalera.presentation.match.MatchPredictionsScreen(
                 bolaoId = route.bolaoId,
                 matchId = route.matchId,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

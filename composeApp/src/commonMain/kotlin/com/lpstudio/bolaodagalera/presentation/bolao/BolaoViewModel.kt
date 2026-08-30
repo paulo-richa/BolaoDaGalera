@@ -2,26 +2,49 @@ package com.lpstudio.bolaodagalera.presentation.bolao
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lpstudio.bolaodagalera.domain.model.*
+import com.lpstudio.bolaodagalera.domain.model.Bolao
+import com.lpstudio.bolaodagalera.domain.model.BolaoScope
+import com.lpstudio.bolaodagalera.domain.model.Championship
+import com.lpstudio.bolaodagalera.domain.model.Match
+import com.lpstudio.bolaodagalera.domain.model.Phase
+import com.lpstudio.bolaodagalera.domain.model.Prediction
+import com.lpstudio.bolaodagalera.domain.model.RankingEntry
+import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class BolaoUiState(
     val bolao: Bolao? = null,
     val matches: List<Match> = emptyList(),
-    val allMatches: List<Match> = emptyList(), // Lista completa sem filtros
-    val userPredictions: Map<String, Prediction> = emptyMap(), // matchId -> prediction
+    /** Lista completa sem filtros */
+    val allMatches: List<Match> = emptyList(),
+    /** matchId -> prediction */
+    val userPredictions: Map<String, Prediction> = emptyMap(),
     val participants: List<RankingEntry> = emptyList(),
     val pendingJoinUsers: List<User> = emptyList(),
     val pendingExitUsers: List<User> = emptyList(),
     val allPredictions: List<Prediction> = emptyList(),
     val isLoading: Boolean = true,
     val isLeaveSuccess: Boolean = false,
-    val error: String? = null,
+    val error: String? = null
 )
 
 class BolaoViewModel(
@@ -29,12 +52,12 @@ class BolaoViewModel(
     private val matchRepository: MatchRepository,
     private val predictionRepository: PredictionRepository,
     private val authRepository: AuthRepository,
-    private val bolaoId: String,
+    private val bolaoId: String
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(BolaoUiState())
     val uiState: StateFlow<BolaoUiState> = _uiState.asStateFlow()
 
-    private val _userId = MutableStateFlow(authRepository.currentUser?.id ?: "")
+    private val userId = MutableStateFlow(authRepository.currentUser?.id ?: "")
     private var dataCollectionJob: kotlinx.coroutines.Job? = null
 
     init {
@@ -44,7 +67,7 @@ class BolaoViewModel(
             if (user == null) {
                 _uiState.update { BolaoUiState(isLoading = false) }
             } else {
-                _userId.value = user.id
+                userId.value = user.id
                 loadBolao()
                 observeMatchesPredictionsAndRanking()
             }
@@ -79,14 +102,14 @@ class BolaoViewModel(
                             _uiState.update {
                                 it.copy(
                                     pendingJoinUsers = pendingJoin,
-                                    pendingExitUsers = pendingExit,
+                                    pendingExitUsers = pendingExit
                                 )
                             }
                         }
                         .map { it.participants }
                         .distinctUntilChanged()
 
-                _userId.filter { it.isNotBlank() }
+                userId.filter { it.isNotBlank() }
                     .flatMapLatest { currentUserId ->
                         bolaoFlow.flatMapLatest { bolao ->
                             val championshipId = bolao.championshipId
@@ -99,22 +122,25 @@ class BolaoViewModel(
                                 participantsFlow.flatMapLatest { participants ->
                                     combine(
                                         predictionRepository.getRanking(bolaoId, championshipId, participants),
-                                        flow { emit(authRepository.getUsers(participants)) },
+                                        flow { emit(authRepository.getUsers(participants)) }
                                     ) { ranking, users ->
                                         val userMap = users.associateBy { it.id }
                                         ranking.map { entry ->
                                             val user = userMap[entry.userId]
-                                            if (user != null && (entry.userName.isBlank() || entry.userName == "Novo Participante" || entry.userName == "Usuário")) {
+                                            val isGenericName = entry.userName.isBlank() ||
+                                                entry.userName == "Novo Participante" ||
+                                                entry.userName == "Usuário"
+                                            if (user != null && isGenericName) {
                                                 entry.copy(
                                                     userName = user.name,
-                                                    userNickname = user.nickname.ifBlank { user.username },
+                                                    userNickname = user.nickname.ifBlank { user.username }
                                                 )
                                             } else {
                                                 entry
                                             }
                                         }
                                     }
-                                },
+                                }
                             ) { b, matches, predictions, allPredictions, ranking ->
                                 // 1. Filtrar por Escopo
                                 var filteredMatches =
@@ -135,7 +161,11 @@ class BolaoViewModel(
                                         if (it.phase == Phase.GROUP_STAGE) {
                                             "${it.homeTeamCode}-${it.awayTeamCode}-${it.groupRound()}"
                                         } else {
-                                            it.id
+                                            // Mata-mata: Agrupa estritamente pelos nomes dos times e fase
+                                            // Isso impede que IDs diferentes do mesmo jogo gerem dois cards
+                                            val teams = listOf(it.homeTeam, it.awayTeam).sorted().joinToString(" vs ")
+                                            val leg = if (it.id.contains("-L2")) "L2" else "L1"
+                                            "${it.phase}-$teams-$leg"
                                         }
                                     }
                                         .map { (_, matchGroup) ->
@@ -177,7 +207,7 @@ class BolaoViewModel(
                                         userPredictions = predictionMap,
                                         allPredictions = allPredictions,
                                         participants = ranking,
-                                        isLoading = false,
+                                        isLoading = false
                                     )
                                 }
                             }
@@ -193,17 +223,13 @@ class BolaoViewModel(
 
     fun setUserId(id: String) {
         if (id.isNotBlank()) {
-            _userId.value = id
+            userId.value = id
         }
     }
 
     fun clearError() = _uiState.update { it.copy(error = null) }
 
-    fun updateMatchScore(
-        matchId: String,
-        home: Int?,
-        away: Int?,
-    ) {
+    fun updateMatchScore(matchId: String, home: Int?, away: Int?) {
         val championshipId = _uiState.value.bolao?.championshipId ?: return
         viewModelScope.launch {
             try {
@@ -215,10 +241,7 @@ class BolaoViewModel(
         }
     }
 
-    fun approveParticipant(
-        userId: String,
-        approve: Boolean,
-    ) {
+    fun approveParticipant(userId: String, approve: Boolean) {
         viewModelScope.launch {
             try {
                 bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
@@ -228,10 +251,7 @@ class BolaoViewModel(
         }
     }
 
-    fun approveLeaveRequest(
-        userId: String,
-        approve: Boolean,
-    ) {
+    fun approveLeaveRequest(userId: String, approve: Boolean) {
         viewModelScope.launch {
             try {
                 bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
@@ -247,7 +267,7 @@ class BolaoViewModel(
     }
 
     fun leaveBolao() {
-        val currentUserId = _userId.value
+        val currentUserId = userId.value
         if (currentUserId.isBlank()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }

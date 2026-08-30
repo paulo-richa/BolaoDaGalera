@@ -2,7 +2,17 @@ package com.lpstudio.bolaodagalera.presentation.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -10,8 +20,21 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,19 +49,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
-import com.lpstudio.bolaodagalera.presentation.theme.*
+import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
+import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
+import com.lpstudio.bolaodagalera.presentation.theme.GlassWhite
+import com.lpstudio.bolaodagalera.presentation.theme.GradientBg
+import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.ValidationUtils
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen(
-    initialEmail: String = "",
-    onRegisterSuccess: () -> Unit,
-    onNavigateBack: () -> Unit,
-) {
+fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onNavigateBack: () -> Unit) {
     val viewModel: AuthViewModel = koinInject()
     val uiState by viewModel.uiState.collectAsState()
 
@@ -123,15 +146,20 @@ fun RegisterScreen(
     val confirmPasswordError = if (confirmPasswordTouched && confirmPassword != password) "As senhas não coincidem" else null
 
     val isFormValid =
-        name.isNotBlank() && email.isNotBlank() && password.length >= 6 &&
-            confirmPassword == password && nameError == null && emailError == null &&
-            phoneError == null && nicknameError == null
+        name.isNotBlank() &&
+            email.isNotBlank() &&
+            password.length >= 6 &&
+            confirmPassword == password &&
+            nameError == null &&
+            emailError == null &&
+            phoneError == null &&
+            nicknameError == null
 
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(GradientBg),
+        Modifier
+            .fillMaxSize()
+            .background(GradientBg)
     ) {
         Scaffold(
             containerColor = Color.Transparent,
@@ -141,7 +169,7 @@ fun RegisterScreen(
                         Text(
                             "Criar conta",
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = Color.White
                         )
                     },
                     navigationIcon = {
@@ -149,52 +177,52 @@ fun RegisterScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Voltar",
-                                tint = Color.White,
+                                tint = Color.White
                             )
                         }
                     },
                     colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                        ),
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
                 )
-            },
+            }
         ) { padding ->
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = 28.dp)
-                        .verticalScroll(scrollState),
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 28.dp)
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.Center
             ) {
                 Spacer(Modifier.height(12.dp))
 
                 Text(
                     "Bem-vindo ao",
                     color = TextMuted,
-                    fontSize = 14.sp,
+                    fontSize = 14.sp
                 )
                 Text(
                     "Bolão da Galera",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                    color = Color.White
                 )
 
                 Spacer(Modifier.height(32.dp))
 
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(GlassWhite)
-                            .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                            .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(GlassWhite)
+                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     // Campo Nome
                     Column {
@@ -207,18 +235,18 @@ fun RegisterScreen(
                             label = "Nome Completo",
                             isError = nameError != null,
                             keyboardOptions =
-                                KeyboardOptions(
-                                    capitalization = KeyboardCapitalization.Words,
-                                    imeAction = ImeAction.Next,
-                                ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                            KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Words,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         nameError?.let {
                             Text(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                             )
                         }
                     }
@@ -234,19 +262,19 @@ fun RegisterScreen(
                             label = "E-mail (ex: joaosilva@gmail.com)",
                             isError = emailError != null,
                             keyboardOptions =
-                                KeyboardOptions(
-                                    keyboardType = KeyboardType.Email,
-                                    capitalization = KeyboardCapitalization.None,
-                                    imeAction = ImeAction.Next,
-                                ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                capitalization = KeyboardCapitalization.None,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         emailError?.let {
                             Text(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                             )
                         }
                     }
@@ -262,14 +290,14 @@ fun RegisterScreen(
                             label = "Apelido (opcional, ex: Fofinho)",
                             isError = nicknameError != null,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         nicknameError?.let {
                             Text(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                             )
                         }
                     }
@@ -285,18 +313,18 @@ fun RegisterScreen(
                             label = "Telefone (opcional, ex: 11987654321)",
                             isError = phoneError != null,
                             keyboardOptions =
-                                KeyboardOptions(
-                                    keyboardType = KeyboardType.Phone,
-                                    imeAction = ImeAction.Next,
-                                ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Phone,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         phoneError?.let {
                             Text(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                             )
                         }
                     }
@@ -315,18 +343,18 @@ fun RegisterScreen(
                             isPassword = true,
                             isError = passwordError != null,
                             keyboardOptions =
-                                KeyboardOptions(
-                                    keyboardType = KeyboardType.Password,
-                                    imeAction = ImeAction.Next,
-                                ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         passwordError?.let {
                             Text(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                             )
                         }
                     }
@@ -343,18 +371,18 @@ fun RegisterScreen(
                             isPassword = true,
                             isError = confirmPasswordError != null,
                             keyboardOptions =
-                                KeyboardOptions(
-                                    keyboardType = KeyboardType.Password,
-                                    imeAction = ImeAction.Done,
-                                ),
-                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                         )
                         confirmPasswordError?.let {
                             Text(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                             )
                         }
                     }
@@ -368,7 +396,7 @@ fun RegisterScreen(
                     BolaoButton(
                         text = "Criar conta",
                         isLoading = uiState.isLoading || isGeneratingUsername,
-                        enabled = isFormValid && !uiState.isLoading && !isGeneratingUsername,
+                        enabled = isFormValid && !uiState.isLoading && !isGeneratingUsername
                     ) {
                         if (username.isBlank()) {
                             // Caso o usuário tenha sido muito rápido, gera o ID agora

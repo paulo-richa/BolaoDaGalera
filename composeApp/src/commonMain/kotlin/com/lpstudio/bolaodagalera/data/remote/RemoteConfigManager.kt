@@ -2,10 +2,10 @@ package com.lpstudio.bolaodagalera.data.remote
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.remoteconfig.remoteConfig
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlin.time.Duration.Companion.minutes
 
 class RemoteConfigManager {
     private val remoteConfig = Firebase.remoteConfig
@@ -23,7 +23,7 @@ class RemoteConfigManager {
             }
             remoteConfig.setDefaults(
                 "maintenance_mode" to false,
-                "show_ads" to true,
+                "show_ads" to true
             )
             remoteConfig.fetchAndActivate()
             _isMaintenanceMode.value = remoteConfig.getValue("maintenance_mode").asBoolean()

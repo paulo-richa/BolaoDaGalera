@@ -47,7 +47,7 @@ data class BolaoColors(
     val glassBorder: Color = GlassBorder,
     val textMuted: Color = TextMuted,
     val textSubtle: Color = TextSubtle,
-    val errorRed: Color = ErrorRed,
+    val errorRed: Color = ErrorRed
 )
 
 val LocalBolaoColors = staticCompositionLocalOf { BolaoColors() }
@@ -74,7 +74,7 @@ private val BolaoColorScheme =
         onSurfaceVariant = TextMuted,
         error = ErrorRed,
         outline = Color(0xFF223040),
-        outlineVariant = Color(0xFF162030),
+        outlineVariant = Color(0xFF162030)
     )
 
 @Composable
@@ -83,7 +83,7 @@ fun AppTheme(content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalBolaoColors provides BolaoColors()) {
         MaterialTheme(
             colorScheme = BolaoColorScheme,
-            content = content,
+            content = content
         )
     }
 }

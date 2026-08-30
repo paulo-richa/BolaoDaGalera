@@ -1,23 +1,15 @@
 build:
   maxIssues: 0
   excludeCorrectable: false
-  weights:
-    # complexity: 2
-    # LongParameterList: 1
-    # style: 1
-    # comments: 1
 
 complexity:
   active: true
   ComplexCondition:
     active: true
     threshold: 4
-  ComplexMethod:
+  CyclomaticComplexMethod:
     active: true
     threshold: 15
-    ignoreSingleExpression: true
-    ignoreSimpleDefinition: true
-    ignoreNestloop: false
   LargeClass:
     active: true
     threshold: 300
@@ -26,14 +18,17 @@ complexity:
     threshold: 60
   LongParameterList:
     active: true
-    threshold: 6
-    ignoreDefaultParameters: true
+    functionThreshold: 10
+    constructorThreshold: 10
   TooManyFunctions:
     active: true
-    threshold: 20
+    thresholdInFiles: 20
 
 style:
   active: true
+  MaxLineLength:
+    active: true
+    maxLineLength: 140
   MagicNumber:
     active: true
     ignoreNumbers:
@@ -41,13 +36,6 @@ style:
       - '0'
       - '1'
       - '2'
-    ignoreHashCodeFunction: true
-    ignorePropertyDeclaration: true
-    ignoreLocalVariableDeclaration: true
-    ignoreConstantDeclaration: true
-    ignoreAnnotation: true
-    ignoreNamedArgument: true
-    ignoreEnums: true
   UnusedPrivateMember:
     active: true
     allowedNames: '(_|ignored|expected|serialVersionUID|tag|TAG)'
@@ -56,26 +44,13 @@ naming:
   active: true
   FunctionNaming:
     active: true
-    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
-    excludeClassPattern: '$^'
-    ignoreOverridden: true
   VariableNaming:
     active: true
-    variablePattern: '[a-z][A-Za-z0-9]*'
-    excludeClassPattern: '$^'
-    ignoreOverridden: true
 
 potential-bugs:
   active: true
   UnsafeCallOnNullableType:
     active: true
-  LateinitUsage:
-    active: true
-    ignoreOnClassesPattern: ''
 
 performance:
   active: true
-  ForEachOnRange:
-    active: true
-  SpreadOperator:
-    active: true

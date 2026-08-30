@@ -61,6 +61,7 @@ async function syncBrasileirao(db, admin, axios) {
                     }
 
                     const s = m.score;
+                    // Sempre priorizar regularTime (tempo normal)
                     const hScore = s?.regularTime?.home ?? s?.fullTime?.home;
                     const aScore = s?.regularTime?.away ?? s?.fullTime?.away;
                     const newHScore = hScore !== undefined ? hScore : null;

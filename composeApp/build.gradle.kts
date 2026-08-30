@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.googleServices)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.roborazzi)
     id("com.google.firebase.appdistribution")
     kotlin("native.cocoapods")
 }
@@ -99,9 +100,8 @@ kotlin {
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
             implementation(libs.coil.svg)
-            // Material Icons
-            implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
-            implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
+            implementation(libs.compose.material.icons.core)
+            implementation(libs.compose.material.icons.extended)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -120,6 +120,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 27
         versionName = "3.2.3"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {
@@ -132,7 +133,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
+                "proguard-rules.pro"
             )
             firebaseAppDistribution {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
@@ -164,18 +165,39 @@ android {
         showAll = true
         explainIssues = true
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     // Provide Firebase BOM at module level so platform versions are available
     // to the GitLive KMP artifacts which rely on platform-specific Android
     // Firebase artifacts without explicit versions.
-    implementation(platform("com.google.firebase:firebase-bom:32.2.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.18.0"))
 
     debugImplementation(libs.compose.uiTooling)
     debugImplementation(libs.compose.ui.test.manifest)
     androidTestImplementation(libs.compose.ui.test.junit4)
+
+    // Unit Tests
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.mockk)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.runner)
+    testImplementation(libs.androidx.test.rules)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.compose.ui.test.manifest)
+
+    // Roborazzi for Snapshot Testing
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.roborazzi.junit)
 }
 
 detekt {
@@ -188,6 +210,10 @@ detekt {
 ktlint {
     android.set(true)
     ignoreFailures.set(false)
+    filter {
+        exclude("**/generated/**")
+        exclude("**/build/**")
+    }
     reporters {
         reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN)
         reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)

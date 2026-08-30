@@ -1,8 +1,20 @@
 package com.lpstudio.bolaodagalera.di
 
-import com.lpstudio.bolaodagalera.data.firebase.*
+import com.lpstudio.bolaodagalera.data.firebase.FirebaseAuthRepository
+import com.lpstudio.bolaodagalera.data.firebase.FirebaseBolaoRepository
+import com.lpstudio.bolaodagalera.data.firebase.FirebaseChampionshipRepository
+import com.lpstudio.bolaodagalera.data.firebase.FirebaseInvitationRepository
+import com.lpstudio.bolaodagalera.data.firebase.FirebaseMatchRepository
+import com.lpstudio.bolaodagalera.data.firebase.FirebasePredictionRepository
+import com.lpstudio.bolaodagalera.data.firebase.FirebaseSupportRepository
 import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
-import com.lpstudio.bolaodagalera.domain.repository.*
+import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
+import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
+import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
+import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
+import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
@@ -41,7 +53,7 @@ val appModule =
                 matchRepository = get(),
                 authRepository = get(),
                 calculatePointsUseCase = get(),
-                bolaoId = bolaoId,
+                bolaoId = bolaoId
             )
         }
     }

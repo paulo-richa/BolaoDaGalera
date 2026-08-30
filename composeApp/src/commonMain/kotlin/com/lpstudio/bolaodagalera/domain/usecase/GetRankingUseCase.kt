@@ -6,15 +6,8 @@ import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.domain.model.User
 
-class GetRankingUseCase(
-    private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
-) {
-    operator fun invoke(
-        bolao: Bolao,
-        predictions: List<Prediction>,
-        matches: List<Match>,
-        users: List<User>,
-    ): List<RankingEntry> {
+class GetRankingUseCase(private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase()) {
+    operator fun invoke(bolao: Bolao, predictions: List<Prediction>, matches: List<Match>, users: List<User>): List<RankingEntry> {
         val userMap = users.associateBy { it.id }
 
         // Group predictions by user
@@ -38,7 +31,7 @@ class GetRankingUseCase(
                             actualHome = match.homeScore,
                             actualAway = match.awayScore,
                             pointsExact = bolao.pointsExactScore,
-                            pointsWinnerOrDraw = bolao.pointsWinnerOrDraw,
+                            pointsWinnerOrDraw = bolao.pointsWinnerOrDraw
                         )
 
                     totalPoints += pts
@@ -57,13 +50,13 @@ class GetRankingUseCase(
                 userNickname = user?.nickname ?: "",
                 points = totalPoints,
                 exactScores = exactScores,
-                correctResults = correctResults,
+                correctResults = correctResults
             )
         }.sortedWith(
             compareByDescending<RankingEntry> { it.points }
                 .thenByDescending { it.exactScores }
                 .thenByDescending { it.correctResults }
-                .thenBy { it.userName.lowercase() },
+                .thenBy { it.userName.lowercase() }
         )
     }
 }

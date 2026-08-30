@@ -6,7 +6,11 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,7 +19,7 @@ private data class UserDto(
     val email: String = "",
     val phone: String = "",
     val nickname: String = "",
-    val username: String = "",
+    val username: String = ""
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -24,15 +28,15 @@ class FirebaseAuthRepository : AuthRepository {
     private val db = Firebase.firestore
     private val usersCollection = db.collection("users")
 
-    private var _cachedUser: User? = null
+    private var cachedUser: User? = null
 
     override val currentUser: User?
-        get() = _cachedUser ?: auth.currentUser?.let { User(it.uid, it.displayName ?: "Usuário", it.email ?: "", "", "", "") }
+        get() = cachedUser ?: auth.currentUser?.let { User(it.uid, it.displayName ?: "Usuário", it.email ?: "", "", "", "") }
 
     override val authStateFlow: Flow<User?> =
         auth.authStateChanged.flatMapLatest { firebaseUser ->
             if (firebaseUser == null) {
-                _cachedUser = null
+                cachedUser = null
                 flowOf(null)
             } else {
                 try {
@@ -44,7 +48,7 @@ class FirebaseAuthRepository : AuthRepository {
                             } else {
                                 User(firebaseUser.uid, firebaseUser.displayName ?: "Usuário", firebaseUser.email ?: "", "", "", "")
                             }
-                        _cachedUser = user
+                        cachedUser = user
                         user as User?
                     }.catch { e ->
                         println("BOLAOLOG: Erro no snapshots de user: ${e.message}")
@@ -60,10 +64,7 @@ class FirebaseAuthRepository : AuthRepository {
             emit(null)
         }
 
-    override suspend fun signIn(
-        email: String,
-        password: String,
-    ): User {
+    override suspend fun signIn(email: String, password: String): User {
         val result = auth.signInWithEmailAndPassword(email.trim(), password)
         val firebaseUser = result.user ?: error("Login falhou")
         val doc = usersCollection.document(firebaseUser.uid).get()
@@ -71,14 +72,7 @@ class FirebaseAuthRepository : AuthRepository {
         return User(firebaseUser.uid, dto.name, dto.email, dto.phone, dto.nickname, dto.username)
     }
 
-    override suspend fun register(
-        email: String,
-        password: String,
-        name: String,
-        phone: String,
-        nickname: String,
-        username: String,
-    ): User {
+    override suspend fun register(email: String, password: String, name: String, phone: String, nickname: String, username: String): User {
         val result =
             try {
                 auth.createUserWithEmailAndPassword(email, password)
@@ -108,11 +102,11 @@ class FirebaseAuthRepository : AuthRepository {
         // Salva ou atualiza o perfil no Firestore
         usersCollection.document(user.uid).set(
             UserDto(name = name, email = user.email ?: "", phone = phone, nickname = nickname, username = username),
-            merge = true,
+            merge = true
         )
 
         val finalUser = User(user.uid, name, user.email ?: "", phone, nickname, username)
-        _cachedUser = finalUser
+        cachedUser = finalUser
         return finalUser
     }
 
@@ -120,11 +114,7 @@ class FirebaseAuthRepository : AuthRepository {
         auth.signOut()
     }
 
-    override suspend fun updateProfile(
-        name: String,
-        phone: String,
-        nickname: String,
-    ) {
+    override suspend fun updateProfile(name: String, phone: String, nickname: String) {
         val firebaseUser = auth.currentUser ?: throw Exception("Usuário não autenticado")
         val uid = firebaseUser.uid
         val email = firebaseUser.email ?: ""
@@ -141,31 +131,29 @@ class FirebaseAuthRepository : AuthRepository {
                 "name" to name,
                 "phone" to phone,
                 "nickname" to nickname,
-                "email" to email,
+                "email" to email
             )
 
         // 3. Grava no Firestore usando set com merge (mais resiliente que update)
         usersCollection.document(uid).set(updateMap, merge = true)
 
         // Atualiza o cache local para refletir na UI imediatamente preservando o username atual
-        val currentUsername = _cachedUser?.username ?: ""
-        _cachedUser = User(uid, name, email, phone, nickname, currentUsername)
+        val currentUsername = cachedUser?.username ?: ""
+        cachedUser = User(uid, name, email, phone, nickname, currentUsername)
     }
 
-    override suspend fun isEmailInUse(email: String): Boolean {
-        return try {
-            // Tenta usar o método do Auth que não exige permissões de Firestore
-            val methods = auth.fetchSignInMethodsForEmail(email)
-            methods.isNotEmpty()
-        } catch (e: Exception) {
-            // Fallback para Firestore apenas se o Auth falhar ou não estiver disponível
-            try {
-                val snapshot = usersCollection.where { "email" equalTo email }.get()
-                !snapshot.documents.isEmpty()
-            } catch (e2: Exception) {
-                // Se ambos falharem, relança a exceção original para o ViewModel tratar
-                throw e
-            }
+    override suspend fun isEmailInUse(email: String): Boolean = try {
+        // Tenta usar o método do Auth que não exige permissões de Firestore
+        val methods = auth.fetchSignInMethodsForEmail(email)
+        methods.isNotEmpty()
+    } catch (e: Exception) {
+        // Fallback para Firestore apenas se o Auth falhar ou não estiver disponível
+        try {
+            val snapshot = usersCollection.where { "email" equalTo email }.get()
+            !snapshot.documents.isEmpty()
+        } catch (e2: Exception) {
+            // Se ambos falharem, relança a exceção original para o ViewModel tratar
+            throw e
         }
     }
 

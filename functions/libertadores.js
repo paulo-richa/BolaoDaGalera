@@ -1,6 +1,8 @@
 const { API_KEY } = require("./config");
 const { LIB_TEAMS } = require("./teams_lib");
 const { mapPhase } = require("./utils");
+const { migratePredictionsIfMatchChanged } = require("./knockout");
+const { getLibertadoresData } = require("./fallback-api");
 const { logger } = require("firebase-functions");
 
 async function syncLibertadores(db, admin, axios) {
@@ -8,120 +10,219 @@ async function syncLibertadores(db, admin, axios) {
     const matchesRef = db.collection("championships").doc("LIBERTADORES").collection("matches");
 
     try {
-        // 1. GARANTIR PLACEHOLDERS DO MATA-MATA (QF, SF, FINAL)
-        const createKnockout = async (phase, count, dates, prefix) => {
-            for (let i = 1; i <= count; i++) {
-                const idaId = `CLI-2026-${prefix}${i}-L1`;
-                const voltaId = `CLI-2026-${prefix}${i}-L2`;
+        // Busca dados com fallback automático
+        const apiData = await getLibertadoresData(axios);
 
-                const doc = await matchesRef.doc(idaId).get();
-                if (doc.exists && doc.data().isManual) continue;
-
-                const baseData = {
-                    homeTeam: "A definir", awayTeam: "A definir", homeTeamCode: "TBD", awayTeamCode: "TBD",
-                    homeTeamFlag: "", awayTeamFlag: "", championshipId: "LIBERTADORES", phase: phase, matchOrder: i, status: "SCHEDULED"
-                };
-                await matchesRef.doc(idaId).set({ ...baseData, matchDateMillis: dates[i-1] }, { merge: true });
-                await matchesRef.doc(voltaId).set({ ...baseData, matchDateMillis: dates[i-1] + (7 * 24 * 3600000) }, { merge: true });
-            }
-        };
-
-        await createKnockout("QUARTERFINALS", 4, [1788825600000, 1788912000000, 1788998400000, 1789084800000], "QF");
-        await createKnockout("SEMIFINALS", 2, [1791244800000, 1791331200000], "SF");
-
-        const finalDoc = await matchesRef.doc("CLI-2026-FINAL").get();
-        if (!finalDoc.exists || !finalDoc.data().isManual) {
-            await matchesRef.doc("CLI-2026-FINAL").set({
-                homeTeam: "A definir", awayTeam: "A definir", homeTeamCode: "TBD", awayTeamCode: "TBD",
-                homeTeamFlag: "", awayTeamFlag: "", matchDateMillis: 1793659200000,
-                phase: "FINAL", championshipId: "LIBERTADORES", matchOrder: 1, status: "SCHEDULED"
-            }, { merge: true });
-        }
-
-        // 2. SINCRONIZAÇÃO COM A API
-        const resCLI = await axios.get("https://api.football-data.org/v4/competitions/CLI/matches", {
-            headers: { 'X-Auth-Token': API_KEY },
-            timeout: 15000
-        }).catch(() => null);
-
-        if (resCLI && resCLI.data && resCLI.data.matches) {
+        if (apiData && apiData.matches) {
+            const resCLI = { data: apiData };
             const batch = db.batch();
             const now = Date.now();
             const knockoutPairs = {};
 
-            resCLI.data.matches.forEach(m => {
-                if ((m.stage === "PLAY_OFFS" || m.stage === "ROUND_OF_16") && m.homeTeam.name && m.awayTeam.name) {
-                    const pairKey = [m.homeTeam.name, m.awayTeam.name].sort().join("|");
-                    if (!knockoutPairs[pairKey]) knockoutPairs[pairKey] = [];
-                    knockoutPairs[pairKey].push(m);
-                }
-            });
-
-            const allKnockoutMatches = resCLI.data.matches
-                .filter(m => m.stage === "ROUND_OF_16" || m.stage === "PLAY_OFFS")
-                .sort((a, b) => a.id - b.id);
+            // Mapeamento Estrito de Oitavas (Ida e Volta para a mesma Chave)
+            const r16Mapping = {
+                564456: 1, 564465: 1, // Estudiantes vs Católica
+                564462: 2, 564470: 2, // Rosario vs Corinthians
+                564460: 3, 564468: 3, // Cruzeiro vs Flamengo
+                564457: 4, 564464: 4, // Tolima vs Ind. del Valle
+                564461: 5, 564469: 5, // Mirassol vs LDU
+                564459: 6, 564466: 6, // Palmeiras vs Cerro
+                564458: 7, 564467: 7, // Platense vs Coquimbo
+                564455: 8, 564463: 8  // Fluminense vs Rivadavia
+            };
 
             for (const m of resCLI.data.matches) {
-                if (m.stage !== "GROUP_STAGE" && m.stage !== "ROUND_OF_16" && m.stage !== "PLAY_OFFS") continue;
+                const knockoutStages = ["ROUND_OF_16", "PLAY_OFFS", "QUARTER_FINALS", "SEMI_FINALS", "FINAL"];
+                if (m.stage !== "GROUP_STAGE" && !knockoutStages.includes(m.stage)) continue;
 
-                const isKnockout = m.stage === "ROUND_OF_16" || m.stage === "PLAY_OFFS";
-                let isVolta = m.matchday === 2 || (m.stage && m.stage.includes("LEG2"));
-                if (isKnockout && !isVolta && m.homeTeam.name && m.awayTeam.name) {
-                    const pair = knockoutPairs[[m.homeTeam.name, m.awayTeam.name].sort().join("|")];
-                    if (pair && pair.length === 2 && pair[1].id === m.id) isVolta = true;
+                const isKO = knockoutStages.includes(m.stage);
+                const mappedPhase = mapPhase(m.stage);
+
+                let matchId = `CLI-2026-M${m.id}`;
+                let knockoutOrder = 0;
+
+                let hName = m.homeTeam?.name || "A definir";
+                let aName = m.awayTeam?.name || "A definir";
+                let hTeam = LIB_TEAMS[hName] || { name: hName, flag: "", code: m.homeTeam?.tla || "TBD", crest: null };
+                let aTeam = LIB_TEAMS[aName] || { name: aName, flag: "", code: m.awayTeam?.tla || "TBD", crest: null };
+
+                if (mappedPhase === "ROUND_OF_16") {
+                    knockoutOrder = r16Mapping[m.id] || 0;
+                    const isVolta = m.matchday === 2 || m.id > 564462;
+
+                    // MAPA DE IDs DE PRODUÇÃO (Baseado nos palpites reais dos usuários)
+                    const productionIds = {
+                        "564456-L1": "CLI-2026-R16-1-L1", // Estudiantes Ida
+                        "564462-L1": "CLI-2026-R16-2-L1", // Corinthians Ida
+                        "564459-L1": "CLI-2026-R16-6-L1", // Palmeiras Ida
+                        "564470-L2": "CLI-2026-M564470-L2", // Corinthians Volta
+                        "564466-L2": "CLI-2026-M564466-L2", // Palmeiras Volta
+                        "564464-L2": "CLI-2026-M564464-L2", // Ind. del Valle Volta
+                        "564469-L2": "CLI-2026-M564469-L2", // LDU Volta
+                        "564465-L2": "CLI-2026-M564465-L2",
+                        "564468-L2": "CLI-2026-M564468-L2",
+                        "564467-L2": "CLI-2026-M564467-L2",
+                        "564463-L2": "CLI-2026-M564463-L2"
+                    };
+
+                    const key = `${m.id}-${isVolta ? "L2" : "L1"}`;
+                    matchId = productionIds[key] || `CLI-2026-R16-${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
+                } else if (mappedPhase === "QUARTERFINALS") {
+                    // Quartas: API traz em pares (Ida/Volta para cada confronto)
+                    // Mapeamos por ordem de aparecer e alternância
+                    const qfMatches = resCLI.data.matches
+                        .filter(x => x.stage === "QUARTER_FINALS")
+                        .sort((a, b) => a.id - b.id);
+                    const idx = qfMatches.findIndex(x => x.id === m.id);
+
+                    if (idx !== -1) {
+                        knockoutOrder = Math.floor(idx / 2) + 1;
+                        const isVolta = idx % 2 === 1; // 0,1 -> QF1; 2,3 -> QF2; etc
+                        matchId = `CLI-2026-QF${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
+
+                        // ⚠️  IMPORTANTE: Na Volta (L2), times devem estar INVERTIDOS
+                        // Se for Volta e times são iguais aos da Ida, inverte
+                        // (troca as REFERÊNCIAS das variáveis, nunca os campos dos
+                        // objetos de LIB_TEAMS — esses são compartilhados/mutáveis
+                        // e mutar seus campos corromperia o cadastro do time para
+                        // todos os outros jogos processados nesta e em futuras
+                        // execuções da function)
+                        if (isVolta && idx > 0) {
+                            const idaMatch = qfMatches[idx - 1];
+                            if (hName === idaMatch.homeTeam?.name && aName === idaMatch.awayTeam?.name) {
+                                const tempName = hName;
+                                hName = aName;
+                                aName = tempName;
+                                const tempTeam = hTeam;
+                                hTeam = aTeam;
+                                aTeam = tempTeam;
+                            }
+                        }
+                    } else {
+                        // Fallback (nunca deve acontecer)
+                        matchId = `CLI-2026-M${m.id}`;
+                    }
+                } else if (mappedPhase === "SEMIFINALS") {
+                    // Semis: Mesmo padrão das Quartas
+                    const sfMatches = resCLI.data.matches
+                        .filter(x => x.stage === "SEMI_FINALS")
+                        .sort((a, b) => a.id - b.id);
+                    const idx = sfMatches.findIndex(x => x.id === m.id);
+
+                    if (idx !== -1) {
+                        knockoutOrder = Math.floor(idx / 2) + 1;
+                        const isVolta = idx % 2 === 1; // 0,1 -> SF1; 2,3 -> SF2
+                        matchId = `CLI-2026-SF${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
+
+                        // ⚠️  IMPORTANTE: Na Volta (L2), times devem estar INVERTIDOS
+                        // (troca as referências, não os campos dos objetos — ver
+                        // comentário equivalente no bloco de QUARTERFINALS acima)
+                        if (isVolta && idx > 0) {
+                            const idaMatch = sfMatches[idx - 1];
+                            if (hName === idaMatch.homeTeam?.name && aName === idaMatch.awayTeam?.name) {
+                                const tempName = hName;
+                                hName = aName;
+                                aName = tempName;
+                                const tempTeam = hTeam;
+                                hTeam = aTeam;
+                                aTeam = tempTeam;
+                            }
+                        }
+                    } else {
+                        matchId = `CLI-2026-M${m.id}`;
+                    }
+                } else if (mappedPhase === "FINAL") {
+                    // Final: sempre um único jogo (sem Ida/Volta)
+                    matchId = `CLI-2026-FINAL`;
+                    knockoutOrder = 1;
                 }
 
-                const matchId = `CLI-2026-M${m.id}${isKnockout ? (isVolta ? "-L2" : "-L1") : ""}`;
+                const matchTime = Date.parse(m.utcDate);
+                let targetStatus = m.status;
 
-                // VERIFICAÇÃO DE EDIÇÃO MANUAL (EXISTENTE)
+                // LÓGICA DE PLACAR: Sempre priorizar tempo normal (90 min)
+                const s = m.score;
+                let hScore = null, aScore = null;
+                if (s) {
+                    // Se existe regularTime, ele é o nosso 90 minutos oficial (independente de duration)
+                    if (s.regularTime && s.regularTime.home !== null) {
+                        hScore = s.regularTime.home;
+                        aScore = s.regularTime.away;
+                    } else {
+                        // Fallback para fullTime se for o único disponível
+                        hScore = s.fullTime?.home ?? null;
+                        aScore = s.fullTime?.away ?? null;
+                    }
+                }
+
+                if (m.status !== "FINISHED" && (now - matchTime > 4 * 3600000) && hScore !== null) {
+                    targetStatus = "FINISHED";
+                }
+
                 const currentDoc = await matchesRef.doc(matchId).get();
                 if (currentDoc.exists && currentDoc.data().isManual) {
                     continue;
                 }
 
-                if (['POSTPONED', 'CANCELLED', 'SUSPENDED'].includes(m.status)) {
-                    batch.delete(matchesRef.doc(matchId));
-                    continue;
-                }
-
-                const s = m.score;
-                // LÓGICA DE PLACAR: Priorizar regularTime para pegar os 90 minutos
-                let hScore, aScore;
-                if (s && s.duration === "REGULAR") {
-                    hScore = s.fullTime.home;
-                    aScore = s.fullTime.away;
-                } else if (s && (s.duration === "PENALTY_SHOOTOUT" || s.duration === "EXTRA_TIME")) {
-                    hScore = s.regularTime.home;
-                    aScore = s.regularTime.away;
-                } else {
-                    hScore = s?.fullTime?.home;
-                    aScore = s?.fullTime?.away;
-                }
-
-                const matchTime = Date.parse(m.utcDate);
-                let targetStatus = m.status;
-                if (m.status !== "FINISHED" && (now - matchTime > 4 * 3600000) && hScore !== undefined && aScore !== undefined) {
-                    targetStatus = "FINISHED";
-                }
-
-                const hTeam = LIB_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD", crest: null };
-                const aTeam = LIB_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD", crest: null };
-
-                batch.set(matchesRef.doc(matchId), {
+                const updates = {
                     status: targetStatus,
-                    homeTeam: hTeam.name, homeTeamCode: hTeam.code, homeTeamFlag: hTeam.flag, homeTeamCrest: hTeam.crest || m.homeTeam.crest,
-                    awayTeam: aTeam.name, awayTeamCode: aTeam.code, awayTeamFlag: aTeam.flag, awayTeamCrest: aTeam.crest || m.awayTeam.crest,
-                    homeScore: hScore !== undefined ? hScore : null,
-                    awayScore: aScore !== undefined ? aScore : null,
+                    homeScore: hScore,
+                    awayScore: aScore,
+                    apiWinner: m.score?.winner || null,
                     championshipId: "LIBERTADORES",
-                    phase: mapPhase(m.stage),
-                    matchOrder: isKnockout ? allKnockoutMatches.findIndex(x => x.id === m.id) + 1 : (m.matchday || 0),
+                    phase: mappedPhase,
+                    matchOrder: knockoutOrder,
                     group: m.group || (m.matchday ? `Rodada ${m.matchday}` : m.stage),
                     matchDateMillis: matchTime,
-                    lastSync: admin.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
+                    lastSync: admin.firestore.FieldValue.serverTimestamp(),
+                    source: "api"
+                };
+
+                // SÓ ATUALIZA TIMES SE A API TROUXER NOMES REAIS ou se o campo no banco estiver vazio/TBD
+                const existing = currentDoc.data();
+                if (hTeam.code !== "TBD" || !existing || existing.homeTeamCode === "TBD") {
+                    updates.homeTeam = hTeam.name;
+                    updates.homeTeamCode = hTeam.code;
+                    updates.homeTeamFlag = hTeam.flag;
+                    updates.homeTeamCrest = hTeam.crest || m.homeTeam?.crest;
+                }
+                if (aTeam.code !== "TBD" || !existing || existing.awayTeamCode === "TBD") {
+                    updates.awayTeam = aTeam.name;
+                    updates.awayTeamCode = aTeam.code;
+                    updates.awayTeamFlag = aTeam.flag;
+                    updates.awayTeamCrest = aTeam.crest || m.awayTeam?.crest;
+                }
+
+                batch.set(matchesRef.doc(matchId), updates, { merge: true });
+
+                // Detectar mudança de mandos e migrar palpites se necessário (Quartas/Semis/Final)
+                if (existing && (mappedPhase === "QUARTERFINALS" || mappedPhase === "SEMIFINALS" || mappedPhase === "FINAL")) {
+                    const oldHomeCode = existing.homeTeamCode;
+                    const oldAwayCode = existing.awayTeamCode;
+                    const newHomeCode = updates.homeTeamCode;
+                    const newAwayCode = updates.awayTeamCode;
+
+                    if (oldHomeCode && oldAwayCode && (oldHomeCode !== newHomeCode || oldAwayCode !== newAwayCode)) {
+                        // Times mudaram - vai precisar migrar palpites após o batch
+                        // Adiciona info ao batch para processar depois
+                        if (!batch.migrationsNeeded) batch.migrationsNeeded = [];
+                        batch.migrationsNeeded.push({
+                            matchId,
+                            oldMatch: existing,
+                            newMatch: updates
+                        });
+                    }
+                }
             }
             await batch.commit();
+
+            // Processar migrações de palpites (depois do commit para evitar locks)
+            if (batch.migrationsNeeded && batch.migrationsNeeded.length > 0) {
+                for (const migration of batch.migrationsNeeded) {
+                    await migratePredictionsIfMatchChanged(db, migration.matchId, migration.oldMatch, migration.newMatch);
+                }
+            }
+
             logger.info(`Libertadores sincronizada.`);
         }
     } catch (e) {
