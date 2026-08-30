@@ -2417,6 +2417,7 @@ private fun PendingRequestItem(user: User, label: String, accentColor: Color = N
 }
 
 private fun formatMatchDate(millis: Long): String {
+    if (millis == Match.NO_DATE_MILLIS) return "Data a definir"
     val tz = TimeZone.currentSystemDefault()
     val dt = Instant.fromEpochMilliseconds(millis).toLocalDateTime(tz)
     val dayOfWeek =
