@@ -12,6 +12,7 @@ const { syncLibertadores } = require("./libertadores");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 
 // Chave da football-data.org, armazenada no Secret Manager (nunca no código).
@@ -83,45 +84,75 @@ exports.syncBrasileiraoHTTP = onRequest({ secrets: [footballDataApiKey] }, async
 });
 
 /**
- * Endpoint de decisão para o GitHub Actions.
- *
- * Retorna shouldSyncFrequently=true quando:
- * - Existe algum jogo com status LIVE, OU
- * - Existe algum jogo cujo horário programado (matchDateMillis) está
- *   dentro da janela de 30 minutos antes até 30 minutos depois do início.
- *
- * O workflow do GitHub Actions roda a cada 5 minutos e chama este endpoint;
- * se vier true, ele faz um loop interno chamando os sync HTTP a cada 60s
- * até o próximo disparo do cron, simulando sincronização "a cada 1 minuto"
- * sem custo nenhum (GitHub Actions é gratuito para esse volume de uso).
+ * Verifica se existe jogo LIVE ou próximo do horário (30 min antes até 30
+ * min depois do início). Usado tanto pelo endpoint HTTP de debug quanto
+ * pela function agendada que roda a cada minuto.
+ */
+async function checkShouldSyncFrequently() {
+    const now = Date.now();
+    const THIRTY_MIN = 30 * 60 * 1000;
+
+    const liveSnap = await db.collectionGroup("matches")
+        .where("status", "==", "LIVE")
+        .limit(1)
+        .get();
+
+    if (!liveSnap.empty) {
+        return { shouldSyncFrequently: true, reason: "LIVE" };
+    }
+
+    const upcomingSnap = await db.collectionGroup("matches")
+        .where("matchDateMillis", ">=", now - THIRTY_MIN)
+        .where("matchDateMillis", "<=", now + THIRTY_MIN)
+        .limit(1)
+        .get();
+
+    if (!upcomingSnap.empty) {
+        return { shouldSyncFrequently: true, reason: "NEAR_KICKOFF" };
+    }
+
+    return { shouldSyncFrequently: false };
+}
+
+/**
+ * Endpoint de debug/manual para inspecionar o resultado de
+ * checkShouldSyncFrequently() sem precisar esperar o agendamento.
  */
 exports.checkSyncFrequency = onRequest(async (req, res) => {
     try {
-        const now = Date.now();
-        const THIRTY_MIN = 30 * 60 * 1000;
-
-        const liveSnap = await db.collectionGroup("matches")
-            .where("status", "==", "LIVE")
-            .limit(1)
-            .get();
-
-        if (!liveSnap.empty) {
-            return res.json({ shouldSyncFrequently: true, reason: "LIVE" });
-        }
-
-        const upcomingSnap = await db.collectionGroup("matches")
-            .where("matchDateMillis", ">=", now - THIRTY_MIN)
-            .where("matchDateMillis", "<=", now + THIRTY_MIN)
-            .limit(1)
-            .get();
-
-        if (!upcomingSnap.empty) {
-            return res.json({ shouldSyncFrequently: true, reason: "NEAR_KICKOFF" });
-        }
-
-        return res.json({ shouldSyncFrequently: false });
+        return res.json(await checkShouldSyncFrequently());
     } catch (error) {
         logger.error("❌ Erro ao verificar frequência de sync:", error.message);
         return res.status(500).json({ shouldSyncFrequently: false, error: error.message });
     }
 });
+
+/**
+ * Agendamento fixo (Cloud Scheduler nativo do Firebase, sem custo dentro
+ * da faixa grátis): 4x/dia, garante sincronização mesmo sem jogo ao vivo.
+ */
+exports.scheduledFixedSync = onSchedule(
+    { schedule: "0 5,12,17,21 * * *", timeZone: "UTC", secrets: [footballDataApiKey] },
+    async () => {
+        logger.info("📡 Sync agendado fixo (4x/dia)");
+        await syncBrasileirao(db, admin, axios);
+        await syncLibertadores(db, admin, axios);
+    }
+);
+
+/**
+ * Agendamento "a cada minuto" (Cloud Scheduler nativo do Firebase): só
+ * chama a sincronização de verdade quando há jogo LIVE ou próximo do
+ * início, mantendo o custo desprezível fora das janelas de jogo.
+ */
+exports.scheduledLiveCheck = onSchedule(
+    { schedule: "* * * * *", timeZone: "UTC", secrets: [footballDataApiKey] },
+    async () => {
+        const { shouldSyncFrequently, reason } = await checkShouldSyncFrequently();
+        if (!shouldSyncFrequently) return;
+
+        logger.info(`📡 Sync agendado (jogo ao vivo/próximo - ${reason})`);
+        await syncBrasileirao(db, admin, axios);
+        await syncLibertadores(db, admin, axios);
+    }
+);
