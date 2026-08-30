@@ -162,8 +162,16 @@ class BolaoViewModel(
                                             "${it.homeTeamCode}-${it.awayTeamCode}-${it.groupRound()}"
                                         } else {
                                             // Mata-mata: Agrupa estritamente pelos nomes dos times e fase
-                                            // Isso impede que IDs diferentes do mesmo jogo gerem dois cards
-                                            val teams = listOf(it.homeTeam, it.awayTeam).sorted().joinToString(" vs ")
+                                            // Isso impede que IDs diferentes do mesmo jogo gerem dois cards.
+                                            // Enquanto a API não confirma os times (ambos TBD), vários
+                                            // confrontos diferentes (QF1, QF2, QF3...) ficam com o mesmo
+                                            // nome genérico "A definir" — nesse caso usa matchOrder para
+                                            // não colapsar confrontos distintos no mesmo grupo.
+                                            val teams = if (it.homeTeamCode != "TBD" && it.awayTeamCode != "TBD") {
+                                                listOf(it.homeTeam, it.awayTeam).sorted().joinToString(" vs ")
+                                            } else {
+                                                "order-${it.matchOrder}"
+                                            }
                                             val leg = if (it.id.contains("-L2")) "L2" else "L1"
                                             "${it.phase}-$teams-$leg"
                                         }
