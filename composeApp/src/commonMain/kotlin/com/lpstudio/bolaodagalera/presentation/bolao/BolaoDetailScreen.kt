@@ -1066,6 +1066,9 @@ private fun StandingsTab(matches: List<Match>) {
     }
 }
 
+/** Sentinela de [selectedRound] para a aba "Amanhã" (0 já é usado por "Hoje"). */
+private const val TOMORROW_ROUND = -1
+
 @Composable
 private fun GroupStageTab(
     matches: List<Match>,
@@ -1087,17 +1090,33 @@ private fun GroupStageTab(
     val tz = TimeZone.currentSystemDefault()
     val now = TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+    val tomorrowDate = remember(todayDate) { kotlinx.datetime.LocalDate.fromEpochDays(todayDate.toEpochDays() + 1) }
     val hasMatchToday =
         remember(
             matches,
             todayDate
         ) { matches.any { Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == todayDate } }
+    val hasMatchTomorrow =
+        remember(
+            matches,
+            tomorrowDate
+        ) { matches.any { Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == tomorrowDate } }
+    val currentRound =
+        remember(matches, now) {
+            val upcoming = matches.filter { !it.isFinished && it.matchDateMillis > now }
+                .minByOrNull { it.matchDateMillis }?.groupRound()
+            upcoming ?: matches.maxByOrNull { it.matchDateMillis }?.groupRound() ?: 0
+        }
     val roundMatches =
-        remember(matches, selectedRound, todayDate, now) {
+        remember(matches, selectedRound, todayDate, tomorrowDate, now) {
             if (selectedRound == 0) {
                 matches.filter {
                     val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
                     mDate == todayDate || (now in it.matchDateMillis..(it.matchDateMillis + 3 * 3600_000L))
+                }.sortedBy { it.matchDateMillis }
+            } else if (selectedRound == TOMORROW_ROUND) {
+                matches.filter {
+                    Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == tomorrowDate
                 }.sortedBy { it.matchDateMillis }
             } else {
                 matches.filter { it.groupRound() == selectedRound }.sortedBy { it.matchDateMillis }
@@ -1112,7 +1131,7 @@ private fun GroupStageTab(
         if (lastInteractedMatchId != null) {
             val target = matches.find { it.id == lastInteractedMatchId }
             if (target != null) {
-                if (selectedRound == 0) {
+                if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
                     onClearLastMatchId()
                     return@LaunchedEffect
                 }
@@ -1163,7 +1182,7 @@ private fun GroupStageTab(
             if (focus != null) {
                 val group = focus.group ?: ""
                 val round = focus.groupRound()
-                if (selectedRound == 0) {
+                if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
                     expandedGroups.addAll(byGroup.keys)
                     listState.scrollToItem(0)
                 } else if (selectedRound == round) {
@@ -1187,7 +1206,11 @@ private fun GroupStageTab(
                     listState.scrollToItem(0)
                 }
             } else {
-                if (selectedRound == 0) expandedGroups.addAll(byGroup.keys) else sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
+                if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
+                    expandedGroups.addAll(byGroup.keys)
+                } else {
+                    sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
+                }
                 listState.scrollToItem(0)
             }
             hasHandledScroll = true
@@ -1195,9 +1218,16 @@ private fun GroupStageTab(
     }
     Column(Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxWidth().background(DeepNavy).padding(vertical = 8.dp)) {
-            RodadaSelector(selected = selectedRound, unlocked = unlocked, showHoje = hasMatchToday, onSelect = {
-                if (it == 0 || it in unlocked) onRoundChange(it)
-            })
+            RodadaSelector(
+                selected = selectedRound,
+                unlocked = unlocked,
+                showHoje = hasMatchToday,
+                showAmanha = hasMatchTomorrow,
+                currentRound = currentRound,
+                onSelect = {
+                    if (it == 0 || it == TOMORROW_ROUND || it in unlocked) onRoundChange(it)
+                }
+            )
         }
         Box(Modifier.weight(1f)) {
             LazyColumn(
@@ -1206,14 +1236,19 @@ private fun GroupStageTab(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                if (roundMatches.isEmpty() && selectedRound == 0) {
+                if (roundMatches.isEmpty() && (selectedRound == 0 || selectedRound == TOMORROW_ROUND)) {
                     item {
                         Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                            Text("Nenhum jogo programado para hoje.", color = TextMuted, fontSize = 14.sp)
+                            val msg = if (selectedRound == 0) {
+                                "Nenhum jogo programado para hoje."
+                            } else {
+                                "Nenhum jogo programado para amanhã."
+                            }
+                            Text(msg, color = TextMuted, fontSize = 14.sp)
                         }
                     }
                 }
-                if (selectedRound == 0 && roundMatches.isNotEmpty()) {
+                if ((selectedRound == 0 || selectedRound == TOMORROW_ROUND) && roundMatches.isNotEmpty()) {
                     items(roundMatches, key = { it.id }) { m ->
                         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                             MatchCard(
@@ -1664,17 +1699,26 @@ private fun KnockoutPhaseSelector(
 }
 
 @Composable
-private fun RodadaSelector(selected: Int, unlocked: Set<Int>, showHoje: Boolean, onSelect: (Int) -> Unit) {
+private fun RodadaSelector(
+    selected: Int,
+    unlocked: Set<Int>,
+    showHoje: Boolean,
+    showAmanha: Boolean,
+    currentRound: Int,
+    onSelect: (Int) -> Unit
+) {
     val sorted = remember(unlocked) { unlocked.sorted() }
+    val leadingTabs = (if (showHoje) 1 else 0) + (if (showAmanha) 1 else 0)
     val listState = rememberLazyListState()
     LaunchedEffect(selected, sorted) {
         if (sorted.isEmpty()) return@LaunchedEffect
         val target =
             when {
                 selected == 0 && showHoje -> 0
+                selected == TOMORROW_ROUND && showAmanha -> if (showHoje) 1 else 0
                 selected > 0 -> {
                     val idx = sorted.indexOf(selected)
-                    if (idx != -1) (if (showHoje) idx + 1 else idx) else -1
+                    if (idx != -1) idx + leadingTabs else -1
                 } else -> -1
             }
         if (target != -1) listState.animateScrollToItem(target)
@@ -1686,15 +1730,44 @@ private fun RodadaSelector(selected: Int, unlocked: Set<Int>, showHoje: Boolean,
         contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
         if (showHoje) item { FilterChip(label = "⚽️ HOJE", isSelected = selected == 0, isUnlocked = true, onClick = { onSelect(0) }) }
-        items(sorted) { r -> FilterChip(label = "Rodada $r", isSelected = selected == r, isUnlocked = true, onClick = { onSelect(r) }) }
+        if (showAmanha) {
+            item {
+                FilterChip(
+                    label = "📅 AMANHÃ",
+                    isSelected = selected == TOMORROW_ROUND,
+                    isUnlocked = true,
+                    onClick = { onSelect(TOMORROW_ROUND) }
+                )
+            }
+        }
+        items(sorted) { r ->
+            FilterChip(
+                label = "Rodada $r",
+                isSelected = selected == r,
+                isUnlocked = true,
+                isPast = r < currentRound,
+                isCurrent = r == currentRound,
+                onClick = { onSelect(r) }
+            )
+        }
     }
 }
 
 @Composable
-private fun FilterChip(label: String, isSelected: Boolean, isUnlocked: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun FilterChip(
+    label: String,
+    isSelected: Boolean,
+    isUnlocked: Boolean,
+    modifier: Modifier = Modifier,
+    isPast: Boolean = false,
+    isCurrent: Boolean = false,
+    onClick: () -> Unit
+) {
     val bColor by animateColorAsState(
         when {
             isSelected && isUnlocked -> Neon
+            isCurrent -> Gold
+            isPast -> Color.Transparent
             isUnlocked -> GlassBorder
             else -> Color.Transparent
         },
@@ -1703,6 +1776,8 @@ private fun FilterChip(label: String, isSelected: Boolean, isUnlocked: Boolean, 
     val cColor by animateColorAsState(
         when {
             isSelected && isUnlocked -> Neon.copy(alpha = 0.12f)
+            isCurrent -> Gold.copy(alpha = 0.12f)
+            isPast -> DeepNavy
             isUnlocked -> NavyElevated
             else -> NavyCard.copy(alpha = 0.5f)
         },
@@ -1711,6 +1786,8 @@ private fun FilterChip(label: String, isSelected: Boolean, isUnlocked: Boolean, 
     val tColor by animateColorAsState(
         when {
             isSelected && isUnlocked -> Neon
+            isCurrent -> Gold
+            isPast -> TextMuted.copy(alpha = 0.55f)
             isUnlocked -> Color.White
             else -> TextMuted.copy(alpha = 0.4f)
         },
