@@ -1,0 +1,13 @@
+[*.{kt,kts}]
+# Max line length
+max_line_length = 140
+
+# No wildcard imports
+ij_kotlin_allow_wildcard_imports = false
+
+# Compose specific ktlint rules
+ktlint_code_style = android_studio
+
+# Composable functions start with uppercase
+ktlint_function_naming_ignore_when_annotated_with = Composable,Preview
+ktlint_standard_function-naming_ignore_when_annotated_with = Composable,Preview

@@ -23,7 +23,7 @@ data class PredictionUiState(
     val existingPrediction: Prediction? = null,
     val isLoading: Boolean = true,
     val isSaved: Boolean = false,
-    val error: String? = null,
+    val error: String? = null
 )
 
 class PredictionViewModel(
@@ -31,7 +31,7 @@ class PredictionViewModel(
     private val predictionRepository: PredictionRepository,
     private val bolaoRepository: BolaoRepository,
     private val bolaoId: String,
-    private val matchId: String,
+    private val matchId: String
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(PredictionUiState())
     val uiState: StateFlow<PredictionUiState> = _uiState.asStateFlow()
@@ -57,7 +57,7 @@ class PredictionViewModel(
                         allMatches = allMatches,
                         bolao = bolao,
                         existingPrediction = prediction,
-                        isLoading = false,
+                        isLoading = false
                     )
                 }
             } catch (e: Exception) {
@@ -66,11 +66,7 @@ class PredictionViewModel(
         }
     }
 
-    fun savePrediction(
-        userId: String,
-        homeScore: Int,
-        awayScore: Int,
-    ) {
+    fun savePrediction(userId: String, homeScore: Int, awayScore: Int) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
@@ -80,7 +76,7 @@ class PredictionViewModel(
                         bolaoId = bolaoId,
                         matchId = matchId,
                         homeScore = homeScore,
-                        awayScore = awayScore,
+                        awayScore = awayScore
                     )
                 predictionRepository.savePrediction(prediction)
                 PredictionAdCounter.incrementAndShowIfNecessary()

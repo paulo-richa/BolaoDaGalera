@@ -6,7 +6,10 @@ import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,18 +18,17 @@ private data class PredictionDto(
     val bolaoId: String = "",
     val matchId: String = "",
     val homeScore: Int = 0,
-    val awayScore: Int = 0,
+    val awayScore: Int = 0
 )
 
-private fun PredictionDto.toDomain(id: String) =
-    Prediction(
-        id = id,
-        userId = userId,
-        bolaoId = bolaoId,
-        matchId = matchId,
-        homeScore = homeScore,
-        awayScore = awayScore,
-    )
+private fun PredictionDto.toDomain(id: String) = Prediction(
+    id = id,
+    userId = userId,
+    bolaoId = bolaoId,
+    matchId = matchId,
+    homeScore = homeScore,
+    awayScore = awayScore
+)
 
 @Serializable
 private data class RankingDto(
@@ -35,76 +37,64 @@ private data class RankingDto(
     val userNickname: String = "",
     val totalPoints: Int = 0,
     val totalExactScores: Int = 0,
-    val totalCorrectResults: Int = 0,
+    val totalCorrectResults: Int = 0
 )
 
-class FirebasePredictionRepository(
-    private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
-) : PredictionRepository {
+class FirebasePredictionRepository(private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase()) :
+    PredictionRepository {
     private val db = Firebase.firestore
 
     private fun getPredictionsCollection(bolaoId: String) = db.collection("boloes").document(bolaoId).collection("predictions")
 
     private fun getRankingsCollection(bolaoId: String) = db.collection("boloes").document(bolaoId).collection("rankings")
 
-    override fun getUserPredictions(
-        userId: String,
-        bolaoId: String,
-    ): Flow<List<Prediction>> =
-        try {
-            val query =
-                if (bolaoId.isEmpty()) {
-                    db.collectionGroup("predictions").where { "userId" equalTo userId }
-                } else {
-                    getPredictionsCollection(bolaoId).where { "userId" equalTo userId }
-                }
-
-            query.snapshots
-                .map { snapshot ->
-                    snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
-                }
-                .catch { e ->
-                    println("BOLAOLOG: Erro no getUserPredictions: ${e.message}")
-                    emit(emptyList())
-                }
-        } catch (e: Exception) {
-            println("BOLAOLOG: Erro crítico no getUserPredictions: ${e.message}")
-            kotlinx.coroutines.flow.flowOf(emptyList())
-        }
-
-    override fun getBolaoAllPredictions(bolaoId: String): Flow<List<Prediction>> =
-        try {
-            getPredictionsCollection(bolaoId)
-                .snapshots
-                .map { snapshot ->
-                    snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
-                }
-                .catch { e ->
-                    println("BOLAOLOG: Erro ao observar todos os palpites do bolão $bolaoId: ${e.message}")
-                    emit(emptyList())
-                }
-        } catch (e: Exception) {
-            println("BOLAOLOG: Erro crítico ao observar todos os palpites do bolão $bolaoId: ${e.message}")
-            kotlinx.coroutines.flow.flowOf(emptyList())
-        }
-
-    override suspend fun getUserPredictionForMatch(
-        userId: String,
-        bolaoId: String,
-        matchId: String,
-    ): Prediction? {
-        return try {
-            val snapshot =
-                getPredictionsCollection(bolaoId)
-                    .where { "userId" equalTo userId }
-                    .where { "matchId" equalTo matchId }
-                    .get()
-            snapshot.documents.firstOrNull()?.let { doc ->
-                doc.data<PredictionDto>().toDomain(doc.id)
+    override fun getUserPredictions(userId: String, bolaoId: String): Flow<List<Prediction>> = try {
+        val query =
+            if (bolaoId.isEmpty()) {
+                db.collectionGroup("predictions").where { "userId" equalTo userId }
+            } else {
+                getPredictionsCollection(bolaoId).where { "userId" equalTo userId }
             }
-        } catch (e: Exception) {
-            null
+
+        query.snapshots
+            .map { snapshot ->
+                snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
+            }
+            .catch { e ->
+                println("BOLAOLOG: Erro no getUserPredictions: ${e.message}")
+                emit(emptyList())
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico no getUserPredictions: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(emptyList())
+    }
+
+    override fun getBolaoAllPredictions(bolaoId: String): Flow<List<Prediction>> = try {
+        getPredictionsCollection(bolaoId)
+            .snapshots
+            .map { snapshot ->
+                snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
+            }
+            .catch { e ->
+                println("BOLAOLOG: Erro ao observar todos os palpites do bolão $bolaoId: ${e.message}")
+                emit(emptyList())
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar todos os palpites do bolão $bolaoId: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(emptyList())
+    }
+
+    override suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction? = try {
+        val snapshot =
+            getPredictionsCollection(bolaoId)
+                .where { "userId" equalTo userId }
+                .where { "matchId" equalTo matchId }
+                .get()
+        snapshot.documents.firstOrNull()?.let { doc ->
+            doc.data<PredictionDto>().toDomain(doc.id)
         }
+    } catch (e: Exception) {
+        null
     }
 
     override suspend fun savePrediction(prediction: Prediction) {
@@ -114,7 +104,7 @@ class FirebasePredictionRepository(
                 bolaoId = prediction.bolaoId,
                 matchId = prediction.matchId,
                 homeScore = prediction.homeScore,
-                awayScore = prediction.awayScore,
+                awayScore = prediction.awayScore
             )
         val existing = getUserPredictionForMatch(prediction.userId, prediction.bolaoId, prediction.matchId)
         val collection = getPredictionsCollection(prediction.bolaoId)
@@ -125,10 +115,7 @@ class FirebasePredictionRepository(
         }
     }
 
-    override suspend fun deleteUserPredictions(
-        userId: String,
-        bolaoId: String,
-    ) {
+    override suspend fun deleteUserPredictions(userId: String, bolaoId: String) {
         try {
             val collection = getPredictionsCollection(bolaoId)
             val snapshot =
@@ -143,60 +130,55 @@ class FirebasePredictionRepository(
         }
     }
 
-    override fun getRanking(
-        bolaoId: String,
-        championshipId: String,
-        participantIds: List<String>,
-    ): Flow<List<RankingEntry>> =
-        try {
-            getRankingsCollection(bolaoId)
-                .snapshots
-                .map { snapshot ->
-                    val entries =
-                        snapshot.documents.map { doc ->
-                            val dto = doc.data<RankingDto>()
+    override fun getRanking(bolaoId: String, championshipId: String, participantIds: List<String>): Flow<List<RankingEntry>> = try {
+        getRankingsCollection(bolaoId)
+            .snapshots
+            .map { snapshot ->
+                val entries =
+                    snapshot.documents.map { doc ->
+                        val dto = doc.data<RankingDto>()
+                        RankingEntry(
+                            userId = dto.userId,
+                            userName = dto.userName,
+                            userNickname = dto.userNickname,
+                            points = dto.totalPoints,
+                            exactScores = dto.totalExactScores,
+                            correctResults = dto.totalCorrectResults
+                        )
+                    }.toMutableList()
+
+                // Se houver participantes que ainda não estão no ranking (ex: recém-entraram),
+                // adicionamos eles com 0 pontos para aparecerem na lista.
+                // O nome real será enriquecido pelo ViewModel buscando na coleção de users.
+                val existingIds = entries.map { it.userId }.toSet()
+                participantIds.forEach { pid ->
+                    if (pid !in existingIds) {
+                        entries.add(
                             RankingEntry(
-                                userId = dto.userId,
-                                userName = dto.userName,
-                                userNickname = dto.userNickname,
-                                points = dto.totalPoints,
-                                exactScores = dto.totalExactScores,
-                                correctResults = dto.totalCorrectResults,
+                                userId = pid,
+                                userName = "",
+                                userNickname = "",
+                                points = 0,
+                                exactScores = 0,
+                                correctResults = 0
                             )
-                        }.toMutableList()
-
-                    // Se houver participantes que ainda não estão no ranking (ex: recém-entraram),
-                    // adicionamos eles com 0 pontos para aparecerem na lista.
-                    // O nome real será enriquecido pelo ViewModel buscando na coleção de users.
-                    val existingIds = entries.map { it.userId }.toSet()
-                    participantIds.forEach { pid ->
-                        if (pid !in existingIds) {
-                            entries.add(
-                                RankingEntry(
-                                    userId = pid,
-                                    userName = "",
-                                    userNickname = "",
-                                    points = 0,
-                                    exactScores = 0,
-                                    correctResults = 0,
-                                ),
-                            )
-                        }
+                        )
                     }
+                }
 
-                    entries.sortedWith(
-                        compareByDescending<RankingEntry> { it.points }
-                            .thenByDescending { it.exactScores }
-                            .thenByDescending { it.correctResults }
-                            .thenBy { it.userName.lowercase() },
-                    )
-                }
-                .catch { e ->
-                    println("BOLAOLOG: Erro ao ler ranking remoto do bolão $bolaoId: ${e.message}")
-                    emit(emptyList())
-                }
-        } catch (e: Exception) {
-            println("BOLAOLOG: Erro crítico ao ler ranking remoto do bolão $bolaoId: ${e.message}")
-            kotlinx.coroutines.flow.flowOf(emptyList())
-        }
+                entries.sortedWith(
+                    compareByDescending<RankingEntry> { it.points }
+                        .thenByDescending { it.exactScores }
+                        .thenByDescending { it.correctResults }
+                        .thenBy { it.userName.lowercase() }
+                )
+            }
+            .catch { e ->
+                println("BOLAOLOG: Erro ao ler ranking remoto do bolão $bolaoId: ${e.message}")
+                emit(emptyList())
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao ler ranking remoto do bolão $bolaoId: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(emptyList())
+    }
 }

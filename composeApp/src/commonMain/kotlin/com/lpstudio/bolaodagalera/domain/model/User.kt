@@ -6,5 +6,5 @@ data class User(
     val email: String,
     val phone: String = "",
     val nickname: String = "",
-    val username: String = "", // O "ID" único do usuário (apenas letras)
+    val username: String = ""
 )

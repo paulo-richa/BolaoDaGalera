@@ -13,7 +13,7 @@ val FAKE_USER =
         email = "paulo.richa@hotmail.com",
         phone = "11975148477",
         nickname = "Paulão",
-        username = "pauloricha",
+        username = "pauloricha"
     )
 
 val FAKE_FRIEND =
@@ -23,11 +23,11 @@ val FAKE_FRIEND =
         email = "liviac.lima@hotmail.com",
         phone = "11943612890",
         nickname = "Lívia",
-        username = "livialima",
+        username = "livialima"
     )
 
 class FakeAuthRepository : AuthRepository {
-    private val _user = MutableStateFlow<User?>(FAKE_USER)
+    private val userState = MutableStateFlow<User?>(FAKE_USER)
     private val allUsers =
         mutableListOf(
             FAKE_USER,
@@ -38,74 +38,66 @@ class FakeAuthRepository : AuthRepository {
             User("u6", "Juliana Mendes", "ju@email.com", "", "Ju", "ju"),
             User("u7", "Marcelo Santos", "marcelo@email.com", "", "Tchelo", "marcelo"),
             User("u8", "Patrícia Lima", "pati@email.com", "", "Paty", "pati"),
-            User("u9", "Gustavo Lima", "gustavo@email.com", "", "Guga", "guga"),
+            User("u9", "Gustavo Lima", "gustavo@email.com", "", "Guga", "guga")
         )
 
+    /** Senha correta usada para validar signIn (todas as contas fake usam a mesma). */
+    var validPassword: String = "123456"
+
+    /** Quando != null, a próxima chamada relevante lança esta exceção (para simular erros). */
+    var signInException: Exception? = null
+    var registerException: Exception? = null
+    var resetPasswordException: Exception? = null
+
     override val currentUser: User?
-        get() = _user.value
+        get() = userState.value
 
-    override val authStateFlow: Flow<User?> = _user.asStateFlow()
+    override val authStateFlow: Flow<User?> = userState.asStateFlow()
 
-    override suspend fun signIn(
-        email: String,
-        password: String,
-    ): User {
-        val user = allUsers.find { it.email == email } ?: FAKE_USER
-        _user.value = user
+    fun setUser(user: User?) {
+        userState.value = user
+    }
+
+    override suspend fun signIn(email: String, password: String): User {
+        signInException?.let { throw it }
+        val user = allUsers.find { it.email.equals(email, ignoreCase = true) }
+            ?: throw Exception("user-not-found: nenhuma conta com esse e-mail")
+        if (password != validPassword) {
+            throw Exception("invalid-credential: senha incorreta")
+        }
+        userState.value = user
         return user
     }
 
-    override suspend fun register(
-        email: String,
-        password: String,
-        name: String,
-        phone: String,
-        nickname: String,
-        username: String,
-    ): User {
+    override suspend fun register(email: String, password: String, name: String, phone: String, nickname: String, username: String): User {
+        registerException?.let { throw it }
         val user = User("fake-${name.hashCode().and(0xFFFF)}", name, email, phone, nickname, username)
         allUsers.add(user)
-        _user.value = user
+        userState.value = user
         return user
     }
 
     override suspend fun signOut() {
-        _user.value = null
+        userState.value = null
     }
 
-    override suspend fun updateProfile(
-        name: String,
-        phone: String,
-        nickname: String,
-    ) {
-        _user.value = _user.value?.copy(name = name, phone = phone, nickname = nickname)
+    override suspend fun updateProfile(name: String, phone: String, nickname: String) {
+        userState.value = userState.value?.copy(name = name, phone = phone, nickname = nickname)
     }
 
-    override suspend fun isEmailInUse(email: String): Boolean {
-        return allUsers.any { it.email.equals(email, ignoreCase = true) }
-    }
+    override suspend fun isEmailInUse(email: String): Boolean = allUsers.any { it.email.equals(email, ignoreCase = true) }
 
-    override suspend fun isPhoneInUse(phone: String): Boolean {
-        return allUsers.any { it.phone == phone }
-    }
+    override suspend fun isPhoneInUse(phone: String): Boolean = allUsers.any { it.phone == phone }
 
-    override suspend fun isNicknameInUse(nickname: String): Boolean {
-        return allUsers.any { it.nickname.equals(nickname, ignoreCase = true) }
-    }
+    override suspend fun isNicknameInUse(nickname: String): Boolean = allUsers.any { it.nickname.equals(nickname, ignoreCase = true) }
 
-    override suspend fun isUsernameInUse(username: String): Boolean {
-        return allUsers.any { it.username.equals(username, ignoreCase = true) }
-    }
+    override suspend fun isUsernameInUse(username: String): Boolean = allUsers.any { it.username.equals(username, ignoreCase = true) }
 
     override suspend fun sendPasswordResetEmail(email: String) {
-        // No-op for fake
+        resetPasswordException?.let { throw it }
     }
 
-    override suspend fun getUser(userId: String): User? {
-        return allUsers.find { it.id == userId }
-    }
+    override suspend fun getUser(userId: String): User? = allUsers.find { it.id == userId }
 
-    override suspend fun getUsers(userIds: List<String>): List<User> {
-        return allUsers.filter { it.id in userIds }
-    }
+    override suspend fun getUsers(userIds: List<String>): List<User> = allUsers.filter { it.id in userIds }
 }

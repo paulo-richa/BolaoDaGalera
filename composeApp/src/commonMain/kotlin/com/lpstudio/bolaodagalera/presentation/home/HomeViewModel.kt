@@ -2,10 +2,25 @@ package com.lpstudio.bolaodagalera.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lpstudio.bolaodagalera.domain.model.*
-import com.lpstudio.bolaodagalera.domain.repository.*
+import com.lpstudio.bolaodagalera.domain.model.Bolao
+import com.lpstudio.bolaodagalera.domain.model.Invitation
+import com.lpstudio.bolaodagalera.domain.model.Notification
+import com.lpstudio.bolaodagalera.domain.model.NotificationType
+import com.lpstudio.bolaodagalera.domain.model.User
+import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
+import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
+import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.util.TimeSource
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -18,7 +33,7 @@ data class HomeUiState(
     val notifications: List<Notification> = emptyList(),
     val hasUnreadNotifications: Boolean = false,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: String? = null
 )
 
 class HomeViewModel(
@@ -26,7 +41,7 @@ class HomeViewModel(
     private val bolaoRepository: BolaoRepository,
     private val matchRepository: MatchRepository,
     private val invitationRepository: InvitationRepository,
-    private val predictionRepository: PredictionRepository,
+    private val predictionRepository: PredictionRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -58,7 +73,7 @@ class HomeViewModel(
                 invitationRepository.getInvitationsForUser(user.email.trim().lowercase()),
                 invitationRepository.getInvitationsForUser(user.id),
                 invitationRepository.getInvitationsForUser(user.username.trim().lowercase()),
-                invitationRepository.getInvitationsForUser(user.phone.filter { it.isDigit() }),
+                invitationRepository.getInvitationsForUser(user.phone.filter { it.isDigit() })
             ) { list1, list2, list3, list4 ->
                 val all = (list1 + list2 + list3 + list4).filter { it.id.isNotBlank() }
                 allInvitationsCache = all
@@ -72,7 +87,7 @@ class HomeViewModel(
                 matchRepository.getAllMatches(),
                 predictionRepository.getUserPredictions(user.id, ""),
                 invitationsFlow,
-                readNotificationIds,
+                readNotificationIds
             ) { boloes, matches, predictions, invitations, readIds ->
 
                 val allGenerated = mutableListOf<Notification>()
@@ -88,8 +103,8 @@ class HomeViewModel(
                             timestamp = invitation.createdAtMillis,
                             type = NotificationType.INVITATION,
                             isRead = readIds.contains(id),
-                            bolaoId = invitation.bolaoId,
-                        ),
+                            bolaoId = invitation.bolaoId
+                        )
                     )
                 }
 
@@ -106,8 +121,8 @@ class HomeViewModel(
                                 type = NotificationType.JOIN_REQUEST,
                                 isRead = readIds.contains(id),
                                 bolaoId = bolao.id,
-                                matchId = pUserId, // Reuso matchId para guardar o userId do solicitante
-                            ),
+                                matchId = pUserId
+                            )
                         )
                     }
                     bolao.pendingExits.forEach { pUserId ->
@@ -121,14 +136,16 @@ class HomeViewModel(
                                 type = NotificationType.EXIT_REQUEST,
                                 isRead = readIds.contains(id),
                                 bolaoId = bolao.id,
-                                matchId = pUserId, // Reuso matchId para guardar o userId do solicitante
-                            ),
+                                matchId = pUserId
+                            )
                         )
                     }
                 }
 
                 // 2. Notificações de Lembrete de Jogos
-                val today = Instant.fromEpochMilliseconds(TimeSource.nowMillis()).toLocalDateTime(TimeZone.currentSystemDefault()).date
+                val now = TimeSource.nowMillis()
+                val today = Instant.fromEpochMilliseconds(now)
+                    .toLocalDateTime(TimeZone.currentSystemDefault()).date
                 val matchesToday =
                     matches.filter {
                         Instant.fromEpochMilliseconds(it.matchDateMillis)
@@ -145,11 +162,12 @@ class HomeViewModel(
                             Notification(
                                 id = id,
                                 title = "Jogos de Hoje! ⚽",
-                                message = "Você tem $missingCount jogo(s) hoje sem palpite. Não perca pontos!",
+                                message = "Você tem $missingCount jogo(s) hoje sem palpite. " +
+                                    "Não perca pontos!",
                                 timestamp = TimeSource.nowMillis(),
                                 type = NotificationType.MATCH_REMINDER,
-                                isRead = readIds.contains(id),
-                            ),
+                                isRead = readIds.contains(id)
+                            )
                         )
                     }
                 }
@@ -163,7 +181,7 @@ class HomeViewModel(
                         invitations = invitations,
                         notifications = sortedNotifications,
                         hasUnreadNotifications = hasUnread,
-                        isLoading = false,
+                        isLoading = false
                     )
                 }
             }.catch { e ->
@@ -177,11 +195,7 @@ class HomeViewModel(
         readNotificationIds.value = readNotificationIds.value + allIds
     }
 
-    fun respondToInvitation(
-        invitationId: String,
-        accept: Boolean,
-        onSuccess: () -> Unit = {},
-    ) {
+    fun respondToInvitation(invitationId: String, accept: Boolean, onSuccess: () -> Unit = {}) {
         val user = authRepository.currentUser ?: return
         val currentInvitations = uiState.value.invitations
         val targetInvitation = currentInvitations.find { it.id == invitationId } ?: return
@@ -221,7 +235,7 @@ class HomeViewModel(
                 _uiState.update {
                     it.copy(
                         invitations = it.invitations.filter { inv -> inv.bolaoId != bolaoId },
-                        isLoading = false,
+                        isLoading = false
                     )
                 }
                 println("BOLAOLOG: [HomeVM] Estado UI atualizado (convites filtrados).")
@@ -247,11 +261,7 @@ class HomeViewModel(
         }
     }
 
-    fun respondToJoinRequest(
-        bolaoId: String,
-        userId: String,
-        approve: Boolean,
-    ) {
+    fun respondToJoinRequest(bolaoId: String, userId: String, approve: Boolean) {
         viewModelScope.launch {
             try {
                 bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
@@ -261,11 +271,7 @@ class HomeViewModel(
         }
     }
 
-    fun respondToExitRequest(
-        bolaoId: String,
-        userId: String,
-        approve: Boolean,
-    ) {
+    fun respondToExitRequest(bolaoId: String, userId: String, approve: Boolean) {
         viewModelScope.launch {
             try {
                 bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)

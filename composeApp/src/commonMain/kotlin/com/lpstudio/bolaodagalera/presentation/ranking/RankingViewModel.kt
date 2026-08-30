@@ -11,14 +11,19 @@ import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class ParticipantHit(
-    val match: Match,
-    val prediction: Prediction,
-    val points: Int,
-)
+data class ParticipantHit(val match: Match, val prediction: Prediction, val points: Int)
 
 data class RankingUiState(
     val entries: List<RankingEntry> = emptyList(),
@@ -27,7 +32,7 @@ data class RankingUiState(
     val selectedParticipantHits: List<ParticipantHit> = emptyList(),
     val selectedParticipantName: String = "",
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: String? = null
 )
 
 class RankingViewModel(
@@ -36,7 +41,7 @@ class RankingViewModel(
     private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
     private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
-    private val bolaoId: String,
+    private val bolaoId: String
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(RankingUiState())
     val uiState: StateFlow<RankingUiState> = _uiState.asStateFlow()
@@ -65,7 +70,7 @@ class RankingViewModel(
                     combine(
                         matchRepository.getMatches(bolao.championshipId),
                         predictionRepository.getBolaoAllPredictions(bolaoId),
-                        flow { emit(authRepository.getUsers(participants)) },
+                        flow { emit(authRepository.getUsers(participants)) }
                     ) { matches, predictions, users ->
                         allMatches = matches
                         allPredictions = predictions
@@ -89,7 +94,7 @@ class RankingViewModel(
                                             match.homeScore!!,
                                             match.awayScore!!,
                                             pointsExact,
-                                            pointsWinner,
+                                            pointsWinner
                                         )
                                     totalPoints += pts
                                     if (pts == pointsExact) {
@@ -106,13 +111,13 @@ class RankingViewModel(
                                 userNickname = user?.nickname?.ifBlank { "" } ?: "",
                                 points = totalPoints,
                                 exactScores = exactScores,
-                                correctResults = correctResults,
+                                correctResults = correctResults
                             )
                         }.sortedWith(
                             compareByDescending<RankingEntry> { it.points }
                                 .thenByDescending { it.exactScores }
                                 .thenByDescending { it.correctResults }
-                                .thenBy { it.userName.lowercase() },
+                                .thenBy { it.userName.lowercase() }
                         )
                     }
                 }.onEach { entries ->
@@ -139,7 +144,7 @@ class RankingViewModel(
                                 match.homeScore!!,
                                 match.awayScore!!,
                                 pointsExact,
-                                pointsWinner,
+                                pointsWinner
                             )
                         if (points > 0) {
                             ParticipantHit(match, pred, points)
@@ -155,7 +160,7 @@ class RankingViewModel(
         _uiState.update {
             it.copy(
                 selectedParticipantHits = hits,
-                selectedParticipantName = entry.userNickname.ifBlank { entry.userName },
+                selectedParticipantName = entry.userNickname.ifBlank { entry.userName }
             )
         }
     }

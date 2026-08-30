@@ -1,12 +1,30 @@
 package com.lpstudio.bolaodagalera.presentation
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,8 +32,17 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,7 +55,13 @@ import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.CommonBackHandler
 import com.lpstudio.bolaodagalera.presentation.auth.ProfileScreen
 import com.lpstudio.bolaodagalera.presentation.home.HomeScreen
-import com.lpstudio.bolaodagalera.presentation.theme.*
+import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
+import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
+import com.lpstudio.bolaodagalera.presentation.theme.GradientPrimary
+import com.lpstudio.bolaodagalera.presentation.theme.NavyCard
+import com.lpstudio.bolaodagalera.presentation.theme.NavyElevated
+import com.lpstudio.bolaodagalera.presentation.theme.Neon
+import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 
 @Composable
 fun MainScreen(
@@ -36,7 +69,7 @@ fun MainScreen(
     onNavigateToCreateBolao: () -> Unit,
     onNavigateToJoinBolao: () -> Unit,
     onNavigateToHelp: () -> Unit,
-    onSignOut: () -> Unit,
+    onSignOut: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showFabMenu by remember { mutableStateOf(false) }
@@ -56,7 +89,7 @@ fun MainScreen(
         bottomBar = {
             BottomNavigationBar(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
+                onTabSelected = { selectedTab = it }
             )
         },
         floatingActionButton = {
@@ -64,10 +97,10 @@ fun MainScreen(
                 showMenu = showFabMenu,
                 onToggleMenu = { showFabMenu = !showFabMenu },
                 onCreateBolao = onNavigateToCreateBolao,
-                onJoinBolao = onNavigateToJoinBolao,
+                onJoinBolao = onNavigateToJoinBolao
             )
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButtonPosition = FabPosition.Center
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when (selectedTab) {
@@ -76,13 +109,13 @@ fun MainScreen(
                         onNavigateToBolao = onNavigateToBolao,
                         onNavigateToCreateBolao = onNavigateToCreateBolao,
                         onNavigateToJoinBolao = onNavigateToJoinBolao,
-                        onNavigateToAccount = { selectedTab = 1 },
+                        onNavigateToAccount = { selectedTab = 1 }
                     )
                 1 ->
                     ProfileScreen(
                         onNavigateToHelp = onNavigateToHelp,
                         onNavigateBack = { selectedTab = 0 },
-                        onSignOut = onSignOut,
+                        onSignOut = onSignOut
                     )
             }
         }
@@ -90,25 +123,20 @@ fun MainScreen(
 }
 
 @Composable
-private fun MainFabMenu(
-    showMenu: Boolean,
-    onToggleMenu: () -> Unit,
-    onCreateBolao: () -> Unit,
-    onJoinBolao: () -> Unit,
-) {
+private fun MainFabMenu(showMenu: Boolean, onToggleMenu: () -> Unit, onCreateBolao: () -> Unit, onJoinBolao: () -> Unit) {
     Column(
-        modifier = Modifier.offset(y = 52.dp), // Desce o círculo para a linha da barra
+        modifier = Modifier.offset(y = 52.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Bottom,
+        verticalArrangement = Arrangement.Bottom
     ) {
         AnimatedVisibility(
             visible = showMenu,
             enter = fadeIn() + slideInVertically { it / 2 },
-            exit = fadeOut() + slideOutVertically { it / 2 },
+            exit = fadeOut() + slideOutVertically { it / 2 }
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FabSubItem(
                     icon = Icons.Default.Search,
@@ -116,7 +144,7 @@ private fun MainFabMenu(
                     onClick = {
                         onToggleMenu()
                         onJoinBolao()
-                    },
+                    }
                 )
                 FabSubItem(
                     icon = Icons.Default.Add,
@@ -124,7 +152,7 @@ private fun MainFabMenu(
                     onClick = {
                         onToggleMenu()
                         onCreateBolao()
-                    },
+                    }
                 )
                 Spacer(Modifier.height(8.dp)) // Espaçamento interno reduzido
             }
@@ -134,47 +162,43 @@ private fun MainFabMenu(
         val rotation by animateFloatAsState(
             targetValue = if (showMenu) 45f else 0f,
             animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-            label = "fab_rotation",
+            label = "fab_rotation"
         )
 
         Box(
             modifier =
-                Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(GradientPrimary)
-                    .clickable(onClick = onToggleMenu),
-            contentAlignment = Alignment.Center,
+            Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(GradientPrimary)
+                .clickable(onClick = onToggleMenu),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 Icons.Default.Add,
                 contentDescription = null,
                 tint = DeepNavy,
                 modifier =
-                    Modifier
-                        .size(32.dp)
-                        .rotate(rotation),
+                Modifier
+                    .size(32.dp)
+                    .rotate(rotation)
             )
         }
     }
 }
 
 @Composable
-private fun FabSubItem(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-) {
+private fun FabSubItem(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier =
-            Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(NavyElevated)
-                .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
-                .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+        Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(NavyElevated)
+            .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Icon(icon, null, modifier = Modifier.size(18.dp), tint = Neon)
         Text(label, fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold)
@@ -182,27 +206,24 @@ private fun FabSubItem(
 }
 
 @Composable
-private fun BottomNavigationBar(
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
-) {
+private fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
     Surface(
         color = NavyCard,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(80.dp),
+            Modifier
+                .fillMaxWidth()
+                .height(80.dp),
             horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             TabItem(
                 icon = Icons.Default.Home,
                 label = "Bolões",
                 isSelected = selectedTab == 0,
-                onClick = { onTabSelected(0) },
+                onClick = { onTabSelected(0) }
             )
 
             // Espaço maior para o FAB central, afastando os menus do centro de forma equilibrada
@@ -212,36 +233,31 @@ private fun BottomNavigationBar(
                 icon = Icons.Default.Person,
                 label = "Conta",
                 isSelected = selectedTab == 1,
-                onClick = { onTabSelected(1) },
+                onClick = { onTabSelected(1) }
             )
         }
     }
 }
 
 @Composable
-private fun TabItem(
-    icon: ImageVector,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-) {
+private fun TabItem(icon: ImageVector, label: String, isSelected: Boolean, onClick: () -> Unit) {
     val color by animateColorAsState(if (isSelected) Neon else TextMuted)
 
     Column(
         modifier =
-            Modifier
-                .clip(CircleShape)
-                .clickable(onClick = onClick)
-                .padding(12.dp),
+        Modifier
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+            .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Center
     ) {
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(30.dp))
         Text(
             text = label,
             color = color,
             fontSize = 13.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
     }
 }

@@ -1,10 +1,30 @@
 package com.lpstudio.bolaodagalera.presentation.match
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,8 +32,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,21 +69,27 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
-import com.lpstudio.bolaodagalera.presentation.theme.*
+import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
+import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
+import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
+import com.lpstudio.bolaodagalera.presentation.theme.Gold
+import com.lpstudio.bolaodagalera.presentation.theme.GradientHero
+import com.lpstudio.bolaodagalera.presentation.theme.GradientPrimary
+import com.lpstudio.bolaodagalera.presentation.theme.NavyCard
+import com.lpstudio.bolaodagalera.presentation.theme.NavyElevated
+import com.lpstudio.bolaodagalera.presentation.theme.Neon
+import com.lpstudio.bolaodagalera.presentation.theme.PinkNeon
+import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
+import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
+import kotlin.random.Random
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
-import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PredictionScreen(
-    bolaoId: String,
-    matchId: String,
-    onSaved: () -> Unit,
-    onNavigateBack: () -> Unit,
-) {
+fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNavigateBack: () -> Unit) {
     val viewModel: PredictionViewModel = koinInject(parameters = { parametersOf(bolaoId, matchId) })
     val uiState by viewModel.uiState.collectAsState()
     val authRepository = koinInject<AuthRepository>()
@@ -79,10 +118,10 @@ fun PredictionScreen(
 
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(DeepNavy)
-                .systemBarsPadding(),
+        Modifier
+            .fillMaxSize()
+            .background(DeepNavy)
+            .systemBarsPadding()
     ) {
         when {
             uiState.isLoading && uiState.match == null -> {
@@ -108,47 +147,47 @@ fun PredictionScreen(
                 Column(modifier = Modifier.fillMaxSize()) {
                     Column(
                         modifier =
-                            Modifier
-                                .weight(1f)
-                                .verticalScroll(scrollState),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                        Modifier
+                            .weight(1f)
+                            .verticalScroll(scrollState),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // ── Stadium header ────────────────────────────────────────
                         Box(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .background(GradientHero)
-                                    .padding(top = 16.dp, bottom = 24.dp, start = 8.dp, end = 20.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .background(GradientHero)
+                                .padding(top = 16.dp, bottom = 24.dp, start = 8.dp, end = 20.dp)
                         ) {
                             Column {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     IconButton(onClick = onNavigateBack, modifier = Modifier.size(44.dp)) {
                                         Icon(
                                             Icons.AutoMirrored.Filled.ArrowBack,
                                             contentDescription = "Voltar",
                                             tint = Color.White,
-                                            modifier = Modifier.size(24.dp),
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     }
                                     Spacer(Modifier.weight(1f))
                                     match.group?.let { group ->
                                         Box(
                                             modifier =
-                                                Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(NavyElevated)
-                                                    .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
-                                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                            Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(NavyElevated)
+                                                .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
+                                                .padding(horizontal = 12.dp, vertical = 6.dp)
                                         ) {
                                             Text(
                                                 "Grupo $group • ${match.phase.label}",
                                                 fontSize = 11.sp,
                                                 color = TextMuted,
-                                                fontWeight = FontWeight.Bold,
+                                                fontWeight = FontWeight.Bold
                                             )
                                         }
                                     }
@@ -159,16 +198,16 @@ fun PredictionScreen(
                                 // Teams display
                                 Row(
                                     modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 16.dp),
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
                                     horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.CenterVertically,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     TeamHero(
                                         flag = homeDisplayFlag,
                                         name = homeDisplayName,
-                                        crestUrl = homeResolvedCrest ?: match.homeTeamCrest,
+                                        crestUrl = homeResolvedCrest ?: match.homeTeamCrest
                                     )
 
                                     Text(
@@ -177,13 +216,13 @@ fun PredictionScreen(
                                         fontWeight = FontWeight.Black,
                                         color = TextMuted.copy(alpha = 0.4f),
                                         modifier = Modifier.padding(bottom = 36.dp),
-                                        letterSpacing = 2.sp,
+                                        letterSpacing = 2.sp
                                     )
 
                                     TeamHero(
                                         flag = awayDisplayFlag,
                                         name = awayDisplayName,
-                                        crestUrl = awayResolvedCrest ?: match.awayTeamCrest,
+                                        crestUrl = awayResolvedCrest ?: match.awayTeamCrest
                                     )
                                 }
                             }
@@ -197,37 +236,37 @@ fun PredictionScreen(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White,
-                            letterSpacing = 0.5.sp,
+                            letterSpacing = 0.5.sp
                         )
                         Spacer(Modifier.height(24.dp))
 
                         Row(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 40.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 40.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             ScoreStepper(
                                 value = homeScore,
                                 onIncrement = { homeScore++ },
                                 onDecrement = { if (homeScore > 0) homeScore-- },
-                                teamName = homeDisplayName,
+                                teamName = homeDisplayName
                             )
 
                             Text(
                                 "×",
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextMuted,
+                                color = TextMuted
                             )
 
                             ScoreStepper(
                                 value = awayScore,
                                 onIncrement = { awayScore++ },
                                 onDecrement = { if (awayScore > 0) awayScore-- },
-                                teamName = awayDisplayName,
+                                teamName = awayDisplayName
                             )
                         }
 
@@ -236,35 +275,35 @@ fun PredictionScreen(
                         // ── Points info ───────────────────────────────────────────
                         Column(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(NavyCard)
-                                    .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-                                    .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(NavyCard)
+                                .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
                                 PointBadge(
                                     emoji = "🎯",
                                     pts = (uiState.bolao?.pointsExactScore ?: 3).toString(),
-                                    label = "Placar exato",
+                                    label = "Placar exato"
                                 )
                                 VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
                                 PointBadge(
                                     emoji = "✅",
                                     pts = (uiState.bolao?.pointsWinnerOrDraw ?: 1).toString(),
-                                    label = "Resultado certo",
+                                    label = "Resultado certo"
                                 )
                                 VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
                                 PointBadge(
                                     emoji = "❌",
                                     pts = "0",
-                                    label = "Errou",
+                                    label = "Errou"
                                 )
                             }
 
@@ -273,14 +312,15 @@ fun PredictionScreen(
                             Row(
                                 verticalAlignment = Alignment.Top,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.padding(horizontal = 4.dp),
+                                modifier = Modifier.padding(horizontal = 4.dp)
                             ) {
                                 Text("⏱️", fontSize = 14.sp)
                                 Text(
-                                    "Regra: O placar válido para o bolão é o do tempo normal + prorrogação. Pênaltis não são contabilizados.",
+                                    "Regra: O placar válido para o bolão é o do tempo normal + prorrogação. " +
+                                        "Pênaltis não são contabilizados.",
                                     fontSize = 11.sp,
                                     color = TextMuted,
-                                    lineHeight = 15.sp,
+                                    lineHeight = 15.sp
                                 )
                             }
                         }
@@ -297,15 +337,15 @@ fun PredictionScreen(
                     // ── Save button (Sticky) ──────────────────────────────────
                     Box(
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
-                                .padding(bottom = 24.dp, top = 8.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 24.dp, top = 8.dp)
                     ) {
                         GradientSaveButton(
                             text = if (uiState.existingPrediction != null) "Atualizar palpite" else "Salvar palpite",
                             isLoading = uiState.isLoading,
-                            onClick = { viewModel.savePrediction(userId, homeScore, awayScore) },
+                            onClick = { viewModel.savePrediction(userId, homeScore, awayScore) }
                         )
                     }
                 }
@@ -324,10 +364,10 @@ private fun SuccessOverlay() {
     val scale by animateFloatAsState(
         targetValue = if (startAnim) 1f else 0f,
         animationSpec =
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow,
-            ),
+        spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
     )
 
     val confettiParticles =
@@ -337,7 +377,7 @@ private fun SuccessOverlay() {
                     color = listOf(Neon, Gold, Color.Cyan, PinkNeon).random(),
                     angle = Random.nextFloat() * 360f,
                     speed = Random.nextFloat() * 15f + 10f,
-                    rotationSpeed = Random.nextFloat() * 10f - 5f,
+                    rotationSpeed = Random.nextFloat() * 10f - 5f
                 )
             }
         }
@@ -348,11 +388,11 @@ private fun SuccessOverlay() {
 
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.8f))
-                .clickable(enabled = false) {},
-        contentAlignment = Alignment.Center,
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.8f))
+            .clickable(enabled = false) {},
+        contentAlignment = Alignment.Center
     ) {
         // Confetti
         if (startAnim) {
@@ -364,25 +404,25 @@ private fun SuccessOverlay() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier =
-                    Modifier
-                        .size(120.dp)
-                        .scale(scale)
-                        .drawBehind {
-                            drawCircle(
-                                color = Neon,
-                                style = Stroke(width = 4.dp.toPx()),
-                            )
-                        }
-                        .padding(12.dp)
-                        .clip(CircleShape)
-                        .background(Neon.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center,
+                Modifier
+                    .size(120.dp)
+                    .scale(scale)
+                    .drawBehind {
+                        drawCircle(
+                            color = Neon,
+                            style = Stroke(width = 4.dp.toPx())
+                        )
+                    }
+                    .padding(12.dp)
+                    .clip(CircleShape)
+                    .background(Neon.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Check,
                     contentDescription = null,
                     tint = Neon,
-                    modifier = Modifier.size(72.dp),
+                    modifier = Modifier.size(72.dp)
                 )
             }
             Spacer(Modifier.height(32.dp))
@@ -391,24 +431,19 @@ private fun SuccessOverlay() {
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp,
+                letterSpacing = 2.sp
             )
             Text(
                 "Boa sorte na torcida!",
                 color = TextMuted,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Medium
             )
         }
     }
 }
 
-private data class ConfettiState(
-    val color: Color,
-    val angle: Float,
-    val speed: Float,
-    val rotationSpeed: Float,
-)
+private data class ConfettiState(val color: Color, val angle: Float, val speed: Float, val rotationSpeed: Float)
 
 @Composable
 private fun ConfettiPiece(state: ConfettiState) {
@@ -417,10 +452,10 @@ private fun ConfettiPiece(state: ConfettiState) {
         initialValue = 0f,
         targetValue = 1f,
         animationSpec =
-            infiniteRepeatable(
-                animation = tween(2000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
+        infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
     )
 
     val xOffset = remember(progress) { (kotlin.math.cos(state.angle) * state.speed * progress * 100) }
@@ -429,26 +464,22 @@ private fun ConfettiPiece(state: ConfettiState) {
 
     Box(
         modifier =
-            Modifier
-                .graphicsLayer {
-                    translationX = xOffset
-                    translationY = yOffset
-                    rotationZ = rotation
-                    alpha = 1f - progress
-                    scaleX = 1f - progress
-                    scaleY = 1f - progress
-                }
-                .size(8.dp)
-                .background(state.color, RoundedCornerShape(2.dp)),
+        Modifier
+            .graphicsLayer {
+                translationX = xOffset
+                translationY = yOffset
+                rotationZ = rotation
+                alpha = 1f - progress
+                scaleX = 1f - progress
+                scaleY = 1f - progress
+            }
+            .size(8.dp)
+            .background(state.color, RoundedCornerShape(2.dp))
     )
 }
 
 @Composable
-private fun TeamHero(
-    flag: String,
-    name: String,
-    crestUrl: String?,
-) {
+private fun TeamHero(flag: String, name: String, crestUrl: String?) {
     val annotatedFlag =
         remember(flag) {
             if (flag.contains(" ou ")) {
@@ -470,25 +501,25 @@ private fun TeamHero(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(120.dp),
+        modifier = Modifier.width(120.dp)
     ) {
         Box(
             modifier =
-                Modifier
-                    .size(86.dp)
-                    .clip(CircleShape)
-                    .background(NavyElevated)
-                    .border(2.dp, GlassBorder, CircleShape),
-            contentAlignment = Alignment.Center,
+            Modifier
+                .size(86.dp)
+                .clip(CircleShape)
+                .background(NavyElevated)
+                .border(2.dp, GlassBorder, CircleShape),
+            contentAlignment = Alignment.Center
         ) {
             if (!crestUrl.isNullOrBlank()) {
                 SubcomposeAsyncImage(
                     model =
-                        ImageRequest.Builder(LocalPlatformContext.current)
-                            .data(crestUrl)
-                            .decoderFactory(SvgDecoder.Factory())
-                            .crossfade(true)
-                            .build(),
+                    ImageRequest.Builder(LocalPlatformContext.current)
+                        .data(crestUrl)
+                        .decoderFactory(SvgDecoder.Factory())
+                        .crossfade(true)
+                        .build(),
                     contentDescription = null,
                     modifier = Modifier.size(56.dp),
                     loading = {
@@ -498,15 +529,15 @@ private fun TeamHero(
                         Text(
                             text = annotatedFlag,
                             fontSize = 24.sp,
-                            textAlign = TextAlign.Center,
+                            textAlign = TextAlign.Center
                         )
-                    },
+                    }
                 )
             } else {
                 Text(
                     text = annotatedFlag,
                     fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -519,29 +550,24 @@ private fun TeamHero(
             color = Color.White,
             textAlign = TextAlign.Center,
             maxLines = 2,
-            lineHeight = 18.sp,
+            lineHeight = 18.sp
         )
     }
 }
 
 @Composable
-private fun ScoreStepper(
-    value: Int,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit,
-    teamName: String,
-) {
+private fun ScoreStepper(value: Int, onIncrement: () -> Unit, onDecrement: () -> Unit, teamName: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         // + button
         Box(
             modifier =
-                Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color.Transparent)
-                    .border(1.dp, Neon.copy(alpha = 0.5f), CircleShape)
-                    .clickable(onClick = onIncrement),
-            contentAlignment = Alignment.Center,
+            Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Color.Transparent)
+                .border(1.dp, Neon.copy(alpha = 0.5f), CircleShape)
+                .clickable(onClick = onIncrement),
+            contentAlignment = Alignment.Center
         ) {
             Text("+", fontSize = 24.sp, fontWeight = FontWeight.Medium, color = Neon)
         }
@@ -551,18 +577,18 @@ private fun ScoreStepper(
         // Score display
         Box(
             modifier =
-                Modifier
-                    .size(84.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(NavyElevated)
-                    .border(1.dp, GlassBorder, RoundedCornerShape(20.dp)),
-            contentAlignment = Alignment.Center,
+            Modifier
+                .size(84.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(NavyElevated)
+                .border(1.dp, GlassBorder, RoundedCornerShape(20.dp)),
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 "$value",
                 fontSize = 42.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White,
+                color = Color.White
             )
         }
 
@@ -571,19 +597,19 @@ private fun ScoreStepper(
         // – button
         Box(
             modifier =
-                Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color.Transparent)
-                    .border(1.dp, if (value > 0) TextMuted.copy(alpha = 0.5f) else GlassBorder, CircleShape)
-                    .clickable(enabled = value > 0, onClick = onDecrement),
-            contentAlignment = Alignment.Center,
+            Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Color.Transparent)
+                .border(1.dp, if (value > 0) TextMuted.copy(alpha = 0.5f) else GlassBorder, CircleShape)
+                .clickable(enabled = value > 0, onClick = onDecrement),
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 "–",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (value > 0) TextMuted else TextSubtle,
+                color = if (value > 0) TextMuted else TextSubtle
             )
         }
 
@@ -594,20 +620,16 @@ private fun ScoreStepper(
             fontSize = 11.sp,
             color = TextMuted,
             textAlign = TextAlign.Center,
-            maxLines = 1,
+            maxLines = 1
         )
     }
 }
 
 @Composable
-private fun PointBadge(
-    emoji: String,
-    pts: String,
-    label: String,
-) {
+private fun PointBadge(emoji: String, pts: String, label: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(vertical = 4.dp),
+        modifier = Modifier.padding(vertical = 4.dp)
     ) {
         Text(emoji, fontSize = 22.sp)
         Spacer(Modifier.height(6.dp))
@@ -615,7 +637,7 @@ private fun PointBadge(
             "$pts pt${if (pts != "1") "s" else ""}",
             fontSize = 15.sp,
             fontWeight = FontWeight.Black,
-            color = Color.White,
+            color = Color.White
         )
         Spacer(Modifier.height(2.dp))
         Text(
@@ -623,39 +645,35 @@ private fun PointBadge(
             fontSize = 10.sp,
             color = TextMuted,
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.Medium
         )
     }
 }
 
 @Composable
-private fun GradientSaveButton(
-    text: String,
-    isLoading: Boolean,
-    onClick: () -> Unit,
-) {
+private fun GradientSaveButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
     Box(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(GradientPrimary)
-                .clickable(enabled = !isLoading, onClick = onClick),
-        contentAlignment = Alignment.Center,
+        Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(GradientPrimary)
+            .clickable(enabled = !isLoading, onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(24.dp),
                 strokeWidth = 2.5.dp,
-                color = DeepNavy,
+                color = DeepNavy
             )
         } else {
             Text(
                 text,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = DeepNavy,
+                color = DeepNavy
             )
         }
     }

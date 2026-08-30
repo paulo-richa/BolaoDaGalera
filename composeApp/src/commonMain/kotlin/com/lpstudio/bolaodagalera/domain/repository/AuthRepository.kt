@@ -7,10 +7,7 @@ interface AuthRepository {
     val currentUser: User?
     val authStateFlow: Flow<User?>
 
-    suspend fun signIn(
-        email: String,
-        password: String,
-    ): User
+    suspend fun signIn(email: String, password: String): User
 
     suspend fun register(
         email: String,
@@ -18,16 +15,12 @@ interface AuthRepository {
         name: String,
         phone: String = "",
         nickname: String = "",
-        username: String = "",
+        username: String = ""
     ): User
 
     suspend fun signOut()
 
-    suspend fun updateProfile(
-        name: String,
-        phone: String,
-        nickname: String,
-    )
+    suspend fun updateProfile(name: String, phone: String, nickname: String)
 
     suspend fun isEmailInUse(email: String): Boolean
 

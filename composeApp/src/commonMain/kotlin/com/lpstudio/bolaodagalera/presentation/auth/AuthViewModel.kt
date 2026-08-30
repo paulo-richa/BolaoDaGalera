@@ -21,7 +21,7 @@ data class AuthUiState(
     val successMessage: String? = null,
     val isAuthChecked: Boolean = false,
     val emailExists: Boolean? = null,
-    val checkedEmail: String = "",
+    val checkedEmail: String = ""
 )
 
 class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
@@ -34,10 +34,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         }.launchIn(viewModelScope)
     }
 
-    fun login(
-        email: String,
-        password: String,
-    ) {
+    fun login(email: String, password: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
             try {
@@ -66,7 +63,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                     it.copy(
                         isLoading = false,
                         emailExists = null,
-                        error = "Não foi possível verificar seu e-mail agora. Tente prosseguir normalmente ou verifique sua conexão.",
+                        error = "Não foi possível verificar seu e-mail agora. Tente prosseguir normalmente ou verifique sua conexão."
                     )
                 }
             }
@@ -77,14 +74,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         _uiState.update { it.copy(emailExists = null, checkedEmail = "") }
     }
 
-    fun register(
-        email: String,
-        password: String,
-        name: String,
-        phone: String,
-        nickname: String,
-        username: String,
-    ) {
+    fun register(email: String, password: String, name: String, phone: String, nickname: String, username: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
@@ -112,7 +102,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                         name.trim(),
                         phone.trim(),
                         nickname.trim(),
-                        username.trim().lowercase(),
+                        username.trim().lowercase()
                     )
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: Exception) {
@@ -121,11 +111,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         }
     }
 
-    fun updateProfile(
-        name: String,
-        phone: String,
-        nickname: String,
-    ) {
+    fun updateProfile(name: String, phone: String, nickname: String) {
         viewModelScope.launch {
             val currentUser = _uiState.value.user
             _uiState.update { it.copy(isLoading = true, error = null) }

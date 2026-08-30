@@ -21,7 +21,7 @@ data class Match(
     val status: String? = null,
     val championshipId: String = "UNKNOWN",
     val matchOrder: Int = 0,
-    val isManual: Boolean = false,
+    val isManual: Boolean = false
 ) {
     val isFinished: Boolean get() = status == "FINISHED"
     val isUpcoming: Boolean get() = status == "TIMED" || status == "SCHEDULED" || status == null
@@ -30,9 +30,7 @@ data class Match(
      * Um jogo é considerado "Preso" se não estiver finalizado mas sua data já passou há mais de 48h.
      * Isso geralmente indica erro na API ou jogo adiado que não foi atualizado.
      */
-    fun isStuck(now: Long): Boolean {
-        return !isFinished && now > (matchDateMillis + 48 * 3600_000L)
-    }
+    fun isStuck(now: Long): Boolean = !isFinished && now > (matchDateMillis + 48 * 3600_000L)
 
     fun groupRound(): Int {
         // Prioridade 1: ID do Brasileirão (Mais confiável que o campo 'group' vindo da API)

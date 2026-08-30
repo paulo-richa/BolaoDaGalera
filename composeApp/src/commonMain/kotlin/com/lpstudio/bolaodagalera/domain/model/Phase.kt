@@ -8,5 +8,5 @@ enum class Phase(val label: String) {
     QUARTERFINALS("Quartas"),
     SEMIFINALS("Semifinal"),
     THIRD_PLACE("3° Lugar"),
-    FINAL("Final"),
+    FINAL("Final")
 }

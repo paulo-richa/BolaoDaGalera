@@ -1,14 +1,15 @@
 package com.lpstudio.bolaodagalera
 
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.lpstudio.bolaodagalera.di.fakeAppModule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoDetailScreen
 import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 
 class BolaoDetailUiTest {
@@ -18,9 +19,9 @@ class BolaoDetailUiTest {
     @Before
     fun setup() {
         stopKoin()
-        startKoin {
+        /* startKoin {
             modules(fakeAppModule)
-        }
+        } */
     }
 
     @Test
@@ -32,9 +33,11 @@ class BolaoDetailUiTest {
                 BolaoDetailScreen(
                     bolaoId = "bolao-1",
                     onNavigateToPrediction = { /* Mock navigation */ },
+                    onNavigateToAllPredictions = { },
                     onNavigateToEdit = { },
                     onNavigateToAddParticipants = { },
-                    onNavigateBack = { navigatedBackCount++ },
+                    onNavigateToHelp = { },
+                    onNavigateBack = { navigatedBackCount++ }
                 )
             }
         }

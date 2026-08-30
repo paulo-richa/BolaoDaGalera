@@ -1,14 +1,29 @@
 package com.lpstudio.bolaodagalera.presentation.splash
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,7 +34,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lpstudio.bolaodagalera.presentation.theme.*
+import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
+import com.lpstudio.bolaodagalera.presentation.theme.GradientPrimary
+import com.lpstudio.bolaodagalera.presentation.theme.Neon
+import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
 import kotlinx.coroutines.delay
 
 @Composable
@@ -28,10 +46,10 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
     val scale by animateFloatAsState(
         targetValue = if (startAnimation) 1.1f else 0.8f,
         animationSpec =
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow,
-            ),
+        spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
     )
 
     LaunchedEffect(Unit) {
@@ -42,40 +60,40 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
 
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(DeepNavy),
-        contentAlignment = Alignment.Center,
+        Modifier
+            .fillMaxSize()
+            .background(DeepNavy),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Center
         ) {
             // Logo Central
             Box(
                 modifier =
-                    Modifier
-                        .size(120.dp)
-                        .scale(scale)
-                        .drawBehind {
-                            drawCircle(
-                                brush =
-                                    Brush.radialGradient(
-                                        colors = listOf(Neon.copy(alpha = 0.2f), Color.Transparent),
-                                    ),
-                                radius = size.maxDimension * 0.8f,
-                            )
-                        },
-                contentAlignment = Alignment.Center,
+                Modifier
+                    .size(120.dp)
+                    .scale(scale)
+                    .drawBehind {
+                        drawCircle(
+                            brush =
+                            Brush.radialGradient(
+                                colors = listOf(Neon.copy(alpha = 0.2f), Color.Transparent)
+                            ),
+                            radius = size.maxDimension * 0.8f
+                        )
+                    },
+                contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .background(GradientPrimary)
-                            .border(2.dp, Neon.copy(alpha = 0.5f), CircleShape),
-                    contentAlignment = Alignment.Center,
+                    Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .background(GradientPrimary)
+                        .border(2.dp, Neon.copy(alpha = 0.5f), CircleShape),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text("⚽", fontSize = 60.sp)
                 }
@@ -88,7 +106,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
-                letterSpacing = 2.sp,
+                letterSpacing = 2.sp
             )
 
             Text(
@@ -96,7 +114,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = Neon,
-                letterSpacing = 2.sp,
+                letterSpacing = 2.sp
             )
 
             Spacer(Modifier.height(48.dp))
@@ -105,12 +123,12 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
             Box(modifier = Modifier.width(180.dp)) {
                 LinearProgressIndicator(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .clip(CircleShape),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .clip(CircleShape),
                     color = Neon,
-                    trackColor = Color.White.copy(alpha = 0.1f),
+                    trackColor = Color.White.copy(alpha = 0.1f)
                 )
             }
         }
@@ -118,12 +136,12 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
         Text(
             "LP STUDIO",
             modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp),
+            Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp),
             fontSize = 10.sp,
             color = TextSubtle,
-            letterSpacing = 1.sp,
+            letterSpacing = 1.sp
         )
     }
 }

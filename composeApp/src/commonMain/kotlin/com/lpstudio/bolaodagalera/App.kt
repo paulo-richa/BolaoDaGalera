@@ -10,7 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
 import com.lpstudio.bolaodagalera.di.appModule
@@ -57,7 +63,7 @@ fun App() {
                     isMaintenanceMode &&
                         currentUser?.email != "paulo.richa@hotmail.com" &&
                         currentUser?.email != "pedro-richa@hotmail.com"
-                )
+                    )
 
         LaunchedEffect(currentUser) {
             try {
@@ -76,26 +82,27 @@ fun App() {
         }
 
         AppTheme {
-            CompositionLocalProvider(LocalAdsEnabled provides showAds) {
+            CompositionLocalProvider(localAdsEnabled provides showAds) {
                 Column(
                     Modifier
                         .fillMaxSize()
                         .background(DeepNavy)
-                        .navigationBarsPadding(), // Resolve sobreposição em todas as telas
+                        // Resolve sobreposição em todas as telas
+                        .navigationBarsPadding()
                 ) {
                     // Background sólido para a status bar para dar destaque aos ícones
                     Spacer(
                         Modifier
                             .fillMaxWidth()
                             .windowInsetsTopHeight(WindowInsets.statusBars)
-                            .background(DeepNavy),
+                            .background(DeepNavy)
                     )
                     Box(Modifier.weight(1f)) {
                         if (shouldShowMaintenance) {
                             MaintenanceScreen(
                                 onLogout = {
                                     scope.launch { authRepository.signOut() }
-                                },
+                                }
                             )
                         } else {
                             NavGraph()
@@ -107,4 +114,4 @@ fun App() {
     }
 }
 
-val LocalAdsEnabled = staticCompositionLocalOf { true }
+val localAdsEnabled = staticCompositionLocalOf { true }

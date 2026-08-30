@@ -9,5 +9,5 @@ data class Prediction(
     val bolaoId: String = "",
     val matchId: String = "",
     val homeScore: Int = 0,
-    val awayScore: Int = 0,
+    val awayScore: Int = 0
 )

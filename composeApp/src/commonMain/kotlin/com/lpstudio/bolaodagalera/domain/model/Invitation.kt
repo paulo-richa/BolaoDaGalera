@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 enum class InvitationStatus {
     PENDING,
     ACCEPTED,
-    DECLINED,
+    DECLINED
 }
 
 @Serializable
@@ -15,7 +15,8 @@ data class Invitation(
     val bolaoId: String,
     val bolaoName: String,
     val inviterName: String,
-    val inviteeIdentifier: String, // Can be email, phone or userId
+    /** Can be email, phone or userId */
+    val inviteeIdentifier: String,
     val status: InvitationStatus = InvitationStatus.PENDING,
-    val createdAtMillis: Long,
+    val createdAtMillis: Long
 )

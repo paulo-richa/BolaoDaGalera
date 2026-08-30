@@ -7,11 +7,11 @@ import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.FieldValue
 import dev.gitlive.firebase.firestore.firestore
+import kotlin.random.Random
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
-import kotlin.random.Random
 
 @Serializable
 private data class BolaoDto(
@@ -28,72 +28,69 @@ private data class BolaoDto(
     val scope: String = "FULL",
     val specificMatchId: String? = null,
     val createdAtMillis: Long = 0L,
-    val deletedAtMillis: Long? = null,
+    val deletedAtMillis: Long? = null
 )
 
-private fun BolaoDto.toDomain(id: String) =
-    Bolao(
-        id = id,
-        name = name,
-        description = description,
-        pointsExactScore = pointsExactScore,
-        pointsWinnerOrDraw = pointsWinnerOrDraw,
-        code = code,
-        ownerId = ownerId,
-        participants = participants,
-        pendingParticipants = pendingParticipants,
-        pendingExits = pendingExits,
-        championshipId = championshipId,
-        scope =
-            try {
-                BolaoScope.valueOf(scope)
-            } catch (e: Exception) {
-                BolaoScope.FULL
-            },
-        specificMatchId = specificMatchId,
-        createdAtMillis = createdAtMillis,
-        deletedAtMillis = deletedAtMillis,
-    )
+private fun BolaoDto.toDomain(id: String) = Bolao(
+    id = id,
+    name = name,
+    description = description,
+    pointsExactScore = pointsExactScore,
+    pointsWinnerOrDraw = pointsWinnerOrDraw,
+    code = code,
+    ownerId = ownerId,
+    participants = participants,
+    pendingParticipants = pendingParticipants,
+    pendingExits = pendingExits,
+    championshipId = championshipId,
+    scope =
+    try {
+        BolaoScope.valueOf(scope)
+    } catch (e: Exception) {
+        BolaoScope.FULL
+    },
+    specificMatchId = specificMatchId,
+    createdAtMillis = createdAtMillis,
+    deletedAtMillis = deletedAtMillis
+)
 
 class FirebaseBolaoRepository : BolaoRepository {
     private val db = Firebase.firestore
     private val collection = db.collection("boloes")
 
-    override fun getUserBoloes(userId: String): Flow<List<Bolao>> =
-        try {
-            collection
-                .where { "participants" contains userId as Any }
-                .snapshots
-                .map { snapshot ->
-                    snapshot.documents
-                        .map { doc -> doc.data<BolaoDto>().toDomain(doc.id) }
-                        .filter { it.deletedAtMillis == null } // Oculta bolões marcados para deleção
-                }
-                .catch { e ->
-                    println("BOLAOLOG: Erro ao observar bolões: ${e.message}")
-                    emit(emptyList())
-                }
-        } catch (e: Exception) {
-            println("BOLAOLOG: Erro crítico ao observar bolões: ${e.message}")
-            kotlinx.coroutines.flow.flowOf(emptyList())
-        }
-
-    override fun getBolaoFlow(bolaoId: String): Flow<Bolao> =
-        try {
-            collection.document(bolaoId).snapshots.map { doc ->
-                if (doc.exists) {
-                    doc.data<BolaoDto>().toDomain(doc.id)
-                } else {
-                    Bolao() // Retorna um objeto vazio em vez de crashar se deletado
-                }
-            }.catch { e ->
-                println("BOLAOLOG: Erro ao observar bolão $bolaoId: ${e.message}")
-                emit(Bolao())
+    override fun getUserBoloes(userId: String): Flow<List<Bolao>> = try {
+        collection
+            .where { "participants" contains userId as Any }
+            .snapshots
+            .map { snapshot ->
+                snapshot.documents
+                    .map { doc -> doc.data<BolaoDto>().toDomain(doc.id) }
+                    .filter { it.deletedAtMillis == null } // Oculta bolões marcados para deleção
             }
-        } catch (e: Exception) {
-            println("BOLAOLOG: Erro crítico ao observar bolão $bolaoId: ${e.message}")
-            kotlinx.coroutines.flow.flowOf(Bolao())
+            .catch { e ->
+                println("BOLAOLOG: Erro ao observar bolões: ${e.message}")
+                emit(emptyList())
+            }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar bolões: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(emptyList())
+    }
+
+    override fun getBolaoFlow(bolaoId: String): Flow<Bolao> = try {
+        collection.document(bolaoId).snapshots.map { doc ->
+            if (doc.exists) {
+                doc.data<BolaoDto>().toDomain(doc.id)
+            } else {
+                Bolao() // Retorna um objeto vazio em vez de crashar se deletado
+            }
+        }.catch { e ->
+            println("BOLAOLOG: Erro ao observar bolão $bolaoId: ${e.message}")
+            emit(Bolao())
         }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar bolão $bolaoId: ${e.message}")
+        kotlinx.coroutines.flow.flowOf(Bolao())
+    }
 
     override suspend fun getBolao(bolaoId: String): Bolao {
         val doc = collection.document(bolaoId).get()
@@ -112,7 +109,7 @@ class FirebaseBolaoRepository : BolaoRepository {
         scope: BolaoScope,
         specificMatchId: String?,
         pointsExactScore: Int,
-        pointsWinnerOrDraw: Int,
+        pointsWinnerOrDraw: Int
     ): Bolao {
         val code = generateCode()
         val dto =
@@ -127,16 +124,13 @@ class FirebaseBolaoRepository : BolaoRepository {
                 championshipId = championshipId,
                 scope = scope.name,
                 specificMatchId = specificMatchId,
-                createdAtMillis = TimeSource.nowMillis(),
+                createdAtMillis = TimeSource.nowMillis()
             )
         val ref = collection.add(dto)
         return dto.toDomain(ref.id)
     }
 
-    override suspend fun requestLeaveBolao(
-        bolaoId: String,
-        userId: String,
-    ) {
+    override suspend fun requestLeaveBolao(bolaoId: String, userId: String) {
         val doc = collection.document(bolaoId).get()
         val dto = doc.data<BolaoDto>()
 
@@ -146,11 +140,7 @@ class FirebaseBolaoRepository : BolaoRepository {
         }
     }
 
-    override suspend fun approveLeaveRequest(
-        bolaoId: String,
-        userId: String,
-        approve: Boolean,
-    ) {
+    override suspend fun approveLeaveRequest(bolaoId: String, userId: String, approve: Boolean) {
         val doc = collection.document(bolaoId).get()
         val dto = doc.data<BolaoDto>()
 
@@ -159,17 +149,14 @@ class FirebaseBolaoRepository : BolaoRepository {
             val newParticipants = dto.participants - userId
             collection.document(bolaoId).update(
                 "participants" to newParticipants,
-                "pendingExits" to newPendingExits,
+                "pendingExits" to newPendingExits
             )
         } else {
             collection.document(bolaoId).update("pendingExits" to newPendingExits)
         }
     }
 
-    override suspend fun joinBolao(
-        code: String,
-        userId: String,
-    ): Bolao {
+    override suspend fun joinBolao(code: String, userId: String): Bolao {
         val snapshot = collection.where { "code" equalTo code.uppercase() }.get()
         if (snapshot.documents.isEmpty()) error("Bolão não encontrado com o código $code")
 
@@ -186,9 +173,9 @@ class FirebaseBolaoRepository : BolaoRepository {
                         "name" to "Novo Usuário",
                         "email" to "",
                         "username" to "user_${userId.take(5)}",
-                        "createdAt" to TimeSource.nowMillis(),
+                        "createdAt" to TimeSource.nowMillis()
                     ),
-                    merge = true,
+                    merge = true
                 )
             }
         } catch (e: Exception) {
@@ -201,7 +188,7 @@ class FirebaseBolaoRepository : BolaoRepository {
 
             collection.document(bolao.id).update(
                 "participants" to updatedParticipants,
-                "pendingParticipants" to updatedPending,
+                "pendingParticipants" to updatedPending
             )
 
             // Inicializa o ranking para o usuário aparecer na lista imediatamente
@@ -213,10 +200,7 @@ class FirebaseBolaoRepository : BolaoRepository {
         return bolao
     }
 
-    override suspend fun requestJoinBolao(
-        code: String,
-        userId: String,
-    ): Bolao {
+    override suspend fun requestJoinBolao(code: String, userId: String): Bolao {
         val snapshot = collection.where { "code" equalTo code.uppercase() }.get()
         if (snapshot.documents.isEmpty()) error("Bolão não encontrado com o código $code")
 
@@ -232,11 +216,7 @@ class FirebaseBolaoRepository : BolaoRepository {
         return bolao.copy(pendingParticipants = updatedPending)
     }
 
-    override suspend fun approveJoinRequest(
-        bolaoId: String,
-        userId: String,
-        approve: Boolean,
-    ) {
+    override suspend fun approveJoinRequest(bolaoId: String, userId: String, approve: Boolean) {
         val doc = collection.document(bolaoId).get()
         val dto = doc.data<BolaoDto>()
 
@@ -245,7 +225,7 @@ class FirebaseBolaoRepository : BolaoRepository {
             val newParticipants = dto.participants + userId
             collection.document(bolaoId).update(
                 "participants" to newParticipants,
-                "pendingParticipants" to newPending,
+                "pendingParticipants" to newPending
             )
             // Inicializa o ranking ao aprovar a entrada
             initializeRankingEntry(bolaoId, userId)
@@ -254,10 +234,7 @@ class FirebaseBolaoRepository : BolaoRepository {
         }
     }
 
-    override suspend fun addParticipantDirectly(
-        bolaoId: String,
-        userId: String,
-    ) {
+    override suspend fun addParticipantDirectly(bolaoId: String, userId: String) {
         println("BOLAOLOG: [BolaoRepo] addParticipantDirectly INICIO. BolaoId: $bolaoId, UserId: $userId")
 
         try {
@@ -265,9 +242,9 @@ class FirebaseBolaoRepository : BolaoRepository {
             println("BOLAOLOG: [BolaoRepo] Tentando atualizar lastActiveAt para $userId...")
             userRef.set(
                 mapOf(
-                    "lastActiveAt" to TimeSource.nowMillis(),
+                    "lastActiveAt" to TimeSource.nowMillis()
                 ),
-                merge = true,
+                merge = true
             )
             println("BOLAOLOG: [BolaoRepo] lastActiveAt atualizado com sucesso.")
         } catch (e: Exception) {
@@ -278,7 +255,7 @@ class FirebaseBolaoRepository : BolaoRepository {
             println("BOLAOLOG: [BolaoRepo] Tentando update atômico (arrayUnion) no bolão $bolaoId...")
             collection.document(bolaoId).update(
                 "participants" to FieldValue.arrayUnion(userId),
-                "pendingParticipants" to FieldValue.arrayRemove(userId),
+                "pendingParticipants" to FieldValue.arrayRemove(userId)
             )
 
             // Inicializa o ranking para o usuário aparecer na lista imediatamente
@@ -291,10 +268,7 @@ class FirebaseBolaoRepository : BolaoRepository {
         }
     }
 
-    private suspend fun initializeRankingEntry(
-        bolaoId: String,
-        userId: String,
-    ) {
+    private suspend fun initializeRankingEntry(bolaoId: String, userId: String) {
         try {
             val userDoc = db.collection("users").document(userId).get()
             val name = if (userDoc.exists) userDoc.get<String>("name") ?: "Novo Participante" else "Novo Participante"
@@ -309,9 +283,9 @@ class FirebaseBolaoRepository : BolaoRepository {
                     "totalExactScores" to 0,
                     "totalCorrectResults" to 0,
                     "matchesPlayed" to 0,
-                    "lastUpdate" to TimeSource.nowMillis(),
+                    "lastUpdate" to TimeSource.nowMillis()
                 ),
-                merge = true,
+                merge = true
             )
             println("BOLAOLOG: [BolaoRepo] Ranking inicial criado para $userId no bolão $bolaoId")
         } catch (e: Exception) {
@@ -319,10 +293,7 @@ class FirebaseBolaoRepository : BolaoRepository {
         }
     }
 
-    override suspend fun leaveBolao(
-        bolaoId: String,
-        userId: String,
-    ) {
+    override suspend fun leaveBolao(bolaoId: String, userId: String) {
         // 1. Remove o usuário da lista de participantes
         val doc = collection.document(bolaoId).get()
         val bolao = doc.data<BolaoDto>().toDomain(doc.id)
@@ -356,14 +327,14 @@ class FirebaseBolaoRepository : BolaoRepository {
         description: String,
         scope: BolaoScope,
         pointsExactScore: Int,
-        pointsWinnerOrDraw: Int,
+        pointsWinnerOrDraw: Int
     ) {
         collection.document(bolaoId).update(
             "name" to name,
             "description" to description,
             "scope" to scope.name,
             "pointsExactScore" to pointsExactScore,
-            "pointsWinnerOrDraw" to pointsWinnerOrDraw,
+            "pointsWinnerOrDraw" to pointsWinnerOrDraw
         )
     }
 
@@ -380,10 +351,7 @@ class FirebaseBolaoRepository : BolaoRepository {
         // caso o admin se arrependa (recuperação via suporte ou futuramente no app).
     }
 
-    override suspend fun removeParticipant(
-        bolaoId: String,
-        userId: String,
-    ) {
+    override suspend fun removeParticipant(bolaoId: String, userId: String) {
         leaveBolao(bolaoId, userId)
     }
 

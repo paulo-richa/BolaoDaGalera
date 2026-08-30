@@ -29,38 +29,36 @@ private data class MatchDto(
     val status: String? = null,
     val championshipId: String = "UNKNOWN",
     val matchOrder: Int = 0,
-    val isManual: Boolean = false,
+    val isManual: Boolean = false
 )
 
-private fun MatchDto.toDomain(id: String) =
-    Match(
-        id = id, homeTeam = homeTeam, awayTeam = awayTeam,
-        homeTeamCode = homeTeamCode, awayTeamCode = awayTeamCode,
-        homeTeamFlag = homeTeamFlag, awayTeamFlag = awayTeamFlag,
-        homeTeamCrest = homeTeamCrest, awayTeamCrest = awayTeamCrest,
-        matchDateMillis = matchDateMillis,
-        phase =
-            try {
-                Phase.valueOf(phase)
-            } catch (e: Exception) {
-                Phase.GROUP_STAGE
-            },
-        group = group, homeScore = homeScore, awayScore = awayScore,
-        status = status, championshipId = championshipId,
-        matchOrder = matchOrder, isManual = isManual,
-    )
+private fun MatchDto.toDomain(id: String) = Match(
+    id = id, homeTeam = homeTeam, awayTeam = awayTeam,
+    homeTeamCode = homeTeamCode, awayTeamCode = awayTeamCode,
+    homeTeamFlag = homeTeamFlag, awayTeamFlag = awayTeamFlag,
+    homeTeamCrest = homeTeamCrest, awayTeamCrest = awayTeamCrest,
+    matchDateMillis = matchDateMillis,
+    phase =
+    try {
+        Phase.valueOf(phase)
+    } catch (e: Exception) {
+        Phase.GROUP_STAGE
+    },
+    group = group, homeScore = homeScore, awayScore = awayScore,
+    status = status, championshipId = championshipId,
+    matchOrder = matchOrder, isManual = isManual
+)
 
-private fun Match.toDto() =
-    MatchDto(
-        homeTeam = homeTeam, awayTeam = awayTeam,
-        homeTeamCode = homeTeamCode, awayTeamCode = awayTeamCode,
-        homeTeamFlag = homeTeamFlag, awayTeamFlag = awayTeamFlag,
-        homeTeamCrest = homeTeamCrest, awayTeamCrest = awayTeamCrest,
-        matchDateMillis = matchDateMillis, phase = phase.name,
-        group = group, homeScore = homeScore, awayScore = awayScore,
-        status = status, championshipId = championshipId,
-        matchOrder = matchOrder, isManual = isManual,
-    )
+private fun Match.toDto() = MatchDto(
+    homeTeam = homeTeam, awayTeam = awayTeam,
+    homeTeamCode = homeTeamCode, awayTeamCode = awayTeamCode,
+    homeTeamFlag = homeTeamFlag, awayTeamFlag = awayTeamFlag,
+    homeTeamCrest = homeTeamCrest, awayTeamCrest = awayTeamCrest,
+    matchDateMillis = matchDateMillis, phase = phase.name,
+    group = group, homeScore = homeScore, awayScore = awayScore,
+    status = status, championshipId = championshipId,
+    matchOrder = matchOrder, isManual = isManual
+)
 
 /**
  * Repositório de Jogos via Firebase Firestore.
@@ -71,92 +69,77 @@ class FirebaseMatchRepository : MatchRepository {
 
     private fun getMatchesCollection(championshipId: String) = db.collection("championships").document(championshipId).collection("matches")
 
-    private fun List<Match>.sortedForUi(): List<Match> =
-        sortedWith { a, b ->
-            if (a.phase == Phase.GROUP_STAGE && b.phase == Phase.GROUP_STAGE) {
-                a.matchDateMillis.compareTo(b.matchDateMillis)
-            } else if (a.phase != Phase.GROUP_STAGE && b.phase != Phase.GROUP_STAGE && a.phase == b.phase) {
-                val orderA = if (a.matchOrder > 0) a.matchOrder else a.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
-                val orderB = if (b.matchOrder > 0) b.matchOrder else b.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
+    private fun List<Match>.sortedForUi(): List<Match> = sortedWith { a, b ->
+        if (a.phase == Phase.GROUP_STAGE && b.phase == Phase.GROUP_STAGE) {
+            a.matchDateMillis.compareTo(b.matchDateMillis)
+        } else if (a.phase != Phase.GROUP_STAGE && b.phase != Phase.GROUP_STAGE && a.phase == b.phase) {
+            val orderA = if (a.matchOrder > 0) a.matchOrder else a.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
+            val orderB = if (b.matchOrder > 0) b.matchOrder else b.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
 
-                if (orderA != orderB) {
-                    orderA.compareTo(orderB)
-                } else {
-                    val dateComp = a.matchDateMillis.compareTo(b.matchDateMillis)
-                    if (dateComp != 0) dateComp else a.id.compareTo(b.id)
-                }
+            if (orderA != orderB) {
+                orderA.compareTo(orderB)
             } else {
-                if (a.matchDateMillis != b.matchDateMillis) {
-                    a.matchDateMillis.compareTo(b.matchDateMillis)
-                } else {
-                    a.phase.ordinal.compareTo(b.phase.ordinal)
-                }
+                val dateComp = a.matchDateMillis.compareTo(b.matchDateMillis)
+                if (dateComp != 0) dateComp else a.id.compareTo(b.id)
+            }
+        } else {
+            if (a.matchDateMillis != b.matchDateMillis) {
+                a.matchDateMillis.compareTo(b.matchDateMillis)
+            } else {
+                a.phase.ordinal.compareTo(b.phase.ordinal)
             }
         }
+    }
 
-    override fun getMatches(championshipId: String): Flow<List<Match>> =
-        try {
-            getMatchesCollection(championshipId).snapshots.map { snap ->
+    override fun getMatches(championshipId: String): Flow<List<Match>> = try {
+        getMatchesCollection(championshipId).snapshots.map { snap ->
+            try {
+                snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }.catch { e ->
+            println("BOLAOLOG: Erro ao observar matches de $championshipId: ${e.message}")
+            emit(emptyList())
+        }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar matches de $championshipId: ${e.message}")
+        flowOf(emptyList<Match>())
+    }
+
+    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> = try {
+        getMatchesCollection(championshipId)
+            .where { "phase" equalTo phase.name }
+            .snapshots
+            .map { snap ->
                 try {
                     snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
                 } catch (e: Exception) {
                     emptyList()
                 }
             }.catch { e ->
-                println("BOLAOLOG: Erro ao observar matches de $championshipId: ${e.message}")
+                println("BOLAOLOG: Erro ao observar matches por fase de $championshipId: ${e.message}")
                 emit(emptyList())
             }
-        } catch (e: Exception) {
-            println("BOLAOLOG: Erro crítico ao observar matches de $championshipId: ${e.message}")
-            flowOf(emptyList<Match>())
-        }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico ao observar matches por fase de $championshipId: ${e.message}")
+        flowOf(emptyList<Match>())
+    }
 
-    override fun getMatchesByPhase(
-        championshipId: String,
-        phase: Phase,
-    ): Flow<List<Match>> =
-        try {
-            getMatchesCollection(championshipId)
-                .where { "phase" equalTo phase.name }
-                .snapshots
-                .map { snap ->
-                    try {
-                        snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-                }.catch { e ->
-                    println("BOLAOLOG: Erro ao observar matches por fase de $championshipId: ${e.message}")
-                    emit(emptyList())
-                }
-        } catch (e: Exception) {
-            println("BOLAOLOG: Erro crítico ao observar matches por fase de $championshipId: ${e.message}")
-            flowOf(emptyList<Match>())
-        }
-
-    override suspend fun getMatch(
-        championshipId: String,
-        matchId: String,
-    ): Match {
+    override suspend fun getMatch(championshipId: String, matchId: String): Match {
         val doc = getMatchesCollection(championshipId).document(matchId).get()
         return doc.data<MatchDto>().toDomain(doc.id)
     }
 
-    override suspend fun updateMatchScore(
-        championshipId: String,
-        matchId: String,
-        homeScore: Int?,
-        awayScore: Int?,
-        isManual: Boolean,
-    ) {
+    override suspend fun updateMatchScore(championshipId: String, matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {
         getMatchesCollection(championshipId).document(matchId).set(
             mapOf(
                 "homeScore" to homeScore,
                 "awayScore" to awayScore,
-                "status" to "FINISHED", // Garante que o status mude para finalizado
-                "isManual" to isManual,
+                "status" to "FINISHED",
+                "isManual" to isManual
             ),
-            merge = true,
+            merge = true
         )
     }
 
@@ -171,7 +154,7 @@ class FirebaseMatchRepository : MatchRepository {
         awayTeamFlag: String,
         dateMillis: Long?,
         status: String?,
-        isManual: Boolean,
+        isManual: Boolean
     ) {
         val updates =
             mutableMapOf<String, Any>(
@@ -181,7 +164,7 @@ class FirebaseMatchRepository : MatchRepository {
                 "awayTeam" to awayTeam,
                 "awayTeamCode" to awayTeamCode,
                 "awayTeamFlag" to awayTeamFlag,
-                "isManual" to isManual,
+                "isManual" to isManual
             )
         dateMillis?.let { updates["matchDateMillis"] = it }
         status?.let { updates["status"] = it }
@@ -203,16 +186,15 @@ class FirebaseMatchRepository : MatchRepository {
         }
     }
 
-    override fun getAllMatches(): Flow<List<Match>> =
-        try {
-            db.collectionGroup("matches").snapshots.map { snap ->
-                snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
-            }.catch { e ->
-                println("BOLAOLOG: Erro no getAllMatches: ${e.message}")
-                emit(emptyList())
-            }
-        } catch (e: Exception) {
-            println("BOLAOLOG: Erro crítico no getAllMatches: ${e.message}")
-            flowOf(emptyList<Match>())
+    override fun getAllMatches(): Flow<List<Match>> = try {
+        db.collectionGroup("matches").snapshots.map { snap ->
+            snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
+        }.catch { e ->
+            println("BOLAOLOG: Erro no getAllMatches: ${e.message}")
+            emit(emptyList())
         }
+    } catch (e: Exception) {
+        println("BOLAOLOG: Erro crítico no getAllMatches: ${e.message}")
+        flowOf(emptyList<Match>())
+    }
 }

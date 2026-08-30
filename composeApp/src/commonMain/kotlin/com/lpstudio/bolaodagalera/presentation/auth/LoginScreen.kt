@@ -1,20 +1,41 @@
 package com.lpstudio.bolaodagalera.presentation.auth
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,17 +53,19 @@ import bolaodagalera.composeapp.generated.resources.Res
 import bolaodagalera.composeapp.generated.resources.logo_oficial
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
-import com.lpstudio.bolaodagalera.presentation.theme.*
+import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
+import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
+import com.lpstudio.bolaodagalera.presentation.theme.GlassWhite
+import com.lpstudio.bolaodagalera.presentation.theme.Gold
+import com.lpstudio.bolaodagalera.presentation.theme.GradientBg
+import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.util.ValidationUtils
+import kotlin.time.Duration.Companion.milliseconds
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: (String?) -> Unit,
-) {
+fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> Unit) {
     val viewModel: AuthViewModel = koinInject()
     val uiState by viewModel.uiState.collectAsState()
 
@@ -80,43 +103,43 @@ fun LoginScreen(
 
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(GradientBg)
-                .systemBarsPadding(),
+        Modifier
+            .fillMaxSize()
+            .background(GradientBg)
+            .systemBarsPadding()
     ) {
         // Decorative glow
         Box(
             modifier =
-                Modifier
-                    .size(320.dp)
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-60).dp)
-                    .background(
-                        Brush.radialGradient(listOf(Neon.copy(alpha = 0.12f), Color.Transparent)),
-                        shape = RoundedCornerShape(50),
-                    ),
+            Modifier
+                .size(320.dp)
+                .align(Alignment.TopCenter)
+                .offset(y = (-60).dp)
+                .background(
+                    Brush.radialGradient(listOf(Neon.copy(alpha = 0.12f), Color.Transparent)),
+                    shape = RoundedCornerShape(50)
+                )
         )
 
         AnimatedVisibility(
             visible = visible,
-            enter = fadeIn(tween(600)) + slideInVertically(tween(600)) { it / 3 },
+            enter = fadeIn(tween(600)) + slideInVertically(tween(600)) { it / 3 }
         ) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 28.dp)
-                        .verticalScroll(scrollState),
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 28.dp)
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top, // Mudado para Top para evitar conflitos de centralização com scroll
+                verticalArrangement = Arrangement.Top
             ) {
                 Spacer(Modifier.height(60.dp))
                 // Logo area
                 Image(
                     painter = painterResource(Res.drawable.logo_oficial),
                     contentDescription = "Logo Bolão da Galera",
-                    modifier = Modifier.size(180.dp),
+                    modifier = Modifier.size(180.dp)
                 )
 
                 Spacer(Modifier.height(20.dp))
@@ -126,7 +149,7 @@ fun LoginScreen(
                     fontSize = 34.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
-                    letterSpacing = (-0.5).sp,
+                    letterSpacing = (-0.5).sp
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -135,7 +158,7 @@ fun LoginScreen(
                     color = Gold,
                     fontWeight = FontWeight.Medium,
                     letterSpacing = 1.5.sp,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Center
                 )
 
                 Spacer(Modifier.height(48.dp))
@@ -143,13 +166,13 @@ fun LoginScreen(
                 // Glass card
                 Column(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(GlassWhite)
-                            .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                            .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(GlassWhite)
+                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     // STEP 1: Email
                     Column {
@@ -164,27 +187,27 @@ fun LoginScreen(
                             enabled = uiState.emailExists == null,
                             isError = emailError != null,
                             keyboardOptions =
-                                KeyboardOptions(
-                                    keyboardType = KeyboardType.Email,
-                                    capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.None,
-                                    imeAction = if (uiState.emailExists == true) ImeAction.Next else ImeAction.Done,
-                                ),
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.None,
+                                imeAction = if (uiState.emailExists == true) ImeAction.Next else ImeAction.Done
+                            ),
                             keyboardActions =
-                                KeyboardActions(
-                                    onNext = { focusManager.moveFocus(FocusDirection.Down) },
-                                    onDone = {
-                                        if (uiState.emailExists == null && emailError == null && email.isNotBlank()) {
-                                            viewModel.checkEmail(email)
-                                        }
-                                    },
-                                ),
+                            KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) },
+                                onDone = {
+                                    if (uiState.emailExists == null && emailError == null && email.isNotBlank()) {
+                                        viewModel.checkEmail(email)
+                                    }
+                                }
+                            )
                         )
                         emailError?.let {
                             Text(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                             )
                         }
 
@@ -192,7 +215,7 @@ fun LoginScreen(
                             TextButton(
                                 onClick = { viewModel.resetEmailCheck() },
                                 contentPadding = PaddingValues(0.dp),
-                                modifier = Modifier.height(32.dp),
+                                modifier = Modifier.height(32.dp)
                             ) {
                                 Text("Mudar e-mail", color = Neon, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                             }
@@ -212,33 +235,33 @@ fun LoginScreen(
                                     isPassword = true,
                                     isError = passwordError != null,
                                     keyboardOptions =
-                                        KeyboardOptions(
-                                            keyboardType = KeyboardType.Password,
-                                            imeAction = ImeAction.Done,
-                                        ),
+                                    KeyboardOptions(
+                                        keyboardType = KeyboardType.Password,
+                                        imeAction = ImeAction.Done
+                                    ),
                                     keyboardActions =
-                                        KeyboardActions(
-                                            onDone = {
-                                                focusManager.clearFocus()
-                                                if (isFormValid) {
-                                                    viewModel.login(email, password)
-                                                }
-                                            },
-                                        ),
+                                    KeyboardActions(
+                                        onDone = {
+                                            focusManager.clearFocus()
+                                            if (isFormValid) {
+                                                viewModel.login(email, password)
+                                            }
+                                        }
+                                    )
                                 )
                                 passwordError?.let {
                                     Text(
                                         it,
                                         color = ErrorRed,
                                         fontSize = 11.sp,
-                                        modifier = Modifier.padding(start = 8.dp, top = 4.dp),
+                                        modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                                     )
                                 }
 
                                 TextButton(
                                     onClick = { viewModel.resetPassword(email) },
                                     contentPadding = PaddingValues(0.dp),
-                                    modifier = Modifier.align(Alignment.End).height(32.dp),
+                                    modifier = Modifier.align(Alignment.End).height(32.dp)
                                 ) {
                                     Text("Esqueceu a senha?", color = Gold, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 }
@@ -247,7 +270,7 @@ fun LoginScreen(
                             BolaoButton(
                                 text = "Entrar",
                                 isLoading = uiState.isLoading,
-                                enabled = isFormValid && !uiState.isLoading,
+                                enabled = isFormValid && !uiState.isLoading
                             ) {
                                 viewModel.login(email, password)
                             }
@@ -257,18 +280,18 @@ fun LoginScreen(
                     AnimatedVisibility(visible = uiState.emailExists == false) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
                                 "Este e-mail ainda não possui conta no Bolão da Galera.",
                                 color = Gold,
                                 fontSize = 13.sp,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 8.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp)
                             )
 
                             BolaoButton(
-                                text = "CRIAR CONTA AGORA",
+                                text = "CRIAR CONTA AGORA"
                             ) {
                                 onNavigateToRegister(email)
                             }
@@ -279,7 +302,7 @@ fun LoginScreen(
                         BolaoButton(
                             text = "Continuar",
                             isLoading = uiState.isLoading,
-                            enabled = email.isNotBlank() && emailError == null && !uiState.isLoading,
+                            enabled = email.isNotBlank() && emailError == null && !uiState.isLoading
                         ) {
                             viewModel.checkEmail(email)
                         }
@@ -290,7 +313,7 @@ fun LoginScreen(
                             it,
                             color = ErrorRed,
                             fontSize = 12.sp,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
@@ -300,7 +323,7 @@ fun LoginScreen(
                             color = Neon,
                             fontSize = 12.sp,
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }

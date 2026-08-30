@@ -8,10 +8,7 @@ import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 
 @Composable
-actual fun AdBannerNative(
-    modifier: Modifier,
-    adId: String,
-) {
+actual fun AdBannerNative(modifier: Modifier, adId: String) {
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -23,6 +20,6 @@ actual fun AdBannerNative(
         },
         update = { adView ->
             // Atualizações se necessário
-        },
+        }
     )
 }

@@ -10,5 +10,6 @@ plugins {
     alias(libs.plugins.googleServices) apply false
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.roborazzi) apply false
     id("com.google.firebase.appdistribution") version "5.1.1" apply false
 }

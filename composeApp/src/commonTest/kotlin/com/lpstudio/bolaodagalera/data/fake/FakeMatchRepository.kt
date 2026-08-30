@@ -9,29 +9,20 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
 class FakeMatchRepository : MatchRepository {
-    private val _matches = MutableStateFlow<List<Match>>(emptyList())
+    private val matchesState = MutableStateFlow<List<Match>>(emptyList())
 
     override fun getMatches(championshipId: String): Flow<List<Match>> =
-        _matches.map { it.filter { m -> m.championshipId == championshipId } }
+        matchesState.map { it.filter { m -> m.championshipId == championshipId } }
 
-    override fun getMatchesByPhase(
-        championshipId: String,
-        phase: Phase,
-    ): Flow<List<Match>> = _matches.map { it.filter { m -> m.championshipId == championshipId && m.phase == phase } }
+    override fun getAllMatches(): Flow<List<Match>> = matchesState
 
-    override suspend fun getMatch(
-        championshipId: String,
-        matchId: String,
-    ): Match = _matches.value.first { it.id == matchId }
+    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> =
+        matchesState.map { it.filter { m -> m.championshipId == championshipId && m.phase == phase } }
 
-    override suspend fun updateMatchScore(
-        championshipId: String,
-        matchId: String,
-        homeScore: Int?,
-        awayScore: Int?,
-        isManual: Boolean,
-    ) {
-        _matches.update { list ->
+    override suspend fun getMatch(championshipId: String, matchId: String): Match = matchesState.value.first { it.id == matchId }
+
+    override suspend fun updateMatchScore(championshipId: String, matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {
+        matchesState.update { list ->
             list.map {
                 if (it.id == matchId) {
                     it.copy(homeScore = homeScore, awayScore = awayScore, isManual = isManual)
@@ -53,9 +44,9 @@ class FakeMatchRepository : MatchRepository {
         awayTeamFlag: String,
         dateMillis: Long?,
         status: String?,
-        isManual: Boolean,
+        isManual: Boolean
     ) {
-        _matches.update { list ->
+        matchesState.update { list ->
             list.map {
                 if (it.id == matchId) {
                     it.copy(
@@ -67,7 +58,7 @@ class FakeMatchRepository : MatchRepository {
                         awayTeamFlag = awayTeamFlag,
                         matchDateMillis = dateMillis ?: it.matchDateMillis,
                         status = status ?: it.status,
-                        isManual = isManual,
+                        isManual = isManual
                     )
                 } else {
                     it
@@ -77,7 +68,7 @@ class FakeMatchRepository : MatchRepository {
     }
 
     override suspend fun upsertMatch(match: Match) {
-        _matches.update { list ->
+        matchesState.update { list ->
             val index = list.indexOfFirst { it.id == match.id }
             if (index != -1) {
                 list.toMutableList().apply { set(index, match) }

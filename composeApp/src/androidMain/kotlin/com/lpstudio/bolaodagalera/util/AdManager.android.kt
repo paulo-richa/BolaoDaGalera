@@ -49,7 +49,7 @@ actual object AdManager {
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     interstitialAd = null
                 }
-            },
+            }
         )
     }
 

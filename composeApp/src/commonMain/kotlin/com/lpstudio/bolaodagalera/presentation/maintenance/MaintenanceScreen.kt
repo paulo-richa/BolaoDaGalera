@@ -1,12 +1,28 @@
 package com.lpstudio.bolaodagalera.presentation.maintenance
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsSoccer
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,10 +46,10 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
         initialValue = 0f,
         targetValue = 360f,
         animationSpec =
-            infiniteRepeatable(
-                animation = tween(2000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
+        infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
     )
 
     // Animação de Pulo (Quique da bola)
@@ -41,10 +57,10 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
         initialValue = 0f,
         targetValue = -100f,
         animationSpec =
-            infiniteRepeatable(
-                animation = tween(600, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
+        infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
     )
 
     // Animação da Sombra (Aumenta/Diminui com o pulo)
@@ -52,47 +68,47 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
         initialValue = 1f,
         targetValue = 0.5f,
         animationSpec =
-            infiniteRepeatable(
-                animation = tween(600, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
+        infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
     )
 
     val shadowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.4f,
         targetValue = 0.1f,
         animationSpec =
-            infiniteRepeatable(
-                animation = tween(600, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
+        infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
     )
 
     Column(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(DeepNavy)
-                .padding(24.dp),
+        Modifier
+            .fillMaxSize()
+            .background(DeepNavy)
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier.height(200.dp),
-            contentAlignment = Alignment.BottomCenter,
+            contentAlignment = Alignment.BottomCenter
         ) {
             // Sombra Neon no chão
             Box(
                 modifier =
-                    Modifier
-                        .size(width = 80.dp, height = 20.dp)
-                        .graphicsLayer(
-                            scaleX = shadowScale,
-                            scaleY = shadowScale,
-                            alpha = shadowAlpha,
-                        )
-                        .background(Neon.copy(alpha = 0.6f), CircleShape)
-                        .blur(10.dp),
+                Modifier
+                    .size(width = 80.dp, height = 20.dp)
+                    .graphicsLayer(
+                        scaleX = shadowScale,
+                        scaleY = shadowScale,
+                        alpha = shadowAlpha
+                    )
+                    .background(Neon.copy(alpha = 0.6f), CircleShape)
+                    .blur(10.dp)
             )
 
             // Bola de Futebol
@@ -100,11 +116,11 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
                 imageVector = Icons.Default.SportsSoccer,
                 contentDescription = "Manutenção",
                 modifier =
-                    Modifier
-                        .size(80.dp)
-                        .offset(y = bounceTranslation.dp)
-                        .graphicsLayer(rotationZ = rotation),
-                tint = Neon,
+                Modifier
+                    .size(80.dp)
+                    .offset(y = bounceTranslation.dp)
+                    .graphicsLayer(rotationZ = rotation),
+                tint = Neon
             )
         }
 
@@ -115,7 +131,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
             color = Color.White,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -126,7 +142,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
             lineHeight = 24.sp,
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -136,7 +152,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
                 "Sair da conta",
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Medium
             )
         }
     }
