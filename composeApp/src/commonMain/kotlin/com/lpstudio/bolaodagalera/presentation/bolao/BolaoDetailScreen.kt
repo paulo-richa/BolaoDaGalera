@@ -1733,7 +1733,7 @@ private fun RodadaSelector(
         if (showAmanha) {
             item {
                 FilterChip(
-                    label = "📅 AMANHÃ",
+                    label = "AMANHÃ",
                     isSelected = selected == TOMORROW_ROUND,
                     isUnlocked = true,
                     onClick = { onSelect(TOMORROW_ROUND) }
