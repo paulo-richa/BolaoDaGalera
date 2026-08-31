@@ -92,8 +92,10 @@ async function checkShouldSyncFrequently() {
     const now = Date.now();
     const THIRTY_MIN = 30 * 60 * 1000;
 
+    // A API nunca manda literalmente "LIVE" — os status reais de jogo em
+    // andamento são estes (mesma lista usada no app para exibir "AO VIVO").
     const liveSnap = await db.collectionGroup("matches")
-        .where("status", "==", "LIVE")
+        .where("status", "in", ["IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTIES", "LIVE"])
         .limit(1)
         .get();
 
@@ -129,10 +131,11 @@ exports.checkSyncFrequency = onRequest(async (req, res) => {
 
 /**
  * Agendamento fixo (Cloud Scheduler nativo do Firebase, sem custo dentro
- * da faixa grátis): 4x/dia, garante sincronização mesmo sem jogo ao vivo.
+ * da faixa grátis): 4x/dia (02h, 09h, 14h, 18h, horário de Brasília),
+ * garante sincronização mesmo sem jogo ao vivo.
  */
 exports.scheduledFixedSync = onSchedule(
-    { schedule: "0 5,12,17,21 * * *", timeZone: "UTC", secrets: [footballDataApiKey] },
+    { schedule: "0 2,9,14,18 * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey] },
     async () => {
         logger.info("📡 Sync agendado fixo (4x/dia)");
         await syncBrasileirao(db, admin, axios);
@@ -141,12 +144,12 @@ exports.scheduledFixedSync = onSchedule(
 );
 
 /**
- * Agendamento "a cada minuto" (Cloud Scheduler nativo do Firebase): só
+ * Agendamento "a cada 3 minutos" (Cloud Scheduler nativo do Firebase): só
  * chama a sincronização de verdade quando há jogo LIVE ou próximo do
  * início, mantendo o custo desprezível fora das janelas de jogo.
  */
 exports.scheduledLiveCheck = onSchedule(
-    { schedule: "* * * * *", timeZone: "UTC", secrets: [footballDataApiKey] },
+    { schedule: "*/3 * * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey] },
     async () => {
         const { shouldSyncFrequently, reason } = await checkShouldSyncFrequently();
         if (!shouldSyncFrequently) return;
