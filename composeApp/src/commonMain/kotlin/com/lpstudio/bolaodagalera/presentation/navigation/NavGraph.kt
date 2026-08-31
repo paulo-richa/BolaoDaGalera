@@ -34,12 +34,12 @@ import com.lpstudio.bolaodagalera.presentation.bolao.JoinBolaoScreen
 import com.lpstudio.bolaodagalera.presentation.help.HelpScreen
 import com.lpstudio.bolaodagalera.presentation.match.PredictionScreen
 import com.lpstudio.bolaodagalera.util.TimeSource
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
-    val authViewModel: AuthViewModel = koinInject()
+    val authViewModel: AuthViewModel = koinViewModel()
     val authUiState by authViewModel.uiState.collectAsState()
 
     if (!authUiState.isAuthChecked) {
@@ -74,7 +74,7 @@ fun NavGraph() {
             }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            lifecycleOwner.lifecycle.addObserver(observer)
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 

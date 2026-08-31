@@ -10,6 +10,7 @@ const db = admin.firestore();
 const { syncBrasileirao } = require("./brasileirao");
 const { syncLibertadores } = require("./libertadores");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
+const { cleanupDeletedBoloes, cleanupExpiredInvitations } = require("./cleanup");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
@@ -19,6 +20,19 @@ const { defineSecret } = require("firebase-functions/params");
 // Definir com: firebase functions:secrets:set FOOTBALL_DATA_API_KEY
 const footballDataApiKey = defineSecret("FOOTBALL_DATA_API_KEY");
 
+// Token para proteger endpoints administrativos (recálculo de ranking,
+// sync manual). Definir com: firebase functions:secrets:set ADMIN_TOKEN
+// Chamar passando o header "x-admin-token: <valor>".
+const adminToken = defineSecret("ADMIN_TOKEN");
+
+function requireAdminToken(req, res) {
+    if (req.get("x-admin-token") !== process.env.ADMIN_TOKEN) {
+        res.status(403).json({ status: "error", message: "Token administrativo inválido ou ausente." });
+        return false;
+    }
+    return true;
+}
+
 /**
  * Gatilho: Quando um jogo é atualizado no Firestore.
  * Se o jogo estiver finalizado, calcula os rankings.
@@ -27,7 +41,16 @@ exports.onMatchUpdate = onDocumentWritten("championships/{championshipId}/matche
     const afterData = event.data.after.data();
     if (!afterData) return;
 
-    if (afterData.status === "FINISHED" && afterData.homeScore !== null && afterData.awayScore !== null) {
+    const beforeData = event.data.before.data();
+    // O sync reescreve o documento (lastSync novo) mesmo sem o placar mudar de
+    // verdade - sem essa checagem, recalculamos o ranking do zero a cada sync,
+    // mesmo quando nada relevante mudou.
+    const scoreChanged = !beforeData ||
+        beforeData.status !== afterData.status ||
+        beforeData.homeScore !== afterData.homeScore ||
+        beforeData.awayScore !== afterData.awayScore;
+
+    if (scoreChanged && afterData.status === "FINISHED" && afterData.homeScore !== null && afterData.awayScore !== null) {
         await updateMatchRankings(db, admin, event.params.championshipId, event.params.matchId, {
             homeScore: afterData.homeScore,
             awayScore: afterData.awayScore
@@ -38,7 +61,8 @@ exports.onMatchUpdate = onDocumentWritten("championships/{championshipId}/matche
 /**
  * Endpoint para forçar a recalculação de todos os rankings (Útil após migrações).
  */
-exports.recalculateAllRankings = onRequest({ timeoutSeconds: 540, memory: "512MiB" }, async (req, res) => {
+exports.recalculateAllRankings = onRequest({ timeoutSeconds: 540, memory: "512MiB", secrets: [adminToken] }, async (req, res) => {
+    if (!requireAdminToken(req, res)) return;
     const boloes = await db.collection("boloes").get();
     for (const bDoc of boloes.docs) {
         await fullRecalculateRanking(db, admin, bDoc.id);
@@ -55,7 +79,8 @@ exports.recalculateAllRankings = onRequest({ timeoutSeconds: 540, memory: "512Mi
  * Quando a API publicar o próximo confronto, o sync normal já traz os
  * times e a data certos.
  */
-exports.syncLibertadoresHTTP = onRequest({ secrets: [footballDataApiKey] }, async (req, res) => {
+exports.syncLibertadoresHTTP = onRequest({ secrets: [footballDataApiKey, adminToken] }, async (req, res) => {
+    if (!requireAdminToken(req, res)) return;
     try {
         logger.info("📡 Sincronizando Libertadores (HTTP)");
         await syncLibertadores(db, admin, axios);
@@ -71,7 +96,8 @@ exports.syncLibertadoresHTTP = onRequest({ secrets: [footballDataApiKey] }, asyn
  * Sincronização Manual do Brasileirão via HTTP (Zero custos).
  * Chamada pelo GitHub Actions (agendamento externo, gratuito).
  */
-exports.syncBrasileiraoHTTP = onRequest({ secrets: [footballDataApiKey] }, async (req, res) => {
+exports.syncBrasileiraoHTTP = onRequest({ secrets: [footballDataApiKey, adminToken] }, async (req, res) => {
+    if (!requireAdminToken(req, res)) return;
     try {
         logger.info("📡 Sincronizando Brasileirão (HTTP)");
         await syncBrasileirao(db, admin, axios);
@@ -157,5 +183,18 @@ exports.scheduledLiveCheck = onSchedule(
         logger.info(`📡 Sync agendado (jogo ao vivo/próximo - ${reason})`);
         await syncBrasileirao(db, admin, axios);
         await syncLibertadores(db, admin, axios);
+    }
+);
+
+/**
+ * Limpeza diária (Cloud Scheduler nativo do Firebase): remove bolões
+ * marcados como deletados há mais de 7 dias (e seus palpites/convites) e
+ * convites pendentes expirados há mais de 7 dias.
+ */
+exports.scheduledCleanup = onSchedule(
+    { schedule: "0 4 * * *", timeZone: "America/Sao_Paulo" },
+    async () => {
+        await cleanupDeletedBoloes(db);
+        await cleanupExpiredInvitations(db);
     }
 );

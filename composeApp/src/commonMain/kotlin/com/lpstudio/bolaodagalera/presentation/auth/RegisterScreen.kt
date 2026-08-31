@@ -57,12 +57,12 @@ import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.ValidationUtils
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onNavigateBack: () -> Unit) {
-    val viewModel: AuthViewModel = koinInject()
+    val viewModel: AuthViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
     var name by remember { mutableStateOf("") }

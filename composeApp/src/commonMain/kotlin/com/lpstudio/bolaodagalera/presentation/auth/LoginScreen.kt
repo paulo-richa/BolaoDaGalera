@@ -62,11 +62,11 @@ import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.util.ValidationUtils
 import kotlin.time.Duration.Companion.milliseconds
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> Unit) {
-    val viewModel: AuthViewModel = koinInject()
+    val viewModel: AuthViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
     var email by remember { mutableStateOf("") }

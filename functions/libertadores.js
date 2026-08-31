@@ -1,4 +1,3 @@
-const { API_KEY } = require("./config");
 const { LIB_TEAMS } = require("./teams_lib");
 const { mapPhase } = require("./utils");
 const { migratePredictionsIfMatchChanged } = require("./knockout");
@@ -161,6 +160,22 @@ async function syncLibertadores(db, admin, axios) {
 
                 const currentDoc = await matchesRef.doc(matchId).get();
                 if (currentDoc.exists && currentDoc.data().isManual) {
+                    continue;
+                }
+
+                // TRAVA DE SEGURANÇA: nunca aceitar um retrocesso da API (ex.: um jogo
+                // já FINISHED com placar real virar algo diferente com placar nulo).
+                const existingData = currentDoc.exists ? currentDoc.data() : null;
+                // Usa m.status (valor CRU da API), não targetStatus, pelo mesmo
+                // motivo do brasileirao.js: a promoção heurística para FINISHED
+                // após 4h parado não deve disfarçar um dado ainda incompleto.
+                const existingIsFinal = existingData && existingData.status === "FINISHED" &&
+                    existingData.homeScore !== null && existingData.awayScore !== null;
+                if (existingIsFinal && (m.status !== "FINISHED" || hScore === null || aScore === null)) {
+                    logger.warn(
+                        `⚠️ Ignorando retrocesso da API para ${matchId}: ` +
+                        `era FINISHED ${existingData.homeScore}x${existingData.awayScore}, API mandou status=${m.status} ${hScore}x${aScore}`
+                    );
                     continue;
                 }
 

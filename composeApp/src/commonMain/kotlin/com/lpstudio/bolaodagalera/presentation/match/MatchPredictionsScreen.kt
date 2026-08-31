@@ -78,11 +78,12 @@ import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.getInitials
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @Composable
 fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () -> Unit) {
-    val viewModel: BolaoViewModel = koinInject { parametersOf(bolaoId) }
+    val viewModel: BolaoViewModel = koinViewModel(key = bolaoId) { parametersOf(bolaoId) }
     val uiState by viewModel.uiState.collectAsState()
     val launcherProvider = com.lpstudio.bolaodagalera.rememberLauncherProvider()
 

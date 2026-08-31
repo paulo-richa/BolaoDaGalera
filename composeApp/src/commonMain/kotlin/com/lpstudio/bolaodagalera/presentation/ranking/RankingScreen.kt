@@ -58,13 +58,13 @@ import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RankingScreen(bolaoId: String) {
-    val viewModel: RankingViewModel = koinInject(parameters = { parametersOf(bolaoId) })
+    val viewModel: RankingViewModel = koinViewModel(key = bolaoId) { parametersOf(bolaoId) }
     val uiState by viewModel.uiState.collectAsState()
 
     var showHitsDialog by remember { mutableStateOf(false) }

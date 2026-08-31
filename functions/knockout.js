@@ -18,9 +18,9 @@ async function migratePredictionsIfMatchChanged(db, matchId, oldMatch, newMatch)
 
         logger.info(`🔄 Detectada mudança de mandos em ${matchId}. Iniciando migração de palpites...`);
 
-        // Buscar todos os palpites desta partida
-        const predictionsRef = db.collection("predictions");
-        const snapshot = await predictionsRef.where("matchId", "==", matchId).get();
+        // Buscar todos os palpites desta partida (palpites moram em
+        // boloes/{bolaoId}/predictions, então precisa de collectionGroup)
+        const snapshot = await db.collectionGroup("predictions").where("matchId", "==", matchId).get();
 
         if (snapshot.empty) {
             logger.info(`✅ Nenhum palpite encontrado para ${matchId}. Migração concluída.`);

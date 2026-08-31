@@ -85,12 +85,13 @@ import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import kotlin.random.Random
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNavigateBack: () -> Unit) {
-    val viewModel: PredictionViewModel = koinInject(parameters = { parametersOf(bolaoId, matchId) })
+    val viewModel: PredictionViewModel = koinViewModel(key = "$bolaoId/$matchId") { parametersOf(bolaoId, matchId) }
     val uiState by viewModel.uiState.collectAsState()
     val authRepository = koinInject<AuthRepository>()
     val userId = authRepository.currentUser?.id ?: ""

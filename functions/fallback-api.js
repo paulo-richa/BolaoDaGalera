@@ -12,20 +12,16 @@ const { logger } = require("firebase-functions");
  */
 
 let lastSuccessfulData = null;
-let lastFetchTime = 0;
 
 async function getLibertadoresData(axios) {
     const API_KEY = process.env.FOOTBALL_DATA_KEY || require("./config").API_KEY;
-    const CACHE_DURATION = 3600000; // 1 hora
-    const now = Date.now();
 
     try {
-        // Evita múltiplas requisições em curto período
-        if (lastSuccessfulData && (now - lastFetchTime) < CACHE_DURATION) {
-            logger.info("📦 Usando cache de dados (< 1 hora)");
-            return lastSuccessfulData;
-        }
-
+        // Sempre busca dado fresco da API - o cache abaixo só existe como
+        // fallback para quando a requisição falhar (rede/API fora do ar).
+        // Usá-lo no caminho feliz travava o placar ao vivo por até 1h,
+        // já que uma instância "quente" do Cloud Run reaproveitava o cache
+        // mesmo com o scheduler rodando de 3 em 3 minutos.
         logger.info("📡 Sincronizando com football-data.org...");
 
         const response = await axios.get(
@@ -38,7 +34,6 @@ async function getLibertadoresData(axios) {
 
         if (response?.data?.matches && response.data.matches.length > 0) {
             lastSuccessfulData = response.data;
-            lastFetchTime = now;
 
             const qf = response.data.matches.filter(m => m.stage === "QUARTER_FINALS").length;
             const sf = response.data.matches.filter(m => m.stage === "SEMI_FINALS").length;
