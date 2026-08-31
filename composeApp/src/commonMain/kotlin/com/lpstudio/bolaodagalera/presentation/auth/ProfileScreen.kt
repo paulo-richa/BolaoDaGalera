@@ -66,12 +66,12 @@ import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
 import com.lpstudio.bolaodagalera.util.ValidationUtils
 import com.lpstudio.bolaodagalera.util.getInitials
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSignOut: () -> Unit) {
-    val viewModel: AuthViewModel = koinInject()
+    val viewModel: AuthViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val launcherProvider = rememberLauncherProvider()
     val snackbarHostState = remember { SnackbarHostState() }

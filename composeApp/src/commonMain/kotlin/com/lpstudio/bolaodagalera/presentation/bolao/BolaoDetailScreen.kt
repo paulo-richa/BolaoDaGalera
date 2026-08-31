@@ -141,6 +141,7 @@ import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @Composable
@@ -153,7 +154,7 @@ fun BolaoDetailScreen(
     onNavigateToHelp: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val viewModel: BolaoViewModel = koinInject(parameters = { parametersOf(bolaoId) })
+    val viewModel: BolaoViewModel = koinViewModel(key = bolaoId) { parametersOf(bolaoId) }
     val uiState by viewModel.uiState.collectAsState()
     val authRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.AuthRepository>()
     val userId = authRepository.currentUser?.id ?: ""

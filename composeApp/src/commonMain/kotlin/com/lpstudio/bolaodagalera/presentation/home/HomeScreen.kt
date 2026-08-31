@@ -84,7 +84,7 @@ import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
 import com.lpstudio.bolaodagalera.util.getInitials
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeScreen(
@@ -93,7 +93,7 @@ fun HomeScreen(
     onNavigateToJoinBolao: () -> Unit,
     onNavigateToAccount: () -> Unit
 ) {
-    val viewModel: HomeViewModel = koinInject()
+    val viewModel: HomeViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
     var showNotifications by remember { mutableStateOf(false) }
 

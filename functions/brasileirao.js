@@ -1,4 +1,4 @@
-const { API_KEY } = require("./config");
+const config = require("./config");
 const { BR_TEAMS } = require("./teams_br");
 const { logger } = require("firebase-functions");
 
@@ -8,7 +8,7 @@ async function syncBrasileirao(db, admin, axios) {
 
     try {
         const compRes = await axios.get("https://api.football-data.org/v4/competitions/BSA", {
-            headers: { 'X-Auth-Token': API_KEY }
+            headers: { 'X-Auth-Token': config.API_KEY }
         }).catch(() => null);
 
         if (!compRes || !compRes.data || !compRes.data.currentSeason) {
@@ -35,7 +35,7 @@ async function syncBrasileirao(db, admin, axios) {
         for (const rd of allRoundsToSync) {
             logger.info(`Sincronizando Rodada ${rd}...`);
             const resBSA = await axios.get(`https://api.football-data.org/v4/competitions/BSA/matches?matchday=${rd}`, {
-                headers: { 'X-Auth-Token': API_KEY },
+                headers: { 'X-Auth-Token': config.API_KEY },
                 timeout: 15000
             }).catch(() => null);
 
@@ -71,6 +71,28 @@ async function syncBrasileirao(db, admin, axios) {
                     let targetStatus = m.status;
                     if (m.status !== "FINISHED" && (now - matchTime > 4 * 3600000) && newHScore !== null && newAScore !== null) {
                         targetStatus = "FINISHED";
+                    }
+
+                    // TRAVA DE SEGURANÇA: nunca aceitar um retrocesso da API (ex.: um jogo
+                    // já FINISHED com placar real virar IN_PLAY/TIMED com placar nulo).
+                    // A football-data.org já mostrou instabilidade de cache/replicação
+                    // que manda dados antigos de volta - preferimos manter o último
+                    // resultado confirmado a sobrescrever com algo pior.
+                    // Usa m.status (valor CRU da API), não targetStatus: nossa própria
+                    // heurística de "promover para FINISHED após 4h parado" (linhas
+                    // acima) pode disfarçar um status ainda incompleto/corrompido como
+                    // se fosse um FINISHED de verdade.
+                    const existingIsFinal = existing && existing.status === "FINISHED" &&
+                        existing.homeScore !== null && existing.awayScore !== null;
+                    const wouldRegress = existingIsFinal &&
+                        (m.status !== "FINISHED" || newHScore === null || newAScore === null);
+
+                    if (wouldRegress) {
+                        logger.warn(
+                            `⚠️ Ignorando retrocesso da API para ${matchId}: ` +
+                            `era FINISHED ${existing.homeScore}x${existing.awayScore}, API mandou status=${m.status} ${newHScore}x${newAScore}`
+                        );
+                        continue;
                     }
 
                     if (!existing || existing.status !== targetStatus || existing.homeScore !== newHScore || existing.awayScore !== newAScore) {

@@ -131,28 +131,17 @@ class FirebaseBolaoRepository : BolaoRepository {
     }
 
     override suspend fun requestLeaveBolao(bolaoId: String, userId: String) {
-        val doc = collection.document(bolaoId).get()
-        val dto = doc.data<BolaoDto>()
-
-        if (userId !in dto.pendingExits) {
-            val updatedPendingExits = dto.pendingExits + userId
-            collection.document(bolaoId).update("pendingExits" to updatedPendingExits)
-        }
+        collection.document(bolaoId).update("pendingExits" to FieldValue.arrayUnion(userId))
     }
 
     override suspend fun approveLeaveRequest(bolaoId: String, userId: String, approve: Boolean) {
-        val doc = collection.document(bolaoId).get()
-        val dto = doc.data<BolaoDto>()
-
-        val newPendingExits = dto.pendingExits - userId
         if (approve) {
-            val newParticipants = dto.participants - userId
             collection.document(bolaoId).update(
-                "participants" to newParticipants,
-                "pendingExits" to newPendingExits
+                "participants" to FieldValue.arrayRemove(userId),
+                "pendingExits" to FieldValue.arrayRemove(userId)
             )
         } else {
-            collection.document(bolaoId).update("pendingExits" to newPendingExits)
+            collection.document(bolaoId).update("pendingExits" to FieldValue.arrayRemove(userId))
         }
     }
 
@@ -217,20 +206,15 @@ class FirebaseBolaoRepository : BolaoRepository {
     }
 
     override suspend fun approveJoinRequest(bolaoId: String, userId: String, approve: Boolean) {
-        val doc = collection.document(bolaoId).get()
-        val dto = doc.data<BolaoDto>()
-
-        val newPending = dto.pendingParticipants - userId
         if (approve) {
-            val newParticipants = dto.participants + userId
             collection.document(bolaoId).update(
-                "participants" to newParticipants,
-                "pendingParticipants" to newPending
+                "participants" to FieldValue.arrayUnion(userId),
+                "pendingParticipants" to FieldValue.arrayRemove(userId)
             )
             // Inicializa o ranking ao aprovar a entrada
             initializeRankingEntry(bolaoId, userId)
         } else {
-            collection.document(bolaoId).update("pendingParticipants" to newPending)
+            collection.document(bolaoId).update("pendingParticipants" to FieldValue.arrayRemove(userId))
         }
     }
 
@@ -295,10 +279,7 @@ class FirebaseBolaoRepository : BolaoRepository {
 
     override suspend fun leaveBolao(bolaoId: String, userId: String) {
         // 1. Remove o usuário da lista de participantes
-        val doc = collection.document(bolaoId).get()
-        val bolao = doc.data<BolaoDto>().toDomain(doc.id)
-        val updatedParticipants = bolao.participants - userId
-        collection.document(bolaoId).update("participants" to updatedParticipants)
+        collection.document(bolaoId).update("participants" to FieldValue.arrayRemove(userId))
 
         // Nota: NÃO apagamos os palpites (predictions) do usuário.
         // Isso permite que ele volte ao bolão sem perder seu histórico.
