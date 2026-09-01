@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoFullScreenLoading
 import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
@@ -67,7 +67,7 @@ fun KnockoutTab(
     championship: Championship = Championship.DEFAULT
 ) {
     if (isLoading && matches.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Neon, strokeWidth = 2.dp) }
+        BolaoFullScreenLoading()
         return
     }
     val phaseOrder = remember(matches) {

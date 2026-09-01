@@ -24,11 +24,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,8 +39,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,7 +59,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoConfirmDialog
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoFullScreenLoading
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.model.Championship
@@ -251,51 +249,30 @@ fun EditBolaoScreen(
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            containerColor = NavyCard,
-            title = { Text("Excluir Bolão?", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = { Text("Esta ação não pode ser desfeita. Todos os participantes e palpites serão removidos.", color = TextMuted) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    viewModel.delete()
-                }) {
-                    Text("Excluir", color = ErrorRed, fontWeight = FontWeight.Bold)
-                }
+        BolaoConfirmDialog(
+            title = "Excluir Bolão?",
+            message = "Esta ação não pode ser desfeita. Todos os participantes e palpites serão removidos.",
+            confirmText = "Excluir",
+            isDestructive = true,
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.delete()
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar", color = TextMuted)
-                }
-            }
+            onDismiss = { showDeleteDialog = false }
         )
     }
 
     participantToRemove?.let { user ->
-        AlertDialog(
-            onDismissRequest = { participantToRemove = null },
-            containerColor = NavyCard,
-            title = { Text("Remover Participante?", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    "Tem certeza que deseja remover ${user.name} deste bolão? Ele perderá todos os palpites feitos.",
-                    color = TextMuted
-                )
+        BolaoConfirmDialog(
+            title = "Remover Participante?",
+            message = "Tem certeza que deseja remover ${user.name} deste bolão? Ele perderá todos os palpites feitos.",
+            confirmText = "Remover",
+            isDestructive = true,
+            onConfirm = {
+                viewModel.removeParticipant(user.id)
+                participantToRemove = null
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.removeParticipant(user.id)
-                    participantToRemove = null
-                }) {
-                    Text("Remover", color = ErrorRed, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { participantToRemove = null }) {
-                    Text("Cancelar", color = TextMuted)
-                }
-            }
+            onDismiss = { participantToRemove = null }
         )
     }
 
@@ -303,13 +280,9 @@ fun EditBolaoScreen(
         containerColor = DeepNavy,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Configurações", fontWeight = FontWeight.Bold, color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = Color.White)
-                    }
-                },
+            BolaoTopBar(
+                title = "Configurações",
+                onNavigateBack = onNavigateBack,
                 actions = {
                     val isOwner = viewModel.currentUserId == uiState.bolao?.ownerId
                     if (isOwner) {
@@ -317,16 +290,12 @@ fun EditBolaoScreen(
                             Icon(Icons.Default.Delete, "Excluir", tint = ErrorRed)
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                windowInsets = WindowInsets(top = 0.dp)
+                }
             )
         }
     ) { padding ->
         if (uiState.isLoading && uiState.bolao == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Neon)
-            }
+            BolaoFullScreenLoading()
         } else {
             Column(
                 modifier =
