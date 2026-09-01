@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.designsystem.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -93,9 +94,17 @@ fun BolaoTextButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.textButtonColors(),
+    contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
 ) {
-    TextButton(onClick = onClick, modifier = modifier, enabled = enabled, colors = colors, content = content)
+    TextButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        colors = colors,
+        contentPadding = contentPadding,
+        content = content
+    )
 }
 
 @Preview
