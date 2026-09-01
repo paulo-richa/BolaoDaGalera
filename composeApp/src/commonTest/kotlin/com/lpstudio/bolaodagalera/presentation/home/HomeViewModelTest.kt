@@ -3,9 +3,7 @@ package com.lpstudio.bolaodagalera.presentation.home
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
-import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeNotificationRepository
-import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.domain.model.Notification
 import com.lpstudio.bolaodagalera.domain.model.NotificationType
 import com.lpstudio.bolaodagalera.domain.model.User
@@ -29,9 +27,7 @@ class HomeViewModelTest {
 
     private lateinit var authRepository: FakeAuthRepository
     private lateinit var bolaoRepository: FakeBolaoRepository
-    private lateinit var matchRepository: FakeMatchRepository
     private lateinit var invitationRepository: FakeInvitationRepository
-    private lateinit var predictionRepository: FakePredictionRepository
     private lateinit var notificationRepository: FakeNotificationRepository
     private lateinit var viewModel: HomeViewModel
 
@@ -44,8 +40,6 @@ class HomeViewModelTest {
         authRepository = FakeAuthRepository()
         authRepository.setUser(testUser)
 
-        matchRepository = FakeMatchRepository()
-        predictionRepository = FakePredictionRepository(matchRepository)
         bolaoRepository = FakeBolaoRepository()
         invitationRepository = FakeInvitationRepository()
         notificationRepository = FakeNotificationRepository()
@@ -54,9 +48,7 @@ class HomeViewModelTest {
             HomeViewModel(
                 authRepository = authRepository,
                 bolaoRepository = bolaoRepository,
-                matchRepository = matchRepository,
                 invitationRepository = invitationRepository,
-                predictionRepository = predictionRepository,
                 notificationRepository = notificationRepository
             )
     }

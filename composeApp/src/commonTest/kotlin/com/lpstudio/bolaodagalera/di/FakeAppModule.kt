@@ -43,7 +43,7 @@ val fakeAppModule =
 
         // ViewModels
         viewModel { AuthViewModel(get()) }
-        viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
+        viewModel { HomeViewModel(get(), get(), get(), get()) }
         viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId) }
         viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), bolaoId, matchId) }
         viewModel { (bolaoId: String) ->
