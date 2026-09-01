@@ -209,5 +209,10 @@ service cloud.firestore {
     match /matchReminders/{reminderId} {
       allow read, write: if false;
     }
+
+    // Idem, mas pro resumo de fim de rodada/fase.
+    match /roundCompletions/{roundId} {
+      allow read, write: if false;
+    }
   }
 }

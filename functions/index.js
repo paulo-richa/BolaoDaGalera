@@ -14,6 +14,7 @@ const { cleanupDeletedBoloes, cleanupExpiredInvitations } = require("./cleanup")
 const { makeNotificationTriggers } = require("./notificationTriggers");
 const { sendDailyDigest } = require("./dailyDigest");
 const { sendMatchReminders } = require("./matchReminder");
+const { checkRoundCompletionAndNotify } = require("./roundSummary");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
@@ -58,6 +59,7 @@ exports.onMatchUpdate = onDocumentWritten("championships/{championshipId}/matche
             homeScore: afterData.homeScore,
             awayScore: afterData.awayScore
         });
+        await checkRoundCompletionAndNotify(db, admin, event.params.championshipId, afterData);
     }
 });
 
