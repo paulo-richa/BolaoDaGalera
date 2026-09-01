@@ -12,6 +12,7 @@ const { syncLibertadores } = require("./libertadores");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
 const { cleanupDeletedBoloes, cleanupExpiredInvitations } = require("./cleanup");
 const { makeNotificationTriggers } = require("./notificationTriggers");
+const { sendDailyDigest } = require("./dailyDigest");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
@@ -205,5 +206,17 @@ exports.scheduledCleanup = onSchedule(
     async () => {
         await cleanupDeletedBoloes(db);
         await cleanupExpiredInvitations(db);
+    }
+);
+
+/**
+ * Resumo diário (Cloud Scheduler nativo do Firebase): às 09h de Brasília,
+ * avisa cada usuário quantos jogos de hoje ele ainda não palpitou, somando
+ * em todos os bolões que participa.
+ */
+exports.scheduledDailyDigest = onSchedule(
+    { schedule: "0 9 * * *", timeZone: "America/Sao_Paulo", timeoutSeconds: 300, memory: "256MiB" },
+    async () => {
+        await sendDailyDigest(db, admin);
     }
 );
