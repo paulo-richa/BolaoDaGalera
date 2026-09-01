@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Person
@@ -35,8 +34,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,7 +50,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.APP_VERSION
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoConfirmDialog
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
@@ -111,50 +110,30 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
     }
 
     if (showSignOutDialog) {
-        AlertDialog(
-            onDismissRequest = { showSignOutDialog = false },
-            containerColor = NavyCard,
-            title = { Text("Sair da conta?", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = { Text("Você precisará entrar novamente para acessar seus bolões.", color = TextMuted) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showSignOutDialog = false
-                        viewModel.signOut()
-                    }
-                ) {
-                    Text("Sair", color = ErrorRed, fontWeight = FontWeight.Bold)
-                }
+        BolaoConfirmDialog(
+            title = "Sair da conta?",
+            message = "Você precisará entrar novamente para acessar seus bolões.",
+            confirmText = "Sair",
+            isDestructive = true,
+            onConfirm = {
+                showSignOutDialog = false
+                viewModel.signOut()
             },
-            dismissButton = {
-                TextButton(onClick = { showSignOutDialog = false }) {
-                    Text("Cancelar", color = TextMuted)
-                }
-            }
+            onDismiss = { showSignOutDialog = false }
         )
     }
 
     if (showDeleteAccountDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteAccountDialog = false },
-            containerColor = NavyCard,
-            title = { Text("Excluir conta permanentemente?", color = ErrorRed, fontWeight = FontWeight.Bold) },
-            text = { Text("Esta ação não pode ser desfeita. Todos os seus bolões e palpites serão perdidos.", color = TextMuted) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteAccountDialog = false
-                        // viewModel.deleteAccount() // A implementar
-                    }
-                ) {
-                    Text("Excluir", color = ErrorRed, fontWeight = FontWeight.Bold)
-                }
+        BolaoConfirmDialog(
+            title = "Excluir conta permanentemente?",
+            message = "Esta ação não pode ser desfeita. Todos os seus bolões e palpites serão perdidos.",
+            confirmText = "Excluir",
+            isDestructive = true,
+            onConfirm = {
+                showDeleteAccountDialog = false
+                // viewModel.deleteAccount() // A implementar
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteAccountDialog = false }) {
-                    Text("Cancelar", color = TextMuted)
-                }
-            }
+            onDismiss = { showDeleteAccountDialog = false }
         )
     }
 
@@ -206,26 +185,14 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                 }
             },
             topBar = {
-                TopAppBar(
-                    title = {
-                        Text("Minha Conta", fontWeight = FontWeight.Bold, color = Color.White)
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Voltar",
-                                tint = Color.White
-                            )
-                        }
-                    },
+                BolaoTopBar(
+                    title = "Minha Conta",
+                    onNavigateBack = onNavigateBack,
                     actions = {
                         IconButton(onClick = { showSignOutDialog = true }) {
                             Icon(Icons.AutoMirrored.Filled.ExitToApp, "Sair", tint = ErrorRed)
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                    windowInsets = WindowInsets(top = 0.dp)
+                    }
                 )
             }
         ) { padding ->

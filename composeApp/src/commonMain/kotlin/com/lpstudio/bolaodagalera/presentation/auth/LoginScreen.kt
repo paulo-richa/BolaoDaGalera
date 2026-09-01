@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,7 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -52,10 +50,9 @@ import androidx.compose.ui.unit.sp
 import bolaodagalera.composeapp.generated.resources.Res
 import bolaodagalera.composeapp.generated.resources.logo_oficial
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoGlassCard
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
-import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
-import com.lpstudio.bolaodagalera.presentation.theme.GlassWhite
 import com.lpstudio.bolaodagalera.presentation.theme.Gold
 import com.lpstudio.bolaodagalera.presentation.theme.GradientBg
 import com.lpstudio.bolaodagalera.presentation.theme.Neon
@@ -164,16 +161,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                 Spacer(Modifier.height(48.dp))
 
                 // Glass card
-                Column(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(GlassWhite)
-                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
+                BolaoGlassCard {
                     // STEP 1: Email
                     Column {
                         BolaoTextField(

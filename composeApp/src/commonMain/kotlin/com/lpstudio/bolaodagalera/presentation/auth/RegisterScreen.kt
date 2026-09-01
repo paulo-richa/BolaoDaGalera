@@ -1,7 +1,6 @@
 package com.lpstudio.bolaodagalera.presentation.auth
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,20 +12,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,7 +30,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -48,10 +40,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoGlassCard
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
-import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
-import com.lpstudio.bolaodagalera.presentation.theme.GlassWhite
 import com.lpstudio.bolaodagalera.presentation.theme.GradientBg
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.ValidationUtils
@@ -160,32 +152,12 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
         Modifier
             .fillMaxSize()
             .background(GradientBg)
+            .systemBarsPadding()
     ) {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            "Criar conta",
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Voltar",
-                                tint = Color.White
-                            )
-                        }
-                    },
-                    colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
-                )
+                BolaoTopBar(title = "Criar conta", onNavigateBack = onNavigateBack)
             }
         ) { padding ->
             Column(
@@ -214,16 +186,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
 
                 Spacer(Modifier.height(32.dp))
 
-                Column(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(GlassWhite)
-                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
+                BolaoGlassCard {
                     // Campo Nome
                     Column {
                         BolaoTextField(
