@@ -63,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.ADMOB_ANDROID_BANNER_ID
 import com.lpstudio.bolaodagalera.ADMOB_IOS_BANNER_ID
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Invitation
@@ -70,8 +72,6 @@ import com.lpstudio.bolaodagalera.domain.model.Notification
 import com.lpstudio.bolaodagalera.domain.model.NotificationType
 import com.lpstudio.bolaodagalera.getPlatform
 import com.lpstudio.bolaodagalera.presentation.components.AdBanner
-import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
-import com.lpstudio.bolaodagalera.presentation.components.UserAvatar
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
 import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder

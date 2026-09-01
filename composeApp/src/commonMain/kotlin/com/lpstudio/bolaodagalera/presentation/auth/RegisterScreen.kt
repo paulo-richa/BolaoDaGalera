@@ -47,8 +47,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
-import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
 import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
 import com.lpstudio.bolaodagalera.presentation.theme.GlassWhite

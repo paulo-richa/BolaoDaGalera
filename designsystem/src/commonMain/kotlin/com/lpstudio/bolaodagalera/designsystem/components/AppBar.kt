@@ -1,0 +1,49 @@
+package com.lpstudio.bolaodagalera.designsystem.components
+
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
+
+/**
+ * Top app bar padrão do app: fundo transparente, texto/ícones brancos, sem
+ * elevação - o mesmo padrão hoje repetido (com pequenas variações) em quase
+ * toda tela com Scaffold + TopAppBar.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BolaoTopBar(title: String, onNavigateBack: (() -> Unit)? = null, actions: @Composable RowScope.() -> Unit = {}) {
+    TopAppBar(
+        title = { Text(title, fontWeight = FontWeight.Bold, color = Color.White) },
+        navigationIcon = {
+            if (onNavigateBack != null) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                }
+            }
+        },
+        actions = actions,
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        windowInsets = WindowInsets(top = 0.dp)
+    )
+}
+
+@Preview
+@Composable
+private fun BolaoTopBarPreview() {
+    BolaoTheme {
+        BolaoTopBar(title = "Configurações", onNavigateBack = {})
+    }
+}
