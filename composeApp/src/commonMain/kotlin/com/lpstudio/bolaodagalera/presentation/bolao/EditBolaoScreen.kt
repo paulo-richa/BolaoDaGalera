@@ -69,6 +69,7 @@ import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
@@ -101,7 +102,8 @@ class EditBolaoViewModel(
     private val bolaoRepository: BolaoRepository,
     private val authRepository: AuthRepository,
     private val matchRepository: MatchRepository,
-    private val bolaoId: String
+    private val bolaoId: String,
+    private val crashReporter: CrashReporter
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EditBolaoUiState())
     val uiState: StateFlow<EditBolaoUiState> = _uiState.asStateFlow()
@@ -141,6 +143,7 @@ class EditBolaoViewModel(
                     _isKnockoutStarted.value = knockoutStarted
                 }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao carregar dados do bolão")
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
         }
@@ -156,6 +159,7 @@ class EditBolaoViewModel(
                 kotlinx.coroutines.delay(3000)
                 _uiState.update { it.copy(showSuccessMessage = false) }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao atualizar bolão")
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
         }
@@ -170,6 +174,7 @@ class EditBolaoViewModel(
                 }
                 _uiState.update { it.copy(isDeleted = true, isLoading = false) }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao excluir bolão")
                 _uiState.update { it.copy(error = e.message ?: "Erro desconhecido ao excluir", isLoading = false) }
             }
         }
@@ -184,6 +189,7 @@ class EditBolaoViewModel(
                 val participants = authRepository.getUsers(bolao.participants)
                 _uiState.update { it.copy(bolao = bolao, participants = participants) }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao remover participante")
                 _uiState.update { it.copy(error = e.message) }
             }
         }
@@ -201,7 +207,8 @@ fun EditBolaoScreen(
     val bolaoRepository = koinInject<BolaoRepository>()
     val authRepository = koinInject<AuthRepository>()
     val matchRepository = koinInject<MatchRepository>()
-    val viewModel = remember(bolaoId) { EditBolaoViewModel(bolaoRepository, authRepository, matchRepository, bolaoId) }
+    val crashReporter = koinInject<CrashReporter>()
+    val viewModel = remember(bolaoId) { EditBolaoViewModel(bolaoRepository, authRepository, matchRepository, bolaoId, crashReporter) }
     val uiState by viewModel.uiState.collectAsState()
     val isKnockoutStarted by viewModel.isKnockoutStarted.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

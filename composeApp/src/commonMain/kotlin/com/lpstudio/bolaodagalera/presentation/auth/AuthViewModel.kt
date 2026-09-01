@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +25,7 @@ data class AuthUiState(
     val checkedEmail: String = ""
 )
 
-class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
+class AuthViewModel(private val authRepository: AuthRepository, private val crashReporter: CrashReporter) : ViewModel() {
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
@@ -41,6 +42,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 val user = authRepository.signIn(email.trim(), password)
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao fazer login")
                 _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
             }
         }
@@ -57,6 +59,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 val exists = authRepository.isEmailInUse(email.trim())
                 _uiState.update { it.copy(isLoading = false, emailExists = exists, checkedEmail = email.trim()) }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao checar e-mail")
                 // Se der erro de verificação (ex: rede ou proteção de enumeração),
                 // não podemos afirmar nada. Resetamos o estado e mostramos um erro amigável.
                 _uiState.update {
@@ -106,6 +109,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                     )
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao registrar usuário")
                 _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
             }
         }
@@ -146,6 +150,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 authRepository.updateProfile(newName, newPhone, newNickname)
                 _uiState.update { it.copy(isLoading = false, successMessage = "Perfil atualizado com sucesso!") }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao atualizar perfil")
                 _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
             }
         }
@@ -168,6 +173,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 authRepository.sendPasswordResetEmail(email.trim())
                 _uiState.update { it.copy(isLoading = false, successMessage = "E-mail de recuperação enviado com sucesso!") }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao enviar e-mail de recuperação")
                 _uiState.update { it.copy(isLoading = false, error = "Erro ao enviar e-mail. Verifique se o e-mail está correto.") }
             }
         }

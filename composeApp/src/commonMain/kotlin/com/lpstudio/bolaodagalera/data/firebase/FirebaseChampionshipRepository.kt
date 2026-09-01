@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.data.firebase
 
 import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
@@ -9,7 +10,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 
-class FirebaseChampionshipRepository : ChampionshipRepository {
+class FirebaseChampionshipRepository(private val crashReporter: CrashReporter) : ChampionshipRepository {
     private val db = Firebase.firestore
     private val collection = db.collection("championships")
 
@@ -25,10 +26,12 @@ class FirebaseChampionshipRepository : ChampionshipRepository {
                 Championship.setCache(list)
             }
             .catch { e ->
+                crashReporter.recordException(e, "Erro ao observar campeonatos")
                 println("BOLAOLOG: Erro ao observar campeonatos: ${e.message}")
                 emit(emptyList<Championship>())
             }
     } catch (e: Exception) {
+        crashReporter.recordException(e, "Erro crítico ao observar campeonatos")
         println("BOLAOLOG: Erro crítico ao observar campeonatos: ${e.message}")
         kotlinx.coroutines.flow.flowOf(emptyList<Championship>())
     }
@@ -42,6 +45,7 @@ class FirebaseChampionshipRepository : ChampionshipRepository {
                 }
             Championship.setCache(list)
         } catch (e: Exception) {
+            crashReporter.recordException(e, "Erro ao carregar campeonatos")
             println("BOLAOLOG: Erro ao carregar campeonatos: ${e.message}")
         }
     }

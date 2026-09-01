@@ -12,6 +12,7 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.FilterBolaoMatchesUseCase
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,6 +52,7 @@ class BolaoViewModel(
     private val predictionRepository: PredictionRepository,
     private val authRepository: AuthRepository,
     private val bolaoId: String,
+    private val crashReporter: CrashReporter,
     private val filterBolaoMatches: FilterBolaoMatchesUseCase = FilterBolaoMatchesUseCase()
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(BolaoUiState())
@@ -80,6 +82,7 @@ class BolaoViewModel(
                 _uiState.update { it.copy(bolao = bolao) }
                 println("BOLAOLOG: Bolão carregado (${bolao.name}).")
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao carregar bolão")
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
         }
@@ -178,6 +181,7 @@ class BolaoViewModel(
             try {
                 matchRepository.updateMatchScore(championshipId, matchId, home, away)
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao atualizar placar")
                 println("BOLAOLOG: Erro ao atualizar placar manual: ${e.message}")
                 _uiState.update { it.copy(error = "Você não tem permissão para alterar placares oficiais.") }
             }
@@ -189,6 +193,7 @@ class BolaoViewModel(
             try {
                 bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao aprovar participante")
                 _uiState.update { it.copy(error = e.message) }
             }
         }
@@ -199,6 +204,7 @@ class BolaoViewModel(
             try {
                 bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao aprovar saída")
                 _uiState.update { it.copy(error = e.message) }
             }
         }
@@ -218,6 +224,7 @@ class BolaoViewModel(
                 }
                 _uiState.update { it.copy(isLeaveSuccess = true, isLoading = false) }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao sair do bolão")
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
         }

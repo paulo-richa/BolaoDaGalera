@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.presentation.bolao
 
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
+import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.domain.model.Match
@@ -60,7 +61,8 @@ class BolaoViewModelTest {
                 matchRepository,
                 predictionRepository,
                 authRepository,
-                "bolao-1"
+                "bolao-1",
+                FakeCrashReporter()
             )
     }
 

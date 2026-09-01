@@ -18,6 +18,8 @@ import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
+import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.createCrashReporter
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
@@ -29,14 +31,15 @@ import org.koin.dsl.module
 val appModule =
     module {
         // Repositories (Firebase Production)
-        single<AuthRepository> { FirebaseAuthRepository() }
-        single<BolaoRepository> { FirebaseBolaoRepository() }
-        single<MatchRepository> { FirebaseMatchRepository() }
-        single<InvitationRepository> { FirebaseInvitationRepository(get()) }
-        single<PredictionRepository> { FirebasePredictionRepository(get()) }
-        single<ChampionshipRepository> { FirebaseChampionshipRepository() }
+        single<AuthRepository> { FirebaseAuthRepository(get()) }
+        single<BolaoRepository> { FirebaseBolaoRepository(get()) }
+        single<MatchRepository> { FirebaseMatchRepository(get()) }
+        single<InvitationRepository> { FirebaseInvitationRepository(get(), get()) }
+        single<PredictionRepository> { FirebasePredictionRepository(get(), get()) }
+        single<ChampionshipRepository> { FirebaseChampionshipRepository(get()) }
         single<SupportRepository> { FirebaseSupportRepository() }
-        single<NotificationRepository> { FirebaseNotificationRepository() }
+        single<NotificationRepository> { FirebaseNotificationRepository(get()) }
+        single<CrashReporter> { createCrashReporter() }
 
         // Remote Config
         single { RemoteConfigManager() }
@@ -45,16 +48,17 @@ val appModule =
         single { CalculatePointsUseCase() }
 
         // ViewModels
-        viewModel { AuthViewModel(get()) }
-        viewModel { HomeViewModel(get(), get(), get(), get()) }
-        viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId) }
-        viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), bolaoId, matchId) }
+        viewModel { AuthViewModel(get(), get()) }
+        viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
+        viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId, get()) }
+        viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), get(), bolaoId, matchId) }
         viewModel { (bolaoId: String) ->
             RankingViewModel(
                 predictionRepository = get(),
                 bolaoRepository = get(),
                 matchRepository = get(),
                 authRepository = get(),
+                crashReporter = get(),
                 calculatePointsUseCase = get(),
                 bolaoId = bolaoId
             )

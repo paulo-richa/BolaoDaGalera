@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleServices)
+    alias(libs.plugins.firebaseCrashlytics)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.roborazzi)
@@ -57,6 +58,7 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.play.services.ads)
             implementation("com.google.firebase:firebase-messaging")
+            implementation("com.google.firebase:firebase-crashlytics")
 
             // UI Testing
             // Note: In KMP, some people use commonTest, but for Compose Android is easiest

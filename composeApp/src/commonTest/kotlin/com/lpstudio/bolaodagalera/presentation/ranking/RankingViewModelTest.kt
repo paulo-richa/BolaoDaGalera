@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.presentation.ranking
 import com.lpstudio.bolaodagalera.data.fake.FAKE_USER
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
+import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.domain.model.Match
@@ -79,6 +80,7 @@ class RankingViewModelTest {
                 bolaoRepository = bolaoRepository,
                 matchRepository = matchRepository,
                 authRepository = authRepository,
+                crashReporter = FakeCrashReporter(),
                 bolaoId = "bolao-1"
             )
     }
