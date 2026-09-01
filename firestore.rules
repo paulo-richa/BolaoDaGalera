@@ -98,8 +98,8 @@ service cloud.firestore {
 
         function isBeforeMatchStart(matchId) {
           let champId = get(/databases/$(database)/documents/boloes/$(bolaoId)).data.championshipId;
-          let match = get(/databases/$(database)/documents/championships/$(champId)/matches/$(matchId)).data;
-          return match.matchDateMillis == null || request.time.toMillis() < match.matchDateMillis;
+          let matchDoc = get(/databases/$(database)/documents/championships/$(champId)/matches/$(matchId)).data;
+          return matchDoc.matchDateMillis == null || request.time.toMillis() < matchDoc.matchDateMillis;
         }
       }
 
