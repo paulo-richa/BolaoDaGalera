@@ -41,27 +41,30 @@ function requireAdminToken(req, res) {
  * Gatilho: Quando um jogo é atualizado no Firestore.
  * Se o jogo estiver finalizado, calcula os rankings.
  */
-exports.onMatchUpdate = onDocumentWritten("championships/{championshipId}/matches/{matchId}", async (event) => {
-    const afterData = event.data.after.data();
-    if (!afterData) return;
+exports.onMatchUpdate = onDocumentWritten(
+    { document: "championships/{championshipId}/matches/{matchId}", timeoutSeconds: 300, memory: "256MiB" },
+    async (event) => {
+        const afterData = event.data.after.data();
+        if (!afterData) return;
 
-    const beforeData = event.data.before.data();
-    // O sync reescreve o documento (lastSync novo) mesmo sem o placar mudar de
-    // verdade - sem essa checagem, recalculamos o ranking do zero a cada sync,
-    // mesmo quando nada relevante mudou.
-    const scoreChanged = !beforeData ||
-        beforeData.status !== afterData.status ||
-        beforeData.homeScore !== afterData.homeScore ||
-        beforeData.awayScore !== afterData.awayScore;
+        const beforeData = event.data.before.data();
+        // O sync reescreve o documento (lastSync novo) mesmo sem o placar mudar de
+        // verdade - sem essa checagem, recalculamos o ranking do zero a cada sync,
+        // mesmo quando nada relevante mudou.
+        const scoreChanged = !beforeData ||
+            beforeData.status !== afterData.status ||
+            beforeData.homeScore !== afterData.homeScore ||
+            beforeData.awayScore !== afterData.awayScore;
 
-    if (scoreChanged && afterData.status === "FINISHED" && afterData.homeScore !== null && afterData.awayScore !== null) {
-        await updateMatchRankings(db, admin, event.params.championshipId, event.params.matchId, {
-            homeScore: afterData.homeScore,
-            awayScore: afterData.awayScore
-        });
-        await checkRoundCompletionAndNotify(db, admin, event.params.championshipId, afterData);
+        if (scoreChanged && afterData.status === "FINISHED" && afterData.homeScore !== null && afterData.awayScore !== null) {
+            await updateMatchRankings(db, admin, event.params.championshipId, event.params.matchId, {
+                homeScore: afterData.homeScore,
+                awayScore: afterData.awayScore
+            });
+            await checkRoundCompletionAndNotify(db, admin, event.params.championshipId, afterData);
+        }
     }
-});
+);
 
 /**
  * Notificações push: convite recebido, pedidos pendentes, resumos, etc.
