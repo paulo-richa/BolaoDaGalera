@@ -11,6 +11,7 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +39,7 @@ class HomeViewModel(
     private val notificationRepository: NotificationRepository,
     private val crashReporter: CrashReporter
 ) : ViewModel() {
+    private val logger = appLogger("HomeViewModel")
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -57,7 +59,7 @@ class HomeViewModel(
                 loadUserData(user)
             }
         }.catch { e ->
-            println("BOLAOLOG: Erro no authStateFlow: ${e.message}")
+            logger.e(e) { "Erro no authStateFlow" }
         }.launchIn(viewModelScope)
     }
 
@@ -97,7 +99,7 @@ class HomeViewModel(
                     )
                 }
             }.catch { e ->
-                println("BOLAOLOG: Erro no dataCollectionJob: ${e.message}")
+                logger.e(e) { "Erro no dataCollectionJob" }
                 _uiState.update { it.copy(isLoading = false, error = "Erro ao carregar dados.") }
             }.launchIn(viewModelScope)
     }
@@ -109,7 +111,7 @@ class HomeViewModel(
                 notificationRepository.markAllAsRead(userId)
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao marcar notificações como lidas")
-                println("BOLAOLOG: Erro ao marcar notificações como lidas: ${e.message}")
+                logger.e(e) { "Erro ao marcar notificações como lidas" }
             }
         }
     }
@@ -120,16 +122,16 @@ class HomeViewModel(
         val targetInvitation = currentInvitations.find { it.id == invitationId } ?: return
         val bolaoId = targetInvitation.bolaoId
 
-        println("BOLAOLOG: [HomeVM] respondToInvitation iniciada. InvId: $invitationId, Accept: $accept, BolaoId: $bolaoId")
+        logger.d { "[HomeVM] respondToInvitation iniciada. InvId: $invitationId, Accept: $accept, BolaoId: $bolaoId" }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
                 // 1. Se aceitou, adiciona ao bolão primeiro
                 if (accept) {
-                    println("BOLAOLOG: [HomeVM] Chamando addParticipantDirectly...")
+                    logger.d { "[HomeVM] Chamando addParticipantDirectly..." }
                     bolaoRepository.addParticipantDirectly(bolaoId, user.id)
-                    println("BOLAOLOG: [HomeVM] addParticipantDirectly concluído.")
+                    logger.d { "[HomeVM] addParticipantDirectly concluído." }
                 }
 
                 // 2. Resolve (deleta) todos os convites pendentes deste usuário para este bolão
@@ -138,12 +140,12 @@ class HomeViewModel(
                         .filter { it.bolaoId == bolaoId }
                         .distinctBy { it.id }
 
-                println("BOLAOLOG: [HomeVM] Encontrados ${toResolve.size} convites para resolver.")
+                logger.d { "[HomeVM] Encontrados ${toResolve.size} convites para resolver." }
 
                 toResolve.forEach { inv ->
-                    println("BOLAOLOG: [HomeVM] Deletando convite ${inv.id}...")
+                    logger.d { "[HomeVM] Deletando convite ${inv.id}..." }
                     invitationRepository.respondToInvitation(inv.id, accept)
-                    println("BOLAOLOG: [HomeVM] Convite ${inv.id} deletado.")
+                    logger.d { "[HomeVM] Convite ${inv.id} deletado." }
                 }
 
                 // 3. Limpeza local imediata
@@ -157,16 +159,16 @@ class HomeViewModel(
                         isLoading = false
                     )
                 }
-                println("BOLAOLOG: [HomeVM] Estado UI atualizado (convites filtrados).")
+                logger.d { "[HomeVM] Estado UI atualizado (convites filtrados)." }
 
                 // 4. Só navega após o sucesso total
                 if (accept) {
-                    println("BOLAOLOG: [HomeVM] Chamando callback de sucesso para navegação.")
+                    logger.d { "[HomeVM] Chamando callback de sucesso para navegação." }
                     onSuccess()
                 }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao processar convite")
-                println("BOLAOLOG: [HomeVM] ERRO ao processar convite: ${e.message}")
+                logger.e(e) { "[HomeVM] ERRO ao processar convite" }
 
                 val msg = e.message?.lowercase() ?: ""
                 val friendly =

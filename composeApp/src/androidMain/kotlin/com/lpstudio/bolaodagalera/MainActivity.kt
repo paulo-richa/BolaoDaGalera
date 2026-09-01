@@ -18,6 +18,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import com.lpstudio.bolaodagalera.util.AdManager
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -27,6 +28,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
+    private val logger = appLogger("MainActivity")
     private val authRepository: AuthRepository by inject()
     private val notificationRepository: NotificationRepository by inject()
     private val crashReporter: CrashReporter by inject()
@@ -81,7 +83,7 @@ class MainActivity : ComponentActivity() {
                     throw e
                 } catch (e: Exception) {
                     crashReporter.recordException(e, "Erro ao registrar fcmToken no login")
-                    println("BOLAOLOG: Erro ao registrar fcmToken no login: ${e.message}")
+                    logger.e(e) { "Erro ao registrar fcmToken no login" }
                 }
             }
         }

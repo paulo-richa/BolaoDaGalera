@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +27,7 @@ data class AuthUiState(
 )
 
 class AuthViewModel(private val authRepository: AuthRepository, private val crashReporter: CrashReporter) : ViewModel() {
+    private val logger = appLogger("AuthViewModel")
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
@@ -231,7 +233,7 @@ class AuthViewModel(private val authRepository: AuthRepository, private val cras
 
     private fun friendlyError(e: Exception): String {
         val msg = e.message?.lowercase() ?: ""
-        println("Auth Error Debug: $msg") // Log para debug interno
+        logger.e(e) { "Auth Error Debug" } // Log para debug interno
         return when {
             msg.contains("incorrect") || msg.contains("invalid-credential") || msg.contains("password") || msg.contains("wrong") ->
                 "E-mail ou senha incorretos. Verifique os dados e tente novamente."

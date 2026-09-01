@@ -5,6 +5,7 @@ import com.lpstudio.bolaodagalera.domain.model.InvitationStatus
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
@@ -35,6 +36,7 @@ private fun InvitationDto.toDomain(id: String) = Invitation(
 
 class FirebaseInvitationRepository(private val bolaoRepository: BolaoRepository, private val crashReporter: CrashReporter) :
     InvitationRepository {
+    private val logger = appLogger("FirebaseInvitationRepository")
     private val db = Firebase.firestore
     private val collection = db.collection("invitations")
 
@@ -50,12 +52,12 @@ class FirebaseInvitationRepository(private val bolaoRepository: BolaoRepository,
             }
             .catch { e ->
                 crashReporter.recordException(e, "Erro ao observar convites")
-                println("BOLAOLOG: Erro ao observar convites: ${e.message}")
+                logger.e(e) { "Erro ao observar convites" }
                 emit(emptyList())
             }
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar convites")
-        println("BOLAOLOG: Erro crítico ao observar convites: ${e.message}")
+        logger.e(e) { "Erro crítico ao observar convites" }
         kotlinx.coroutines.flow.flowOf(emptyList())
     }
 

@@ -4,6 +4,7 @@ import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
@@ -66,6 +67,7 @@ private fun Match.toDto() = MatchDto(
  * Organizado por Subcollections: championships/{championshipId}/matches/{matchId}
  */
 class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchRepository {
+    private val logger = appLogger("FirebaseMatchRepository")
     private val db by lazy { Firebase.firestore }
 
     private fun getMatchesCollection(championshipId: String) = db.collection("championships").document(championshipId).collection("matches")
@@ -101,7 +103,7 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
         }
     }.catch { e ->
         crashReporter.recordException(e, "Erro ao observar matches de $championshipId")
-        println("BOLAOLOG: Erro ao observar matches de $championshipId: ${e.message}")
+        logger.e(e) { "Erro ao observar matches de $championshipId" }
         emit(emptyList())
     }
 
@@ -178,7 +180,7 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
                 snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
             }.catch { e ->
                 crashReporter.recordException(e, "Erro no getAllMatches")
-                println("BOLAOLOG: Erro no getAllMatches: ${e.message}")
+                logger.e(e) { "Erro no getAllMatches" }
                 emit(emptyList())
             }
     }

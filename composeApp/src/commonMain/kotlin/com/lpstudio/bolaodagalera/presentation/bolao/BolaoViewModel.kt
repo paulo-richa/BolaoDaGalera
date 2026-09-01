@@ -13,6 +13,7 @@ import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.FilterBolaoMatchesUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,6 +56,7 @@ class BolaoViewModel(
     private val crashReporter: CrashReporter,
     private val filterBolaoMatches: FilterBolaoMatchesUseCase = FilterBolaoMatchesUseCase()
 ) : ViewModel() {
+    private val logger = appLogger("BolaoViewModel")
     private val _uiState = MutableStateFlow(BolaoUiState())
     val uiState: StateFlow<BolaoUiState> = _uiState.asStateFlow()
 
@@ -80,7 +82,7 @@ class BolaoViewModel(
             try {
                 val bolao = bolaoRepository.getBolao(bolaoId)
                 _uiState.update { it.copy(bolao = bolao) }
-                println("BOLAOLOG: Bolão carregado (${bolao.name}).")
+                logger.d { "Bolão carregado (${bolao.name})." }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao carregar bolão")
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
@@ -160,7 +162,7 @@ class BolaoViewModel(
                         }
                     }
                     .catch { e ->
-                        println("BOLAOLOG: Erro no observeMatchesPredictionsAndRanking: ${e.message}")
+                        logger.e(e) { "Erro no observeMatchesPredictionsAndRanking" }
                         _uiState.update { it.copy(error = "Erro ao carregar dados do bolão.", isLoading = false) }
                     }
                     .collect { }
@@ -182,7 +184,7 @@ class BolaoViewModel(
                 matchRepository.updateMatchScore(championshipId, matchId, home, away)
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao atualizar placar")
-                println("BOLAOLOG: Erro ao atualizar placar manual: ${e.message}")
+                logger.e(e) { "Erro ao atualizar placar manual" }
                 _uiState.update { it.copy(error = "Você não tem permissão para alterar placares oficiais.") }
             }
         }

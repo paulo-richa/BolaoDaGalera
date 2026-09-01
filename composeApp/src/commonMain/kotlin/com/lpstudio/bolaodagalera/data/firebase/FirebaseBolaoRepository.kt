@@ -4,6 +4,7 @@ import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.FieldValue
@@ -56,6 +57,7 @@ private fun BolaoDto.toDomain(id: String) = Bolao(
 )
 
 class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoRepository {
+    private val logger = appLogger("FirebaseBolaoRepository")
     private val db = Firebase.firestore
     private val collection = db.collection("boloes")
 
@@ -70,12 +72,12 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
             }
             .catch { e ->
                 crashReporter.recordException(e, "Erro ao observar bolões")
-                println("BOLAOLOG: Erro ao observar bolões: ${e.message}")
+                logger.e(e) { "Erro ao observar bolões" }
                 emit(emptyList())
             }
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar bolões")
-        println("BOLAOLOG: Erro crítico ao observar bolões: ${e.message}")
+        logger.e(e) { "Erro crítico ao observar bolões" }
         kotlinx.coroutines.flow.flowOf(emptyList())
     }
 
@@ -88,12 +90,12 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
             }
         }.catch { e ->
             crashReporter.recordException(e, "Erro ao observar bolão $bolaoId")
-            println("BOLAOLOG: Erro ao observar bolão $bolaoId: ${e.message}")
+            logger.e(e) { "Erro ao observar bolão $bolaoId" }
             emit(Bolao())
         }
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar bolão $bolaoId")
-        println("BOLAOLOG: Erro crítico ao observar bolão $bolaoId: ${e.message}")
+        logger.e(e) { "Erro crítico ao observar bolão $bolaoId" }
         kotlinx.coroutines.flow.flowOf(Bolao())
     }
 
@@ -224,24 +226,24 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
     }
 
     override suspend fun addParticipantDirectly(bolaoId: String, userId: String) {
-        println("BOLAOLOG: [BolaoRepo] addParticipantDirectly INICIO. BolaoId: $bolaoId, UserId: $userId")
+        logger.d { "[BolaoRepo] addParticipantDirectly INICIO. BolaoId: $bolaoId, UserId: $userId" }
 
         try {
             val userRef = db.collection("users").document(userId)
-            println("BOLAOLOG: [BolaoRepo] Tentando atualizar lastActiveAt para $userId...")
+            logger.d { "[BolaoRepo] Tentando atualizar lastActiveAt para $userId..." }
             userRef.set(
                 mapOf(
                     "lastActiveAt" to TimeSource.nowMillis()
                 ),
                 merge = true
             )
-            println("BOLAOLOG: [BolaoRepo] lastActiveAt atualizado com sucesso.")
+            logger.d { "[BolaoRepo] lastActiveAt atualizado com sucesso." }
         } catch (e: Exception) {
-            println("BOLAOLOG: [BolaoRepo] Erro (ignorado) ao atualizar users/$userId: ${e.message}")
+            logger.e(e) { "[BolaoRepo] Erro (ignorado) ao atualizar users/$userId" }
         }
 
         try {
-            println("BOLAOLOG: [BolaoRepo] Tentando update atômico (arrayUnion) no bolão $bolaoId...")
+            logger.d { "[BolaoRepo] Tentando update atômico (arrayUnion) no bolão $bolaoId..." }
             collection.document(bolaoId).update(
                 "participants" to FieldValue.arrayUnion(userId),
                 "pendingParticipants" to FieldValue.arrayRemove(userId)
@@ -250,9 +252,9 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
             // Inicializa o ranking para o usuário aparecer na lista imediatamente
             initializeRankingEntry(bolaoId, userId)
 
-            println("BOLAOLOG: [BolaoRepo] update atômico e ranking inicial concluídos.")
+            logger.d { "[BolaoRepo] update atômico e ranking inicial concluídos." }
         } catch (e: Exception) {
-            println("BOLAOLOG: [BolaoRepo] ERRO no update do bolão: ${e.message}")
+            logger.e(e) { "[BolaoRepo] ERRO no update do bolão" }
             throw e
         }
     }
@@ -276,10 +278,10 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                 ),
                 merge = true
             )
-            println("BOLAOLOG: [BolaoRepo] Ranking inicial criado para $userId no bolão $bolaoId")
+            logger.d { "[BolaoRepo] Ranking inicial criado para $userId no bolão $bolaoId" }
         } catch (e: Exception) {
             crashReporter.recordException(e, "Erro ao criar ranking inicial")
-            println("BOLAOLOG: [BolaoRepo] Erro ao criar ranking inicial: ${e.message}")
+            logger.e(e) { "[BolaoRepo] Erro ao criar ranking inicial" }
         }
     }
 
