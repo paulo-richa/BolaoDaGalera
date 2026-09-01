@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.presentation.match
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
+import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
@@ -56,7 +57,16 @@ class PredictionViewModelTest {
             )
         )
 
-        viewModel = PredictionViewModel(matchRepository, predictionRepository, bolaoRepository, FakeCrashReporter(), bolaoId, matchId)
+        viewModel =
+            PredictionViewModel(
+                matchRepository,
+                predictionRepository,
+                bolaoRepository,
+                FakeCrashReporter(),
+                FakePerformanceMonitor(),
+                bolaoId,
+                matchId
+            )
     }
 
     @AfterTest
@@ -84,6 +94,7 @@ class PredictionViewModelTest {
                 predictionRepository,
                 bolaoRepository,
                 FakeCrashReporter(),
+                FakePerformanceMonitor(),
                 bolaoId,
                 "match-que-nao-existe"
             )

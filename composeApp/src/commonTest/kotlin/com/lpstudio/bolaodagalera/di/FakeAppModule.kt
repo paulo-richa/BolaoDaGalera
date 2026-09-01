@@ -7,6 +7,7 @@ import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeNotificationRepository
+import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeSupportRepository
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
@@ -19,6 +20,7 @@ import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
@@ -40,15 +42,16 @@ val fakeAppModule =
         single<SupportRepository> { FakeSupportRepository() }
         single<NotificationRepository> { FakeNotificationRepository() }
         single<CrashReporter> { FakeCrashReporter() }
+        single<PerformanceMonitor> { FakePerformanceMonitor() }
 
         // UseCases
         single { CalculatePointsUseCase() }
 
         // ViewModels
-        viewModel { AuthViewModel(get(), get()) }
+        viewModel { AuthViewModel(get(), get(), get()) }
         viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
         viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId, get()) }
-        viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), get(), bolaoId, matchId) }
+        viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), get(), get(), bolaoId, matchId) }
         viewModel { (bolaoId: String) ->
             RankingViewModel(
                 predictionRepository = get(),

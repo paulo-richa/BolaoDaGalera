@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.observability.appLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +27,11 @@ data class AuthUiState(
     val checkedEmail: String = ""
 )
 
-class AuthViewModel(private val authRepository: AuthRepository, private val crashReporter: CrashReporter) : ViewModel() {
+class AuthViewModel(
+    private val authRepository: AuthRepository,
+    private val crashReporter: CrashReporter,
+    private val performanceMonitor: PerformanceMonitor
+) : ViewModel() {
     private val logger = appLogger("AuthViewModel")
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -41,7 +46,7 @@ class AuthViewModel(private val authRepository: AuthRepository, private val cras
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
             try {
-                val user = authRepository.signIn(email.trim(), password)
+                val user = performanceMonitor.trace("auth_login") { authRepository.signIn(email.trim(), password) }
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao fazer login")
@@ -101,14 +106,16 @@ class AuthViewModel(private val authRepository: AuthRepository, private val cras
                 }
 
                 val user =
-                    authRepository.register(
-                        email.trim(),
-                        password,
-                        name.trim(),
-                        phone.trim(),
-                        nickname.trim(),
-                        username.trim().lowercase()
-                    )
+                    performanceMonitor.trace("auth_register") {
+                        authRepository.register(
+                            email.trim(),
+                            password,
+                            name.trim(),
+                            phone.trim(),
+                            nickname.trim(),
+                            username.trim().lowercase()
+                        )
+                    }
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao registrar usuário")

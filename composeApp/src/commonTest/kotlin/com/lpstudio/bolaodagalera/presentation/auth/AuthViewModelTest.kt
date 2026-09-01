@@ -4,6 +4,7 @@ import com.lpstudio.bolaodagalera.data.fake.FAKE_FRIEND
 import com.lpstudio.bolaodagalera.data.fake.FAKE_USER
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
+import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -32,7 +33,7 @@ class AuthViewModelTest {
         authRepository = FakeAuthRepository()
         // Começa deslogado: os testes de login/cadastro simulam o app "do zero".
         authRepository.setUser(null)
-        viewModel = AuthViewModel(authRepository, FakeCrashReporter())
+        viewModel = AuthViewModel(authRepository, FakeCrashReporter(), FakePerformanceMonitor())
     }
 
     @AfterTest

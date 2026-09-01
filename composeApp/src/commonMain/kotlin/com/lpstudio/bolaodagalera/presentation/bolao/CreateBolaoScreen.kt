@@ -75,6 +75,7 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
@@ -102,7 +103,8 @@ class CreateBolaoViewModel(
     private val bolaoRepository: BolaoRepository,
     private val authRepository: AuthRepository,
     private val matchRepository: MatchRepository,
-    private val crashReporter: CrashReporter
+    private val crashReporter: CrashReporter,
+    private val performanceMonitor: PerformanceMonitor
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CreateBolaoUiState())
     val uiState: StateFlow<CreateBolaoUiState> = _uiState.asStateFlow()
@@ -159,16 +161,18 @@ class CreateBolaoViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val bolao =
-                    bolaoRepository.createBolao(
-                        name.trim(),
-                        description.trim(),
-                        userId,
-                        championshipId,
-                        scope = scope,
-                        specificMatchId = specificMatchId,
-                        pointsExactScore = pointsExact,
-                        pointsWinnerOrDraw = pointsWinner
-                    )
+                    performanceMonitor.trace("create_bolao") {
+                        bolaoRepository.createBolao(
+                            name.trim(),
+                            description.trim(),
+                            userId,
+                            championshipId,
+                            scope = scope,
+                            specificMatchId = specificMatchId,
+                            pointsExactScore = pointsExact,
+                            pointsWinnerOrDraw = pointsWinner
+                        )
+                    }
                 _uiState.update { it.copy(createdBolao = bolao, isLoading = false) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao criar bolão")
@@ -185,7 +189,9 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
     val authRepository = koinInject<AuthRepository>()
     val matchRepository = koinInject<MatchRepository>()
     val crashReporter = koinInject<CrashReporter>()
-    val viewModel = remember { CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository, crashReporter) }
+    val performanceMonitor = koinInject<PerformanceMonitor>()
+    val viewModel =
+        remember { CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository, crashReporter, performanceMonitor) }
     val uiState by viewModel.uiState.collectAsState()
     val allMatches by viewModel.allMatches.collectAsState()
 

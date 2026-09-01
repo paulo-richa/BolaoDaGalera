@@ -59,6 +59,7 @@ import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
@@ -89,7 +90,8 @@ data class JoinBolaoUiState(
 class JoinBolaoViewModel(
     private val bolaoRepository: BolaoRepository,
     private val authRepository: AuthRepository,
-    private val crashReporter: CrashReporter
+    private val crashReporter: CrashReporter,
+    private val performanceMonitor: PerformanceMonitor
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(JoinBolaoUiState())
     val uiState: StateFlow<JoinBolaoUiState> = _uiState.asStateFlow()
@@ -100,7 +102,10 @@ class JoinBolaoViewModel(
             _uiState.update { it.copy(isLoading = true, error = null, requestSent = false) }
             try {
                 // Agora usamos requestJoinBolao para que o dono precise aceitar
-                val bolao = bolaoRepository.requestJoinBolao(code.trim().uppercase(), userId)
+                val bolao =
+                    performanceMonitor.trace("join_bolao") {
+                        bolaoRepository.requestJoinBolao(code.trim().uppercase(), userId)
+                    }
 
                 if (userId in bolao.participants) {
                     // Regra 4: Já é membro, sinaliza para navegar direto
@@ -123,7 +128,8 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
     val bolaoRepository = koinInject<BolaoRepository>()
     val authRepository = koinInject<AuthRepository>()
     val crashReporter = koinInject<CrashReporter>()
-    val viewModel = remember { JoinBolaoViewModel(bolaoRepository, authRepository, crashReporter) }
+    val performanceMonitor = koinInject<PerformanceMonitor>()
+    val viewModel = remember { JoinBolaoViewModel(bolaoRepository, authRepository, crashReporter, performanceMonitor) }
     val uiState by viewModel.uiState.collectAsState()
     var code by remember(initialCode) { mutableStateOf(initialCode) }
     var codeTouched by remember(initialCode) { mutableStateOf(initialCode.isNotEmpty()) }
