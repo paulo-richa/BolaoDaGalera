@@ -13,6 +13,7 @@ const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
 const { cleanupDeletedBoloes, cleanupExpiredInvitations } = require("./cleanup");
 const { makeNotificationTriggers } = require("./notificationTriggers");
 const { sendDailyDigest } = require("./dailyDigest");
+const { sendMatchReminders } = require("./matchReminder");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
@@ -218,5 +219,19 @@ exports.scheduledDailyDigest = onSchedule(
     { schedule: "0 9 * * *", timeZone: "America/Sao_Paulo", timeoutSeconds: 300, memory: "256MiB" },
     async () => {
         await sendDailyDigest(db, admin);
+    }
+);
+
+/**
+ * Lembrete por jogo (Cloud Scheduler nativo do Firebase): a cada 15 min,
+ * avisa quem ainda não palpitou um jogo que começa em menos de 1h.
+ * matchReminders/{bolaoId}_{matchId}_{userId} garante que o mesmo lembrete
+ * nunca é enviado duas vezes, mesmo cobrindo a mesma janela em execuções
+ * sucessivas.
+ */
+exports.scheduledMatchReminder = onSchedule(
+    { schedule: "*/15 * * * *", timeZone: "America/Sao_Paulo", timeoutSeconds: 300, memory: "256MiB" },
+    async () => {
+        await sendMatchReminders(db, admin);
     }
 );
