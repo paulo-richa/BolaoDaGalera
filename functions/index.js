@@ -11,6 +11,7 @@ const { syncBrasileirao } = require("./brasileirao");
 const { syncLibertadores } = require("./libertadores");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
 const { cleanupDeletedBoloes, cleanupExpiredInvitations } = require("./cleanup");
+const { makeNotificationTriggers } = require("./notificationTriggers");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
@@ -57,6 +58,13 @@ exports.onMatchUpdate = onDocumentWritten("championships/{championshipId}/matche
         });
     }
 });
+
+/**
+ * Notificações push: convite recebido, pedidos pendentes, resumos, etc.
+ * (funções individuais registradas conforme cada tipo é implementado).
+ */
+const notificationTriggers = makeNotificationTriggers(db, admin);
+exports.onInvitationCreated = notificationTriggers.onInvitationCreated;
 
 /**
  * Endpoint para forçar a recalculação de todos os rankings (Útil após migrações).
