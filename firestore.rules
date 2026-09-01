@@ -189,5 +189,19 @@ service cloud.firestore {
         isAdmin()
       );
     }
+
+    // 6. NOTIFICAÇÕES: só as Cloud Functions (Admin SDK, ignora regras)
+    // criam/apagam. O cliente só lê as próprias e só pode mexer no campo
+    // "read" (marcar como lida) - nunca criar uma notificação fake em nome
+    // de outro usuário nem alterar título/mensagem.
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      allow update: if isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+
+      allow create, delete: if false;
+    }
   }
 }

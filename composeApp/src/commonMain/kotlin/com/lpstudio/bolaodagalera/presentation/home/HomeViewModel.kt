@@ -11,6 +11,7 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.util.TimeSource
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,14 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+
+private data class HomeBaseData(
+    val boloes: List<Bolao>,
+    val matches: List<com.lpstudio.bolaodagalera.domain.model.Match>,
+    val predictions: List<com.lpstudio.bolaodagalera.domain.model.Prediction>,
+    val invitations: List<Invitation>,
+    val readIds: Set<String>
+)
 
 data class HomeUiState(
     val user: User? = null,
@@ -41,7 +50,8 @@ class HomeViewModel(
     private val bolaoRepository: BolaoRepository,
     private val matchRepository: MatchRepository,
     private val invitationRepository: InvitationRepository,
-    private val predictionRepository: PredictionRepository
+    private val predictionRepository: PredictionRepository,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -81,7 +91,7 @@ class HomeViewModel(
             }.catch { emit(emptyList()) }
 
         // Carrega Bolões, Jogos, Palpites, Convites e IDs lidos
-        dataCollectionJob =
+        val baseFlow =
             combine(
                 bolaoRepository.getUserBoloes(user.id),
                 matchRepository.getAllMatches(),
@@ -89,6 +99,16 @@ class HomeViewModel(
                 invitationsFlow,
                 readNotificationIds
             ) { boloes, matches, predictions, invitations, readIds ->
+                HomeBaseData(boloes, matches, predictions, invitations, readIds)
+            }
+
+        // Combina com as notificações persistidas (gravadas pelas Cloud Functions).
+        // Tipos que ainda não têm um evento server-side equivalente (ex: lembrete
+        // de jogos de hoje) continuam sendo sintetizados localmente aqui embaixo -
+        // as duas listas são só mescladas por id, sem duplicar.
+        dataCollectionJob =
+            combine(baseFlow, notificationRepository.getNotifications(user.id)) { base, persisted ->
+                val (boloes, matches, predictions, invitations, readIds) = base
 
                 val allGenerated = mutableListOf<Notification>()
 
@@ -172,7 +192,10 @@ class HomeViewModel(
                     }
                 }
 
-                val sortedNotifications = allGenerated.sortedByDescending { n -> n.timestamp }
+                val sortedNotifications =
+                    (allGenerated + persisted)
+                        .distinctBy { it.id }
+                        .sortedByDescending { n -> n.timestamp }
                 val hasUnread = sortedNotifications.any { !it.isRead }
 
                 _uiState.update {
@@ -193,6 +216,15 @@ class HomeViewModel(
     fun markAllNotificationsAsRead() {
         val allIds = uiState.value.notifications.map { it.id }.toSet()
         readNotificationIds.value = readNotificationIds.value + allIds
+
+        val userId = authRepository.currentUser?.id ?: return
+        viewModelScope.launch {
+            try {
+                notificationRepository.markAllAsRead(userId)
+            } catch (e: Exception) {
+                println("BOLAOLOG: Erro ao marcar notificações como lidas: ${e.message}")
+            }
+        }
     }
 
     fun respondToInvitation(invitationId: String, accept: Boolean, onSuccess: () -> Unit = {}) {
