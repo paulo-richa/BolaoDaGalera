@@ -65,6 +65,7 @@ exports.onMatchUpdate = onDocumentWritten("championships/{championshipId}/matche
  */
 const notificationTriggers = makeNotificationTriggers(db, admin);
 exports.onInvitationCreated = notificationTriggers.onInvitationCreated;
+exports.onBolaoUpdated = notificationTriggers.onBolaoUpdated;
 
 /**
  * Endpoint para forçar a recalculação de todos os rankings (Útil após migrações).
