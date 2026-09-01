@@ -18,7 +18,8 @@ private data class PredictionDto(
     val bolaoId: String = "",
     val matchId: String = "",
     val homeScore: Int = 0,
-    val awayScore: Int = 0
+    val awayScore: Int = 0,
+    val points: Int? = null
 )
 
 private fun PredictionDto.toDomain(id: String) = Prediction(
@@ -27,7 +28,8 @@ private fun PredictionDto.toDomain(id: String) = Prediction(
     bolaoId = bolaoId,
     matchId = matchId,
     homeScore = homeScore,
-    awayScore = awayScore
+    awayScore = awayScore,
+    points = points
 )
 
 @Serializable
@@ -84,17 +86,20 @@ class FirebasePredictionRepository(private val calculatePointsUseCase: Calculate
         kotlinx.coroutines.flow.flowOf(emptyList())
     }
 
-    override suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction? = try {
+    // Sem try/catch aqui de propósito: savePrediction() usa este resultado para
+    // decidir entre criar ou atualizar o palpite. Engolir a exceção e devolver
+    // null fazia parecer que "não existe palpite ainda" quando na real a
+    // leitura só falhou por rede - e savePrediction criava um palpite
+    // duplicado em vez de atualizar o existente.
+    override suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction? {
         val snapshot =
             getPredictionsCollection(bolaoId)
                 .where { "userId" equalTo userId }
                 .where { "matchId" equalTo matchId }
                 .get()
-        snapshot.documents.firstOrNull()?.let { doc ->
+        return snapshot.documents.firstOrNull()?.let { doc ->
             doc.data<PredictionDto>().toDomain(doc.id)
         }
-    } catch (e: Exception) {
-        null
     }
 
     override suspend fun savePrediction(prediction: Prediction) {

@@ -15,6 +15,7 @@ async function syncLibertadores(db, admin, axios) {
         if (apiData && apiData.matches) {
             const resCLI = { data: apiData };
             const batch = db.batch();
+            const migrationsNeeded = [];
             const now = Date.now();
             const knockoutPairs = {};
 
@@ -219,9 +220,7 @@ async function syncLibertadores(db, admin, axios) {
 
                     if (oldHomeCode && oldAwayCode && (oldHomeCode !== newHomeCode || oldAwayCode !== newAwayCode)) {
                         // Times mudaram - vai precisar migrar palpites após o batch
-                        // Adiciona info ao batch para processar depois
-                        if (!batch.migrationsNeeded) batch.migrationsNeeded = [];
-                        batch.migrationsNeeded.push({
+                        migrationsNeeded.push({
                             matchId,
                             oldMatch: existing,
                             newMatch: updates
@@ -232,10 +231,8 @@ async function syncLibertadores(db, admin, axios) {
             await batch.commit();
 
             // Processar migrações de palpites (depois do commit para evitar locks)
-            if (batch.migrationsNeeded && batch.migrationsNeeded.length > 0) {
-                for (const migration of batch.migrationsNeeded) {
-                    await migratePredictionsIfMatchChanged(db, migration.matchId, migration.oldMatch, migration.newMatch);
-                }
+            for (const migration of migrationsNeeded) {
+                await migratePredictionsIfMatchChanged(db, migration.matchId, migration.oldMatch, migration.newMatch);
             }
 
             logger.info(`Libertadores sincronizada.`);

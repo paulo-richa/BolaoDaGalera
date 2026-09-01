@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.presentation.ranking
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
@@ -10,6 +11,7 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
+import com.lpstudio.bolaodagalera.domain.usecase.GetRankingUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +43,7 @@ class RankingViewModel(
     private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
     private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
+    private val getRankingUseCase: GetRankingUseCase = GetRankingUseCase(calculatePointsUseCase),
     private val bolaoId: String
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(RankingUiState())
@@ -48,8 +51,7 @@ class RankingViewModel(
 
     private var allMatches: List<Match> = emptyList()
     private var allPredictions: List<Prediction> = emptyList()
-    private var pointsExact: Int = 3
-    private var pointsWinner: Int = 1
+    private var currentBolao: Bolao = Bolao()
 
     init {
         val userId = authRepository.currentUser?.id ?: ""
@@ -61,11 +63,13 @@ class RankingViewModel(
     private fun loadData() {
         viewModelScope.launch {
             try {
-                // Observa Bolão, Jogos e Palpites simultaneamente para cálculo em tempo real
+                // Observa Bolão, Jogos e Palpites simultaneamente. O ranking usa o
+                // valor oficial de pontos calculado pela Cloud Function quando
+                // disponível, e só estima localmente os jogos que ela ainda não
+                // processou - ver GetRankingUseCase.
                 bolaoRepository.getBolaoFlow(bolaoId).flatMapLatest { bolao ->
+                    currentBolao = bolao
                     val participants = bolao.participants
-                    pointsExact = bolao.pointsExactScore
-                    pointsWinner = bolao.pointsWinnerOrDraw
 
                     combine(
                         matchRepository.getMatches(bolao.championshipId),
@@ -74,51 +78,7 @@ class RankingViewModel(
                     ) { matches, predictions, users ->
                         allMatches = matches
                         allPredictions = predictions
-                        val userMap = users.associateBy { it.id }
-
-                        // Calcula o ranking localmente com base nos placares atuais (Live)
-                        participants.map { userId ->
-                            val user = userMap[userId]
-                            val userPredictions = predictions.filter { it.userId == userId }
-
-                            var totalPoints = 0
-                            var exactScores = 0
-                            var correctResults = 0
-
-                            userPredictions.forEach { pred ->
-                                val match = matches.find { it.id == pred.matchId }
-                                if (match != null && match.homeScore != null && match.awayScore != null) {
-                                    val pts =
-                                        calculatePointsUseCase(
-                                            pred,
-                                            match.homeScore!!,
-                                            match.awayScore!!,
-                                            pointsExact,
-                                            pointsWinner
-                                        )
-                                    totalPoints += pts
-                                    if (pts == pointsExact) {
-                                        exactScores++
-                                    } else if (pts == pointsWinner) {
-                                        correctResults++
-                                    }
-                                }
-                            }
-
-                            RankingEntry(
-                                userId = userId,
-                                userName = user?.name ?: "Usuário",
-                                userNickname = user?.nickname?.ifBlank { "" } ?: "",
-                                points = totalPoints,
-                                exactScores = exactScores,
-                                correctResults = correctResults
-                            )
-                        }.sortedWith(
-                            compareByDescending<RankingEntry> { it.points }
-                                .thenByDescending { it.exactScores }
-                                .thenByDescending { it.correctResults }
-                                .thenBy { it.userName.lowercase() }
-                        )
+                        getRankingUseCase(bolao, predictions, matches, users)
                     }
                 }.onEach { entries ->
                     _uiState.update { it.copy(entries = entries, isLoading = false) }
@@ -139,12 +99,12 @@ class RankingViewModel(
                     val match = allMatches.find { it.id == pred.matchId }
                     if (match != null && match.homeScore != null && match.awayScore != null) {
                         val points =
-                            calculatePointsUseCase(
+                            pred.points ?: calculatePointsUseCase(
                                 pred,
                                 match.homeScore!!,
                                 match.awayScore!!,
-                                pointsExact,
-                                pointsWinner
+                                currentBolao.pointsExactScore,
+                                currentBolao.pointsWinnerOrDraw
                             )
                         if (points > 0) {
                             ParticipantHit(match, pred, points)

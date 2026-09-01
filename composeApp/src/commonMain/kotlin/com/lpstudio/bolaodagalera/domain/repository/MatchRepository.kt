@@ -1,13 +1,10 @@
 package com.lpstudio.bolaodagalera.domain.repository
 
 import com.lpstudio.bolaodagalera.domain.model.Match
-import com.lpstudio.bolaodagalera.domain.model.Phase
 import kotlinx.coroutines.flow.Flow
 
 interface MatchRepository {
     fun getMatches(championshipId: String): Flow<List<Match>>
-
-    fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>>
 
     suspend fun getMatch(championshipId: String, matchId: String): Match
 

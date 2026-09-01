@@ -45,9 +45,4 @@ class FirebaseChampionshipRepository : ChampionshipRepository {
             println("BOLAOLOG: Erro ao carregar campeonatos: ${e.message}")
         }
     }
-
-    override suspend fun seedChampionships() {
-        // Agora o seed é feito centralizadamente via script Node.js (seed.js)
-        // ou via GitHub Actions para garantir consistência.
-    }
 }

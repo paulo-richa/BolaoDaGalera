@@ -7,6 +7,4 @@ interface ChampionshipRepository {
     fun getChampionships(): Flow<List<Championship>>
 
     suspend fun refreshCache()
-
-    suspend fun seedChampionships()
 }

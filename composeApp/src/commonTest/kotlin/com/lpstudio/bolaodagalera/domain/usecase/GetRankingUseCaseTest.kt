@@ -89,4 +89,37 @@ class GetRankingUseCaseTest {
         assertEquals(3, ranking[1].points)
         assertEquals(0, ranking[1].exactScores)
     }
+
+    @Test
+    fun `usa o ponto oficial do servidor quando a prediction ja foi pontuada`() {
+        val bolao = Bolao(id = "b1", name = "Test", participants = listOf("u1"), pointsExactScore = 3, pointsWinnerOrDraw = 1)
+        val users = listOf(User(id = "u1", name = "User 1", email = "", phone = ""))
+        val matches = listOf(createMatch("m1", 2, 1))
+        // Palpite errado localmente (0 pts pela regra), mas a Cloud Function já
+        // gravou 3 pts - simula uma correção manual do servidor que o cliente
+        // não deve sobrescrever com o próprio cálculo.
+        val predictions = listOf(
+            Prediction(id = "p1", userId = "u1", matchId = "m1", homeScore = 0, awayScore = 0, points = 3)
+        )
+
+        val ranking = getRankingUseCase(bolao, predictions, matches, users)
+
+        assertEquals(3, ranking[0].points)
+        assertEquals(1, ranking[0].exactScores)
+    }
+
+    @Test
+    fun `estima localmente quando o servidor ainda nao pontuou o palpite`() {
+        val bolao = Bolao(id = "b1", name = "Test", participants = listOf("u1"), pointsExactScore = 3, pointsWinnerOrDraw = 1)
+        val users = listOf(User(id = "u1", name = "User 1", email = "", phone = ""))
+        val matches = listOf(createMatch("m1", 2, 1))
+        val predictions = listOf(
+            Prediction(id = "p1", userId = "u1", matchId = "m1", homeScore = 2, awayScore = 1, points = null)
+        )
+
+        val ranking = getRankingUseCase(bolao, predictions, matches, users)
+
+        assertEquals(3, ranking[0].points)
+        assertEquals(1, ranking[0].exactScores)
+    }
 }
