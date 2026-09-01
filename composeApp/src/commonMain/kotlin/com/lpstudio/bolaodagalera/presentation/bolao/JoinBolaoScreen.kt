@@ -17,23 +17,18 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +51,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoGlassCard
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
@@ -65,7 +62,6 @@ import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
 import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
-import com.lpstudio.bolaodagalera.presentation.theme.GlassWhite
 import com.lpstudio.bolaodagalera.presentation.theme.Gold
 import com.lpstudio.bolaodagalera.presentation.theme.GradientBg
 import com.lpstudio.bolaodagalera.presentation.theme.GradientGold
@@ -178,6 +174,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
         Modifier
             .fillMaxSize()
             .background(GradientBg)
+            .systemBarsPadding()
     ) {
         // Glow
         Box(
@@ -196,21 +193,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = {
-                        Text("Entrar em Bolão", fontWeight = FontWeight.Bold, color = Color.White)
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Voltar",
-                                tint = Color.White
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-                )
+                BolaoTopBar(title = "Entrar em Bolão", onNavigateBack = onNavigateBack)
             }
         ) { padding ->
             val scrollState = rememberScrollState()
@@ -246,85 +229,74 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                 Spacer(Modifier.height(36.dp))
 
                 // Code input card
-                Box(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(GlassWhite)
-                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
+                BolaoGlassCard(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = code,
-                            onValueChange = {
-                                if (it.length <= 6) code = it.uppercase()
-                                codeTouched = true
-                            },
-                            label = { Text("Código", color = if (codeError != null) ErrorRed else TextMuted, fontSize = 13.sp) },
-                            modifier = Modifier.fillMaxWidth(),
-                            isError = codeError != null,
-                            shape = RoundedCornerShape(12.dp),
-                            colors =
-                            OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Gold,
-                                unfocusedBorderColor = Color(0xFF2A3D55),
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                cursorColor = Gold,
-                                focusedContainerColor = NavyElevated,
-                                unfocusedContainerColor = NavyCard,
-                                errorBorderColor = ErrorRed,
-                                errorLabelColor = ErrorRed
-                            ),
-                            keyboardOptions =
-                            KeyboardOptions(
-                                capitalization = KeyboardCapitalization.Characters,
-                                imeAction = ImeAction.Done
-                            ),
-                            keyboardActions =
-                            KeyboardActions(
-                                onDone = { if (code.length == 6) viewModel.join(code) }
-                            ),
-                            singleLine = true,
-                            textStyle =
-                            TextStyle(
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 10.sp,
-                                textAlign = TextAlign.Center,
-                                color = Gold
-                            )
+                    OutlinedTextField(
+                        value = code,
+                        onValueChange = {
+                            if (it.length <= 6) code = it.uppercase()
+                            codeTouched = true
+                        },
+                        label = { Text("Código", color = if (codeError != null) ErrorRed else TextMuted, fontSize = 13.sp) },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = codeError != null,
+                        shape = RoundedCornerShape(12.dp),
+                        colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Gold,
+                            unfocusedBorderColor = Color(0xFF2A3D55),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = Gold,
+                            focusedContainerColor = NavyElevated,
+                            unfocusedContainerColor = NavyCard,
+                            errorBorderColor = ErrorRed,
+                            errorLabelColor = ErrorRed
+                        ),
+                        keyboardOptions =
+                        KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Characters,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions =
+                        KeyboardActions(
+                            onDone = { if (code.length == 6) viewModel.join(code) }
+                        ),
+                        singleLine = true,
+                        textStyle =
+                        TextStyle(
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 10.sp,
+                            textAlign = TextAlign.Center,
+                            color = Gold
                         )
+                    )
 
-                        codeError?.let { Text(it, color = ErrorRed, fontSize = 11.sp) }
+                    codeError?.let { Text(it, color = ErrorRed, fontSize = 11.sp) }
 
-                        // Char counter dots
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            for (i in 0 until 6) {
-                                val filled = i < code.length
-                                Box(
-                                    modifier =
-                                    Modifier
-                                        .size(if (filled) 10.dp else 8.dp)
-                                        .clip(RoundedCornerShape(50))
-                                        .background(if (filled) Gold else NavyElevated)
-                                        .border(1.dp, if (filled) Gold else GlassBorder, RoundedCornerShape(50))
-                                )
-                            }
+                    // Char counter dots
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        for (i in 0 until 6) {
+                            val filled = i < code.length
+                            Box(
+                                modifier =
+                                Modifier
+                                    .size(if (filled) 10.dp else 8.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(if (filled) Gold else NavyElevated)
+                                    .border(1.dp, if (filled) Gold else GlassBorder, RoundedCornerShape(50))
+                            )
                         }
+                    }
 
-                        uiState.error?.let {
-                            Text(it, color = ErrorRed, fontSize = 12.sp, textAlign = TextAlign.Center)
-                        }
+                    uiState.error?.let {
+                        Text(it, color = ErrorRed, fontSize = 12.sp, textAlign = TextAlign.Center)
                     }
                 }
 

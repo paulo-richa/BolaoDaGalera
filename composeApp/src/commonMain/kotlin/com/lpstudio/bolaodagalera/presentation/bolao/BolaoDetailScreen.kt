@@ -34,8 +34,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,6 +68,8 @@ import com.lpstudio.bolaodagalera.ADMOB_ANDROID_BANNER_ID
 import com.lpstudio.bolaodagalera.ADMOB_IOS_BANNER_ID
 import com.lpstudio.bolaodagalera.CommonBackHandler
 import com.lpstudio.bolaodagalera.LauncherProvider
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoConfirmDialog
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoFullScreenLoading
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
@@ -351,33 +351,23 @@ fun BolaoDetailContent(
     }
 
     if (showLeaveDialog) {
-        AlertDialog(onDismissRequest = {
-            showLeaveDialog = false
-        }, containerColor = NavyCard, title = {
-            Text("Sair do Bolão?", color = Color.White, fontWeight = FontWeight.Bold)
-        }, text = {
-            val msg = if (isOwner) {
+        val leaveMessage =
+            if (isOwner) {
                 "Você é o dono deste bolão. Se sair, o bolão continuará existindo mas ficará sem administrador."
             } else {
                 "O administrador precisará confirmar sua saída para que você seja removido do ranking."
             }
-            Text(text = msg, color = TextMuted)
-        }, confirmButton = {
-            TextButton(onClick = {
+        BolaoConfirmDialog(
+            title = "Sair do Bolão?",
+            message = leaveMessage,
+            confirmText = if (isOwner) "Sair" else "Pedir para sair",
+            isDestructive = true,
+            onConfirm = {
                 showLeaveDialog = false
                 onLeaveBolao()
-            }) {
-                Text(
-                    text = if (isOwner) "Sair" else "Pedir para sair",
-                    color = ErrorRed,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }, dismissButton = {
-            TextButton(onClick = { showLeaveDialog = false }) {
-                Text("Cancelar", color = TextMuted)
-            }
-        })
+            },
+            onDismiss = { showLeaveDialog = false }
+        )
     }
 
     if (showParticipantsSheet) {
@@ -510,9 +500,7 @@ fun BolaoDetailContent(
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f)) {
                 if (uiState.isLoading && uiState.matches.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Neon)
-                    }
+                    BolaoFullScreenLoading()
                 } else {
                     Column(Modifier.fillMaxSize()) {
                         Box(modifier = Modifier.fillMaxWidth().background(GradientHero).padding(top = 16.dp, bottom = 16.dp)) {
