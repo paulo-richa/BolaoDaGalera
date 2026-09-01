@@ -9,6 +9,7 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.util.PredictionAdCounter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,7 @@ class PredictionViewModel(
     private val predictionRepository: PredictionRepository,
     private val bolaoRepository: BolaoRepository,
     private val crashReporter: CrashReporter,
+    private val performanceMonitor: PerformanceMonitor,
     private val bolaoId: String,
     private val matchId: String
 ) : ViewModel() {
@@ -81,7 +83,7 @@ class PredictionViewModel(
                         homeScore = homeScore,
                         awayScore = awayScore
                     )
-                predictionRepository.savePrediction(prediction)
+                performanceMonitor.trace("save_prediction") { predictionRepository.savePrediction(prediction) }
                 PredictionAdCounter.incrementAndShowIfNecessary()
                 _uiState.update { it.copy(isSaved = true, isLoading = false) }
             } catch (e: Exception) {
