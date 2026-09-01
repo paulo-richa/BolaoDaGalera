@@ -12,6 +12,7 @@ import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.GetRankingUseCase
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,6 +43,7 @@ class RankingViewModel(
     private val bolaoRepository: BolaoRepository,
     private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
+    private val crashReporter: CrashReporter,
     private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
     private val getRankingUseCase: GetRankingUseCase = GetRankingUseCase(calculatePointsUseCase),
     private val bolaoId: String
@@ -83,9 +85,11 @@ class RankingViewModel(
                 }.onEach { entries ->
                     _uiState.update { it.copy(entries = entries, isLoading = false) }
                 }.catch { e ->
+                    crashReporter.recordException(e, "Erro ao observar ranking")
                     _uiState.update { it.copy(error = e.message, isLoading = false) }
                 }.launchIn(viewModelScope)
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao carregar ranking")
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
         }

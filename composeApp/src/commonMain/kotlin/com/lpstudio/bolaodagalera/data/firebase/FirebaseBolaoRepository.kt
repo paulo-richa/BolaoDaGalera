@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.data.firebase
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.FieldValue
@@ -54,7 +55,7 @@ private fun BolaoDto.toDomain(id: String) = Bolao(
     deletedAtMillis = deletedAtMillis
 )
 
-class FirebaseBolaoRepository : BolaoRepository {
+class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoRepository {
     private val db = Firebase.firestore
     private val collection = db.collection("boloes")
 
@@ -68,10 +69,12 @@ class FirebaseBolaoRepository : BolaoRepository {
                     .filter { it.deletedAtMillis == null } // Oculta bolões marcados para deleção
             }
             .catch { e ->
+                crashReporter.recordException(e, "Erro ao observar bolões")
                 println("BOLAOLOG: Erro ao observar bolões: ${e.message}")
                 emit(emptyList())
             }
     } catch (e: Exception) {
+        crashReporter.recordException(e, "Erro crítico ao observar bolões")
         println("BOLAOLOG: Erro crítico ao observar bolões: ${e.message}")
         kotlinx.coroutines.flow.flowOf(emptyList())
     }
@@ -84,10 +87,12 @@ class FirebaseBolaoRepository : BolaoRepository {
                 Bolao() // Retorna um objeto vazio em vez de crashar se deletado
             }
         }.catch { e ->
+            crashReporter.recordException(e, "Erro ao observar bolão $bolaoId")
             println("BOLAOLOG: Erro ao observar bolão $bolaoId: ${e.message}")
             emit(Bolao())
         }
     } catch (e: Exception) {
+        crashReporter.recordException(e, "Erro crítico ao observar bolão $bolaoId")
         println("BOLAOLOG: Erro crítico ao observar bolão $bolaoId: ${e.message}")
         kotlinx.coroutines.flow.flowOf(Bolao())
     }
@@ -273,6 +278,7 @@ class FirebaseBolaoRepository : BolaoRepository {
             )
             println("BOLAOLOG: [BolaoRepo] Ranking inicial criado para $userId no bolão $bolaoId")
         } catch (e: Exception) {
+            crashReporter.recordException(e, "Erro ao criar ranking inicial")
             println("BOLAOLOG: [BolaoRepo] Erro ao criar ranking inicial: ${e.message}")
         }
     }

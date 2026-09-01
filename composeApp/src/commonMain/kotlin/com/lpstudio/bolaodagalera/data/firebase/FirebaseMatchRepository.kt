@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.data.firebase
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
@@ -64,7 +65,7 @@ private fun Match.toDto() = MatchDto(
  * Repositório de Jogos via Firebase Firestore.
  * Organizado por Subcollections: championships/{championshipId}/matches/{matchId}
  */
-class FirebaseMatchRepository : MatchRepository {
+class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchRepository {
     private val db by lazy { Firebase.firestore }
 
     private fun getMatchesCollection(championshipId: String) = db.collection("championships").document(championshipId).collection("matches")
@@ -95,9 +96,11 @@ class FirebaseMatchRepository : MatchRepository {
         try {
             snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
         } catch (e: Exception) {
+            crashReporter.recordException(e, "Erro ao mapear matches")
             emptyList()
         }
     }.catch { e ->
+        crashReporter.recordException(e, "Erro ao observar matches de $championshipId")
         println("BOLAOLOG: Erro ao observar matches de $championshipId: ${e.message}")
         emit(emptyList())
     }
@@ -174,6 +177,7 @@ class FirebaseMatchRepository : MatchRepository {
             .snapshots.map { snap ->
                 snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
             }.catch { e ->
+                crashReporter.recordException(e, "Erro no getAllMatches")
                 println("BOLAOLOG: Erro no getAllMatches: ${e.message}")
                 emit(emptyList())
             }

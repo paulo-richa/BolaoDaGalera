@@ -74,6 +74,7 @@ import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
@@ -100,7 +101,8 @@ data class CreateBolaoUiState(val isLoading: Boolean = false, val createdBolao: 
 class CreateBolaoViewModel(
     private val bolaoRepository: BolaoRepository,
     private val authRepository: AuthRepository,
-    private val matchRepository: MatchRepository
+    private val matchRepository: MatchRepository,
+    private val crashReporter: CrashReporter
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CreateBolaoUiState())
     val uiState: StateFlow<CreateBolaoUiState> = _uiState.asStateFlow()
@@ -169,6 +171,7 @@ class CreateBolaoViewModel(
                     )
                 _uiState.update { it.copy(createdBolao = bolao, isLoading = false) }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao criar bolão")
                 _uiState.update { it.copy(error = e.message ?: "Erro ao criar bolão", isLoading = false) }
             }
         }
@@ -181,7 +184,8 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
     val bolaoRepository = koinInject<BolaoRepository>()
     val authRepository = koinInject<AuthRepository>()
     val matchRepository = koinInject<MatchRepository>()
-    val viewModel = remember { CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository) }
+    val crashReporter = koinInject<CrashReporter>()
+    val viewModel = remember { CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository, crashReporter) }
     val uiState by viewModel.uiState.collectAsState()
     val allMatches by viewModel.allMatches.collectAsState()
 

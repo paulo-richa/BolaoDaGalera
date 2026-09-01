@@ -1,6 +1,7 @@
 package com.lpstudio.bolaodagalera.presentation.match
 
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
+import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.domain.model.Match
@@ -55,7 +56,7 @@ class PredictionViewModelTest {
             )
         )
 
-        viewModel = PredictionViewModel(matchRepository, predictionRepository, bolaoRepository, bolaoId, matchId)
+        viewModel = PredictionViewModel(matchRepository, predictionRepository, bolaoRepository, FakeCrashReporter(), bolaoId, matchId)
     }
 
     @AfterTest
@@ -78,7 +79,14 @@ class PredictionViewModelTest {
     @Test
     fun `load com jogo inexistente mostra erro`() = runTest {
         val brokenViewModel =
-            PredictionViewModel(matchRepository, predictionRepository, bolaoRepository, bolaoId, "match-que-nao-existe")
+            PredictionViewModel(
+                matchRepository,
+                predictionRepository,
+                bolaoRepository,
+                FakeCrashReporter(),
+                bolaoId,
+                "match-que-nao-existe"
+            )
 
         brokenViewModel.load(userId)
 

@@ -58,6 +58,7 @@ import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
@@ -85,7 +86,11 @@ data class JoinBolaoUiState(
     val error: String? = null
 )
 
-class JoinBolaoViewModel(private val bolaoRepository: BolaoRepository, private val authRepository: AuthRepository) : ViewModel() {
+class JoinBolaoViewModel(
+    private val bolaoRepository: BolaoRepository,
+    private val authRepository: AuthRepository,
+    private val crashReporter: CrashReporter
+) : ViewModel() {
     private val _uiState = MutableStateFlow(JoinBolaoUiState())
     val uiState: StateFlow<JoinBolaoUiState> = _uiState.asStateFlow()
 
@@ -105,6 +110,7 @@ class JoinBolaoViewModel(private val bolaoRepository: BolaoRepository, private v
                     _uiState.update { it.copy(joinedBolao = bolao, requestSent = true, isLoading = false) }
                 }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao entrar no bolão")
                 _uiState.update { it.copy(error = e.message ?: "Código inválido.", isLoading = false) }
             }
         }
@@ -116,7 +122,8 @@ class JoinBolaoViewModel(private val bolaoRepository: BolaoRepository, private v
 fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavigateBack: () -> Unit) {
     val bolaoRepository = koinInject<BolaoRepository>()
     val authRepository = koinInject<AuthRepository>()
-    val viewModel = remember { JoinBolaoViewModel(bolaoRepository, authRepository) }
+    val crashReporter = koinInject<CrashReporter>()
+    val viewModel = remember { JoinBolaoViewModel(bolaoRepository, authRepository, crashReporter) }
     val uiState by viewModel.uiState.collectAsState()
     var code by remember(initialCode) { mutableStateOf(initialCode) }
     var codeTouched by remember(initialCode) { mutableStateOf(initialCode.isNotEmpty()) }

@@ -16,6 +16,7 @@ import com.lpstudio.bolaodagalera.MainActivity
 import com.lpstudio.bolaodagalera.R
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,6 +32,7 @@ import org.koin.android.ext.android.inject
 class BolaoFirebaseMessagingService : FirebaseMessagingService() {
     private val authRepository: AuthRepository by inject()
     private val notificationRepository: NotificationRepository by inject()
+    private val crashReporter: CrashReporter by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onNewToken(token: String) {
@@ -40,6 +42,7 @@ class BolaoFirebaseMessagingService : FirebaseMessagingService() {
             try {
                 notificationRepository.registerFcmToken(userId, token)
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao registrar fcmToken (onNewToken)")
                 println("BOLAOLOG: Erro ao registrar fcmToken: ${e.message}")
             }
         }

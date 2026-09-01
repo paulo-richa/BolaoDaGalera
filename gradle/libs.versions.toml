@@ -20,6 +20,7 @@ kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 navigation-compose = "2.9.2"
 google-services-plugin = "4.5.0"
+firebase-crashlytics-plugin = "3.0.8"
 kotlinx-datetime = "0.8.0"
 ktor = "3.5.2"
 coil = "3.0.4"
@@ -105,6 +106,7 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 googleServices = { id = "com.google.gms.google-services", version.ref = "google-services-plugin" }
+firebaseCrashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-plugin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }

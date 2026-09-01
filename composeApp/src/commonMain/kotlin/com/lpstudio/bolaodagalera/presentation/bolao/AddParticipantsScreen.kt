@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
@@ -80,6 +81,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
     val bolaoRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.BolaoRepository>()
     val authRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.AuthRepository>()
     val invitationRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.InvitationRepository>()
+    val crashReporter = koinInject<CrashReporter>()
     var bolaoName by remember { mutableStateOf("") }
 
     // Carrega o nome e código do bolão ao iniciar
@@ -89,6 +91,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
             bolaoName = bolao.name
             bolaoCode = bolao.code
         } catch (e: Exception) {
+            crashReporter.recordException(e, "Erro ao carregar dados do bolão para convite")
         }
     }
 
@@ -252,6 +255,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                                 delay(3000)
                                 showSuccessMessage = false
                             } catch (e: Exception) {
+                                crashReporter.recordException(e, "Erro ao enviar convite")
                                 error = "Não foi possível enviar. Verifique sua conexão."
                                 isLoading = false
                             }

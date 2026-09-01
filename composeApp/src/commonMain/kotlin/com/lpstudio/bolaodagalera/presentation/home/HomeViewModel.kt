@@ -10,6 +10,7 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
+import com.lpstudio.bolaodagalera.observability.CrashReporter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +35,8 @@ class HomeViewModel(
     private val authRepository: AuthRepository,
     private val bolaoRepository: BolaoRepository,
     private val invitationRepository: InvitationRepository,
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
+    private val crashReporter: CrashReporter
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -106,6 +108,7 @@ class HomeViewModel(
             try {
                 notificationRepository.markAllAsRead(userId)
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao marcar notificações como lidas")
                 println("BOLAOLOG: Erro ao marcar notificações como lidas: ${e.message}")
             }
         }
@@ -162,6 +165,7 @@ class HomeViewModel(
                     onSuccess()
                 }
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao processar convite")
                 println("BOLAOLOG: [HomeVM] ERRO ao processar convite: ${e.message}")
 
                 val msg = e.message?.lowercase() ?: ""
@@ -182,6 +186,7 @@ class HomeViewModel(
             try {
                 bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao responder pedido de entrada")
                 _uiState.update { it.copy(error = e.message) }
             }
         }
@@ -192,6 +197,7 @@ class HomeViewModel(
             try {
                 bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
             } catch (e: Exception) {
+                crashReporter.recordException(e, "Erro ao responder pedido de saída")
                 _uiState.update { it.copy(error = e.message) }
             }
         }

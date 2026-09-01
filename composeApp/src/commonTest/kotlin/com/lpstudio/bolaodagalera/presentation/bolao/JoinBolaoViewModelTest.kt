@@ -4,6 +4,7 @@ import com.lpstudio.bolaodagalera.data.fake.FAKE_FRIEND
 import com.lpstudio.bolaodagalera.data.fake.FAKE_USER
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
+import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -33,7 +34,7 @@ class JoinBolaoViewModelTest {
         Dispatchers.setMain(testDispatcher)
         bolaoRepository = FakeBolaoRepository()
         authRepository = FakeAuthRepository()
-        viewModel = JoinBolaoViewModel(bolaoRepository, authRepository)
+        viewModel = JoinBolaoViewModel(bolaoRepository, authRepository, FakeCrashReporter())
     }
 
     @AfterTest

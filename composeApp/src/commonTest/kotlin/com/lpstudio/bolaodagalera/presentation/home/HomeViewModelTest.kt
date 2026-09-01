@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.presentation.home
 
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
+import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeNotificationRepository
 import com.lpstudio.bolaodagalera.domain.model.Notification
@@ -49,7 +50,8 @@ class HomeViewModelTest {
                 authRepository = authRepository,
                 bolaoRepository = bolaoRepository,
                 invitationRepository = invitationRepository,
-                notificationRepository = notificationRepository
+                notificationRepository = notificationRepository,
+                crashReporter = FakeCrashReporter()
             )
     }
 
