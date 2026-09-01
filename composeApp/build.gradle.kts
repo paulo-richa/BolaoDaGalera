@@ -61,6 +61,7 @@ kotlin {
             implementation("com.google.firebase:firebase-messaging")
             implementation("com.google.firebase:firebase-crashlytics")
             implementation("com.google.firebase:firebase-perf")
+            implementation("com.google.firebase:firebase-analytics")
 
             // UI Testing
             // Note: In KMP, some people use commonTest, but for Compose Android is easiest

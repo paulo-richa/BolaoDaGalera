@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.observability.appLogger
@@ -30,7 +31,8 @@ data class AuthUiState(
 class AuthViewModel(
     private val authRepository: AuthRepository,
     private val crashReporter: CrashReporter,
-    private val performanceMonitor: PerformanceMonitor
+    private val performanceMonitor: PerformanceMonitor,
+    private val analyticsTracker: AnalyticsTracker
 ) : ViewModel() {
     private val logger = appLogger("AuthViewModel")
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -47,6 +49,7 @@ class AuthViewModel(
             _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
             try {
                 val user = performanceMonitor.trace("auth_login") { authRepository.signIn(email.trim(), password) }
+                analyticsTracker.logEvent("login")
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao fazer login")
@@ -116,6 +119,7 @@ class AuthViewModel(
                             username.trim().lowercase()
                         )
                     }
+                analyticsTracker.logEvent("sign_up")
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao registrar usuário")

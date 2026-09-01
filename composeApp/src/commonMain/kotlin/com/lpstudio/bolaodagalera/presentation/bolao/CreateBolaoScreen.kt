@@ -74,6 +74,7 @@ import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
@@ -104,7 +105,8 @@ class CreateBolaoViewModel(
     private val authRepository: AuthRepository,
     private val matchRepository: MatchRepository,
     private val crashReporter: CrashReporter,
-    private val performanceMonitor: PerformanceMonitor
+    private val performanceMonitor: PerformanceMonitor,
+    private val analyticsTracker: AnalyticsTracker
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CreateBolaoUiState())
     val uiState: StateFlow<CreateBolaoUiState> = _uiState.asStateFlow()
@@ -173,6 +175,7 @@ class CreateBolaoViewModel(
                             pointsWinnerOrDraw = pointsWinner
                         )
                     }
+                analyticsTracker.logEvent("bolao_created", mapOf("championship_id" to championshipId, "scope" to scope.name))
                 _uiState.update { it.copy(createdBolao = bolao, isLoading = false) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao criar bolão")
@@ -190,8 +193,11 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
     val matchRepository = koinInject<MatchRepository>()
     val crashReporter = koinInject<CrashReporter>()
     val performanceMonitor = koinInject<PerformanceMonitor>()
+    val analyticsTracker = koinInject<AnalyticsTracker>()
     val viewModel =
-        remember { CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository, crashReporter, performanceMonitor) }
+        remember {
+            CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository, crashReporter, performanceMonitor, analyticsTracker)
+        }
     val uiState by viewModel.uiState.collectAsState()
     val allMatches by viewModel.allMatches.collectAsState()
 

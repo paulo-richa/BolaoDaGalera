@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.presentation.auth
 
 import com.lpstudio.bolaodagalera.data.fake.FAKE_FRIEND
 import com.lpstudio.bolaodagalera.data.fake.FAKE_USER
+import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
@@ -33,7 +34,7 @@ class AuthViewModelTest {
         authRepository = FakeAuthRepository()
         // Começa deslogado: os testes de login/cadastro simulam o app "do zero".
         authRepository.setUser(null)
-        viewModel = AuthViewModel(authRepository, FakeCrashReporter(), FakePerformanceMonitor())
+        viewModel = AuthViewModel(authRepository, FakeCrashReporter(), FakePerformanceMonitor(), FakeAnalyticsTracker())
     }
 
     @AfterTest

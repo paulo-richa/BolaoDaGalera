@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.presentation.bolao
 
 import com.lpstudio.bolaodagalera.data.fake.FAKE_FRIEND
 import com.lpstudio.bolaodagalera.data.fake.FAKE_USER
+import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
@@ -35,7 +36,8 @@ class JoinBolaoViewModelTest {
         Dispatchers.setMain(testDispatcher)
         bolaoRepository = FakeBolaoRepository()
         authRepository = FakeAuthRepository()
-        viewModel = JoinBolaoViewModel(bolaoRepository, authRepository, FakeCrashReporter(), FakePerformanceMonitor())
+        viewModel =
+            JoinBolaoViewModel(bolaoRepository, authRepository, FakeCrashReporter(), FakePerformanceMonitor(), FakeAnalyticsTracker())
     }
 
     @AfterTest

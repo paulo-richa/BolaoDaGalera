@@ -22,6 +22,7 @@ import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
 import com.lpstudio.bolaodagalera.di.appModule
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.presentation.maintenance.MaintenanceScreen
 import com.lpstudio.bolaodagalera.presentation.navigation.NavGraph
@@ -41,6 +42,7 @@ fun App() {
         val authRepository = koinInject<AuthRepository>()
         val championshipRepository = koinInject<ChampionshipRepository>()
         val crashReporter = koinInject<CrashReporter>()
+        val analyticsTracker = koinInject<AnalyticsTracker>()
 
         val showAds by remoteConfigManager.showAds.collectAsState()
 
@@ -69,6 +71,7 @@ fun App() {
 
         LaunchedEffect(currentUser) {
             crashReporter.setUserId(currentUser?.id)
+            analyticsTracker.setUserId(currentUser?.id)
         }
 
         LaunchedEffect(currentUser) {
