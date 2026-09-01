@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.data.firebase
 import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
@@ -27,6 +28,7 @@ private data class UserDto(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRepository {
+    private val logger = appLogger("FirebaseAuthRepository")
     private val auth = Firebase.auth
     private val db = Firebase.firestore
     private val usersCollection = db.collection("users")
@@ -55,18 +57,18 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
                         user as User?
                     }.catch { e ->
                         crashReporter.recordException(e, "Erro no snapshots de user")
-                        println("BOLAOLOG: Erro no snapshots de user: ${e.message}")
+                        logger.e(e) { "Erro no snapshots de user" }
                         emit(null)
                     }
                 } catch (e: Exception) {
                     crashReporter.recordException(e, "Erro crítico ao iniciar snapshots de user")
-                    println("BOLAOLOG: Erro crítico ao iniciar snapshots de user: ${e.message}")
+                    logger.e(e) { "Erro crítico ao iniciar snapshots de user" }
                     flowOf(null)
                 }
             }
         }.catch { e ->
             crashReporter.recordException(e, "Erro no authStateFlow")
-            println("BOLAOLOG: Erro no authStateFlow: ${e.message}")
+            logger.e(e) { "Erro no authStateFlow" }
             emit(null)
         }
 

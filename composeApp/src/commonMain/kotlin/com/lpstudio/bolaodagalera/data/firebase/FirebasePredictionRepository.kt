@@ -5,6 +5,7 @@ import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +48,7 @@ class FirebasePredictionRepository(
     private val crashReporter: CrashReporter,
     private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase()
 ) : PredictionRepository {
+    private val logger = appLogger("FirebasePredictionRepository")
     private val db = Firebase.firestore
 
     private fun getPredictionsCollection(bolaoId: String) = db.collection("boloes").document(bolaoId).collection("predictions")
@@ -67,12 +69,12 @@ class FirebasePredictionRepository(
             }
             .catch { e ->
                 crashReporter.recordException(e, "Erro no getUserPredictions")
-                println("BOLAOLOG: Erro no getUserPredictions: ${e.message}")
+                logger.e(e) { "Erro no getUserPredictions" }
                 emit(emptyList())
             }
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico no getUserPredictions")
-        println("BOLAOLOG: Erro crítico no getUserPredictions: ${e.message}")
+        logger.e(e) { "Erro crítico no getUserPredictions" }
         kotlinx.coroutines.flow.flowOf(emptyList())
     }
 
@@ -84,12 +86,12 @@ class FirebasePredictionRepository(
             }
             .catch { e ->
                 crashReporter.recordException(e, "Erro ao observar todos os palpites do bolão $bolaoId")
-                println("BOLAOLOG: Erro ao observar todos os palpites do bolão $bolaoId: ${e.message}")
+                logger.e(e) { "Erro ao observar todos os palpites do bolão $bolaoId" }
                 emit(emptyList())
             }
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar todos os palpites do bolão $bolaoId")
-        println("BOLAOLOG: Erro crítico ao observar todos os palpites do bolão $bolaoId: ${e.message}")
+        logger.e(e) { "Erro crítico ao observar todos os palpites do bolão $bolaoId" }
         kotlinx.coroutines.flow.flowOf(emptyList())
     }
 
@@ -187,12 +189,12 @@ class FirebasePredictionRepository(
             }
             .catch { e ->
                 crashReporter.recordException(e, "Erro ao ler ranking remoto do bolão $bolaoId")
-                println("BOLAOLOG: Erro ao ler ranking remoto do bolão $bolaoId: ${e.message}")
+                logger.e(e) { "Erro ao ler ranking remoto do bolão $bolaoId" }
                 emit(emptyList())
             }
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao ler ranking remoto do bolão $bolaoId")
-        println("BOLAOLOG: Erro crítico ao ler ranking remoto do bolão $bolaoId: ${e.message}")
+        logger.e(e) { "Erro crítico ao ler ranking remoto do bolão $bolaoId" }
         kotlinx.coroutines.flow.flowOf(emptyList())
     }
 }

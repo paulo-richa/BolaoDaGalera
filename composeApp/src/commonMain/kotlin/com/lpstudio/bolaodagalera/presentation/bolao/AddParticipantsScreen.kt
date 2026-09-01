@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
 import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
@@ -67,6 +68,8 @@ private enum class ParticipantInputType {
     PHONE,
     USER
 }
+
+private val logger = appLogger("AddParticipantsScreen")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -245,7 +248,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                                         )
                                     }
                                 } catch (e: Exception) {
-                                    println("Aviso: Convite interno em cache para envio posterior (rede lenta)")
+                                    logger.w(e) { "Convite interno em cache para envio posterior (rede lenta)" }
                                 }
 
                                 isLoading = false

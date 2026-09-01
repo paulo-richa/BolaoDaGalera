@@ -1,7 +1,9 @@
 package com.lpstudio.bolaodagalera
 
 import android.app.Application
+import co.touchlab.kermit.Logger
 import com.lpstudio.bolaodagalera.di.appModule
+import com.lpstudio.bolaodagalera.observability.CrashlyticsLogWriter
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -19,5 +21,8 @@ class BolaoApplication : Application() {
             androidContext(this@BolaoApplication)
             modules(appModule)
         }
+        // Encaminha logs (Kermit) como breadcrumbs do Crashlytics, além do writer
+        // padrão (Logcat), para dar contexto do que aconteceu antes de um crash.
+        Logger.addLogWriter(CrashlyticsLogWriter())
     }
 }

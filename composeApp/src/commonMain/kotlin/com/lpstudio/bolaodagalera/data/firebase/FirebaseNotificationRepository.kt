@@ -4,6 +4,7 @@ import com.lpstudio.bolaodagalera.domain.model.Notification
 import com.lpstudio.bolaodagalera.domain.model.NotificationType
 import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.Direction
 import dev.gitlive.firebase.firestore.FieldValue
@@ -44,6 +45,7 @@ private fun NotificationDto.toDomain(id: String) = Notification(
  * cálculo local que se perde ao reiniciar o app.
  */
 class FirebaseNotificationRepository(private val crashReporter: CrashReporter) : NotificationRepository {
+    private val logger = appLogger("FirebaseNotificationRepository")
     private val db = Firebase.firestore
     private val collection = db.collection("notifications")
     private val usersCollection = db.collection("users")
@@ -58,12 +60,12 @@ class FirebaseNotificationRepository(private val crashReporter: CrashReporter) :
             }
             .catch { e ->
                 crashReporter.recordException(e, "Erro ao observar notificações")
-                println("BOLAOLOG: Erro ao observar notificações: ${e.message}")
+                logger.e(e) { "Erro ao observar notificações" }
                 emit(emptyList())
             }
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar notificações")
-        println("BOLAOLOG: Erro crítico ao observar notificações: ${e.message}")
+        logger.e(e) { "Erro crítico ao observar notificações" }
         flowOf(emptyList())
     }
 

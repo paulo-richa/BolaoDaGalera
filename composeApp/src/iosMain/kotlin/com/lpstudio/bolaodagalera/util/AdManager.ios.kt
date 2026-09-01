@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.util
 import cocoapods.Google_Mobile_Ads_SDK.GADInterstitialAd
 import cocoapods.Google_Mobile_Ads_SDK.GADRequest
 import com.lpstudio.bolaodagalera.ADMOB_IOS_INTERSTITIAL_ID
+import com.lpstudio.bolaodagalera.observability.appLogger
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.UIKit.UIApplication
 import platform.UIKit.UIViewController
@@ -10,6 +11,7 @@ import platform.UIKit.UIWindow
 
 @OptIn(ExperimentalForeignApi::class)
 actual object AdManager {
+    private val logger = appLogger("AdManager")
     private var interstitial: GADInterstitialAd? = null
     private var isLoading = false
     private var isEnabled = true
@@ -22,11 +24,11 @@ actual object AdManager {
     }
 
     init {
-        println("AdManager: Initializing")
+        logger.d { "AdManager: Initializing" }
     }
 
     actual fun prepare() {
-        println("AdManager: Prepare called - pre-loading interstitial")
+        logger.d { "AdManager: Prepare called - pre-loading interstitial" }
         loadInterstitial()
     }
 
@@ -34,7 +36,7 @@ actual object AdManager {
         if (!isEnabled || isLoading || interstitial != null) return
 
         isLoading = true
-        println("AdManager: Starting to load interstitial with ID: $ADMOB_IOS_INTERSTITIAL_ID")
+        logger.d { "AdManager: Starting to load interstitial with ID: $ADMOB_IOS_INTERSTITIAL_ID" }
 
         GADInterstitialAd.loadWithAdUnitID(
             adUnitID = ADMOB_IOS_INTERSTITIAL_ID,
@@ -42,10 +44,10 @@ actual object AdManager {
             completionHandler = { ad, error ->
                 isLoading = false
                 if (error == null) {
-                    println("AdManager: Interstitial loaded successfully")
+                    logger.d { "AdManager: Interstitial loaded successfully" }
                     interstitial = ad
                 } else {
-                    println("AdManager: Failed to load interstitial: ${error.localizedDescription}")
+                    logger.d { "AdManager: Failed to load interstitial: ${error.localizedDescription}" }
                 }
             }
         )
@@ -65,16 +67,16 @@ actual object AdManager {
         val rootViewController = getRootViewController()
         val ad = interstitial
 
-        println("AdManager: Attempting to show interstitial. Ad present: ${ad != null}, VC present: ${rootViewController != null}")
+        logger.d { "AdManager: Attempting to show interstitial. Ad present: ${ad != null}, VC present: ${rootViewController != null}" }
 
         if (ad != null && rootViewController != null) {
             ad.presentFromRootViewController(rootViewController)
             interstitial = null
-            println("AdManager: Interstitial presented")
+            logger.d { "AdManager: Interstitial presented" }
             loadInterstitial()
         } else {
-            if (ad == null) println("AdManager: Ad was null, triggering new load")
-            if (rootViewController == null) println("AdManager: RootViewController was null")
+            if (ad == null) logger.d { "AdManager: Ad was null, triggering new load" }
+            if (rootViewController == null) logger.d { "AdManager: RootViewController was null" }
             loadInterstitial()
         }
     }
