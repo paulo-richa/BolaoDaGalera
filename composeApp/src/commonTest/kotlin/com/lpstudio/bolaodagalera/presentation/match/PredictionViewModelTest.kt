@@ -1,5 +1,6 @@
 package com.lpstudio.bolaodagalera.presentation.match
 
+import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
@@ -64,6 +65,7 @@ class PredictionViewModelTest {
                 bolaoRepository,
                 FakeCrashReporter(),
                 FakePerformanceMonitor(),
+                FakeAnalyticsTracker(),
                 bolaoId,
                 matchId
             )
@@ -95,6 +97,7 @@ class PredictionViewModelTest {
                 bolaoRepository,
                 FakeCrashReporter(),
                 FakePerformanceMonitor(),
+                FakeAnalyticsTracker(),
                 bolaoId,
                 "match-que-nao-existe"
             )

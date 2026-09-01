@@ -18,8 +18,10 @@ import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.createAnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.createCrashReporter
 import com.lpstudio.bolaodagalera.observability.createPerformanceMonitor
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
@@ -43,6 +45,7 @@ val appModule =
         single<NotificationRepository> { FirebaseNotificationRepository(get()) }
         single<CrashReporter> { createCrashReporter() }
         single<PerformanceMonitor> { createPerformanceMonitor() }
+        single<AnalyticsTracker> { createAnalyticsTracker() }
 
         // Remote Config
         single { RemoteConfigManager() }
@@ -51,10 +54,12 @@ val appModule =
         single { CalculatePointsUseCase() }
 
         // ViewModels
-        viewModel { AuthViewModel(get(), get(), get()) }
+        viewModel { AuthViewModel(get(), get(), get(), get()) }
         viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
         viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId, get()) }
-        viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), get(), get(), bolaoId, matchId) }
+        viewModel { (bolaoId: String, matchId: String) ->
+            PredictionViewModel(get(), get(), get(), get(), get(), get(), bolaoId, matchId)
+        }
         viewModel { (bolaoId: String) ->
             RankingViewModel(
                 predictionRepository = get(),

@@ -1,6 +1,7 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
 import com.lpstudio.bolaodagalera.data.fake.FAKE_USER
+import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
@@ -57,7 +58,14 @@ class CreateBolaoViewModelTest {
         bolaoRepository = FakeBolaoRepository()
         matchRepository = FakeMatchRepository()
         viewModel =
-            CreateBolaoViewModel(bolaoRepository, authRepository, matchRepository, FakeCrashReporter(), FakePerformanceMonitor())
+            CreateBolaoViewModel(
+                bolaoRepository,
+                authRepository,
+                matchRepository,
+                FakeCrashReporter(),
+                FakePerformanceMonitor(),
+                FakeAnalyticsTracker()
+            )
     }
 
     @AfterTest

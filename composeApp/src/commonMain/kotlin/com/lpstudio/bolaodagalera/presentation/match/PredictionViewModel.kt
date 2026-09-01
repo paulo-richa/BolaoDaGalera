@@ -8,6 +8,7 @@ import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.util.PredictionAdCounter
@@ -34,6 +35,7 @@ class PredictionViewModel(
     private val bolaoRepository: BolaoRepository,
     private val crashReporter: CrashReporter,
     private val performanceMonitor: PerformanceMonitor,
+    private val analyticsTracker: AnalyticsTracker,
     private val bolaoId: String,
     private val matchId: String
 ) : ViewModel() {
@@ -84,6 +86,10 @@ class PredictionViewModel(
                         awayScore = awayScore
                     )
                 performanceMonitor.trace("save_prediction") { predictionRepository.savePrediction(prediction) }
+                analyticsTracker.logEvent(
+                    "prediction_saved",
+                    mapOf("bolao_id" to bolaoId, "match_id" to matchId)
+                )
                 PredictionAdCounter.incrementAndShowIfNecessary()
                 _uiState.update { it.copy(isSaved = true, isLoading = false) }
             } catch (e: Exception) {

@@ -58,6 +58,7 @@ import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
@@ -91,7 +92,8 @@ class JoinBolaoViewModel(
     private val bolaoRepository: BolaoRepository,
     private val authRepository: AuthRepository,
     private val crashReporter: CrashReporter,
-    private val performanceMonitor: PerformanceMonitor
+    private val performanceMonitor: PerformanceMonitor,
+    private val analyticsTracker: AnalyticsTracker
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(JoinBolaoUiState())
     val uiState: StateFlow<JoinBolaoUiState> = _uiState.asStateFlow()
@@ -112,6 +114,7 @@ class JoinBolaoViewModel(
                     _uiState.update { it.copy(alreadyMemberBolaoId = bolao.id, isLoading = false) }
                 } else {
                     // Regra 3: Novo pedido enviado
+                    analyticsTracker.logEvent("bolao_join_requested", mapOf("bolao_id" to bolao.id))
                     _uiState.update { it.copy(joinedBolao = bolao, requestSent = true, isLoading = false) }
                 }
             } catch (e: Exception) {
@@ -129,7 +132,9 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
     val authRepository = koinInject<AuthRepository>()
     val crashReporter = koinInject<CrashReporter>()
     val performanceMonitor = koinInject<PerformanceMonitor>()
-    val viewModel = remember { JoinBolaoViewModel(bolaoRepository, authRepository, crashReporter, performanceMonitor) }
+    val analyticsTracker = koinInject<AnalyticsTracker>()
+    val viewModel =
+        remember { JoinBolaoViewModel(bolaoRepository, authRepository, crashReporter, performanceMonitor, analyticsTracker) }
     val uiState by viewModel.uiState.collectAsState()
     var code by remember(initialCode) { mutableStateOf(initialCode) }
     var codeTouched by remember(initialCode) { mutableStateOf(initialCode.isNotEmpty()) }
