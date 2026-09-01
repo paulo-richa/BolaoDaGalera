@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,6 +47,32 @@ fun BolaoConfirmDialog(
                 Text(dismissText, color = TextMuted)
             }
         }
+    )
+}
+
+/**
+ * Diálogo genérico com slots customizados, para os casos que não se
+ * encaixam no formato confirmar/cancelar do [BolaoConfirmDialog] (ex:
+ * diálogo de sucesso com emoji, formulário embutido).
+ */
+@Composable
+fun BolaoDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: (@Composable () -> Unit)? = null,
+    title: (@Composable () -> Unit)? = null,
+    text: (@Composable () -> Unit)? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = confirmButton,
+        modifier = modifier,
+        dismissButton = dismissButton,
+        title = title,
+        text = text,
+        containerColor = containerColor
     )
 }
 
