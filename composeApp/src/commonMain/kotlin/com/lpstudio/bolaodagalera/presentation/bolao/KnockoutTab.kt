@@ -32,8 +32,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
@@ -42,7 +45,6 @@ import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.TimeSource
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -59,8 +61,6 @@ fun KnockoutTab(
     selectedLabel: String?,
     onLabelChange: (String?) -> Unit,
     listState: LazyListState,
-    lastInteractedMatchId: String?,
-    onClearLastMatchId: () -> Unit,
     onMatchClick: (String) -> Unit,
     onShowAllPredictions: (Match) -> Unit,
     onOpenAdminScoreDialog: (Match) -> Unit,
@@ -113,65 +113,40 @@ fun KnockoutTab(
     val selLabel = selectedLabel
     val showShadow by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
 
-    LaunchedEffect(matches, lastInteractedMatchId, selectedPhase) {
-        // 1. Prioridade para Interação do Usuário (Volta de palpite)
-        if (lastInteractedMatchId != null) {
-            val target = matches.find { it.id == lastInteractedMatchId }
-            if (target != null && target.phase != Phase.GROUP_STAGE) {
-                if (selectedPhase == Phase.FRIENDLIES) {
-                    onClearLastMatchId()
-                    return@LaunchedEffect
-                }
-                onPhaseChange(target.phase)
-                val newLabel =
-                    if (championship.isTwoLegged) {
-                        "${target.phase.label} - ${if (target.id.contains("-L2")) "Volta" else "Ida"}"
-                    } else {
-                        target.phase.label
+    val lifecycleOwner = LocalLifecycleOwner.current
+    // Roda só enquanto esta tela está em primeiro plano (RESUMED), pra não competir
+    // com a navegação pra tela de palpite. selectedPhase/selectedLabel/listState já
+    // são todos rememberSaveable, então a aba e a posição de rolagem certas voltam
+    // sozinhas ao retornar de um palpite - esse efeito só cuida da auto-seleção
+    // inicial (jogo "ao vivo"/próximo).
+    LaunchedEffect(matches, selectedPhase) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            // Lógica de Auto-Seleção Inteligente
+            val isFirstLoad = selLabel == null
+            val isOnStartMarker = selectedPhase == Phase.FRIENDLIES
+
+            if (isOnStartMarker || isFirstLoad) {
+                if (hasMatchToday) {
+                    onLabelChange("⚽️ HOJE")
+                    onPhaseChange(Phase.FRIENDLIES)
+                } else {
+                    val nextRelevantLabel =
+                        labels.find { label ->
+                            val base = label.substringBefore(" - ")
+                            val isVolta = label.contains("Volta")
+                            matches.any { m ->
+                                m.phase.label == base &&
+                                    (if (isVolta) m.id.contains("-L2") else !m.id.contains("-L2")) &&
+                                    !m.isFinished
+                            }
+                        } ?: labels.lastOrNull()
+
+                    if (nextRelevantLabel != null) {
+                        onLabelChange(nextRelevantLabel)
+                        val base = nextRelevantLabel.substringBefore(" - ")
+                        val phase = Phase.entries.find { it.label == base }
+                        onPhaseChange(phase)
                     }
-                onLabelChange(newLabel)
-                kotlinx.coroutines.delay(100.milliseconds)
-                val current =
-                    matches.filter {
-                        if (championship.isTwoLegged) {
-                            it.phase == target.phase && (if (target.id.contains("-L2")) it.id.contains("-L2") else !it.id.contains("-L2"))
-                        } else {
-                            it.phase == target.phase
-                        }
-                    }.sortedBy { it.id.split("-").lastOrNull()?.toIntOrNull() ?: 0 }
-                val pairs = current.chunked(2)
-                val pairIdx = pairs.indexOfFirst { pair -> pair.any { it.id == lastInteractedMatchId } }
-                if (pairIdx != -1) listState.scrollToItem(pairIdx)
-                onClearLastMatchId()
-                return@LaunchedEffect
-            }
-        }
-
-        // 2. Lógica de Auto-Seleção Inteligente
-        val isFirstLoad = selLabel == null
-        val isOnStartMarker = selectedPhase == Phase.FRIENDLIES
-
-        if (isOnStartMarker || isFirstLoad) {
-            if (hasMatchToday) {
-                onLabelChange("⚽️ HOJE")
-                onPhaseChange(Phase.FRIENDLIES)
-            } else {
-                val nextRelevantLabel =
-                    labels.find { label ->
-                        val base = label.substringBefore(" - ")
-                        val isVolta = label.contains("Volta")
-                        matches.any { m ->
-                            m.phase.label == base &&
-                                (if (isVolta) m.id.contains("-L2") else !m.id.contains("-L2")) &&
-                                !m.isFinished
-                        }
-                    } ?: labels.lastOrNull()
-
-                if (nextRelevantLabel != null) {
-                    onLabelChange(nextRelevantLabel)
-                    val base = nextRelevantLabel.substringBefore(" - ")
-                    val phase = Phase.entries.find { it.label == base }
-                    onPhaseChange(phase)
                 }
             }
         }

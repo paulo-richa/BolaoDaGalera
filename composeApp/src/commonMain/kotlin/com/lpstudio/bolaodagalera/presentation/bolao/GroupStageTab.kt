@@ -34,8 +34,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.model.Prediction
@@ -43,7 +46,6 @@ import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.TimeSource
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -62,8 +64,6 @@ fun GroupStageTab(
     onRoundChange: (Int) -> Unit,
     listState: LazyListState,
     expandedGroups: SnapshotStateList<String>,
-    lastInteractedMatchId: String?,
-    onClearLastMatchId: () -> Unit,
     onMatchClick: (String) -> Unit,
     onShowAllPredictions: (Match) -> Unit,
     onOpenAdminScoreDialog: (Match) -> Unit
@@ -107,95 +107,72 @@ fun GroupStageTab(
     val byGroup = remember(roundMatches) { roundMatches.groupBy { it.group ?: "" } }
     val showShadow by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
     var hasHandledScroll by rememberSaveable(selectedRound) { mutableStateOf(false) }
-    LaunchedEffect(selectedRound, matches.isNotEmpty(), byGroup, lastInteractedMatchId) {
-        if (matches.isEmpty() || byGroup.isEmpty()) return@LaunchedEffect
-        val sorted = byGroup.entries.sortedBy { it.key }
-        if (lastInteractedMatchId != null) {
-            val target = matches.find { it.id == lastInteractedMatchId }
-            if (target != null) {
-                if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
-                    onClearLastMatchId()
-                    return@LaunchedEffect
+    val lifecycleOwner = LocalLifecycleOwner.current
+    // Roda só enquanto esta tela está em primeiro plano (RESUMED), pra não competir
+    // com a navegação pra tela de palpite - o scroll aqui é só o foco inicial
+    // (jogo "ao vivo"/próximo). A posição de rolagem em si (inclusive ao voltar de
+    // um palpite) já é preservada sozinha porque listState é rememberSaveable.
+    LaunchedEffect(selectedRound, matches.isNotEmpty(), byGroup) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            if (matches.isEmpty() || byGroup.isEmpty()) return@repeatOnLifecycle
+            val sorted = byGroup.entries.sortedBy { it.key }
+            if (!hasHandledScroll) {
+                expandedGroups.clear()
+                if (roundMatches.isNotEmpty() && roundMatches.all { it.isFinished } && selectedRound != 0) {
+                    listState.scrollToItem(0)
+                    hasHandledScroll = true
+                    return@repeatOnLifecycle
                 }
-                val group = target.group ?: ""
-                if (!expandedGroups.contains(group)) {
-                    expandedGroups.add(group)
-                    kotlinx.coroutines.delay(200.milliseconds)
-                }
-                var targetIdx = 0
-                for (entry in sorted) {
-                    if (entry.key == group) {
-                        val ms = entry.value
-                        val matchIdx = ms.indexOfFirst {
-                            it.id == lastInteractedMatchId
+                val window = 2 * 60 * 60 * 1000L + (30 * 60 * 1000L)
+                val focus =
+                    matches.filter { it.phase == Phase.GROUP_STAGE }.let { all ->
+                        all.find { now in it.matchDateMillis..(it.matchDateMillis + window) }
+                            ?: all.filter {
+                                val matchDate = Instant.fromEpochMilliseconds(it.matchDateMillis)
+                                    .toLocalDateTime(tz).date
+                                matchDate == todayDate && it.matchDateMillis > now
+                            }.minByOrNull {
+                                it.matchDateMillis
+                            } ?: all.filter {
+                            it.matchDateMillis > now
+                        }.minByOrNull { it.matchDateMillis }
+                    }
+                if (focus != null) {
+                    val group = focus.group ?: ""
+                    val round = focus.groupRound()
+                    if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
+                        expandedGroups.addAll(byGroup.keys)
+                        listState.scrollToItem(0)
+                    } else if (selectedRound == round) {
+                        expandedGroups.add(group)
+                        val actG = matches.filter {
+                            val sR = it.groupRound() == selectedRound
+                            val isT = Instant.fromEpochMilliseconds(it.matchDateMillis)
+                                .toLocalDateTime(tz).date == todayDate
+                            val isV = it.matchDateMillis + window >= now
+                            sR && isT && isV && !it.isFinished
+                        }.mapNotNull { it.group }
+                        expandedGroups.addAll(actG)
+                        var targetIdx = 0
+                        for (entry in sorted) {
+                            if (entry.key == group) break
+                            targetIdx += 1 + entry.value.size + 1
                         }
-                        targetIdx += 1 + (if (matchIdx != -1) matchIdx else 0)
-                        break
+                        listState.scrollToItem(targetIdx)
+                    } else {
+                        sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
+                        listState.scrollToItem(0)
                     }
-                    targetIdx += 1 + entry.value.size + 1
-                }
-                listState.scrollToItem(targetIdx)
-                hasHandledScroll = true
-                onClearLastMatchId()
-                return@LaunchedEffect
-            }
-        }
-        if (!hasHandledScroll) {
-            expandedGroups.clear()
-            if (roundMatches.isNotEmpty() && roundMatches.all { it.isFinished } && selectedRound != 0) {
-                listState.scrollToItem(0)
-                hasHandledScroll = true
-                return@LaunchedEffect
-            }
-            val window = 2 * 60 * 60 * 1000L + (30 * 60 * 1000L)
-            val focus =
-                matches.filter { it.phase == Phase.GROUP_STAGE }.let { all ->
-                    all.find { now in it.matchDateMillis..(it.matchDateMillis + window) }
-                        ?: all.filter {
-                            val matchDate = Instant.fromEpochMilliseconds(it.matchDateMillis)
-                                .toLocalDateTime(tz).date
-                            matchDate == todayDate && it.matchDateMillis > now
-                        }.minByOrNull {
-                            it.matchDateMillis
-                        } ?: all.filter {
-                        it.matchDateMillis > now
-                    }.minByOrNull { it.matchDateMillis }
-                }
-            if (focus != null) {
-                val group = focus.group ?: ""
-                val round = focus.groupRound()
-                if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
-                    expandedGroups.addAll(byGroup.keys)
-                    listState.scrollToItem(0)
-                } else if (selectedRound == round) {
-                    expandedGroups.add(group)
-                    val actG = matches.filter {
-                        val sR = it.groupRound() == selectedRound
-                        val isT = Instant.fromEpochMilliseconds(it.matchDateMillis)
-                            .toLocalDateTime(tz).date == todayDate
-                        val isV = it.matchDateMillis + window >= now
-                        sR && isT && isV && !it.isFinished
-                    }.mapNotNull { it.group }
-                    expandedGroups.addAll(actG)
-                    var targetIdx = 0
-                    for (entry in sorted) {
-                        if (entry.key == group) break
-                        targetIdx += 1 + entry.value.size + 1
-                    }
-                    listState.scrollToItem(targetIdx)
                 } else {
-                    sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
+                    if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
+                        expandedGroups.addAll(byGroup.keys)
+                    } else {
+                        sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
+                    }
                     listState.scrollToItem(0)
                 }
-            } else {
-                if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
-                    expandedGroups.addAll(byGroup.keys)
-                } else {
-                    sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
-                }
-                listState.scrollToItem(0)
+                hasHandledScroll = true
             }
-            hasHandledScroll = true
         }
     }
     Column(Modifier.fillMaxSize()) {
