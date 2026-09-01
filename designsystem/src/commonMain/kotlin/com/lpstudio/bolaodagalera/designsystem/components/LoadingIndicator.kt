@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.designsystem.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +29,15 @@ fun BolaoLoadingIndicator(modifier: Modifier = Modifier) {
 fun BolaoFullScreenLoading(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         BolaoLoadingIndicator()
+    }
+}
+
+@Composable
+fun BolaoLinearProgressIndicator(modifier: Modifier = Modifier, progress: (() -> Float)? = null) {
+    if (progress != null) {
+        LinearProgressIndicator(progress = progress, modifier = modifier, color = Neon)
+    } else {
+        LinearProgressIndicator(modifier = modifier, color = Neon)
     }
 }
 

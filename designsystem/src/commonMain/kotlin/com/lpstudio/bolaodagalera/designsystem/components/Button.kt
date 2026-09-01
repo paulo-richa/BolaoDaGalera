@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +75,27 @@ fun BolaoButton(
             }
         }
     }
+}
+
+@Composable
+fun BolaoOutlinedButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
+) {
+    OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled, content = content)
+}
+
+@Composable
+fun BolaoTextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.textButtonColors(),
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
+) {
+    TextButton(onClick = onClick, modifier = modifier, enabled = enabled, colors = colors, content = content)
 }
 
 @Preview
