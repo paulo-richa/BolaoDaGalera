@@ -203,5 +203,11 @@ service cloud.firestore {
 
       allow create, delete: if false;
     }
+
+    // Controle interno de idempotência do lembrete de jogo (evita mandar o
+    // mesmo push duas vezes) - só as Cloud Functions leem/escrevem.
+    match /matchReminders/{reminderId} {
+      allow read, write: if false;
+    }
   }
 }
