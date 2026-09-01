@@ -3,10 +3,7 @@ package com.lpstudio.bolaodagalera.presentation.bolao
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.Bolao
-import com.lpstudio.bolaodagalera.domain.model.BolaoScope
-import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Match
-import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.domain.model.User
@@ -14,6 +11,7 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
+import com.lpstudio.bolaodagalera.domain.usecase.FilterBolaoMatchesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,7 +50,8 @@ class BolaoViewModel(
     private val matchRepository: MatchRepository,
     private val predictionRepository: PredictionRepository,
     private val authRepository: AuthRepository,
-    private val bolaoId: String
+    private val bolaoId: String,
+    private val filterBolaoMatches: FilterBolaoMatchesUseCase = FilterBolaoMatchesUseCase()
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(BolaoUiState())
     val uiState: StateFlow<BolaoUiState> = _uiState.asStateFlow()
@@ -142,71 +141,7 @@ class BolaoViewModel(
                                     }
                                 }
                             ) { b, matches, predictions, allPredictions, ranking ->
-                                // 1. Filtrar por Escopo
-                                var filteredMatches =
-                                    matches.filter { m ->
-                                        when {
-                                            b.specificMatchId != null -> m.id == b.specificMatchId
-                                            b.scope == BolaoScope.ONLY_GROUPS -> m.phase == Phase.GROUP_STAGE
-                                            b.scope == BolaoScope.ONLY_KNOCKOUT -> m.phase != Phase.GROUP_STAGE
-                                            else -> true
-                                        }
-                                    }
-
-                                // INJEÇÃO LOCAL (LIBERTADORES): Removida para priorizar dados reais do Firestore
-
-                                // TRATAMENTO DE DUPLICADOS/GHOSTS
-                                filteredMatches =
-                                    filteredMatches.groupBy {
-                                        if (it.phase == Phase.GROUP_STAGE) {
-                                            "${it.homeTeamCode}-${it.awayTeamCode}-${it.groupRound()}"
-                                        } else {
-                                            // Mata-mata: Agrupa estritamente pelos nomes dos times e fase
-                                            // Isso impede que IDs diferentes do mesmo jogo gerem dois cards.
-                                            // Enquanto a API não confirma os times (ambos TBD), vários
-                                            // confrontos diferentes (QF1, QF2, QF3...) ficam com o mesmo
-                                            // nome genérico "A definir" — nesse caso usa matchOrder para
-                                            // não colapsar confrontos distintos no mesmo grupo.
-                                            val teams = if (it.homeTeamCode != "TBD" && it.awayTeamCode != "TBD") {
-                                                listOf(it.homeTeam, it.awayTeam).sorted().joinToString(" vs ")
-                                            } else {
-                                                "order-${it.matchOrder}"
-                                            }
-                                            val leg = if (it.id.contains("-L2")) "L2" else "L1"
-                                            "${it.phase}-$teams-$leg"
-                                        }
-                                    }
-                                        .map { (_, matchGroup) ->
-                                            matchGroup.maxByOrNull {
-                                                if (it.status == "FINISHED") {
-                                                    3
-                                                } else if (it.homeScore != null) {
-                                                    2
-                                                } else if (it.id.contains("-")) {
-                                                    1
-                                                } else {
-                                                    0
-                                                }
-                                            }!!
-                                        }
-
-                                // 2. Filtro de Rodada de Corte
-                                val championship = Championship.fromId(championshipId)
-                                if (championship.isPointsBased) {
-                                    val matchesByRound = filteredMatches.groupBy { it.groupRound() }
-                                    val lastMostlyFinishedRound =
-                                        matchesByRound.keys
-                                            .filter { round ->
-                                                val roundMatches = matchesByRound[round] ?: emptyList()
-                                                val finishedCount = roundMatches.count { it.matchDateMillis < b.createdAtMillis }
-                                                finishedCount > (roundMatches.size / 2)
-                                            }
-                                            .maxOrNull() ?: 0
-
-                                    val startFromRound = lastMostlyFinishedRound + 1
-                                    filteredMatches = filteredMatches.filter { it.groupRound() >= startFromRound }
-                                }
-
+                                val filteredMatches = filterBolaoMatches(b, matches)
                                 val predictionMap = predictions.associateBy { it.matchId }
                                 _uiState.update {
                                     it.copy(
@@ -267,11 +202,6 @@ class BolaoViewModel(
                 _uiState.update { it.copy(error = e.message) }
             }
         }
-    }
-
-    fun syncMatchesWithApi() {
-        // Implementação do sync (placeholder para acionamento via app se necessário)
-        loadBolao()
     }
 
     fun leaveBolao() {

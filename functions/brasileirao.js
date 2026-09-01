@@ -18,19 +18,29 @@ async function syncBrasileirao(db, admin, axios) {
 
         const currentMatchday = compRes.data.currentSeason.currentMatchday;
         const roundsToSync = [currentMatchday, currentMatchday - 1, currentMatchday - 2].filter(r => r > 0);
+        const now = Date.now();
 
+        // Rede de segurança pro caso do currentMatchday da API atrasar pra avançar
+        // de rodada: qualquer jogo que já começou nas últimas 8h e ainda não está
+        // FINISHED entra na sincronização mesmo fora da janela [atual, -1, -2].
+        // Antes isso dependia de status já estar em IN_PLAY/TIMED/LIVE (não pegava
+        // status nulo) e vinha limitado a 10 documentos sem ordenação - podia
+        // deixar de fora justamente a rodada nova que a API ainda não "acordou".
+        const RECENT_WINDOW_MILLIS = 8 * 3600000;
         const pendingMatchesSnapshot = await matchesRef
-            .where('status', 'in', ['IN_PLAY', 'TIMED', 'LIVE'])
-            .limit(10)
+            .where('matchDateMillis', '>=', now - RECENT_WINDOW_MILLIS)
+            .where('matchDateMillis', '<=', now)
             .get();
 
-        const pendingRounds = pendingMatchesSnapshot.docs.map(doc => {
-            const match = doc.id.match(/-R(\d+)-/);
-            return match ? parseInt(match[1]) : null;
-        }).filter(r => r !== null && !roundsToSync.includes(r));
+        const pendingRounds = pendingMatchesSnapshot.docs
+            .filter(doc => doc.data().status !== 'FINISHED')
+            .map(doc => {
+                const match = doc.id.match(/-R(\d+)-/);
+                return match ? parseInt(match[1]) : null;
+            })
+            .filter(r => r !== null && !roundsToSync.includes(r));
 
         const allRoundsToSync = [...new Set([...roundsToSync, ...pendingRounds])];
-        const now = Date.now();
 
         for (const rd of allRoundsToSync) {
             logger.info(`Sincronizando Rodada ${rd}...`);

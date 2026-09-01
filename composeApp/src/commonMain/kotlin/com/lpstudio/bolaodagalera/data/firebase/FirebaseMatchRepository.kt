@@ -3,11 +3,11 @@ package com.lpstudio.bolaodagalera.data.firebase
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
@@ -91,39 +91,15 @@ class FirebaseMatchRepository : MatchRepository {
         }
     }
 
-    override fun getMatches(championshipId: String): Flow<List<Match>> = try {
-        getMatchesCollection(championshipId).snapshots.map { snap ->
-            try {
-                snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }.catch { e ->
-            println("BOLAOLOG: Erro ao observar matches de $championshipId: ${e.message}")
-            emit(emptyList())
+    override fun getMatches(championshipId: String): Flow<List<Match>> = getMatchesCollection(championshipId).snapshots.map { snap ->
+        try {
+            snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
+        } catch (e: Exception) {
+            emptyList()
         }
-    } catch (e: Exception) {
-        println("BOLAOLOG: Erro crítico ao observar matches de $championshipId: ${e.message}")
-        flowOf(emptyList<Match>())
-    }
-
-    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> = try {
-        getMatchesCollection(championshipId)
-            .where { "phase" equalTo phase.name }
-            .snapshots
-            .map { snap ->
-                try {
-                    snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
-                } catch (e: Exception) {
-                    emptyList()
-                }
-            }.catch { e ->
-                println("BOLAOLOG: Erro ao observar matches por fase de $championshipId: ${e.message}")
-                emit(emptyList())
-            }
-    } catch (e: Exception) {
-        println("BOLAOLOG: Erro crítico ao observar matches por fase de $championshipId: ${e.message}")
-        flowOf(emptyList<Match>())
+    }.catch { e ->
+        println("BOLAOLOG: Erro ao observar matches de $championshipId: ${e.message}")
+        emit(emptyList())
     }
 
     override suspend fun getMatch(championshipId: String, matchId: String): Match {
@@ -186,15 +162,20 @@ class FirebaseMatchRepository : MatchRepository {
         }
     }
 
-    override fun getAllMatches(): Flow<List<Match>> = try {
-        db.collectionGroup("matches").snapshots.map { snap ->
-            snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
-        }.catch { e ->
-            println("BOLAOLOG: Erro no getAllMatches: ${e.message}")
-            emit(emptyList())
-        }
-    } catch (e: Exception) {
-        println("BOLAOLOG: Erro crítico no getAllMatches: ${e.message}")
-        flowOf(emptyList<Match>())
+    // Usado só para achar jogos "de hoje" (lembrete de palpite pendente na Home),
+    // então basta uma janela de alguns dias em vez da história inteira de todos
+    // os campeonatos - reduz leituras e o tamanho do listener em aberto.
+    override fun getAllMatches(): Flow<List<Match>> {
+        val now = TimeSource.nowMillis()
+        val window = 3 * 24 * 3600_000L
+        return db.collectionGroup("matches")
+            .where { "matchDateMillis" greaterThanOrEqualTo (now - window) }
+            .where { "matchDateMillis" lessThanOrEqualTo (now + window) }
+            .snapshots.map { snap ->
+                snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
+            }.catch { e ->
+                println("BOLAOLOG: Erro no getAllMatches: ${e.message}")
+                emit(emptyList())
+            }
     }
 }

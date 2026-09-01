@@ -171,6 +171,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Collection group: getUserPredictions (Home) usa
+    // db.collectionGroup("predictions") pra juntar os palpites do usuário em
+    // todos os bolões de uma vez. A regra aninhada em /boloes/{id}/predictions
+    // não vale pra collection group query — sem esta regra, a query era
+    // sempre negada e o erro engolido por .catch { emptyList() }, fazendo a
+    // Home mostrar "todos os jogos sem palpite" mesmo pra quem já palpitou.
+    match /{path=**}/predictions/{predictionId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
     // 5. SUPORTE: qualquer logado pode abrir chamado; só autor ou Admin leem
     match /support_tickets/{ticketId} {
       allow create: if isSignedIn();

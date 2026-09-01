@@ -6,6 +6,8 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
@@ -202,8 +204,13 @@ class FirebaseAuthRepository : AuthRepository {
         }
     }
 
+    // Busca cada usuário em paralelo em vez de sequencialmente - um bolão com
+    // muitos participantes reexecuta isso a cada snapshot de jogo/palpite, e
+    // uma leitura por vez multiplicava a latência pelo número de pessoas.
     override suspend fun getUsers(userIds: List<String>): List<User> {
         if (userIds.isEmpty()) return emptyList()
-        return userIds.mapNotNull { getUser(it) }
+        return coroutineScope {
+            userIds.map { async { getUser(it) } }.mapNotNull { it.await() }
+        }
     }
 }

@@ -1,7 +1,6 @@
 package com.lpstudio.bolaodagalera.data.fake
 
 import com.lpstudio.bolaodagalera.domain.model.Match
-import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,9 +14,6 @@ class FakeMatchRepository : MatchRepository {
         matchesState.map { it.filter { m -> m.championshipId == championshipId } }
 
     override fun getAllMatches(): Flow<List<Match>> = matchesState
-
-    override fun getMatchesByPhase(championshipId: String, phase: Phase): Flow<List<Match>> =
-        matchesState.map { it.filter { m -> m.championshipId == championshipId && m.phase == phase } }
 
     override suspend fun getMatch(championshipId: String, matchId: String): Match = matchesState.value.first { it.id == matchId }
 

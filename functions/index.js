@@ -161,7 +161,7 @@ exports.checkSyncFrequency = onRequest(async (req, res) => {
  * garante sincronização mesmo sem jogo ao vivo.
  */
 exports.scheduledFixedSync = onSchedule(
-    { schedule: "0 2,9,14,18 * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey] },
+    { schedule: "0 2,9,14,18 * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey], timeoutSeconds: 300, memory: "256MiB" },
     async () => {
         logger.info("📡 Sync agendado fixo (4x/dia)");
         await syncBrasileirao(db, admin, axios);
@@ -175,7 +175,7 @@ exports.scheduledFixedSync = onSchedule(
  * início, mantendo o custo desprezível fora das janelas de jogo.
  */
 exports.scheduledLiveCheck = onSchedule(
-    { schedule: "*/3 * * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey] },
+    { schedule: "*/3 * * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey], timeoutSeconds: 170, memory: "256MiB" },
     async () => {
         const { shouldSyncFrequently, reason } = await checkShouldSyncFrequently();
         if (!shouldSyncFrequently) return;

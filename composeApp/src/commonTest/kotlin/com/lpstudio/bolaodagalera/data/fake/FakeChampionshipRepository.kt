@@ -11,8 +11,4 @@ class FakeChampionshipRepository : ChampionshipRepository {
     override suspend fun refreshCache() {
         Championship.setCache(Championship.getAll())
     }
-
-    override suspend fun seedChampionships() {
-        // No-op for fake
-    }
 }
