@@ -70,6 +70,7 @@ import com.lpstudio.bolaodagalera.ADMOB_ANDROID_BANNER_ID
 import com.lpstudio.bolaodagalera.ADMOB_IOS_BANNER_ID
 import com.lpstudio.bolaodagalera.CommonBackHandler
 import com.lpstudio.bolaodagalera.LauncherProvider
+import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.model.Championship
@@ -79,7 +80,6 @@ import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.getPlatform
 import com.lpstudio.bolaodagalera.presentation.components.AdBanner
-import com.lpstudio.bolaodagalera.presentation.components.UserAvatar
 import com.lpstudio.bolaodagalera.presentation.ranking.RankingScreen
 import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy

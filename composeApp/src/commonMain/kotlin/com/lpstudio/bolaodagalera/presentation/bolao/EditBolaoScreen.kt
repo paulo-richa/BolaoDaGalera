@@ -63,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.model.Championship
@@ -70,8 +72,6 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
-import com.lpstudio.bolaodagalera.presentation.components.BolaoButton
-import com.lpstudio.bolaodagalera.presentation.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
 import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
