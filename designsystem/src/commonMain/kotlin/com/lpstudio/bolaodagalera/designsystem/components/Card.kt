@@ -2,10 +2,12 @@ package com.lpstudio.bolaodagalera.designsystem.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,6 +18,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
+import com.lpstudio.bolaodagalera.designsystem.theme.GlassWhite
+import com.lpstudio.bolaodagalera.designsystem.theme.GradientBg
 
 /**
  * Card padrão do app: cantos arredondados (MaterialTheme.shapes.large,
@@ -45,6 +49,43 @@ private fun BolaoCardPreview() {
         BolaoCard {
             Text("Título do card", color = Color.White)
             Text("Conteúdo de exemplo dentro do card.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/**
+ * Card translúcido ("glass"), usado nas telas de autenticação sobre o
+ * GradientBg (login/cadastro). Cantos mais arredondados (20.dp) e fundo
+ * semi-transparente - visual distinto do [BolaoCard] opaco.
+ */
+@Composable
+fun BolaoGlassCard(
+    modifier: Modifier = Modifier,
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(14.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier =
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(GlassWhite)
+            .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
+            .padding(24.dp),
+        verticalArrangement = verticalArrangement,
+        content = content
+    )
+}
+
+@Preview
+@Composable
+private fun BolaoGlassCardPreview() {
+    BolaoTheme {
+        Column(modifier = Modifier.background(GradientBg).padding(16.dp)) {
+            BolaoGlassCard {
+                Text("Título do card", color = Color.White)
+                Text("Conteúdo de exemplo dentro do card.", color = Color.White.copy(alpha = 0.7f))
+            }
         }
     }
 }
