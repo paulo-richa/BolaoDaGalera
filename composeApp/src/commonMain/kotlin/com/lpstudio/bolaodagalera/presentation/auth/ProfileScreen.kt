@@ -23,17 +23,6 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,12 +37,46 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.profile_button_save
+import bolaodagalera.composeapp.generated.resources.profile_change_password_dialog_confirm
+import bolaodagalera.composeapp.generated.resources.profile_change_password_dialog_dismiss
+import bolaodagalera.composeapp.generated.resources.profile_change_password_dialog_message
+import bolaodagalera.composeapp.generated.resources.profile_change_password_dialog_title
+import bolaodagalera.composeapp.generated.resources.profile_delete_account_dialog_confirm
+import bolaodagalera.composeapp.generated.resources.profile_delete_account_dialog_message
+import bolaodagalera.composeapp.generated.resources.profile_delete_account_dialog_title
+import bolaodagalera.composeapp.generated.resources.profile_field_name_label
+import bolaodagalera.composeapp.generated.resources.profile_field_nickname_label
+import bolaodagalera.composeapp.generated.resources.profile_field_phone_label
+import bolaodagalera.composeapp.generated.resources.profile_field_username_label
+import bolaodagalera.composeapp.generated.resources.profile_icon_sign_out_content_description
+import bolaodagalera.composeapp.generated.resources.profile_name_error_invalid
+import bolaodagalera.composeapp.generated.resources.profile_option_change_password
+import bolaodagalera.composeapp.generated.resources.profile_option_delete_account
+import bolaodagalera.composeapp.generated.resources.profile_option_help
+import bolaodagalera.composeapp.generated.resources.profile_option_invite_friends
+import bolaodagalera.composeapp.generated.resources.profile_share_invite_message
+import bolaodagalera.composeapp.generated.resources.profile_sign_out_dialog_confirm
+import bolaodagalera.composeapp.generated.resources.profile_sign_out_dialog_message
+import bolaodagalera.composeapp.generated.resources.profile_sign_out_dialog_title
+import bolaodagalera.composeapp.generated.resources.profile_top_bar_title
+import bolaodagalera.composeapp.generated.resources.profile_version_label
 import com.lpstudio.bolaodagalera.APP_VERSION
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoConfirmDialog
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoDialog
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIconButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSnackbarHost
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
+import com.lpstudio.bolaodagalera.designsystem.components.rememberBolaoSnackbarHostState
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
 import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
@@ -65,15 +88,15 @@ import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
 import com.lpstudio.bolaodagalera.util.ValidationUtils
 import com.lpstudio.bolaodagalera.util.getInitials
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSignOut: () -> Unit) {
     val viewModel: AuthViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val launcherProvider = rememberLauncherProvider()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = rememberBolaoSnackbarHostState()
     val scrollState = rememberScrollState()
     val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
 
@@ -89,6 +112,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
     var showChangePasswordDialog by remember { mutableStateOf(value = false) }
 
     val isNameValid = ValidationUtils.isValidFullName(name)
+    val shareInviteMessage = stringResource(Res.string.profile_share_invite_message)
 
     LaunchedEffect(uiState.successMessage) {
         uiState.successMessage?.let {
@@ -111,9 +135,9 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
 
     if (showSignOutDialog) {
         BolaoConfirmDialog(
-            title = "Sair da conta?",
-            message = "Você precisará entrar novamente para acessar seus bolões.",
-            confirmText = "Sair",
+            title = stringResource(Res.string.profile_sign_out_dialog_title),
+            message = stringResource(Res.string.profile_sign_out_dialog_message),
+            confirmText = stringResource(Res.string.profile_sign_out_dialog_confirm),
             isDestructive = true,
             onConfirm = {
                 showSignOutDialog = false
@@ -125,9 +149,9 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
 
     if (showDeleteAccountDialog) {
         BolaoConfirmDialog(
-            title = "Excluir conta permanentemente?",
-            message = "Esta ação não pode ser desfeita. Todos os seus bolões e palpites serão perdidos.",
-            confirmText = "Excluir",
+            title = stringResource(Res.string.profile_delete_account_dialog_title),
+            message = stringResource(Res.string.profile_delete_account_dialog_message),
+            confirmText = stringResource(Res.string.profile_delete_account_dialog_confirm),
             isDestructive = true,
             onConfirm = {
                 showDeleteAccountDialog = false
@@ -138,20 +162,25 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
     }
 
     if (showChangePasswordDialog) {
-        AlertDialog(
+        BolaoDialog(
             onDismissRequest = { showChangePasswordDialog = false },
             containerColor = NavyCard,
-            title = { Text("Alterar Senha", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = {
+                BolaoText(
+                    stringResource(Res.string.profile_change_password_dialog_title),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = {
-                Text(
-                    "Enviaremos um e-mail de recuperação para ${uiState.user?.email} " +
-                        "para que você possa redefinir sua senha com segurança.",
+                BolaoText(
+                    stringResource(Res.string.profile_change_password_dialog_message, uiState.user?.email ?: ""),
                     color = TextMuted
                 )
             },
             confirmButton = {
                 BolaoButton(
-                    text = "Enviar E-mail",
+                    text = stringResource(Res.string.profile_change_password_dialog_confirm),
                     onClick = {
                         showChangePasswordDialog = false
                         uiState.user?.email?.let { viewModel.resetPassword(it) }
@@ -159,8 +188,8 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                 )
             },
             dismissButton = {
-                TextButton(onClick = { showChangePasswordDialog = false }) {
-                    Text("Cancelar", color = TextMuted)
+                BolaoTextButton(onClick = { showChangePasswordDialog = false }) {
+                    BolaoText(stringResource(Res.string.profile_change_password_dialog_dismiss), color = TextMuted)
                 }
             }
         )
@@ -172,25 +201,22 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
             .fillMaxSize()
             .background(DeepNavy)
     ) {
-        Scaffold(
+        BolaoScaffold(
             containerColor = Color.Transparent,
             snackbarHost = {
-                SnackbarHost(snackbarHostState) { data ->
-                    Snackbar(
-                        snackbarData = data,
-                        containerColor = Neon,
-                        contentColor = DeepNavy,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
+                BolaoSnackbarHost(snackbarHostState)
             },
             topBar = {
                 BolaoTopBar(
-                    title = "Minha Conta",
+                    title = stringResource(Res.string.profile_top_bar_title),
                     onNavigateBack = onNavigateBack,
                     actions = {
-                        IconButton(onClick = { showSignOutDialog = true }) {
-                            Icon(Icons.AutoMirrored.Filled.ExitToApp, "Sair", tint = ErrorRed)
+                        BolaoIconButton(onClick = { showSignOutDialog = true }) {
+                            BolaoIcon(
+                                Icons.AutoMirrored.Filled.ExitToApp,
+                                stringResource(Res.string.profile_icon_sign_out_content_description),
+                                tint = ErrorRed
+                            )
                         }
                     }
                 )
@@ -218,7 +244,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
 
                 Spacer(Modifier.height(16.dp))
 
-                Text(
+                BolaoText(
                     uiState.user?.email ?: "",
                     fontSize = 14.sp,
                     color = TextMuted
@@ -241,19 +267,19 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                     BolaoTextField(
                         value = uiState.user?.username ?: "",
                         onValueChange = { },
-                        label = "ID da Conta",
+                        label = stringResource(Res.string.profile_field_username_label),
                         enabled = false
                     )
 
                     BolaoTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = "Nome Completo (ex: João da Silva)",
+                        label = stringResource(Res.string.profile_field_name_label),
                         isError = name.isNotBlank() && !isNameValid
                     )
                     if (name.isNotBlank() && !isNameValid) {
-                        Text(
-                            "Digite seu nome e sobrenome",
+                        BolaoText(
+                            stringResource(Res.string.profile_name_error_invalid),
                             color = ErrorRed,
                             fontSize = 11.sp,
                             modifier = Modifier.padding(start = 8.dp)
@@ -263,23 +289,23 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                     BolaoTextField(
                         value = nickname,
                         onValueChange = { nickname = it },
-                        label = "Apelido (ex: Fofinho)"
+                        label = stringResource(Res.string.profile_field_nickname_label)
                     )
 
                     BolaoTextField(
                         value = phone,
                         onValueChange = { phone = it },
-                        label = "Telefone (com DDD, ex: 11987654321)"
+                        label = stringResource(Res.string.profile_field_phone_label)
                     )
 
                     uiState.error?.let {
-                        Text(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
+                        BolaoText(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
                     }
 
                     Spacer(Modifier.height(8.dp))
 
                     BolaoButton(
-                        text = "Salvar Alterações",
+                        text = stringResource(Res.string.profile_button_save),
                         isLoading = uiState.isLoading,
                         enabled = isNameValid && !uiState.isLoading,
                         onClick = { viewModel.updateProfile(name, phone, nickname) }
@@ -295,29 +321,25 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                 ) {
                     ProfileOptionItem(
                         icon = Icons.Default.Share,
-                        title = "Convidar Amigos para o App"
+                        title = stringResource(Res.string.profile_option_invite_friends)
                     ) {
-                        launcherProvider.shareText(
-                            "Vem jogar o Bolão da Galera comigo! ⚽ Baixe agora e crie seu bolão.\n\n" +
-                                "Disponível na Google Play: " +
-                                "https://play.google.com/store/apps/details?id=com.lpstudio.bolaodagalera"
-                        )
+                        launcherProvider.shareText(shareInviteMessage)
                     }
                     ProfileOptionItem(
                         icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                        title = "Ajuda e Regras"
+                        title = stringResource(Res.string.profile_option_help)
                     ) {
                         onNavigateToHelp()
                     }
                     ProfileOptionItem(
                         icon = Icons.Default.Person,
-                        title = "Alterar Senha"
+                        title = stringResource(Res.string.profile_option_change_password)
                     ) {
                         showChangePasswordDialog = true
                     }
                     ProfileOptionItem(
                         icon = Icons.AutoMirrored.Filled.ExitToApp,
-                        title = "Excluir Minha Conta",
+                        title = stringResource(Res.string.profile_option_delete_account),
                         textColor = ErrorRed
                     ) {
                         showDeleteAccountDialog = true
@@ -326,8 +348,8 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
 
                 Spacer(Modifier.height(40.dp))
 
-                Text(
-                    "Versão $APP_VERSION",
+                BolaoText(
+                    stringResource(Res.string.profile_version_label, APP_VERSION),
                     fontSize = 12.sp,
                     color = TextSubtle
                 )
@@ -350,7 +372,7 @@ private fun ProfileOptionItem(
     textColor: Color = Color.White,
     onClick: () -> Unit
 ) {
-    Surface(
+    BolaoSurface(
         onClick = onClick,
         color = NavyElevated,
         shape = RoundedCornerShape(12.dp),
@@ -361,8 +383,8 @@ private fun ProfileOptionItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(icon, null, tint = textColor.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
-            Text(title, color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            BolaoIcon(icon, null, tint = textColor.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
+            BolaoText(title, color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }
     }
 }

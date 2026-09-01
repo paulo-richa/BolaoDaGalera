@@ -17,9 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,8 +36,27 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.register_app_name
+import bolaodagalera.composeapp.generated.resources.register_button_submit
+import bolaodagalera.composeapp.generated.resources.register_confirm_password_error_mismatch
+import bolaodagalera.composeapp.generated.resources.register_field_confirm_password_label
+import bolaodagalera.composeapp.generated.resources.register_field_email_label
+import bolaodagalera.composeapp.generated.resources.register_field_name_label
+import bolaodagalera.composeapp.generated.resources.register_field_nickname_label
+import bolaodagalera.composeapp.generated.resources.register_field_password_label
+import bolaodagalera.composeapp.generated.resources.register_field_phone_label
+import bolaodagalera.composeapp.generated.resources.register_name_error_invalid
+import bolaodagalera.composeapp.generated.resources.register_name_error_required
+import bolaodagalera.composeapp.generated.resources.register_nickname_error_invalid
+import bolaodagalera.composeapp.generated.resources.register_password_error_min_length
+import bolaodagalera.composeapp.generated.resources.register_phone_error_invalid
+import bolaodagalera.composeapp.generated.resources.register_top_bar_title
+import bolaodagalera.composeapp.generated.resources.register_welcome_prefix
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoGlassCard
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
@@ -49,9 +65,9 @@ import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.ValidationUtils
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onNavigateBack: () -> Unit) {
     val viewModel: AuthViewModel = koinViewModel()
@@ -105,11 +121,13 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
     LaunchedEffect(uiState.user) { if (uiState.user != null) onRegisterSuccess() }
 
     // Helpers de Validação
+    val nameErrorRequiredText = stringResource(Res.string.register_name_error_required)
+    val nameErrorInvalidText = stringResource(Res.string.register_name_error_invalid)
     val nameError =
         if (nameTouched) {
             when {
-                name.isBlank() -> "Nome obrigatório"
-                !ValidationUtils.isValidFullName(name) -> "Digite seu nome e sobrenome"
+                name.isBlank() -> nameErrorRequiredText
+                !ValidationUtils.isValidFullName(name) -> nameErrorInvalidText
                 else -> null
             }
         } else {
@@ -118,24 +136,28 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
 
     val emailError = if (emailTouched) ValidationUtils.validateEmail(email) else null
 
+    val phoneErrorText = stringResource(Res.string.register_phone_error_invalid)
     val phoneError =
         if (phoneTouched && phone.isNotBlank()) {
             val digits = phone.filter { it.isDigit() }
-            if (digits.length < 10) "Telefone inválido (mín. 10 dígitos)" else null
+            if (digits.length < 10) phoneErrorText else null
         } else {
             null
         }
 
+    val nicknameErrorText = stringResource(Res.string.register_nickname_error_invalid)
     val nicknameError =
         if (nicknameTouched && nickname.isNotBlank()) {
-            if (!nickname.all { it.isLetterOrDigit() }) "Use apenas letras e números" else null
+            if (!nickname.all { it.isLetterOrDigit() }) nicknameErrorText else null
         } else {
             null
         }
 
-    val passwordError = if (passwordTouched && password.length < 6) "Mínimo 6 caracteres" else null
+    val passwordErrorText = stringResource(Res.string.register_password_error_min_length)
+    val passwordError = if (passwordTouched && password.length < 6) passwordErrorText else null
 
-    val confirmPasswordError = if (confirmPasswordTouched && confirmPassword != password) "As senhas não coincidem" else null
+    val confirmPasswordErrorText = stringResource(Res.string.register_confirm_password_error_mismatch)
+    val confirmPasswordError = if (confirmPasswordTouched && confirmPassword != password) confirmPasswordErrorText else null
 
     val isFormValid =
         name.isNotBlank() &&
@@ -154,10 +176,10 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
             .background(GradientBg)
             .systemBarsPadding()
     ) {
-        Scaffold(
+        BolaoScaffold(
             containerColor = Color.Transparent,
             topBar = {
-                BolaoTopBar(title = "Criar conta", onNavigateBack = onNavigateBack)
+                BolaoTopBar(title = stringResource(Res.string.register_top_bar_title), onNavigateBack = onNavigateBack)
             }
         ) { padding ->
             Column(
@@ -172,13 +194,13 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
             ) {
                 Spacer(Modifier.height(12.dp))
 
-                Text(
-                    "Bem-vindo ao",
+                BolaoText(
+                    stringResource(Res.string.register_welcome_prefix),
                     color = TextMuted,
                     fontSize = 14.sp
                 )
-                Text(
-                    "Bolão da Galera",
+                BolaoText(
+                    stringResource(Res.string.register_app_name),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White
@@ -195,7 +217,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                                 if (it.length <= 50) name = it
                                 nameTouched = true
                             },
-                            label = "Nome Completo",
+                            label = stringResource(Res.string.register_field_name_label),
                             isError = nameError != null,
                             keyboardOptions =
                             KeyboardOptions(
@@ -205,7 +227,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         nameError?.let {
-                            Text(
+                            BolaoText(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
@@ -222,7 +244,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                                 if (it.length <= 60) email = it.lowercase().trim()
                                 emailTouched = true
                             },
-                            label = "E-mail (ex: joaosilva@gmail.com)",
+                            label = stringResource(Res.string.register_field_email_label),
                             isError = emailError != null,
                             keyboardOptions =
                             KeyboardOptions(
@@ -233,7 +255,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         emailError?.let {
-                            Text(
+                            BolaoText(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
@@ -250,13 +272,13 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                                 if (it.length <= 20) nickname = it
                                 nicknameTouched = true
                             },
-                            label = "Apelido (opcional, ex: Fofinho)",
+                            label = stringResource(Res.string.register_field_nickname_label),
                             isError = nicknameError != null,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         nicknameError?.let {
-                            Text(
+                            BolaoText(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
@@ -273,7 +295,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                                 if (it.length <= 15) phone = it
                                 phoneTouched = true
                             },
-                            label = "Telefone (opcional, ex: 11987654321)",
+                            label = stringResource(Res.string.register_field_phone_label),
                             isError = phoneError != null,
                             keyboardOptions =
                             KeyboardOptions(
@@ -283,7 +305,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         phoneError?.let {
-                            Text(
+                            BolaoText(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
@@ -302,7 +324,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                                 if (it.length <= 30) password = it
                                 passwordTouched = true
                             },
-                            label = "Senha (min. 6 caracteres)",
+                            label = stringResource(Res.string.register_field_password_label),
                             isPassword = true,
                             isError = passwordError != null,
                             keyboardOptions =
@@ -313,7 +335,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         passwordError?.let {
-                            Text(
+                            BolaoText(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
@@ -330,7 +352,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                                 if (it.length <= 30) confirmPassword = it
                                 confirmPasswordTouched = true
                             },
-                            label = "Confirmar senha",
+                            label = stringResource(Res.string.register_field_confirm_password_label),
                             isPassword = true,
                             isError = confirmPasswordError != null,
                             keyboardOptions =
@@ -341,7 +363,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                         )
                         confirmPasswordError?.let {
-                            Text(
+                            BolaoText(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
@@ -351,13 +373,13 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                     }
 
                     uiState.error?.let {
-                        Text(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
+                        BolaoText(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
                     }
 
                     Spacer(Modifier.height(4.dp))
 
                     BolaoButton(
-                        text = "Criar conta",
+                        text = stringResource(Res.string.register_button_submit),
                         isLoading = uiState.isLoading || isGeneratingUsername,
                         enabled = isFormValid && !uiState.isLoading && !isGeneratingUsername
                     ) {

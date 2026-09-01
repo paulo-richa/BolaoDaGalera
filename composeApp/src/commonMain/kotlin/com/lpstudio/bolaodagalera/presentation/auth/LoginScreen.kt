@@ -26,8 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,9 +46,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.login_button_change_email
+import bolaodagalera.composeapp.generated.resources.login_button_continue
+import bolaodagalera.composeapp.generated.resources.login_button_create_account_now
+import bolaodagalera.composeapp.generated.resources.login_button_forgot_password
+import bolaodagalera.composeapp.generated.resources.login_button_submit
+import bolaodagalera.composeapp.generated.resources.login_email_not_found_message
+import bolaodagalera.composeapp.generated.resources.login_field_email_label
+import bolaodagalera.composeapp.generated.resources.login_field_password_label
+import bolaodagalera.composeapp.generated.resources.login_logo_content_description
+import bolaodagalera.composeapp.generated.resources.login_password_error_min_length
+import bolaodagalera.composeapp.generated.resources.login_subtitle
+import bolaodagalera.composeapp.generated.resources.login_title
 import bolaodagalera.composeapp.generated.resources.logo_oficial
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoGlassCard
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
 import com.lpstudio.bolaodagalera.presentation.theme.Gold
@@ -59,6 +71,7 @@ import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.util.ValidationUtils
 import kotlin.time.Duration.Companion.milliseconds
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -88,7 +101,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
     // Helpers de Validação
     val emailError = if (emailTouched) ValidationUtils.validateEmail(email) else null
 
-    val passwordError = if (passwordTouched && (password.length < 6)) "Mínimo 6 caracteres" else null
+    val passwordErrorText = stringResource(Res.string.login_password_error_min_length)
+    val passwordError = if (passwordTouched && (password.length < 6)) passwordErrorText else null
 
     val isFormValid = email.isNotBlank() && password.length >= 6 && emailError == null && passwordError == null
 
@@ -135,22 +149,22 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                 // Logo area
                 Image(
                     painter = painterResource(Res.drawable.logo_oficial),
-                    contentDescription = "Logo Bolão da Galera",
+                    contentDescription = stringResource(Res.string.login_logo_content_description),
                     modifier = Modifier.size(180.dp)
                 )
 
                 Spacer(Modifier.height(20.dp))
 
-                Text(
-                    "Bolão da Galera",
+                BolaoText(
+                    stringResource(Res.string.login_title),
                     fontSize = 34.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     letterSpacing = (-0.5).sp
                 )
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    "Crie e jogue bolões de futebol com os seus amigos",
+                BolaoText(
+                    stringResource(Res.string.login_subtitle),
                     fontSize = 14.sp,
                     color = Gold,
                     fontWeight = FontWeight.Medium,
@@ -171,7 +185,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                                 emailTouched = true
                                 if (uiState.emailExists != null) viewModel.resetEmailCheck()
                             },
-                            label = "E-mail",
+                            label = stringResource(Res.string.login_field_email_label),
                             enabled = uiState.emailExists == null,
                             isError = emailError != null,
                             keyboardOptions =
@@ -191,7 +205,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                             )
                         )
                         emailError?.let {
-                            Text(
+                            BolaoText(
                                 it,
                                 color = ErrorRed,
                                 fontSize = 11.sp,
@@ -200,12 +214,17 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                         }
 
                         if (uiState.emailExists != null) {
-                            TextButton(
+                            BolaoTextButton(
                                 onClick = { viewModel.resetEmailCheck() },
-                                contentPadding = PaddingValues(0.dp),
-                                modifier = Modifier.height(32.dp)
+                                modifier = Modifier.height(32.dp),
+                                contentPadding = PaddingValues(0.dp)
                             ) {
-                                Text("Mudar e-mail", color = Neon, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                BolaoText(
+                                    stringResource(Res.string.login_button_change_email),
+                                    color = Neon,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         }
                     }
@@ -219,7 +238,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                                         password = it
                                         passwordTouched = true
                                     },
-                                    label = "Senha",
+                                    label = stringResource(Res.string.login_field_password_label),
                                     isPassword = true,
                                     isError = passwordError != null,
                                     keyboardOptions =
@@ -238,7 +257,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                                     )
                                 )
                                 passwordError?.let {
-                                    Text(
+                                    BolaoText(
                                         it,
                                         color = ErrorRed,
                                         fontSize = 11.sp,
@@ -246,17 +265,22 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                                     )
                                 }
 
-                                TextButton(
+                                BolaoTextButton(
                                     onClick = { viewModel.resetPassword(email) },
-                                    contentPadding = PaddingValues(0.dp),
-                                    modifier = Modifier.align(Alignment.End).height(32.dp)
+                                    modifier = Modifier.align(Alignment.End).height(32.dp),
+                                    contentPadding = PaddingValues(0.dp)
                                 ) {
-                                    Text("Esqueceu a senha?", color = Gold, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    BolaoText(
+                                        stringResource(Res.string.login_button_forgot_password),
+                                        color = Gold,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
                                 }
                             }
 
                             BolaoButton(
-                                text = "Entrar",
+                                text = stringResource(Res.string.login_button_submit),
                                 isLoading = uiState.isLoading,
                                 enabled = isFormValid && !uiState.isLoading
                             ) {
@@ -270,8 +294,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text(
-                                "Este e-mail ainda não possui conta no Bolão da Galera.",
+                            BolaoText(
+                                stringResource(Res.string.login_email_not_found_message),
                                 color = Gold,
                                 fontSize = 13.sp,
                                 textAlign = TextAlign.Center,
@@ -279,7 +303,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                             )
 
                             BolaoButton(
-                                text = "CRIAR CONTA AGORA"
+                                text = stringResource(Res.string.login_button_create_account_now)
                             ) {
                                 onNavigateToRegister(email)
                             }
@@ -288,7 +312,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
 
                     if (uiState.emailExists == null) {
                         BolaoButton(
-                            text = "Continuar",
+                            text = stringResource(Res.string.login_button_continue),
                             isLoading = uiState.isLoading,
                             enabled = email.isNotBlank() && emailError == null && !uiState.isLoading
                         ) {
@@ -297,7 +321,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                     }
 
                     uiState.error?.let {
-                        Text(
+                        BolaoText(
                             it,
                             color = ErrorRed,
                             fontSize = 12.sp,
@@ -306,7 +330,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                     }
 
                     uiState.successMessage?.let {
-                        Text(
+                        BolaoText(
                             it,
                             color = Neon,
                             fontSize = 12.sp,
