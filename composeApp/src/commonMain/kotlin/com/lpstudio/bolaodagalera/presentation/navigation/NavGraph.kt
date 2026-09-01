@@ -178,7 +178,9 @@ fun NavGraph() {
             )
         }
 
-        composable<BolaoDetail> { backStackEntry ->
+        composable<BolaoDetail>(
+            deepLinks = listOf(navDeepLink { uriPattern = "bolaodagalera://bolao?bolaoId={bolaoId}" })
+        ) { backStackEntry ->
             val route = backStackEntry.toRoute<BolaoDetail>()
             BolaoDetailScreen(
                 bolaoId = route.bolaoId,
@@ -215,7 +217,9 @@ fun NavGraph() {
             )
         }
 
-        composable<Prediction> { backStackEntry ->
+        composable<Prediction>(
+            deepLinks = listOf(navDeepLink { uriPattern = "bolaodagalera://predict?bolaoId={bolaoId}&matchId={matchId}" })
+        ) { backStackEntry ->
             val route = backStackEntry.toRoute<Prediction>()
             PredictionScreen(
                 bolaoId = route.bolaoId,

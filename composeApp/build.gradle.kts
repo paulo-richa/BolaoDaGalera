@@ -56,6 +56,7 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.play.services.ads)
+            implementation("com.google.firebase:firebase-messaging")
 
             // UI Testing
             // Note: In KMP, some people use commonTest, but for Compose Android is easiest
