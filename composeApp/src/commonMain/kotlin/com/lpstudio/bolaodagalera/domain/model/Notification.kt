@@ -32,6 +32,9 @@ enum class NotificationType {
     // Admin: Alguém quer sair do seu bolão
     EXIT_REQUEST,
 
+    // Resumo de fim de rodada/fase: acertos, erros e pontos do usuário naquele recorte
+    ROUND_SUMMARY,
+
     // Avisos gerais
     SYSTEM
 }

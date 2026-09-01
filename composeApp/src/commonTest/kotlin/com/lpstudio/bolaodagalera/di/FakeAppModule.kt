@@ -5,6 +5,7 @@ import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeChampionshipRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
+import com.lpstudio.bolaodagalera.data.fake.FakeNotificationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeSupportRepository
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
@@ -12,6 +13,7 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
@@ -34,13 +36,14 @@ val fakeAppModule =
         single<PredictionRepository> { FakePredictionRepository(matchRepo) }
         single<ChampionshipRepository> { FakeChampionshipRepository() }
         single<SupportRepository> { FakeSupportRepository() }
+        single<NotificationRepository> { FakeNotificationRepository() }
 
         // UseCases
         single { CalculatePointsUseCase() }
 
         // ViewModels
         viewModel { AuthViewModel(get()) }
-        viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
+        viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
         viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId) }
         viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), bolaoId, matchId) }
         viewModel { (bolaoId: String) ->

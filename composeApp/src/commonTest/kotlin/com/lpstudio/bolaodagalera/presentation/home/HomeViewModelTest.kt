@@ -4,7 +4,10 @@ import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
+import com.lpstudio.bolaodagalera.data.fake.FakeNotificationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
+import com.lpstudio.bolaodagalera.domain.model.Notification
+import com.lpstudio.bolaodagalera.domain.model.NotificationType
 import com.lpstudio.bolaodagalera.domain.model.User
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -29,6 +32,7 @@ class HomeViewModelTest {
     private lateinit var matchRepository: FakeMatchRepository
     private lateinit var invitationRepository: FakeInvitationRepository
     private lateinit var predictionRepository: FakePredictionRepository
+    private lateinit var notificationRepository: FakeNotificationRepository
     private lateinit var viewModel: HomeViewModel
 
     private val testUser = User(id = "user-1", name = "Test User", email = "test@test.com", username = "testuser")
@@ -44,6 +48,7 @@ class HomeViewModelTest {
         predictionRepository = FakePredictionRepository(matchRepository)
         bolaoRepository = FakeBolaoRepository()
         invitationRepository = FakeInvitationRepository()
+        notificationRepository = FakeNotificationRepository()
 
         viewModel =
             HomeViewModel(
@@ -51,7 +56,8 @@ class HomeViewModelTest {
                 bolaoRepository = bolaoRepository,
                 matchRepository = matchRepository,
                 invitationRepository = invitationRepository,
-                predictionRepository = predictionRepository
+                predictionRepository = predictionRepository,
+                notificationRepository = notificationRepository
             )
     }
 
@@ -122,5 +128,45 @@ class HomeViewModelTest {
 
         val bolao = bolaoRepository.getBolao("bolao-1")
         assertFalse(testUser.id in bolao.participants)
+    }
+
+    // ---------- NOTIFICAÇÕES PERSISTIDAS (Cloud Functions) ----------
+
+    @Test
+    fun `notificacao persistida pelo servidor aparece na lista do sininho`() = runTest {
+        notificationRepository.seed(
+            testUser.id,
+            Notification(
+                id = "round-summary-1",
+                title = "Fim de rodada!",
+                message = "Você fez 4 pontos na Rodada 26.",
+                timestamp = 1_000L,
+                type = NotificationType.ROUND_SUMMARY
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertTrue(state.notifications.any { it.type == NotificationType.ROUND_SUMMARY })
+        assertTrue(state.hasUnreadNotifications)
+    }
+
+    @Test
+    fun `marcar todas como lidas tambem marca as persistidas no servidor`() = runTest {
+        notificationRepository.seed(
+            testUser.id,
+            Notification(
+                id = "round-summary-1",
+                title = "Fim de rodada!",
+                message = "Você fez 4 pontos na Rodada 26.",
+                timestamp = 1_000L,
+                type = NotificationType.ROUND_SUMMARY
+            )
+        )
+
+        viewModel.markAllNotificationsAsRead()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.hasUnreadNotifications)
+        assertTrue(state.notifications.first { it.type == NotificationType.ROUND_SUMMARY }.isRead)
     }
 }

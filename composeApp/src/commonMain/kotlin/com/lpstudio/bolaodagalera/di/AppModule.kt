@@ -5,6 +5,7 @@ import com.lpstudio.bolaodagalera.data.firebase.FirebaseBolaoRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseChampionshipRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseInvitationRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseMatchRepository
+import com.lpstudio.bolaodagalera.data.firebase.FirebaseNotificationRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebasePredictionRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseSupportRepository
 import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
@@ -13,6 +14,7 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
@@ -34,6 +36,7 @@ val appModule =
         single<PredictionRepository> { FirebasePredictionRepository(get()) }
         single<ChampionshipRepository> { FirebaseChampionshipRepository() }
         single<SupportRepository> { FirebaseSupportRepository() }
+        single<NotificationRepository> { FirebaseNotificationRepository() }
 
         // Remote Config
         single { RemoteConfigManager() }
@@ -43,7 +46,7 @@ val appModule =
 
         // ViewModels
         viewModel { AuthViewModel(get()) }
-        viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
+        viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
         viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId) }
         viewModel { (bolaoId: String, matchId: String) -> PredictionViewModel(get(), get(), get(), bolaoId, matchId) }
         viewModel { (bolaoId: String) ->
