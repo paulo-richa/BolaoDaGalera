@@ -22,8 +22,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -157,7 +157,6 @@ fun BolaoDetailContent(
     var showLeaveDialog by remember { mutableStateOf(false) }
     var showParticipantsSheet by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
-    var lastInteractedMatchId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val championship = Championship.fromId(uiState.bolao?.championshipId)
 
@@ -188,8 +187,11 @@ fun BolaoDetailContent(
     var selectedRound by rememberSaveable { mutableIntStateOf(0) }
     var selectedPhase by rememberSaveable { mutableStateOf<Phase?>(Phase.FRIENDLIES) }
     var selectedLabel by rememberSaveable(bolaoId) { mutableStateOf<String?>(null) }
-    val groupsListState = rememberLazyListState()
-    val knockoutListState = rememberLazyListState()
+    // Saveable (não só remember) para que a posição de rolagem sobreviva à
+    // navegação pra tela de palpite e volta sem precisar recalcular/forçar
+    // um scroll manual - a tela volta exatamente como o usuário deixou.
+    val groupsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val knockoutListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val expandedGroups =
         rememberSaveable(
             bolaoId,
@@ -844,12 +846,7 @@ fun BolaoDetailContent(
                                         onRoundChange = { selectedRound = it },
                                         listState = groupsListState,
                                         expandedGroups = expandedGroups,
-                                        lastInteractedMatchId = lastInteractedMatchId,
-                                        onClearLastMatchId = { lastInteractedMatchId = null },
-                                        onMatchClick = {
-                                            lastInteractedMatchId = it
-                                            onNavigateToPrediction(it)
-                                        },
+                                        onMatchClick = onNavigateToPrediction,
                                         onShowAllPredictions = { onNavigateToAllPredictions(it.id) },
                                         onOpenAdminScoreDialog = { matchToUpdate = it }
                                     )
@@ -865,12 +862,7 @@ fun BolaoDetailContent(
                                         selectedLabel = selectedLabel,
                                         onLabelChange = { selectedLabel = it },
                                         listState = knockoutListState,
-                                        lastInteractedMatchId = lastInteractedMatchId,
-                                        onClearLastMatchId = { lastInteractedMatchId = null },
-                                        onMatchClick = {
-                                            lastInteractedMatchId = it
-                                            onNavigateToPrediction(it)
-                                        },
+                                        onMatchClick = onNavigateToPrediction,
                                         onShowAllPredictions = { onNavigateToAllPredictions(it.id) },
                                         onOpenAdminScoreDialog = { matchToUpdate = it },
                                         championship = championship
