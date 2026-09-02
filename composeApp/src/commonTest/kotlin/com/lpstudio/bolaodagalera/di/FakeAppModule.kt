@@ -1,10 +1,12 @@
 package com.lpstudio.bolaodagalera.di
 
+import com.lpstudio.bolaodagalera.ads.InterstitialAdCounter
 import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeChampionshipRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
+import com.lpstudio.bolaodagalera.data.fake.FakeInterstitialAdCounter
 import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeNotificationRepository
@@ -46,6 +48,7 @@ val fakeAppModule =
         single<CrashReporter> { FakeCrashReporter() }
         single<PerformanceMonitor> { FakePerformanceMonitor() }
         single<AnalyticsTracker> { FakeAnalyticsTracker() }
+        single<InterstitialAdCounter> { FakeInterstitialAdCounter() }
 
         // UseCases
         single { CalculatePointsUseCase() }
@@ -55,7 +58,7 @@ val fakeAppModule =
         viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
         viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId, get()) }
         viewModel { (bolaoId: String, matchId: String) ->
-            PredictionViewModel(get(), get(), get(), get(), get(), get(), bolaoId, matchId)
+            PredictionViewModel(get(), get(), get(), get(), get(), get(), get(), bolaoId, matchId)
         }
         viewModel { (bolaoId: String) ->
             RankingViewModel(

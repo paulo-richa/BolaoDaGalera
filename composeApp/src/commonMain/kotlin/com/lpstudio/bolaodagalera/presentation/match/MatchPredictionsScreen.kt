@@ -28,12 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,11 +51,41 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.match_predictions_back_cd
+import bolaodagalera.composeapp.generated.resources.match_predictions_locked_badge
+import bolaodagalera.composeapp.generated.resources.match_predictions_no_prediction
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_cd
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_correct_icon
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_exact_icon
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_header
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_locked
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_no_prediction
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_points_plural
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_points_singular
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_status_finished
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_status_ongoing
+import bolaodagalera.composeapp.generated.resources.match_predictions_share_wrong_icon
+import bolaodagalera.composeapp.generated.resources.match_predictions_status_admin_view
+import bolaodagalera.composeapp.generated.resources.match_predictions_status_extra_time
+import bolaodagalera.composeapp.generated.resources.match_predictions_status_finished
+import bolaodagalera.composeapp.generated.resources.match_predictions_status_going_extra_time
+import bolaodagalera.composeapp.generated.resources.match_predictions_status_going_penalties
+import bolaodagalera.composeapp.generated.resources.match_predictions_status_halftime
+import bolaodagalera.composeapp.generated.resources.match_predictions_status_in_progress
+import bolaodagalera.composeapp.generated.resources.match_predictions_status_penalties
+import bolaodagalera.composeapp.generated.resources.match_predictions_title
 import coil3.compose.LocalPlatformContext
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoHorizontalDivider
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIconButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoLoadingIndicator
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
@@ -77,6 +101,7 @@ import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
 import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.getInitials
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -97,6 +122,29 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
 
     val now = TimeSource.nowMillis()
     val calculatePointsUseCase = remember { com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase() }
+
+    val backCd = stringResource(Res.string.match_predictions_back_cd)
+    val shareCd = stringResource(Res.string.match_predictions_share_cd)
+    val shareHeader = stringResource(Res.string.match_predictions_share_header)
+    val shareStatusFinished = stringResource(Res.string.match_predictions_share_status_finished)
+    val shareStatusOngoing = stringResource(Res.string.match_predictions_share_status_ongoing)
+    val shareLocked = stringResource(Res.string.match_predictions_share_locked)
+    val shareExactIcon = stringResource(Res.string.match_predictions_share_exact_icon)
+    val shareCorrectIcon = stringResource(Res.string.match_predictions_share_correct_icon)
+    val shareWrongIcon = stringResource(Res.string.match_predictions_share_wrong_icon)
+    val sharePointsSingular = stringResource(Res.string.match_predictions_share_points_singular)
+    val sharePointsPlural = stringResource(Res.string.match_predictions_share_points_plural)
+    val shareNoPrediction = stringResource(Res.string.match_predictions_share_no_prediction)
+    val statusAdminView = stringResource(Res.string.match_predictions_status_admin_view)
+    val statusFinished = stringResource(Res.string.match_predictions_status_finished)
+    val statusExtraTime = stringResource(Res.string.match_predictions_status_extra_time)
+    val statusPenalties = stringResource(Res.string.match_predictions_status_penalties)
+    val statusGoingExtraTime = stringResource(Res.string.match_predictions_status_going_extra_time)
+    val statusGoingPenalties = stringResource(Res.string.match_predictions_status_going_penalties)
+    val statusHalftime = stringResource(Res.string.match_predictions_status_halftime)
+    val statusInProgress = stringResource(Res.string.match_predictions_status_in_progress)
+    val lockedBadge = stringResource(Res.string.match_predictions_locked_badge)
+    val noPredictionLabel = stringResource(Res.string.match_predictions_no_prediction)
 
     val hReal = match?.homeScore ?: 0
     val aReal = match?.awayScore ?: 0
@@ -140,7 +188,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
     ) {
         if (match == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Neon)
+                BolaoLoadingIndicator()
             }
         } else {
             Column(Modifier.fillMaxSize()) {
@@ -177,17 +225,17 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            IconButton(onClick = onNavigateBack, modifier = Modifier.size(36.dp)) {
-                                Icon(
+                            BolaoIconButton(onClick = onNavigateBack, modifier = Modifier.size(36.dp)) {
+                                BolaoIcon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
-                                    "Voltar",
+                                    backCd,
                                     tint = Color.White,
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
 
-                            Text(
-                                "Palpites da Galera",
+                            BolaoText(
+                                stringResource(Res.string.match_predictions_title),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color.White,
@@ -195,7 +243,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                 letterSpacing = (-0.5).sp
                             )
 
-                            IconButton(onClick = {
+                            BolaoIconButton(onClick = {
                                 val (hName, hFlag, _) =
                                     resolveDisplayName(
                                         match.id,
@@ -217,7 +265,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
 
                                 val header =
                                     buildString {
-                                        append("📊 *PALPITES DA GALERA*\n\n")
+                                        append(shareHeader)
                                         append("$hFlag $hName ")
                                         if (hasStarted || isActuallyFinished) {
                                             append("$hReal x $aReal ")
@@ -227,7 +275,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         append("$aName $aFlag")
 
                                         if (hasStarted || isActuallyFinished) {
-                                            val label = if (isActuallyFinished) " - Jogo encerrado" else " - Jogo em andamento"
+                                            val label = if (isActuallyFinished) shareStatusFinished else shareStatusOngoing
                                             append(label)
                                         }
                                         append("\n\n")
@@ -251,7 +299,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         if (pred != null) {
                                             val score =
                                                 if (isAdminViewingBeforeStart && p.userId != currentUserId) {
-                                                    "Palpitou 🔒"
+                                                    shareLocked
                                                 } else {
                                                     "${pred.homeScore} x ${pred.awayScore}"
                                                 }
@@ -259,9 +307,9 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                             val ptsIcon =
                                                 if (!isAdminViewingBeforeStart && isActuallyFinished) {
                                                     when (pts) {
-                                                        uiState.bolao?.pointsExactScore ?: 3 -> " 🎯"
-                                                        uiState.bolao?.pointsWinnerOrDraw ?: 1 -> " ✅"
-                                                        else -> " ❌"
+                                                        uiState.bolao?.pointsExactScore ?: 3 -> shareExactIcon
+                                                        uiState.bolao?.pointsWinnerOrDraw ?: 1 -> shareCorrectIcon
+                                                        else -> shareWrongIcon
                                                     }
                                                 } else {
                                                     ""
@@ -269,13 +317,17 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
 
                                             val pointsLabel =
                                                 if (!isAdminViewingBeforeStart && isActuallyFinished) {
-                                                    " - *$pts ${if (pts == 1) "PONTO" else "PONTOS"}*"
+                                                    if (pts == 1) {
+                                                        sharePointsSingular.replace("%1\$d", pts.toString())
+                                                    } else {
+                                                        sharePointsPlural.replace("%1\$d", pts.toString())
+                                                    }
                                                 } else {
                                                     ""
                                                 }
                                             "${index + 1}. $name: $score$pointsLabel$ptsIcon"
                                         } else {
-                                            "${index + 1}. $name: Sem palpite 😶‍🌫️"
+                                            "${index + 1}. $name: $shareNoPrediction"
                                         }
                                     }.joinToString("\n")
 
@@ -283,7 +335,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
 
                                 launcherProvider.shareText(header + list + footer)
                             }, modifier = Modifier.size(36.dp)) {
-                                Icon(Icons.Default.Share, "Compartilhar", tint = Color.White, modifier = Modifier.size(20.dp))
+                                BolaoIcon(Icons.Default.Share, shareCd, tint = Color.White, modifier = Modifier.size(20.dp))
                             }
                         }
 
@@ -360,7 +412,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                     Spacer(Modifier.height(8.dp))
                                     var fontSize by remember(hName) { mutableIntStateOf(13) }
                                     var readyToDraw by remember(hName) { mutableStateOf(false) }
-                                    Text(
+                                    BolaoText(
                                         hName,
                                         color = Color.White,
                                         fontSize = fontSize.sp,
@@ -382,14 +434,14 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
 
                             val statusLabel =
                                 when {
-                                    isAdminViewingBeforeStart -> "Visualização Admin"
-                                    isActuallyFinished -> "Jogo encerrado"
-                                    match.status == "EXTRA_TIME" -> "Prorrogação"
-                                    match.status == "PENALTIES" -> "Pênaltis"
-                                    match.status == "PAUSED_EXTRA_TIME" -> "Indo para prorrogação"
-                                    match.status == "PAUSED_PENALTIES" -> "Indo para pênaltis"
-                                    match.status == "PAUSED" -> "Intervalo"
-                                    else -> "Jogo em andamento"
+                                    isAdminViewingBeforeStart -> statusAdminView
+                                    isActuallyFinished -> statusFinished
+                                    match.status == "EXTRA_TIME" -> statusExtraTime
+                                    match.status == "PENALTIES" -> statusPenalties
+                                    match.status == "PAUSED_EXTRA_TIME" -> statusGoingExtraTime
+                                    match.status == "PAUSED_PENALTIES" -> statusGoingPenalties
+                                    match.status == "PAUSED" -> statusHalftime
+                                    else -> statusInProgress
                                 }
 
                             val isLive = !isActuallyFinished && !isAdminViewingBeforeStart && hasStarted
@@ -416,7 +468,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         )
                                         Spacer(Modifier.width(6.dp))
                                     }
-                                    Text(
+                                    BolaoText(
                                         statusLabel,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
@@ -430,12 +482,17 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Text(hReal.toString(), fontSize = 32.sp, fontWeight = FontWeight.Black, color = Neon)
-                                        Text("×", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextMuted)
-                                        Text(aReal.toString(), fontSize = 32.sp, fontWeight = FontWeight.Black, color = Neon)
+                                        BolaoText(hReal.toString(), fontSize = 32.sp, fontWeight = FontWeight.Black, color = Neon)
+                                        BolaoText("×", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                                        BolaoText(aReal.toString(), fontSize = 32.sp, fontWeight = FontWeight.Black, color = Neon)
                                     }
                                 } else {
-                                    Icon(Icons.Default.Lock, null, tint = TextMuted.copy(alpha = 0.5f), modifier = Modifier.size(28.dp))
+                                    BolaoIcon(
+                                        Icons.Default.Lock,
+                                        null,
+                                        tint = TextMuted.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(28.dp)
+                                    )
                                 }
                             }
 
@@ -450,7 +507,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                     Spacer(Modifier.height(8.dp))
                                     var fontSize by remember(aName) { mutableIntStateOf(13) }
                                     var readyToDraw by remember(aName) { mutableStateOf(false) }
-                                    Text(
+                                    BolaoText(
                                         aName,
                                         color = Color.White,
                                         fontSize = fontSize.sp,
@@ -479,7 +536,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                     contentPadding = PaddingValues(top = 16.dp, bottom = 40.dp)
                 ) {
                     item {
-                        HorizontalDivider(
+                        BolaoHorizontalDivider(
                             color = GlassBorder,
                             thickness = 1.dp,
                             modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
@@ -491,7 +548,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                         val pred = item.second
                         val pts = item.third
 
-                        Surface(
+                        BolaoSurface(
                             color = NavyElevated,
                             shape = RoundedCornerShape(14.dp),
                             border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
@@ -510,7 +567,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                 Spacer(Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     val hasNickname = participant.userNickname.isNotBlank()
-                                    Text(
+                                    BolaoText(
                                         text = if (hasNickname) participant.userNickname else participant.userName,
                                         color = Color.White,
                                         fontSize = 15.sp,
@@ -518,7 +575,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         maxLines = 1
                                     )
                                     if (hasNickname) {
-                                        Text(text = participant.userName, color = TextMuted, fontSize = 11.sp, maxLines = 1)
+                                        BolaoText(text = participant.userName, color = TextMuted, fontSize = 11.sp, maxLines = 1)
                                     }
                                 }
                                 if (pred != null) {
@@ -527,7 +584,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
                                         if (isAdminViewingBeforeStart && participant.userId != currentUserId) {
-                                            Text("Palpitou", color = Neon, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            BolaoText(lockedBadge, color = Neon, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                         } else {
                                             Box(
                                                 modifier =
@@ -541,7 +598,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                                     RoundedCornerShape(8.dp)
                                                 ).padding(horizontal = 10.dp, vertical = 6.dp)
                                             ) {
-                                                Text(
+                                                BolaoText(
                                                     "${pred.homeScore} × ${pred.awayScore}",
                                                     color = Color.White,
                                                     fontSize = 14.sp,
@@ -571,7 +628,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                                 ).padding(vertical = 6.dp),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                Text(
+                                                BolaoText(
                                                     text = if (pts > 0) "+$pts" else "0",
                                                     color = pointsColor,
                                                     fontSize = 15.sp,
@@ -581,7 +638,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         }
                                     }
                                 } else {
-                                    Text("Sem palpite", color = TextSubtle, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                    BolaoText(noPredictionLabel, color = TextSubtle, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                 }
                             }
                         }
@@ -614,10 +671,10 @@ private fun TeamCrestCircle(url: String?, flag: AnnotatedString, isTbd: Boolean,
                 contentDescription = null,
                 modifier = Modifier.size(36.dp),
                 loading = {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Neon)
+                    BolaoLoadingIndicator(modifier = Modifier.size(16.dp))
                 },
                 error = {
-                    Text(
+                    BolaoText(
                         text = flag,
                         fontSize = if (isTbd) 16.sp else flagSize,
                         fontWeight = FontWeight.Bold,
@@ -626,7 +683,7 @@ private fun TeamCrestCircle(url: String?, flag: AnnotatedString, isTbd: Boolean,
                 }
             )
         } else {
-            Text(
+            BolaoText(
                 text = flag,
                 fontSize = if (isTbd) 16.sp else flagSize,
                 fontWeight = FontWeight.Bold,

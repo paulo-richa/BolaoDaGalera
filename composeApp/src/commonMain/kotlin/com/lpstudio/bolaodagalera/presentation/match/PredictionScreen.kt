@@ -32,13 +32,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -63,11 +56,39 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.prediction_back_cd
+import bolaodagalera.composeapp.generated.resources.prediction_button_save
+import bolaodagalera.composeapp.generated.resources.prediction_button_update
+import bolaodagalera.composeapp.generated.resources.prediction_group_label
+import bolaodagalera.composeapp.generated.resources.prediction_point_correct_emoji
+import bolaodagalera.composeapp.generated.resources.prediction_point_correct_label
+import bolaodagalera.composeapp.generated.resources.prediction_point_exact_emoji
+import bolaodagalera.composeapp.generated.resources.prediction_point_exact_label
+import bolaodagalera.composeapp.generated.resources.prediction_point_wrong_emoji
+import bolaodagalera.composeapp.generated.resources.prediction_point_wrong_label
+import bolaodagalera.composeapp.generated.resources.prediction_points_badge_plural
+import bolaodagalera.composeapp.generated.resources.prediction_points_badge_singular
+import bolaodagalera.composeapp.generated.resources.prediction_rule_emoji
+import bolaodagalera.composeapp.generated.resources.prediction_rule_text
+import bolaodagalera.composeapp.generated.resources.prediction_score_question
+import bolaodagalera.composeapp.generated.resources.prediction_score_separator
+import bolaodagalera.composeapp.generated.resources.prediction_stepper_decrement
+import bolaodagalera.composeapp.generated.resources.prediction_stepper_increment
+import bolaodagalera.composeapp.generated.resources.prediction_success_subtitle
+import bolaodagalera.composeapp.generated.resources.prediction_success_title
+import bolaodagalera.composeapp.generated.resources.prediction_vs_label
 import coil3.compose.LocalPlatformContext
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoHorizontalDivider
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIconButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoLoadingIndicator
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoVerticalDivider
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
@@ -84,11 +105,11 @@ import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import kotlin.random.Random
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNavigateBack: () -> Unit) {
     val viewModel: PredictionViewModel = koinViewModel(key = "$bolaoId/$matchId") { parametersOf(bolaoId, matchId) }
@@ -110,6 +131,22 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
     var homeScore by remember { mutableIntStateOf(0) }
     var awayScore by remember { mutableIntStateOf(0) }
 
+    val backCd = stringResource(Res.string.prediction_back_cd)
+    val groupLabelTemplate = stringResource(Res.string.prediction_group_label)
+    val vsLabel = stringResource(Res.string.prediction_vs_label)
+    val scoreQuestion = stringResource(Res.string.prediction_score_question)
+    val scoreSeparator = stringResource(Res.string.prediction_score_separator)
+    val pointExactEmoji = stringResource(Res.string.prediction_point_exact_emoji)
+    val pointExactLabel = stringResource(Res.string.prediction_point_exact_label)
+    val pointCorrectEmoji = stringResource(Res.string.prediction_point_correct_emoji)
+    val pointCorrectLabel = stringResource(Res.string.prediction_point_correct_label)
+    val pointWrongEmoji = stringResource(Res.string.prediction_point_wrong_emoji)
+    val pointWrongLabel = stringResource(Res.string.prediction_point_wrong_label)
+    val ruleEmoji = stringResource(Res.string.prediction_rule_emoji)
+    val ruleText = stringResource(Res.string.prediction_rule_text)
+    val updateButtonText = stringResource(Res.string.prediction_button_update)
+    val saveButtonText = stringResource(Res.string.prediction_button_save)
+
     LaunchedEffect(uiState.existingPrediction) {
         uiState.existingPrediction?.let {
             homeScore = it.homeScore
@@ -127,7 +164,7 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
         when {
             uiState.isLoading && uiState.match == null -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Neon, strokeWidth = 2.dp)
+                    BolaoLoadingIndicator()
                 }
             }
 
@@ -166,10 +203,10 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(onClick = onNavigateBack, modifier = Modifier.size(44.dp)) {
-                                        Icon(
+                                    BolaoIconButton(onClick = onNavigateBack, modifier = Modifier.size(44.dp)) {
+                                        BolaoIcon(
                                             Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Voltar",
+                                            contentDescription = backCd,
                                             tint = Color.White,
                                             modifier = Modifier.size(24.dp)
                                         )
@@ -184,8 +221,8 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
                                                 .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
                                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                                         ) {
-                                            Text(
-                                                "Grupo $group • ${match.phase.label}",
+                                            BolaoText(
+                                                groupLabelTemplate.replace("%1\$s", group).replace("%2\$s", match.phase.label),
                                                 fontSize = 11.sp,
                                                 color = TextMuted,
                                                 fontWeight = FontWeight.Bold
@@ -211,8 +248,8 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
                                         crestUrl = homeResolvedCrest ?: match.homeTeamCrest
                                     )
 
-                                    Text(
-                                        "vs",
+                                    BolaoText(
+                                        vsLabel,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Black,
                                         color = TextMuted.copy(alpha = 0.4f),
@@ -232,8 +269,8 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
                         Spacer(Modifier.height(32.dp))
 
                         // ── Score picker ──────────────────────────────────────────
-                        Text(
-                            "Qual será o placar?",
+                        BolaoText(
+                            scoreQuestion,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White,
@@ -256,8 +293,8 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
                                 teamName = homeDisplayName
                             )
 
-                            Text(
-                                "×",
+                            BolaoText(
+                                scoreSeparator,
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextMuted
@@ -290,35 +327,34 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
                                 PointBadge(
-                                    emoji = "🎯",
+                                    emoji = pointExactEmoji,
                                     pts = (uiState.bolao?.pointsExactScore ?: 3).toString(),
-                                    label = "Placar exato"
+                                    label = pointExactLabel
                                 )
-                                VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
+                                BolaoVerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
                                 PointBadge(
-                                    emoji = "✅",
+                                    emoji = pointCorrectEmoji,
                                     pts = (uiState.bolao?.pointsWinnerOrDraw ?: 1).toString(),
-                                    label = "Resultado certo"
+                                    label = pointCorrectLabel
                                 )
-                                VerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
+                                BolaoVerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
                                 PointBadge(
-                                    emoji = "❌",
+                                    emoji = pointWrongEmoji,
                                     pts = "0",
-                                    label = "Errou"
+                                    label = pointWrongLabel
                                 )
                             }
 
-                            HorizontalDivider(color = GlassBorder.copy(alpha = 0.5f), thickness = 0.5.dp)
+                            BolaoHorizontalDivider(color = GlassBorder.copy(alpha = 0.5f), thickness = 0.5.dp)
 
                             Row(
                                 verticalAlignment = Alignment.Top,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 modifier = Modifier.padding(horizontal = 4.dp)
                             ) {
-                                Text("⏱️", fontSize = 14.sp)
-                                Text(
-                                    "Regra: O placar válido para o bolão é o do tempo normal + prorrogação. " +
-                                        "Pênaltis não são contabilizados.",
+                                BolaoText(ruleEmoji, fontSize = 14.sp)
+                                BolaoText(
+                                    ruleText,
                                     fontSize = 11.sp,
                                     color = TextMuted,
                                     lineHeight = 15.sp
@@ -328,7 +364,7 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
 
                         uiState.error?.let {
                             Spacer(Modifier.height(12.dp))
-                            Text(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp))
+                            BolaoText(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp))
                         }
 
                         Spacer(Modifier.height(24.dp))
@@ -344,7 +380,7 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
                             .padding(bottom = 24.dp, top = 8.dp)
                     ) {
                         GradientSaveButton(
-                            text = if (uiState.existingPrediction != null) "Atualizar palpite" else "Salvar palpite",
+                            text = if (uiState.existingPrediction != null) updateButtonText else saveButtonText,
                             isLoading = uiState.isLoading,
                             onClick = { viewModel.savePrediction(userId, homeScore, awayScore) }
                         )
@@ -419,7 +455,7 @@ private fun SuccessOverlay() {
                     .background(Neon.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
+                BolaoIcon(
                     Icons.Default.Check,
                     contentDescription = null,
                     tint = Neon,
@@ -427,15 +463,15 @@ private fun SuccessOverlay() {
                 )
             }
             Spacer(Modifier.height(32.dp))
-            Text(
-                "PALPITE SALVO!",
+            BolaoText(
+                stringResource(Res.string.prediction_success_title),
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 2.sp
             )
-            Text(
-                "Boa sorte na torcida!",
+            BolaoText(
+                stringResource(Res.string.prediction_success_subtitle),
                 color = TextMuted,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
@@ -524,10 +560,10 @@ private fun TeamHero(flag: String, name: String, crestUrl: String?) {
                     contentDescription = null,
                     modifier = Modifier.size(56.dp),
                     loading = {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Neon)
+                        BolaoLoadingIndicator(modifier = Modifier.size(24.dp))
                     },
                     error = {
-                        Text(
+                        BolaoText(
                             text = annotatedFlag,
                             fontSize = 24.sp,
                             textAlign = TextAlign.Center
@@ -535,7 +571,7 @@ private fun TeamHero(flag: String, name: String, crestUrl: String?) {
                     }
                 )
             } else {
-                Text(
+                BolaoText(
                     text = annotatedFlag,
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center
@@ -544,7 +580,7 @@ private fun TeamHero(flag: String, name: String, crestUrl: String?) {
         }
 
         Spacer(Modifier.height(12.dp))
-        Text(
+        BolaoText(
             name,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
@@ -570,7 +606,12 @@ private fun ScoreStepper(value: Int, onIncrement: () -> Unit, onDecrement: () ->
                 .clickable(onClick = onIncrement),
             contentAlignment = Alignment.Center
         ) {
-            Text("+", fontSize = 24.sp, fontWeight = FontWeight.Medium, color = Neon)
+            BolaoText(
+                stringResource(Res.string.prediction_stepper_increment),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Medium,
+                color = Neon
+            )
         }
 
         Spacer(Modifier.height(12.dp))
@@ -585,7 +626,7 @@ private fun ScoreStepper(value: Int, onIncrement: () -> Unit, onDecrement: () ->
                 .border(1.dp, GlassBorder, RoundedCornerShape(20.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
+            BolaoText(
                 "$value",
                 fontSize = 42.sp,
                 fontWeight = FontWeight.Black,
@@ -606,8 +647,8 @@ private fun ScoreStepper(value: Int, onIncrement: () -> Unit, onDecrement: () ->
                 .clickable(enabled = value > 0, onClick = onDecrement),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                "–",
+            BolaoText(
+                stringResource(Res.string.prediction_stepper_decrement),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Medium,
                 color = if (value > 0) TextMuted else TextSubtle
@@ -616,7 +657,7 @@ private fun ScoreStepper(value: Int, onIncrement: () -> Unit, onDecrement: () ->
 
         Spacer(Modifier.height(10.dp))
 
-        Text(
+        BolaoText(
             teamName,
             fontSize = 11.sp,
             color = TextMuted,
@@ -632,16 +673,21 @@ private fun PointBadge(emoji: String, pts: String, label: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(vertical = 4.dp)
     ) {
-        Text(emoji, fontSize = 22.sp)
+        BolaoText(emoji, fontSize = 22.sp)
         Spacer(Modifier.height(6.dp))
-        Text(
-            "$pts pt${if (pts != "1") "s" else ""}",
+        BolaoText(
+            text =
+            if (pts == "1") {
+                stringResource(Res.string.prediction_points_badge_singular, pts)
+            } else {
+                stringResource(Res.string.prediction_points_badge_plural, pts)
+            },
             fontSize = 15.sp,
             fontWeight = FontWeight.Black,
             color = Color.White
         )
         Spacer(Modifier.height(2.dp))
-        Text(
+        BolaoText(
             label,
             fontSize = 10.sp,
             color = TextMuted,
@@ -664,13 +710,9 @@ private fun GradientSaveButton(text: String, isLoading: Boolean, onClick: () -> 
         contentAlignment = Alignment.Center
     ) {
         if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                strokeWidth = 2.5.dp,
-                color = DeepNavy
-            )
+            BolaoLoadingIndicator(modifier = Modifier.size(24.dp), color = DeepNavy, strokeWidth = 2.5.dp)
         } else {
-            Text(
+            BolaoText(
                 text,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,

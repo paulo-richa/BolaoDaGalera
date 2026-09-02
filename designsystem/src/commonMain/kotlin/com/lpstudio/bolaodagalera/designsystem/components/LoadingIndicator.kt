@@ -19,11 +19,11 @@ import com.lpstudio.bolaodagalera.designsystem.theme.Neon
  * [BolaoFullScreenLoading] pra centralizar numa tela inteira.
  */
 @Composable
-fun BolaoLoadingIndicator(modifier: Modifier = Modifier) {
+fun BolaoLoadingIndicator(modifier: Modifier = Modifier, color: Color = Neon, strokeWidth: androidx.compose.ui.unit.Dp = 3.dp) {
     CircularProgressIndicator(
         modifier = modifier,
-        color = Neon,
-        strokeWidth = 3.dp
+        color = color,
+        strokeWidth = strokeWidth
     )
 }
 

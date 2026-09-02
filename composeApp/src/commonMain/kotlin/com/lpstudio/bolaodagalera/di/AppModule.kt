@@ -1,5 +1,6 @@
 package com.lpstudio.bolaodagalera.di
 
+import com.lpstudio.bolaodagalera.ads.InterstitialAdCounter
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseAuthRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseBolaoRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseChampionshipRepository
@@ -29,6 +30,7 @@ import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
 import com.lpstudio.bolaodagalera.presentation.match.PredictionViewModel
 import com.lpstudio.bolaodagalera.presentation.ranking.RankingViewModel
+import com.lpstudio.bolaodagalera.util.PredictionAdCounter
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -46,6 +48,7 @@ val appModule =
         single<CrashReporter> { createCrashReporter() }
         single<PerformanceMonitor> { createPerformanceMonitor() }
         single<AnalyticsTracker> { createAnalyticsTracker() }
+        single<InterstitialAdCounter> { PredictionAdCounter }
 
         // Remote Config
         single { RemoteConfigManager() }
@@ -58,7 +61,7 @@ val appModule =
         viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
         viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId, get()) }
         viewModel { (bolaoId: String, matchId: String) ->
-            PredictionViewModel(get(), get(), get(), get(), get(), get(), bolaoId, matchId)
+            PredictionViewModel(get(), get(), get(), get(), get(), get(), get(), bolaoId, matchId)
         }
         viewModel { (bolaoId: String) ->
             RankingViewModel(
