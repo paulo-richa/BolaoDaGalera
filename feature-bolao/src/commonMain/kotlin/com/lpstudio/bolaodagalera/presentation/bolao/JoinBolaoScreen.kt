@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -116,7 +115,6 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
         Modifier
             .fillMaxSize()
             .background(GradientBg)
-            .systemBarsPadding()
     ) {
         // Glow
         Box(

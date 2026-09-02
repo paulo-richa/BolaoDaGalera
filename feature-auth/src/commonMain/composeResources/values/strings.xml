@@ -38,9 +38,13 @@
     <string name="profile_sign_out_dialog_title">Sair da conta?</string>
     <string name="profile_sign_out_dialog_message">Você precisará entrar novamente para acessar seus bolões.</string>
     <string name="profile_sign_out_dialog_confirm">Sair</string>
-    <string name="profile_delete_account_dialog_title">Excluir conta permanentemente?</string>
-    <string name="profile_delete_account_dialog_message">Esta ação não pode ser desfeita. Todos os seus bolões e palpites serão perdidos.</string>
-    <string name="profile_delete_account_dialog_confirm">Excluir</string>
+    <string name="profile_delete_account_warning_dialog_title">Excluir conta permanentemente?</string>
+    <string name="profile_delete_account_warning_dialog_message">Esta ação não pode ser desfeita. Todos os seus bolões e palpites serão perdidos.</string>
+    <string name="profile_delete_account_warning_dialog_confirm">Continuar</string>
+    <string name="profile_delete_account_final_dialog_title">Tem certeza absoluta?</string>
+    <string name="profile_delete_account_final_dialog_message">Esta é sua última chance de cancelar. Sua conta e todos os dados serão excluídos definitivamente.</string>
+    <string name="profile_delete_account_final_dialog_confirm">Sim, excluir minha conta</string>
+    <string name="profile_menu_content_description">Mais opções</string>
     <string name="profile_change_password_dialog_title">Alterar Senha</string>
     <string name="profile_change_password_dialog_message">Enviaremos um e-mail de recuperação para %1$s para que você possa redefinir sua senha com segurança.</string>
     <string name="profile_change_password_dialog_confirm">Enviar E-mail</string>
@@ -55,6 +59,7 @@
     <string name="profile_share_invite_message">Vem jogar o Bolão da Galera comigo! ⚽ Baixe agora e crie seu bolão.\n\nDisponível na Google Play: https://play.google.com/store/apps/details?id=com.lpstudio.bolaodagalera</string>
     <string name="profile_option_help">Ajuda e Regras</string>
     <string name="profile_option_change_password">Alterar Senha</string>
+    <string name="profile_option_sign_out">Sair</string>
     <string name="profile_option_delete_account">Excluir Minha Conta</string>
     <string name="profile_version_label">Versão %1$s</string>
 </resources>

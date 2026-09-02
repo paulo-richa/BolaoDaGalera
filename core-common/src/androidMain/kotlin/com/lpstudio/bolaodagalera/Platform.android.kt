@@ -2,8 +2,11 @@ package com.lpstudio.bolaodagalera
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalView
 import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
 
 actual fun getPlatform(): Platform = object : Platform {
     override val name: String = "Android ${android.os.Build.VERSION.SDK_INT}"
@@ -11,7 +14,19 @@ actual fun getPlatform(): Platform = object : Platform {
 
 @Composable
 actual fun SystemAppearance(isDark: Boolean) {
-    // Android handle system appearance via theme
+    // enableEdgeToEdge() picks status/navigation bar icon color from the system's
+    // light/dark setting, not from the app's own theme - since this app is always
+    // dark regardless of the device's setting, that default leaves dark (near-invisible)
+    // icons on a dark background whenever the device itself is in light mode. Force
+    // light (white) icons here instead, matching the app's actual background color.
+    val view = LocalView.current
+    if (view.isInEditMode) return
+    SideEffect {
+        val window = (view.context as? android.app.Activity)?.window ?: return@SideEffect
+        val controller = WindowCompat.getInsetsController(window, view)
+        controller.isAppearanceLightStatusBars = !isDark
+        controller.isAppearanceLightNavigationBars = !isDark
+    }
 }
 
 @Composable
