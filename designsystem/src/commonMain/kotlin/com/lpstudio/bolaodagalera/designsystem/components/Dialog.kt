@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoElevation
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
@@ -26,11 +28,13 @@ fun BolaoConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     dismissText: String = "Cancelar",
-    isDestructive: Boolean = false
+    isDestructive: Boolean = false,
+    tonalElevation: Dp = BolaoElevation.level3
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = tonalElevation,
         title = { Text(title, color = Color.White, fontWeight = FontWeight.Bold) },
         text = { Text(message, color = TextMuted) },
         confirmButton = {
@@ -63,7 +67,8 @@ fun BolaoDialog(
     dismissButton: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    tonalElevation: Dp = BolaoElevation.level3
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -72,7 +77,8 @@ fun BolaoDialog(
         dismissButton = dismissButton,
         title = title,
         text = text,
-        containerColor = containerColor
+        containerColor = containerColor,
+        tonalElevation = tonalElevation
     )
 }
 
