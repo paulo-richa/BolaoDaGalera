@@ -10,7 +10,7 @@ class FakeNotificationRepository : NotificationRepository {
     private val notifications = MutableStateFlow<List<Notification>>(emptyList())
     private val tokensByUser = mutableMapOf<String, MutableSet<String>>()
 
-    /** Simula uma notificação já gravada por uma Cloud Function, pra testes. */
+    /** Simulates a notification already written by a Cloud Function, for tests. */
     fun seed(userId: String, notification: Notification) {
         notifications.value = notifications.value + notification.copy(id = "$userId:${notification.id}")
     }

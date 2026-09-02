@@ -105,18 +105,18 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
     val appUrl = "bolaodagalera://invite?code=$bolaoCode"
     val shareMessage = stringResource(Res.string.add_participants_share_message, bolaoName, webUrl, appUrl, bolaoCode)
 
-    // Carrega o nome e código do bolão ao iniciar
+    // Load pool name and code on entry so the invite link/message can be built.
     LaunchedEffect(bolaoId) {
         try {
             val bolao = bolaoRepository.getBolao(bolaoId)
             bolaoName = bolao.name
             bolaoCode = bolao.code
         } catch (e: Exception) {
-            crashReporter.recordException(e, "Erro ao carregar dados do bolão para convite")
+            crashReporter.recordException(e, "Failed to load pool data for invitation")
         }
     }
 
-    // Detecção automática e inteligente do tipo de entrada
+    // Infer the input type from its shape to route validation and keyboard type.
     val detectedType =
         remember(identifier) {
             val trimmed = identifier.trim()
@@ -157,7 +157,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
 
                 Spacer(Modifier.height(12.dp))
 
-                // Input field único e inteligente
+                // Single input field that adapts keyboard/validation to the detected type
                 BolaoTextField(
                     value = identifier,
                     onValueChange = { identifier = it },
@@ -207,7 +207,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                     )
                 }
 
-                // Botão Único: Enviar Convite
+                // Single action: send invitation
                 BolaoButton(
                     text = stringResource(Res.string.add_participants_button_send_invite),
                     isLoading = isLoading,
@@ -220,7 +220,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                                 val trimmedId = identifier.trim()
                                 val inviterName = authRepository.currentUser?.name ?: defaultInviterName
 
-                                // 1. Verificação de existência do usuário no banco de dados
+                                // 1. Check the user exists in the database before inviting
                                 val userExists =
                                     when (detectedType) {
                                         ParticipantInputType.EMAIL -> authRepository.isEmailInUse(trimmedId.lowercase())
@@ -234,7 +234,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                                     return@launch
                                 }
 
-                                // 2. Enviar convite interno
+                                // 2. Send the in-app invitation
                                 val inviteeIdentifier =
                                     when (detectedType) {
                                         ParticipantInputType.EMAIL -> trimmedId.lowercase()
@@ -252,7 +252,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                                         )
                                     }
                                 } catch (e: Exception) {
-                                    logger.w(e) { "Convite interno em cache para envio posterior (rede lenta)" }
+                                    logger.w(e) { "In-app invitation queued for later delivery (slow network)" }
                                 }
 
                                 isLoading = false
@@ -262,7 +262,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                                 delay(3000)
                                 showSuccessMessage = false
                             } catch (e: Exception) {
-                                crashReporter.recordException(e, "Erro ao enviar convite")
+                                crashReporter.recordException(e, "Failed to send invitation")
                                 error = sendFailedError
                                 isLoading = false
                             }

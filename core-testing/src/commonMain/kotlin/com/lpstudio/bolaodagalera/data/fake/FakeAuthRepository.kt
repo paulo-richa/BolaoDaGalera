@@ -41,10 +41,10 @@ class FakeAuthRepository : AuthRepository {
             User("u9", "Gustavo Lima", "gustavo@email.com", "", "Guga", "guga")
         )
 
-    /** Senha correta usada para validar signIn (todas as contas fake usam a mesma). */
+    /** Correct password used to validate signIn (all fake accounts share the same one). */
     var validPassword: String = "123456"
 
-    /** Quando != null, a próxima chamada relevante lança esta exceção (para simular erros). */
+    /** When non-null, the next relevant call throws this exception, to simulate errors. */
     var signInException: Exception? = null
     var registerException: Exception? = null
     var resetPasswordException: Exception? = null

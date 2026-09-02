@@ -547,7 +547,7 @@ fun EditBolaoScreen(
                         )
                     }
 
-                    // Info sobre prorrogação e pênaltis
+                    // Note on extra time and penalty shootout scoring
                     BolaoSurface(
                         color = Color.White.copy(alpha = 0.05f),
                         shape = BolaoRadiusShape.md,

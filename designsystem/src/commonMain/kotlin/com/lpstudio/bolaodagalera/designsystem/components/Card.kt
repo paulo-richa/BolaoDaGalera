@@ -24,11 +24,11 @@ import com.lpstudio.bolaodagalera.designsystem.theme.GlassWhite
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientBg
 
 /**
- * Card padrão do app: cantos arredondados (MaterialTheme.shapes.large,
- * 16.dp - o valor já usado na maioria dos cards hoje) e fundo
- * surfaceVariant. Substitui o padrão hand-rolled
+ * Standard app card: rounded corners (MaterialTheme.shapes.large,
+ * 16.dp - the value already used by most cards) and surfaceVariant
+ * background. Replaces the hand-rolled
  * `Modifier.clip(RoundedCornerShape(16.dp)).background(NavyCard)`
- * repetido em várias telas.
+ * pattern repeated across several screens.
  */
 @Composable
 fun BolaoCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
@@ -56,9 +56,9 @@ private fun BolaoCardPreview() {
 }
 
 /**
- * Card translúcido ("glass"), usado nas telas de autenticação sobre o
- * GradientBg (login/cadastro). Cantos mais arredondados (20.dp) e fundo
- * semi-transparente - visual distinto do [BolaoCard] opaco.
+ * Translucent ("glass") card, used on the authentication screens over the
+ * GradientBg (login/signup). More rounded corners (20.dp) and a
+ * semi-transparent background - visually distinct from the opaque [BolaoCard].
  */
 @Composable
 fun BolaoGlassCard(

@@ -70,8 +70,8 @@ class AuthViewModel(
                 _uiState.update { it.copy(isLoading = false, emailExists = exists, checkedEmail = email.trim()) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao checar e-mail")
-                // Se der erro de verificação (ex: rede ou proteção de enumeração),
-                // não podemos afirmar nada. Resetamos o estado e mostramos um erro amigável.
+                // Verification failure (e.g. network issue or enumeration protection) is
+                // inconclusive, so reset the state and surface a generic user-facing error.
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -137,7 +137,7 @@ class AuthViewModel(
                 val newNickname = nickname.trim()
                 val newName = name.trim()
 
-                // Verificações de duplicidade rápidas
+                // Quick duplicate checks
                 if (newPhone.isNotBlank() && newPhone != currentUser?.phone) {
                     try {
                         if (authRepository.isPhoneInUse(newPhone)) {
@@ -145,7 +145,7 @@ class AuthViewModel(
                             return@launch
                         }
                     } catch (e: Exception) {
-                        // Segue se der timeout na checagem
+                        // Ignore timeout on the check and proceed
                     }
                 }
 
@@ -156,7 +156,7 @@ class AuthViewModel(
                             return@launch
                         }
                     } catch (e: Exception) {
-                        // Segue se der timeout na checagem
+                        // Ignore timeout on the check and proceed
                     }
                 }
 
@@ -197,7 +197,7 @@ class AuthViewModel(
     suspend fun generateAvailableUsername(fullName: String): String {
         val parts =
             fullName.trim().lowercase()
-                .replace(Regex("[^a-z\\s]"), "") // Remove acentos e símbolos simplificadamente
+                .replace(Regex("[^a-z\\s]"), "") // Strip accents/symbols via simplified ASCII filtering
                 .split(" ")
                 .filter { it.length >= 2 }
 
@@ -218,17 +218,17 @@ class AuthViewModel(
             candidates.add(firstName.take(1) + secondName.take(1) + lastPart)
         }
 
-        // Tenta os candidatos pré-definidos
+        // Try the predefined candidates first
         for (candidate in candidates) {
             try {
                 if (!authRepository.isUsernameInUse(candidate)) return candidate
             } catch (e: Exception) {
-                // Se der erro de permissão por estar deslogado, retorna o primeiro como sugestão
+                // Permission error while signed out: fall back to the first candidate as a suggestion
                 return candidates.firstOrNull() ?: firstName
             }
         }
 
-        // Fallback com números aleatórios caso nenhum esteja livre
+        // Fallback: append a random number when no predefined candidate is available
         return try {
             var finalCandidate: String
             var attempts = 0
@@ -244,7 +244,7 @@ class AuthViewModel(
 
     private fun friendlyError(e: Exception): String {
         val msg = e.message?.lowercase() ?: ""
-        logger.e(e) { "Auth Error Debug" } // Log para debug interno
+        logger.e(e) { "Auth Error Debug" } // Internal debug log
         return when {
             msg.contains("incorrect") || msg.contains("invalid-credential") || msg.contains("password") || msg.contains("wrong") ->
                 "E-mail ou senha incorretos. Verifique os dados e tente novamente."

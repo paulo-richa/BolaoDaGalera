@@ -32,7 +32,7 @@ class AuthViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         authRepository = FakeAuthRepository()
-        // Começa deslogado: os testes de login/cadastro simulam o app "do zero".
+        // Start signed out: login/registration tests simulate a fresh app install.
         authRepository.setUser(null)
         viewModel = AuthViewModel(authRepository, FakeCrashReporter(), FakePerformanceMonitor(), FakeAnalyticsTracker())
     }
@@ -101,7 +101,7 @@ class AuthViewModelTest {
         )
     }
 
-    // ---------- CHECK EMAIL (etapa 1 do login) ----------
+    // ---------- CHECK EMAIL (login step 1) ----------
 
     @Test
     fun `checkEmail em branco mostra erro sem chamar o repositorio`() = runTest {
@@ -153,7 +153,7 @@ class AuthViewModelTest {
         assertNull(state.successMessage)
     }
 
-    // ---------- REGISTER (CADASTRO) ----------
+    // ---------- REGISTER ----------
 
     @Test
     fun `register com email ja em uso mostra erro e nao cria conta`() = runTest {
@@ -213,7 +213,7 @@ class AuthViewModelTest {
         assertEquals("Erro de conexão. Verifique sua internet e tente novamente.", state.error)
     }
 
-    // ---------- ESQUECI MINHA SENHA ----------
+    // ---------- FORGOT PASSWORD ----------
 
     @Test
     fun `resetPassword com email em branco mostra erro sem chamar o repositorio`() = runTest {
@@ -252,7 +252,7 @@ class AuthViewModelTest {
         assertEquals("Erro ao enviar e-mail. Verifique se o e-mail está correto.", state.error)
     }
 
-    // ---------- PERFIL (EDITAR DADOS) ----------
+    // ---------- PROFILE (EDIT DATA) ----------
 
     @Test
     fun `updateProfile com dados novos e disponiveis atualiza com sucesso`() = runTest {
@@ -286,7 +286,7 @@ class AuthViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("Este telefone já está em uso.", state.error)
         assertNull(state.successMessage)
-        // Não deve ter alterado o telefone de verdade
+        // The phone must remain unchanged on the underlying record
         assertEquals(FAKE_USER.phone, authRepository.currentUser?.phone)
     }
 
@@ -301,7 +301,7 @@ class AuthViewModelTest {
         assertNull(state.successMessage)
     }
 
-    // ---------- GERAÇÃO DE USERNAME ----------
+    // ---------- USERNAME GENERATION ----------
 
     @Test
     fun `generateAvailableUsername gera candidato a partir do nome completo`() = runTest {
@@ -313,7 +313,7 @@ class AuthViewModelTest {
 
     @Test
     fun `generateAvailableUsername evita colisao com username existente`() = runTest {
-        // FAKE_USER já usa "pauloricha"; gerar para o mesmo nome não deve colidir
+        // FAKE_USER already owns "pauloricha"; generating for the same name must avoid a collision
         val username = viewModel.generateAvailableUsername(FAKE_USER.name)
 
         assertFalse(username.equals(FAKE_USER.username, ignoreCase = true))

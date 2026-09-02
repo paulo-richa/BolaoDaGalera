@@ -11,10 +11,10 @@ data class Prediction(
     val homeScore: Int = 0,
     val awayScore: Int = 0,
     /**
-     * Pontos já calculados pela Cloud Function (updateMatchRankings/fullRecalculateRanking)
-     * e persistidos no palpite. Null enquanto o jogo não terminou ou a function ainda não
-     * processou o resultado - nesse caso o ranking "ao vivo" estima localmente em cima do
-     * placar do jogo, mas troca pelo valor oficial assim que ele chega.
+     * Points already calculated by the Cloud Function (updateMatchRankings/fullRecalculateRanking)
+     * and persisted on the prediction. Null while the match hasn't finished or the function
+     * hasn't processed the result yet - in that case the "live" ranking estimates locally from
+     * the match score, then switches to the official value once it arrives.
      */
     val points: Int? = null
 )

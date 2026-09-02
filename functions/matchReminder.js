@@ -2,15 +2,15 @@ const { logger } = require("firebase-functions");
 const { notifyUser } = require("./notifications");
 const { relevantMatchesForBolao } = require("./dailyDigest");
 
-/** Avisa quem ainda não palpitou quando falta menos disso pro jogo fechar. */
+/** Notifies users without a prediction once less than this remains before the match locks. */
 const REMINDER_WINDOW_MILLIS = 60 * 60 * 1000;
 
 /**
- * Marca em matchReminders/{bolaoId}_{matchId}_{userId} pra nunca mandar o
- * mesmo lembrete duas vezes, mesmo rodando a cada poucos minutos e cobrindo
- * a mesma janela de 1h em execuções sucessivas. create() falha se o
- * documento já existe (idempotência atômica: quem cria o marcador primeiro
- * é quem manda a notificação).
+ * Marks matchReminders/{bolaoId}_{matchId}_{userId} to never send the same
+ * reminder twice, even when running every few minutes and covering the
+ * same 1h window across successive runs. create() fails if the document
+ * already exists (atomic idempotency: whoever creates the marker first is
+ * the one who sends the notification).
  */
 async function claimReminder(db, key) {
     try {

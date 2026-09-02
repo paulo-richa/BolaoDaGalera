@@ -117,14 +117,14 @@ fun KnockoutTab(
     val showShadow by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    // Roda só enquanto esta tela está em primeiro plano (RESUMED), pra não competir
-    // com a navegação pra tela de palpite. selectedPhase/selectedLabel/listState já
-    // são todos rememberSaveable, então a aba e a posição de rolagem certas voltam
-    // sozinhas ao retornar de um palpite - esse efeito só cuida da auto-seleção
-    // inicial (jogo "ao vivo"/próximo).
+    // Runs only while this screen is in the foreground (RESUMED), so it doesn't race
+    // with navigation to the prediction screen. selectedPhase/selectedLabel/listState
+    // are all already rememberSaveable, so the correct tab and scroll position return
+    // on their own when coming back from a prediction — this effect only handles the
+    // initial auto-selection (live/next match).
     LaunchedEffect(matches, selectedPhase) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            // Lógica de Auto-Seleção Inteligente
+            // Smart auto-selection logic
             val isFirstLoad = selLabel == null
             val isOnStartMarker = selectedPhase == Phase.FRIENDLIES
 

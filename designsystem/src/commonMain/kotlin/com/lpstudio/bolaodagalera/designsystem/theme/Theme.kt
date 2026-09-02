@@ -27,10 +27,10 @@ private val BolaoColorScheme =
     )
 
 /**
- * Tema Material 3 do app: ColorScheme + Typography + Shapes, os 3 pilares
- * recomendados pelo Google. Só tema escuro por enquanto (o app força dark).
- * Não lida com comportamento específico de plataforma (ex: cor da status
- * bar) - isso fica por conta de quem consome este composable no app.
+ * The app's Material 3 theme: ColorScheme + Typography + Shapes, the 3
+ * pillars recommended by Google. Dark theme only for now (the app forces
+ * dark mode). Does not handle platform-specific behavior (e.g. status bar
+ * color) - that is left to whoever consumes this composable in the app.
  */
 @Composable
 fun BolaoTheme(content: @Composable () -> Unit) {

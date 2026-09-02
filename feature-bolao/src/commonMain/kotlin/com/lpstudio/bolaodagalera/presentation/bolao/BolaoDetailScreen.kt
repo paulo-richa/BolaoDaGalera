@@ -154,9 +154,9 @@ fun BolaoDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val authRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.AuthRepository>()
     val userId = authRepository.currentUser?.id ?: ""
-    // Mesmo uid usado como fonte da verdade em firestore.rules (isAdmin()) -
-    // username/e-mail são campos que o próprio usuário pode editar em
-    // users/{uid}, então não servem como checagem de admin no client.
+    // Same uid used as the source of truth in firestore.rules (isAdmin()) —
+    // username/email are user-editable fields under users/{uid}, so they
+    // cannot be used as an admin check on the client.
     val isAppOwner = userId == "Uf3tNfKKE3hnQ7xhLxaZpW1QyIC2"
     val launcherProvider = rememberLauncherProvider()
 
@@ -245,9 +245,9 @@ fun BolaoDetailContent(
     var selectedRound by rememberSaveable { mutableIntStateOf(0) }
     var selectedPhase by rememberSaveable { mutableStateOf<Phase?>(Phase.FRIENDLIES) }
     var selectedLabel by rememberSaveable(bolaoId) { mutableStateOf<String?>(null) }
-    // Saveable (não só remember) para que a posição de rolagem sobreviva à
-    // navegação pra tela de palpite e volta sem precisar recalcular/forçar
-    // um scroll manual - a tela volta exatamente como o usuário deixou.
+    // rememberSaveable (not just remember) so the scroll position survives
+    // navigating to the prediction screen and back without recomputing or
+    // forcing a manual scroll — the screen returns exactly as the user left it.
     val groupsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val knockoutListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val expandedGroups =

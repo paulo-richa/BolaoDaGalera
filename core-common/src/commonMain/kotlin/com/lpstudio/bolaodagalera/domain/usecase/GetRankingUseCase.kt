@@ -7,14 +7,14 @@ import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.domain.model.User
 
 /**
- * Monta o ranking "ao vivo" de um bolão: para cada palpite já pontuado pela
- * Cloud Function (Prediction.points != null), usa o valor oficial do
- * servidor; para palpites de jogos já finalizados que a function ainda não
- * processou, estima localmente com a mesma regra (CalculatePointsUseCase) até
- * o valor oficial chegar. Evita que o ranking mostrado dependa só da
- * pontuação recalculada no cliente (que podia divergir de scoring.js no
- * servidor) sem sacrificar a atualização quase-instantânea ao editar um
- * placar manual.
+ * Builds the "live" ranking for a pool: for each prediction already scored by
+ * the Cloud Function (Prediction.points != null), uses the server's official
+ * value; for predictions on already-finished matches the function hasn't
+ * processed yet, estimates locally with the same rule (CalculatePointsUseCase)
+ * until the official value arrives. This avoids the displayed ranking
+ * depending solely on client-recalculated points (which could diverge from
+ * scoring.js on the server) without sacrificing near-instant updates when a
+ * manual score is edited.
  */
 class GetRankingUseCase(private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase()) {
     operator fun invoke(bolao: Bolao, predictions: List<Prediction>, matches: List<Match>, users: List<User>): List<RankingEntry> {

@@ -4,8 +4,8 @@ import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 
 /**
- * Resolve o nome de exibição de um time em um jogo de mata-mata.
- * Aplica recursividade para encontrar candidatos (bandeiras/nomes) em fases futuras.
+ * Resolves the display name of a team in a knockout-stage match.
+ * Recurses to find candidates (flags/names) in upcoming phases.
  */
 fun resolveDisplayName(
     matchId: String,
@@ -15,8 +15,8 @@ fun resolveDisplayName(
     isHome: Boolean,
     depth: Int = 0
 ): Triple<String, String, String?> {
-    // Se o nome já for de um time real (não for TBD ou "Vencedor..."), usamos ele direto.
-    // O Backend agora é responsável por enviar o nome já limpo/curto.
+    // If the name already belongs to a real team (not TBD or "Winner..."), use it as-is.
+    // The backend is now responsible for sending the name already clean/short.
     val isPlaceholder =
         teamName == "TBD" ||
             teamName.startsWith("Vencedor") ||
@@ -32,7 +32,7 @@ fun resolveDisplayName(
 
     val id = matchId
 
-    // 1. Determinar o ID do jogo de origem baseado na lógica sequencial
+    // 1. Determine the source match ID based on the sequential bracket logic
     val targetId =
         when {
             id.contains("QF") -> {
@@ -54,10 +54,10 @@ fun resolveDisplayName(
 
     if (targetId == null) return Triple(teamName, teamFlag, null)
 
-    // 2. Buscar o jogo de origem
+    // 2. Look up the source match
     val matchSource = allMatches.find { it.id == targetId } ?: return Triple(teamName, teamFlag, null)
 
-    // 3. Se o jogo de origem terminou, resolvemos quem passou
+    // 3. If the source match has finished, resolve who advanced
     if (matchSource.isFinished) {
         val homeRes = resolveDisplayName(matchSource.id, matchSource.homeTeam, matchSource.homeTeamFlag, allMatches, true, depth + 1)
         val awayRes = resolveDisplayName(matchSource.id, matchSource.awayTeam, matchSource.awayTeamFlag, allMatches, false, depth + 1)
@@ -67,7 +67,7 @@ fun resolveDisplayName(
         return if (hScore > aScore) homeRes else awayRes
     }
 
-    // 4. Se o jogo não terminou, tentamos resolver os candidatos recursivamente
+    // 4. If the match hasn't finished, try to resolve the candidates recursively
     if (depth < 3) {
         val (hResName, _, _) =
             resolveDisplayName(
@@ -89,7 +89,7 @@ fun resolveDisplayName(
             )
 
         if (hResName.isNotBlank() && aResName.isNotBlank()) {
-            // O App apenas formata a exibição do "OU", os nomes vêm do backend
+            // The app only formats the "OR" display; the names come from the backend
             val n1 = hResName.split(" ").first()
             val n2 = aResName.split(" ").first()
             return Triple("", "$n1 ou $n2", null)

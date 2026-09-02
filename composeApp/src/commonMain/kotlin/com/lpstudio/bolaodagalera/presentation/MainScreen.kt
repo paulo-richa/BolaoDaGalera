@@ -160,7 +160,7 @@ private fun MainFabMenu(showMenu: Boolean, onToggleMenu: () -> Unit, onCreateBol
                         onCreateBolao()
                     }
                 )
-                Spacer(Modifier.height(8.dp)) // Espaçamento interno reduzido
+                Spacer(Modifier.height(8.dp)) // Reduced internal spacing
             }
         }
 
@@ -232,7 +232,7 @@ private fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) 
                 onClick = { onTabSelected(0) }
             )
 
-            // Espaço maior para o FAB central, afastando os menus do centro de forma equilibrada
+            // Larger gap for the central FAB, evenly pushing the menus away from the center
             Spacer(Modifier.width(140.dp))
 
             TabItem(

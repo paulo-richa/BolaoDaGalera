@@ -109,17 +109,17 @@ class JoinBolaoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, requestSent = false) }
             try {
-                // Agora usamos requestJoinBolao para que o dono precise aceitar
+                // Uses requestJoinBolao so the owner must approve the request
                 val bolao =
                     performanceMonitor.trace("join_bolao") {
                         bolaoRepository.requestJoinBolao(code.trim().uppercase(), userId)
                     }
 
                 if (userId in bolao.participants) {
-                    // Regra 4: Já é membro, sinaliza para navegar direto
+                    // Rule 4: already a member, signal to navigate directly
                     _uiState.update { it.copy(alreadyMemberBolaoId = bolao.id, isLoading = false) }
                 } else {
-                    // Regra 3: Novo pedido enviado
+                    // Rule 3: new join request sent
                     analyticsTracker.logEvent("bolao_join_requested", mapOf("bolao_id" to bolao.id))
                     _uiState.update { it.copy(joinedBolao = bolao, requestSent = true, isLoading = false) }
                 }

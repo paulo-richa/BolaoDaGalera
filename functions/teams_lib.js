@@ -14,11 +14,11 @@ const LIB_TEAMS = {
     // COLOMBIA
     "CD Tolima": { name: "Tolima", flag: "", code: "TOL", crest: "https://crests.football-data.org/4437.png" },
 
-    // CHILE / PARAGUAI
+    // CHILE / PARAGUAY
     "CD Coquimbo Unido": { name: "Coquimbo", flag: "", code: "COQ", crest: "https://crests.football-data.org/7912.png" },
     "Club Cerro Porteño": { name: "Cerro Porteño", flag: "", code: "CCP", crest: "https://crests.football-data.org/9373.png" },
 
-    // BRASIL
+    // BRAZIL
     "SE Palmeiras": { name: "Palmeiras", flag: "", code: "PAL", crest: "https://crests.football-data.org/1769.png" },
     "CR Flamengo": { name: "Flamengo", flag: "", code: "FLA", crest: "https://crests.football-data.org/1783.png" },
     "Cruzeiro EC": { name: "Cruzeiro", flag: "", code: "CRU", crest: "https://crests.football-data.org/1771.png" },

@@ -26,7 +26,7 @@ actual object AdManager {
     }
 
     actual fun prepare() {
-        // Já inicializado via init(activity) na MainActivity
+        // Already initialized via init(activity) in MainActivity
         if (interstitialAd == null) {
             loadInterstitial()
         }

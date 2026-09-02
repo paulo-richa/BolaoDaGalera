@@ -68,7 +68,7 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
             .map { snapshot ->
                 snapshot.documents
                     .map { doc -> doc.data<BolaoDto>().toDomain(doc.id) }
-                    .filter { it.deletedAtMillis == null } // Oculta bolões marcados para deleção
+                    .filter { it.deletedAtMillis == null } // Hide bolões marked for deletion
             }
             .catch { e ->
                 crashReporter.recordException(e, "Erro ao observar bolões")
@@ -86,7 +86,7 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
             if (doc.exists) {
                 doc.data<BolaoDto>().toDomain(doc.id)
             } else {
-                Bolao() // Retorna um objeto vazio em vez de crashar se deletado
+                Bolao() // Return an empty object instead of crashing if deleted
             }
         }.catch { e ->
             crashReporter.recordException(e, "Erro ao observar bolão $bolaoId")
@@ -159,7 +159,7 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
         val doc = snapshot.documents.first()
         val bolao = doc.data<BolaoDto>().toDomain(doc.id)
 
-        // 2. Garante que o usuário existe na coleção 'users' para aparecer no ranking
+        // 2. Ensure the user exists in the 'users' collection so they appear in the ranking
         try {
             val userRef = db.collection("users").document(userId)
             val userDoc = userRef.get()
@@ -177,7 +177,7 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
         } catch (e: Exception) {
         }
 
-        // 3. Adiciona diretamente aos participantes
+        // 3. Add directly to the participants
         if (userId !in bolao.participants) {
             val updatedParticipants = bolao.participants + userId
             val updatedPending = bolao.pendingParticipants - userId
@@ -187,7 +187,7 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                 "pendingParticipants" to updatedPending
             )
 
-            // Inicializa o ranking para o usuário aparecer na lista imediatamente
+            // Initialize the ranking entry so the user appears in the list immediately
             initializeRankingEntry(bolao.id, userId)
 
             return bolao.copy(participants = updatedParticipants, pendingParticipants = updatedPending)
@@ -218,7 +218,7 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                 "participants" to FieldValue.arrayUnion(userId),
                 "pendingParticipants" to FieldValue.arrayRemove(userId)
             )
-            // Inicializa o ranking ao aprovar a entrada
+            // Initialize the ranking entry when approving the join request
             initializeRankingEntry(bolaoId, userId)
         } else {
             collection.document(bolaoId).update("pendingParticipants" to FieldValue.arrayRemove(userId))
@@ -249,7 +249,7 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                 "pendingParticipants" to FieldValue.arrayRemove(userId)
             )
 
-            // Inicializa o ranking para o usuário aparecer na lista imediatamente
+            // Initialize the ranking entry so the user appears in the list immediately
             initializeRankingEntry(bolaoId, userId)
 
             logger.d { "[BolaoRepo] update atômico e ranking inicial concluídos." }
@@ -286,14 +286,15 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
     }
 
     override suspend fun leaveBolao(bolaoId: String, userId: String) {
-        // 1. Remove o usuário da lista de participantes
+        // 1. Remove the user from the participants list
         collection.document(bolaoId).update("participants" to FieldValue.arrayRemove(userId))
 
-        // Nota: NÃO apagamos os palpites (predictions) do usuário.
-        // Isso permite que ele volte ao bolão sem perder seu histórico.
-        // O ranking já filtra apenas por participantes ativos, então ele sumirá do ranking automaticamente.
+        // Note: we do NOT delete the user's predictions.
+        // This lets them rejoin the bolão without losing their history.
+        // The ranking already filters to active participants only, so they
+        // disappear from it automatically.
 
-        // 2. Apaga qualquer convite pendente para este usuário neste bolão
+        // 2. Delete any pending invitation for this user in this bolão
         try {
             val invitesSnapshot =
                 db.collection("invitations")
@@ -328,16 +329,16 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
     }
 
     override suspend fun deleteBolao(bolaoId: String) {
-        // Agora o bolão não é deletado imediatamente.
-        // Ele é marcado para deleção e ficará oculto para os usuários.
-        // Uma Cloud Function ou processo de limpeza removerá após 7 dias.
+        // The bolão is not deleted immediately.
+        // It is marked for deletion and hidden from users.
+        // A Cloud Function or cleanup process removes it after 7 days.
         collection.document(bolaoId).update("deletedAtMillis" to TimeSource.nowMillis())
 
-        // Removemos o código do bolão para que ele não possa ser encontrado via busca
+        // Clear the bolão code so it can no longer be found via search
         collection.document(bolaoId).update("code" to "DELETED_$bolaoId")
 
-        // Os dados reais (documento, palpites e convites) continuam existindo por 7 dias
-        // caso o admin se arrependa (recuperação via suporte ou futuramente no app).
+        // The underlying data (document, predictions, invitations) still exists for 7 days
+        // in case the admin reconsiders (recovery via support or, in the future, in-app).
     }
 
     override suspend fun removeParticipant(bolaoId: String, userId: String) {

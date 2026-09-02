@@ -1,6 +1,6 @@
 const admin = require("firebase-admin");
 
-// Inicializa com o ID do projeto (ajuste se necessário)
+// Initialize with the project ID (adjust if needed)
 if (admin.apps.length === 0) {
     admin.initializeApp({
         projectId: "bolaodagalera-bb002"

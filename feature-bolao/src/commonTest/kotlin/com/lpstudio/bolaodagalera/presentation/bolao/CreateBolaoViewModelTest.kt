@@ -73,7 +73,7 @@ class CreateBolaoViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // ---------- DISPONIBILIDADE DE FASES ----------
+    // ---------- PHASE AVAILABILITY ----------
 
     @Test
     fun `isPhaseAvailable retorna false quando nao ha jogos da fase`() {
@@ -98,7 +98,7 @@ class CreateBolaoViewModelTest {
 
     @Test
     fun `isKnockoutAvailable ignora jogos de fase de grupos e amistosos`() = runTest {
-        // Grupos já começaram (passado), mas o mata-mata ainda não
+        // Group stage already started (past), but the knockout stage hasn't
         matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.GROUP_STAGE, pastMillis))
         matchRepository.upsertMatch(match("m2", "LIBERTADORES", Phase.ROUND_OF_16, futureMillis))
 
@@ -112,7 +112,7 @@ class CreateBolaoViewModelTest {
         assertFalse(viewModel.isKnockoutAvailable("LIBERTADORES"))
     }
 
-    // ---------- CRIAÇÃO DO BOLÃO ----------
+    // ---------- POOL CREATION ----------
 
     @Test
     fun `create com sucesso preenche createdBolao com o codigo gerado`() = runTest {

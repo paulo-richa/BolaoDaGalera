@@ -7,13 +7,15 @@ import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 
 /**
- * Reduz a lista completa de jogos de um campeonato à lista que o bolão deve
- * exibir: filtra pelo escopo do bolão, remove duplicatas "fantasma" que a API
- * cria durante a migração de um jogo (mesmo confronto com IDs diferentes) e
- * corta as rodadas já quase todas encerradas antes do bolão ser criado.
+ * Reduces the full list of matches for a championship to the list a pool
+ * should display: filters by the pool's scope, removes "ghost" duplicates
+ * that the API creates while migrating a match (same fixture with different
+ * IDs), and trims rounds that were already mostly finished before the pool
+ * was created.
  *
- * Extraído do combine() de BolaoViewModel: é a maior fonte histórica de bug
- * do app, e viver dentro do lambda impedia testar essa lógica isoladamente.
+ * Extracted from BolaoViewModel's combine(): it was the app's biggest
+ * historical source of bugs, and living inside the lambda made it impossible
+ * to test this logic in isolation.
  */
 class FilterBolaoMatchesUseCase {
     operator fun invoke(bolao: Bolao, matches: List<Match>): List<Match> {
@@ -37,12 +39,12 @@ class FilterBolaoMatchesUseCase {
             if (it.phase == Phase.GROUP_STAGE) {
                 "${it.homeTeamCode}-${it.awayTeamCode}-${it.groupRound()}"
             } else {
-                // Mata-mata: agrupa estritamente pelos nomes dos times e fase.
-                // Isso impede que IDs diferentes do mesmo jogo gerem dois cards.
-                // Enquanto a API não confirma os times (ambos TBD), vários
-                // confrontos diferentes (QF1, QF2, QF3...) ficam com o mesmo
-                // nome genérico "A definir" - nesse caso usa matchOrder para
-                // não colapsar confrontos distintos no mesmo grupo.
+                // Knockout: groups strictly by team names and phase.
+                // This prevents different IDs for the same match from producing two cards.
+                // While the API hasn't confirmed the teams (both TBD), several
+                // different fixtures (QF1, QF2, QF3...) end up with the same
+                // generic "TBD" name - in that case matchOrder is used to
+                // avoid collapsing distinct fixtures into the same group.
                 val teams = if (it.homeTeamCode != "TBD" && it.awayTeamCode != "TBD") {
                     listOf(it.homeTeam, it.awayTeam).sorted().joinToString(" vs ")
                 } else {

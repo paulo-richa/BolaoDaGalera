@@ -3,11 +3,11 @@ package com.lpstudio.bolaodagalera.designsystem.theme
 import androidx.compose.ui.unit.dp
 
 /**
- * Os 6 níveis oficiais de "tonal elevation" do Material 3 (level0...level5).
- * O visual do app é flat (bordas + fundo translúcido em vez de sombra), então
- * a maioria dos componentes usa level0 por padrão - mas os níveis existem
- * pra quando um componente precisar se destacar de verdade (ex: diálogos,
- * que já usam level3 mesmo antes desse token existir, como padrão do M3).
+ * The 6 official Material 3 "tonal elevation" levels (level0...level5).
+ * The app's visual style is flat (borders + translucent background instead
+ * of shadow), so most components default to level0 - but the levels exist
+ * for when a component genuinely needs to stand out (e.g. dialogs, which
+ * already used level3 before this token existed, as the M3 default).
  */
 object BolaoElevation {
     val level0 = 0.dp

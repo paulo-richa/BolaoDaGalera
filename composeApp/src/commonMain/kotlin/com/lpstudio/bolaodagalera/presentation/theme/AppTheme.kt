@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import com.lpstudio.bolaodagalera.SystemAppearance
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
 
-// Re-exportados do :designsystem (fonte única de verdade) para não quebrar
-// os imports existentes em telas que ainda não migraram (Design System Fase 4).
+// Re-exported from :designsystem (single source of truth) to avoid breaking
+// existing imports in screens not yet migrated (Design System Phase 4).
 val Neon = com.lpstudio.bolaodagalera.designsystem.theme.Neon
 val OrangeNeon = com.lpstudio.bolaodagalera.designsystem.theme.OrangeNeon
 val PinkNeon = com.lpstudio.bolaodagalera.designsystem.theme.PinkNeon

@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
-// Singleton global para garantir que os dados persistam na memória do processo
+// Global singleton so data persists across the process's memory
 private val globalInvitations =
     MutableStateFlow<List<Invitation>>(
         listOf(

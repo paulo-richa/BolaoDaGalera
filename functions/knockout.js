@@ -2,24 +2,24 @@ const admin = require("firebase-admin");
 const { logger } = require("firebase-functions");
 
 /**
- * Detecta mudança de mandos de campo entre L1 e L2 (inversão normal em mata-mata)
- * E migra palpites automaticamente quando a API sobrescreve com dados reais
+ * Detects home/away swaps between L1 and L2 (normal inversion in knockout ties)
+ * and automatically migrates predictions when the API overwrites with real data.
  */
 async function migratePredictionsIfMatchChanged(db, matchId, oldMatch, newMatch) {
     try {
-        // Verificar se houve mudança significativa de times
+        // Check whether there was a significant change in teams
         const teamsChanged =
             oldMatch.homeTeamCode !== newMatch.homeTeamCode ||
             oldMatch.awayTeamCode !== newMatch.awayTeamCode;
 
         if (!teamsChanged) {
-            return; // Sem mudança, sem necessidade de migração
+            return; // No change, no migration needed
         }
 
         logger.info(`🔄 Detectada mudança de mandos em ${matchId}. Iniciando migração de palpites...`);
 
-        // Buscar todos os palpites desta partida (palpites moram em
-        // boloes/{bolaoId}/predictions, então precisa de collectionGroup)
+        // Fetch all predictions for this match (predictions live under
+        // boloes/{bolaoId}/predictions, hence the collectionGroup query)
         const snapshot = await db.collectionGroup("predictions").where("matchId", "==", matchId).get();
 
         if (snapshot.empty) {
@@ -27,7 +27,7 @@ async function migratePredictionsIfMatchChanged(db, matchId, oldMatch, newMatch)
             return;
         }
 
-        // Preparar batch de migração
+        // Prepare migration batch
         const batch = db.batch();
         let migratedCount = 0;
 
@@ -36,7 +36,7 @@ async function migratePredictionsIfMatchChanged(db, matchId, oldMatch, newMatch)
             const oldHome = prediction.homeScore || 0;
             const oldAway = prediction.awayScore || 0;
 
-            // Inverte o palpite (L2 tem mandos invertidos)
+            // Invert the prediction (L2 has home/away swapped)
             const updates = {
                 homeScore: oldAway,
                 awayScore: oldHome,

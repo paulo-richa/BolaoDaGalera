@@ -3,29 +3,29 @@ package com.lpstudio.bolaodagalera.domain.model
 import kotlinx.serialization.Serializable
 
 /**
- * Define o comportamento e as regras de exibição de cada campeonato suportado.
- * Agora carregado dinamicamente via Firestore.
+ * Defines the behavior and display rules for each supported championship.
+ * Now loaded dynamically via Firestore.
  */
 @Serializable
 data class Championship(
     val id: String = "",
     val displayName: String = "",
     val emoji: String = "",
-    // Código na API (ex: BSA, CLI)
+    // Code used by the API (e.g. BSA, CLI)
     val apiCode: String = "",
-    // Se exibe a aba de "Tabela"
+    // Whether to show the "Standings" tab
     val hasStandings: Boolean = false,
-    // Se é formato "Pontos Corridos" (ex: Brasileirão)
+    // Whether it's a "league table" format (e.g. Brasileirão)
     val isPointsBased: Boolean = false,
-    // Se tem fase de grupos seguida de mata-mata (ex: Libertadores)
+    // Whether it has a group stage followed by knockout (e.g. Libertadores)
     val isGroupsAndKnockout: Boolean = false,
-    // Se o mata-mata tem jogos de ida e volta
+    // Whether the knockout stage has two-legged ties
     val isTwoLegged: Boolean = false,
-    // Se está liberado para criação de novos bolões
+    // Whether new pools can be created for it
     val isAvailable: Boolean = true
 ) {
     companion object {
-        // Fallback genérico para quando os dados ainda não foram carregados
+        // Generic fallback for when data hasn't loaded yet
         val DEFAULT =
             Championship(
                 id = "UNKNOWN",
@@ -34,8 +34,8 @@ data class Championship(
                 isAvailable = false
             )
 
-        // Cache local para busca rápida por ID (Sincronizado pelo Repository)
-        // Usamos State para que as UIs recomponham automaticamente quando o cache for preenchido
+        // Local cache for fast lookup by ID (synchronized by the Repository)
+        // Uses State so UIs automatically recompose when the cache is populated
         private val _cachedChampionships = androidx.compose.runtime.mutableStateOf(listOf<Championship>())
         val cachedChampionships: List<Championship> get() = _cachedChampionships.value
 

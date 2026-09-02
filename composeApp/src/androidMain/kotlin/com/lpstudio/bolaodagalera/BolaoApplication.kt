@@ -8,11 +8,11 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
 /**
- * KoinApplication (Compose) usado em App.kt não registra uma instância global
- * do Koin - ela só vale dentro da árvore de composição. Componentes Android
- * fora do Compose (como o FirebaseMessagingService, que roda mesmo com o app
- * em background/morto) precisam de uma instância global de verdade, por isso
- * iniciamos o Koin aqui também.
+ * The KoinApplication (Compose) used in App.kt does not register a global Koin
+ * instance - it is only valid within the composition tree. Android components
+ * outside Compose (such as FirebaseMessagingService, which runs even when the
+ * app is backgrounded/killed) require an actual global instance, so Koin is
+ * also started here.
  */
 class BolaoApplication : Application() {
     override fun onCreate() {
@@ -21,8 +21,8 @@ class BolaoApplication : Application() {
             androidContext(this@BolaoApplication)
             modules(appModule)
         }
-        // Encaminha logs (Kermit) como breadcrumbs do Crashlytics, além do writer
-        // padrão (Logcat), para dar contexto do que aconteceu antes de um crash.
+        // Forward Kermit logs as Crashlytics breadcrumbs in addition to the default
+        // writer (Logcat), providing context on what happened before a crash.
         Logger.addLogWriter(CrashlyticsLogWriter())
     }
 }

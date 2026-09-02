@@ -62,7 +62,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
 
     LaunchedEffect(Unit) {
         startAnimation = true
-        delay(2500) // Tempo da Splash restaurado
+        delay(2500) // Restored splash duration
         onSplashFinished()
     }
 
@@ -77,7 +77,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Logo Central
+            // Centered logo
             Box(
                 modifier =
                 Modifier

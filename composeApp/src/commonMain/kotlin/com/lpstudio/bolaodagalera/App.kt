@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
 
-// ── Configuração de dados ─────────────────────
+// ── Data configuration ─────────────────────
 
 @Composable
 fun App() {
@@ -46,12 +46,12 @@ fun App() {
 
         val showAds by remoteConfigManager.showAds.collectAsState()
 
-        // Atualiza o estado global de anúncios para o AdManager (interstitials)
+        // Update the global ads state for AdManager (interstitials)
         LaunchedEffect(showAds) {
             AdManager.setEnabled(showAds)
         }
 
-        // Pré-carrega anúncios (Interstitiais) se estiverem ativados
+        // Preload interstitial ads if enabled
         LaunchedEffect(Unit) {
             AdManager.prepare()
         }
@@ -76,17 +76,17 @@ fun App() {
 
         LaunchedEffect(currentUser) {
             try {
-                // Remote Config pode ser buscado sem login
+                // Remote Config can be fetched without login
                 remoteConfigManager.fetchAndActivate()
 
-                // Operações no Firestore DEVEM aguardar login para evitar PERMISSION_DENIED
+                // Firestore operations MUST wait for login to avoid PERMISSION_DENIED
                 if (currentUser != null) {
-                    // Inicia carregamento de campeonatos e mantém cache atualizado
+                    // Start loading championships and keep the cache up to date
                     championshipRepository.refreshCache()
                     championshipRepository.getChampionships().collect { }
                 }
             } catch (_: Exception) {
-                // Falha silenciosa
+                // Silent failure
             }
         }
 
@@ -96,10 +96,10 @@ fun App() {
                     Modifier
                         .fillMaxSize()
                         .background(DeepNavy)
-                        // Resolve sobreposição em todas as telas
+                        // Resolve overlap across all screens
                         .navigationBarsPadding()
                 ) {
-                    // Background sólido para a status bar para dar destaque aos ícones
+                    // Solid background for the status bar to make icons stand out
                     Spacer(
                         Modifier
                             .fillMaxWidth()

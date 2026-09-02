@@ -65,7 +65,7 @@ class HomeViewModelTest {
         val state = viewModel.uiState.value
         assertEquals(testUser, state.user)
         assertFalse(state.isLoading)
-        // O FakeBolaoRepository pode vir vazio ou com dados iniciais dependendo da implementação
+        // FakeBolaoRepository may start empty or pre-seeded, depending on the implementation
         assertNotNull(state.boloes)
     }
 
@@ -77,7 +77,7 @@ class HomeViewModelTest {
         assertEquals(emptyList(), state.boloes)
     }
 
-    // ---------- CONVITES ----------
+    // ---------- INVITATIONS ----------
 
     @Test
     fun `aceitar convite adiciona o usuario ao bolao e remove o convite da lista`() = runTest {
@@ -87,7 +87,7 @@ class HomeViewModelTest {
             inviterName = "Dono do Bolão",
             inviteeIdentifier = testUser.id
         )
-        // Aguarda o combine reprocessar após o novo convite
+        // Wait for the combine flow to reprocess after the new invitation
         val invitation = viewModel.uiState.value.invitations.find { it.bolaoId == "bolao-1" }
         assertNotNull(invitation)
 
@@ -124,7 +124,7 @@ class HomeViewModelTest {
         assertFalse(testUser.id in bolao.participants)
     }
 
-    // ---------- NOTIFICAÇÕES PERSISTIDAS (Cloud Functions) ----------
+    // ---------- SERVER-PERSISTED NOTIFICATIONS (Cloud Functions) ----------
 
     @Test
     fun `notificacao persistida pelo servidor aparece na lista do sininho`() = runTest {

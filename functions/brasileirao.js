@@ -20,12 +20,12 @@ async function syncBrasileirao(db, admin, axios) {
         const roundsToSync = [currentMatchday, currentMatchday - 1, currentMatchday - 2].filter(r => r > 0);
         const now = Date.now();
 
-        // Rede de segurança pro caso do currentMatchday da API atrasar pra avançar
-        // de rodada: qualquer jogo que já começou nas últimas 8h e ainda não está
-        // FINISHED entra na sincronização mesmo fora da janela [atual, -1, -2].
-        // Antes isso dependia de status já estar em IN_PLAY/TIMED/LIVE (não pegava
-        // status nulo) e vinha limitado a 10 documentos sem ordenação - podia
-        // deixar de fora justamente a rodada nova que a API ainda não "acordou".
+        // Safety net for cases where the API's currentMatchday lags behind
+        // advancing rounds: any match that started within the last 8h and is
+        // not yet FINISHED is synced even outside the [current, -1, -2] window.
+        // Previously this relied on status already being IN_PLAY/TIMED/LIVE
+        // (missed a null status) and was limited to 10 unordered documents,
+        // which could exclude exactly the new round the API hadn't "woken up" to yet.
         const RECENT_WINDOW_MILLIS = 8 * 3600000;
         const pendingMatchesSnapshot = await matchesRef
             .where('matchDateMillis', '>=', now - RECENT_WINDOW_MILLIS)
@@ -59,7 +59,7 @@ async function syncBrasileirao(db, admin, axios) {
                     const doc = await matchesRef.doc(matchId).get();
                     const existing = doc.exists ? doc.data() : null;
 
-                    // TRAVA DE SEGURANÇA: Se já foi editado manualmente, o robô não mexe mais
+                    // SAFETY LOCK: once manually edited, the sync job no longer touches this match
                     if (existing && existing.isManual) continue;
 
                     if (['POSTPONED', 'CANCELLED', 'SUSPENDED'].includes(m.status)) {
@@ -71,7 +71,7 @@ async function syncBrasileirao(db, admin, axios) {
                     }
 
                     const s = m.score;
-                    // Sempre priorizar regularTime (tempo normal)
+                    // Always prioritize regularTime (regulation score) over full time
                     const hScore = s?.regularTime?.home ?? s?.fullTime?.home;
                     const aScore = s?.regularTime?.away ?? s?.fullTime?.away;
                     const newHScore = hScore !== undefined ? hScore : null;
@@ -83,15 +83,15 @@ async function syncBrasileirao(db, admin, axios) {
                         targetStatus = "FINISHED";
                     }
 
-                    // TRAVA DE SEGURANÇA: nunca aceitar um retrocesso da API (ex.: um jogo
-                    // já FINISHED com placar real virar IN_PLAY/TIMED com placar nulo).
-                    // A football-data.org já mostrou instabilidade de cache/replicação
-                    // que manda dados antigos de volta - preferimos manter o último
-                    // resultado confirmado a sobrescrever com algo pior.
-                    // Usa m.status (valor CRU da API), não targetStatus: nossa própria
-                    // heurística de "promover para FINISHED após 4h parado" (linhas
-                    // acima) pode disfarçar um status ainda incompleto/corrompido como
-                    // se fosse um FINISHED de verdade.
+                    // SAFETY LOCK: never accept a regression from the API (e.g. a match
+                    // already FINISHED with a real score reverting to IN_PLAY/TIMED with
+                    // a null score). football-data.org has shown cache/replication
+                    // instability that returns stale data - we prefer keeping the last
+                    // confirmed result over overwriting it with something worse.
+                    // Uses m.status (raw API value), not targetStatus: our own
+                    // heuristic of "promote to FINISHED after 4h stalled" (lines
+                    // above) could disguise a still-incomplete/corrupted status as
+                    // a genuine FINISHED.
                     const existingIsFinal = existing && existing.status === "FINISHED" &&
                         existing.homeScore !== null && existing.awayScore !== null;
                     const wouldRegress = existingIsFinal &&

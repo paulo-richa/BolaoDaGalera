@@ -1,10 +1,10 @@
 package com.lpstudio.bolaodagalera.ads
 
 /**
- * Abstrai a lógica de "mostrar anúncio intersticial a cada N ações" da
- * implementação real do SDK de Ads (que fica em :composeApp, já que o
- * AdManager depende de cinterop do CocoaPods no iOS e só o módulo com o
- * plugin native.cocoapods consegue referenciá-lo).
+ * Abstracts the "show an interstitial ad every N actions" logic from the
+ * actual Ads SDK implementation (which lives in :composeApp, since
+ * AdManager depends on CocoaPods cinterop on iOS and only the module with
+ * the native.cocoapods plugin can reference it).
  */
 interface InterstitialAdCounter {
     fun incrementAndShowIfNecessary()

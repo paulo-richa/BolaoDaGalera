@@ -45,12 +45,12 @@ class HomeViewModel(
 
     private var dataCollectionJob: kotlinx.coroutines.Job? = null
 
-    // Cache de todos os convites (sem o distinctBy) para facilitar a limpeza ao aceitar
+    // Cache of all invitations (pre-distinctBy) so acceptance can clean them up in bulk
     private var allInvitationsCache: List<Invitation> = emptyList()
 
     init {
         authRepository.authStateFlow.onEach { user ->
-            dataCollectionJob?.cancel() // Cancela fluxos ativos ao mudar de estado de auth
+            dataCollectionJob?.cancel() // Cancel active flows whenever auth state changes
 
             if (user == null) {
                 _uiState.update { it.copy(user = null, isLoading = false, boloes = emptyList(), invitations = emptyList()) }
@@ -73,13 +73,12 @@ class HomeViewModel(
             ) { list1, list2, list3, list4 ->
                 val all = (list1 + list2 + list3 + list4).filter { it.id.isNotBlank() }
                 allInvitationsCache = all
-                all.distinctBy { it.bolaoId } // Garante apenas 1 convite por bolão na UI
+                all.distinctBy { it.bolaoId } // Ensure the UI shows at most 1 invitation per bolão
             }.catch { emit(emptyList()) }
 
-        // Todos os tipos de notificação (convite, pedido de entrada/saída,
-        // resumo diário) já são gravados pelas Cloud Functions em
-        // notifications/{id} - o sininho só reflete o que o servidor mandou,
-        // sem recalcular nada localmente.
+        // All notification types (invitation, join/leave request, daily digest) are
+        // already persisted by the Cloud Functions under notifications/{id}. The bell
+        // icon only reflects what the server wrote — nothing is recomputed client-side.
         dataCollectionJob =
             combine(
                 bolaoRepository.getUserBoloes(user.id),
@@ -127,14 +126,14 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                // 1. Se aceitou, adiciona ao bolão primeiro
+                // 1. On accept, add the participant to the bolão first
                 if (accept) {
                     logger.d { "[HomeVM] Chamando addParticipantDirectly..." }
                     bolaoRepository.addParticipantDirectly(bolaoId, user.id)
                     logger.d { "[HomeVM] addParticipantDirectly concluído." }
                 }
 
-                // 2. Resolve (deleta) todos os convites pendentes deste usuário para este bolão
+                // 2. Resolve (delete) all of this user's pending invitations for this bolão
                 val toResolve =
                     (allInvitationsCache + targetInvitation)
                         .filter { it.bolaoId == bolaoId }
@@ -148,7 +147,7 @@ class HomeViewModel(
                     logger.d { "[HomeVM] Convite ${inv.id} deletado." }
                 }
 
-                // 3. Limpeza local imediata
+                // 3. Immediate local cleanup
                 allInvitationsCache =
                     allInvitationsCache.filter { inv ->
                         inv.bolaoId != bolaoId
@@ -161,7 +160,7 @@ class HomeViewModel(
                 }
                 logger.d { "[HomeVM] Estado UI atualizado (convites filtrados)." }
 
-                // 4. Só navega após o sucesso total
+                // 4. Only navigate once every step above has succeeded
                 if (accept) {
                     logger.d { "[HomeVM] Chamando callback de sucesso para navegação." }
                     onSuccess()

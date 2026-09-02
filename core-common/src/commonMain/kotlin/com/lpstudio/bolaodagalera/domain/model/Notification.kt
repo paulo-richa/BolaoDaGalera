@@ -17,24 +17,24 @@ data class Notification(
 )
 
 enum class NotificationType {
-    // Lembrete de jogo para palpitar
+    // Reminder to submit a prediction for a match
     MATCH_REMINDER,
 
-    // Placar atualizado e pontos somados
+    // Score updated and points tallied
     RESULT_READY,
 
-    // Novo convite para bolão
+    // New invitation to a pool
     INVITATION,
 
-    // Admin: Alguém quer entrar no seu bolão
+    // Admin: someone wants to join your pool
     JOIN_REQUEST,
 
-    // Admin: Alguém quer sair do seu bolão
+    // Admin: someone wants to leave your pool
     EXIT_REQUEST,
 
-    // Resumo de fim de rodada/fase: acertos, erros e pontos do usuário naquele recorte
+    // End-of-round/phase summary: hits, misses and points for the user in that period
     ROUND_SUMMARY,
 
-    // Avisos gerais
+    // General announcements
     SYSTEM
 }

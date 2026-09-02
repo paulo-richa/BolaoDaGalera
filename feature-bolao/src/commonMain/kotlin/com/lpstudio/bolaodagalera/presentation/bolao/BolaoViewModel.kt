@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 data class BolaoUiState(
     val bolao: Bolao? = null,
     val matches: List<Match> = emptyList(),
-    /** Lista completa sem filtros */
+    /** Full unfiltered list */
     val allMatches: List<Match> = emptyList(),
     /** matchId -> prediction */
     val userPredictions: Map<String, Prediction> = emptyMap(),

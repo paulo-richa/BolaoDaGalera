@@ -54,7 +54,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
-/** Sentinela de [selectedRound] para a aba "Amanhã" (0 já é usado por "Hoje"). */
+/** Sentinel value of [selectedRound] for the "Tomorrow" tab (0 is already used by "Today"). */
 const val TOMORROW_ROUND = -1
 
 @Composable
@@ -112,10 +112,10 @@ fun GroupStageTab(
     val showShadow by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
     var hasHandledScroll by rememberSaveable(selectedRound) { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
-    // Roda só enquanto esta tela está em primeiro plano (RESUMED), pra não competir
-    // com a navegação pra tela de palpite - o scroll aqui é só o foco inicial
-    // (jogo "ao vivo"/próximo). A posição de rolagem em si (inclusive ao voltar de
-    // um palpite) já é preservada sozinha porque listState é rememberSaveable.
+    // Runs only while this screen is in the foreground (RESUMED), so it doesn't race
+    // with navigation to the prediction screen — this scroll is only the initial focus
+    // (live/next match). The scroll position itself (including on returning from a
+    // prediction) is already preserved on its own since listState is rememberSaveable.
     LaunchedEffect(selectedRound, matches.isNotEmpty(), byGroup) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             if (matches.isEmpty() || byGroup.isEmpty()) return@repeatOnLifecycle

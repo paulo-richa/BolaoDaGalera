@@ -42,7 +42,7 @@ class RankingViewModelTest {
         bolaoRepository = FakeBolaoRepository()
         predictionRepository = FakePredictionRepository(matchRepository)
 
-        // bolao-1 (fixture padrão): championshipId=LIBERTADORES, pointsExactScore=3, pointsWinnerOrDraw=1
+        // bolao-1 (default fixture): championshipId=LIBERTADORES, pointsExactScore=3, pointsWinnerOrDraw=1
         matchRepository.upsertMatch(
             Match(
                 id = matchId,
@@ -61,15 +61,15 @@ class RankingViewModelTest {
             )
         )
 
-        // pauloricha acerta o placar exato (3 pts)
+        // pauloricha predicts the exact score (3 pts)
         predictionRepository.savePrediction(
             Prediction(userId = "pauloricha", bolaoId = "bolao-1", matchId = matchId, homeScore = 2, awayScore = 1)
         )
-        // u3 acerta só o vencedor (1 pt)
+        // u3 predicts only the winner correctly (1 pt)
         predictionRepository.savePrediction(
             Prediction(userId = "u3", bolaoId = "bolao-1", matchId = matchId, homeScore = 1, awayScore = 0)
         )
-        // u4 erra tudo (0 pts)
+        // u4 misses entirely (0 pts)
         predictionRepository.savePrediction(
             Prediction(userId = "u4", bolaoId = "bolao-1", matchId = matchId, homeScore = 0, awayScore = 0)
         )

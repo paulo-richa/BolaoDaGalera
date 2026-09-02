@@ -123,7 +123,7 @@ class PredictionScreenTest {
     fun incrementar_placar_e_salvar_grava_o_palpite_correto() {
         setContent()
 
-        // 2 cliques no "+" do time da casa (índice 0), 1 clique no "+" do visitante (índice 1)
+        // 2 clicks on the home team's "+" (index 0), 1 click on the away team's "+" (index 1)
         composeTestRule.onAllNodesWithText("+")[0].performClick()
         composeTestRule.onAllNodesWithText("+")[0].performClick()
         composeTestRule.onAllNodesWithText("+")[1].performClick()

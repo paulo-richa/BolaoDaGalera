@@ -39,7 +39,7 @@ class BolaoViewModelTest {
         predictionRepository = FakePredictionRepository(matchRepository)
         bolaoRepository = FakeBolaoRepository()
 
-        // Adiciona alguns jogos ao repositório para evitar que a UI fique vazia e falhe nos asserts
+        // Seed a few matches into the repository so the UI isn't empty and assertions don't fail
         matchRepository.upsertMatch(
             Match(
                 id = "M1",
@@ -87,7 +87,7 @@ class BolaoViewModelTest {
         assertFalse(state.isLoading)
     }
 
-    // ---------- GESTÃO DO BOLÃO (DONO) ----------
+    // ---------- POOL MANAGEMENT (OWNER) ----------
 
     @Test
     fun `aprovar pedido de entrada adiciona o usuario aos participantes`() = runTest {
@@ -125,7 +125,7 @@ class BolaoViewModelTest {
 
     @Test
     fun `dono sai do bolao usando leaveBolao em vez de requestLeaveBolao`() = runTest {
-        // FAKE_USER (pauloricha) é o dono do bolao-1 no fixture padrão
+        // FAKE_USER (pauloricha) is the owner of bolao-1 in the default fixture
         viewModel.leaveBolao()
 
         val state = viewModel.uiState.value

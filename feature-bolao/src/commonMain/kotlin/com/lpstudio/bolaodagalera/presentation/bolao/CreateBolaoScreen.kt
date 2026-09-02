@@ -165,7 +165,7 @@ class CreateBolaoViewModel(
         if (matches.isEmpty()) return false
 
         val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
-        // A fase está disponível se nenhum jogo começou ainda
+        // The phase is available only if none of its matches have kicked off yet
         return matches.all { it.matchDateMillis > now }
     }
 
@@ -179,7 +179,7 @@ class CreateBolaoViewModel(
         if (matches.isEmpty()) return false
 
         val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
-        // O mata-mata está disponível se nenhum jogo dele começou ainda
+        // The knockout stage is available only if none of its matches have kicked off yet
         return matches.all { it.matchDateMillis > now }
     }
 
@@ -238,14 +238,14 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
     var description by remember { mutableStateOf("") }
     var selectedChampionshipId by remember { mutableStateOf("UNKNOWN") }
 
-    // Auto-selecionar o primeiro disponível quando carregar
+    // Auto-select the first available championship on load
     LaunchedEffect(Championship.getAll()) {
         if (selectedChampionshipId == "UNKNOWN") {
             selectedChampionshipId = Championship.getAll().find { it.isAvailable }?.id ?: "UNKNOWN"
         }
     }
 
-    // Calcula disponibilidade reativamente
+    // Recompute availability reactively as matches/championship change
     val isGroupStageAvailable =
         remember(allMatches, selectedChampionshipId) {
             viewModel.isPhaseAvailable(selectedChampionshipId, Phase.GROUP_STAGE)
@@ -257,7 +257,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
     var selectedScope by remember { mutableStateOf(BolaoScope.FULL) }
     var selectedMatchId by remember { mutableStateOf<String?>(null) }
 
-    // Ajuste inicial do scope baseado no campeonato selecionado
+    // Initial scope adjustment based on the selected championship
     LaunchedEffect(selectedChampionshipId) {
         val championship = Championship.fromId(selectedChampionshipId)
         when {
@@ -266,7 +266,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                 selectedMatchId = null
             }
             !championship.isGroupsAndKnockout -> {
-                // Se não tem a mistura (ex: apenas mata-mata como Copa do Brasil)
+                // No groups+knockout mix (e.g. knockout-only, like Copa do Brasil)
                 selectedScope = BolaoScope.ONLY_KNOCKOUT
                 selectedMatchId = null
             }
@@ -290,7 +290,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
     val launcherProvider = rememberLauncherProvider()
     var showSuccessDialog by remember { mutableStateOf(false) }
 
-    // Auto-ajuste do scope se a fase de grupos ou mata-mata acabar/começar
+    // Auto-adjust scope if the group stage or knockout stage becomes unavailable/available
     LaunchedEffect(isGroupStageAvailable, isKnockoutAvailable, selectedChampionshipId) {
         val champ = Championship.fromId(selectedChampionshipId)
         if (champ.isPointsBased) {
@@ -326,7 +326,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
         }
     }
 
-    // Helpers de Validação
+    // Validation helpers
     val nameErrorText = stringResource(Res.string.create_bolao_name_error_too_short)
     val nameError = if (nameTouched && name.trim().length < 10) nameErrorText else null
     val isFormValid = name.trim().length in 10..35
@@ -496,7 +496,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                         .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.xl),
                     verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                 ) {
-                    // Campeonato
+                    // Championship
                     Column(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
                         BolaoText(
                             stringResource(Res.string.create_bolao_section_championship),
@@ -573,7 +573,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                         }
                                     }
 
-                                    // Aqui é onde as opções (Radio Buttons) aparecem apenas para o selecionado
+                                    // Scope radio options are only shown for the selected championship
                                     val showScopeOptions = isSelected && championship.isGroupsAndKnockout
 
                                     if (showScopeOptions) {
@@ -594,7 +594,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                         Column(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)) {
                                             BolaoScope.entries
                                                 .filter { scope ->
-                                                    // Filtros de visibilidade do escopo baseados no campeonato e datas
+                                                    // Scope visibility filters based on championship and match dates
                                                     when (scope) {
                                                         BolaoScope.ONLY_GROUPS ->
                                                             championship.isGroupsAndKnockout && isGroupStageAvailable
@@ -786,7 +786,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                             )
                         }
 
-                        // Info sobre prorrogação e pênaltis
+                        // Note on extra time and penalty shootout scoring
                         BolaoSurface(
                             color = Color.White.copy(alpha = 0.05f),
                             shape = BolaoRadiusShape.md,

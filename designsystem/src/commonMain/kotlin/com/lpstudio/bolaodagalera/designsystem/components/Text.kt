@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.TextUnit
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
 
 /**
- * Ponto único de acesso a texto no app - nenhuma tela deve importar
- * androidx.compose.material3.Text diretamente.
+ * Single access point for text in the app - no screen should import
+ * androidx.compose.material3.Text directly.
  */
 @Composable
 fun BolaoText(

@@ -7,7 +7,7 @@ data class Bolao(
     val id: String = "",
     val name: String = "",
     val description: String = "",
-    // Estrutura para cálculo automático
+    // Structure used for automatic point calculation
     val pointsExactScore: Int = 3,
     val pointsWinnerOrDraw: Int = 1,
     val code: String = "",
