@@ -60,9 +60,6 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.play.services.ads)
             implementation("com.google.firebase:firebase-messaging")
-            implementation("com.google.firebase:firebase-crashlytics")
-            implementation("com.google.firebase:firebase-perf")
-            implementation("com.google.firebase:firebase-analytics")
 
             // UI Testing
             // Note: In KMP, some people use commonTest, but for Compose Android is easiest
@@ -72,6 +69,8 @@ kotlin {
         }
         commonMain.dependencies {
             implementation(project(":designsystem"))
+            implementation(project(":core-common"))
+            implementation(project(":core-data"))
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -80,14 +79,6 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             // implementation(libs.androidx.lifecycle.viewmodelCompose)
             // implementation(libs.androidx.lifecycle.runtimeCompose)
-            // Firebase KMP (GitLive SDK)
-            // The Firebase BOM will be provided at the module-level dependencies
-            // block (outside the kotlin { } sourceSets) because using
-            // platform(...) inside the Kotlin Multiplatform sourceSets can trigger
-            // a Kotlin/Gradle DSL compilation issue. See below for the BOM.
-            implementation(libs.firebase.auth)
-            implementation(libs.firebase.firestore)
-            implementation(libs.firebase.config)
             // Koin
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
