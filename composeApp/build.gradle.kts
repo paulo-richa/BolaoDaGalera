@@ -80,8 +80,6 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
-            // implementation(libs.androidx.lifecycle.viewmodelCompose)
-            // implementation(libs.androidx.lifecycle.runtimeCompose)
             // Koin
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
@@ -94,12 +92,9 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             // Navigation
             implementation(libs.navigation.compose)
-            // DateTime
-            implementation(libs.kotlinx.datetime)
-            // Ktor
+            // Ktor (HTTP client engine required by Coil's network image loader; no direct
+            // Ktor usage in app code - all data access goes through the Firebase SDK)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.json)
             // Coil
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
@@ -191,7 +186,6 @@ dependencies {
 
     // Unit Tests
     testImplementation(libs.kotlin.test)
-    testImplementation(libs.mockk)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.runner)
