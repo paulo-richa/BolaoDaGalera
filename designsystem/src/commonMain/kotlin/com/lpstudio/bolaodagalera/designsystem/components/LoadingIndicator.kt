@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
@@ -33,11 +35,15 @@ fun BolaoFullScreenLoading(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun BolaoLinearProgressIndicator(modifier: Modifier = Modifier, progress: (() -> Float)? = null) {
+fun BolaoLinearProgressIndicator(
+    modifier: Modifier = Modifier,
+    progress: (() -> Float)? = null,
+    trackColor: Color = ProgressIndicatorDefaults.linearTrackColor
+) {
     if (progress != null) {
-        LinearProgressIndicator(progress = progress, modifier = modifier, color = Neon)
+        LinearProgressIndicator(progress = progress, modifier = modifier, color = Neon, trackColor = trackColor)
     } else {
-        LinearProgressIndicator(modifier = modifier, color = Neon)
+        LinearProgressIndicator(modifier = modifier, color = Neon, trackColor = trackColor)
     }
 }
 
