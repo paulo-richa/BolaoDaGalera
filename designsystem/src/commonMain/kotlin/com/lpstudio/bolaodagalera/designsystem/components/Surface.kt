@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoElevation
 
 @Composable
 fun BolaoSurface(
@@ -17,9 +19,20 @@ fun BolaoSurface(
     color: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     border: BorderStroke? = null,
+    tonalElevation: Dp = BolaoElevation.level0,
+    shadowElevation: Dp = BolaoElevation.level0,
     content: @Composable () -> Unit
 ) {
-    Surface(modifier = modifier, shape = shape, color = color, contentColor = contentColor, border = border, content = content)
+    Surface(
+        modifier = modifier,
+        shape = shape,
+        color = color,
+        contentColor = contentColor,
+        border = border,
+        tonalElevation = tonalElevation,
+        shadowElevation = shadowElevation,
+        content = content
+    )
 }
 
 @Composable
@@ -31,6 +44,8 @@ fun BolaoSurface(
     color: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     border: BorderStroke? = null,
+    tonalElevation: Dp = BolaoElevation.level0,
+    shadowElevation: Dp = BolaoElevation.level0,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable () -> Unit
 ) {
@@ -42,6 +57,8 @@ fun BolaoSurface(
         color = color,
         contentColor = contentColor,
         border = border,
+        tonalElevation = tonalElevation,
+        shadowElevation = shadowElevation,
         interactionSource = interactionSource,
         content = content
     )

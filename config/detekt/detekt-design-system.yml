@@ -31,3 +31,5 @@ bolao-design-system:
     active: true
   NoRawSpacingDp:
     active: true
+  NoRawElevation:
+    active: true
