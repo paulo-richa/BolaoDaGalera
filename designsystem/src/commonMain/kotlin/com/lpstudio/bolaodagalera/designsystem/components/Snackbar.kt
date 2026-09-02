@@ -12,14 +12,25 @@ import androidx.compose.ui.unit.dp
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 
-typealias BolaoSnackbarHostState = SnackbarHostState
+/**
+ * Envelopa [SnackbarHostState] pra telas fora do :designsystem não
+ * precisarem depender de material3 só pra guardar essa referência.
+ */
+class BolaoSnackbarHostState internal constructor(internal val delegate: SnackbarHostState) {
+    suspend fun showSnackbar(message: String) {
+        delegate.showSnackbar(message)
+    }
+}
 
 @Composable
-fun rememberBolaoSnackbarHostState(): BolaoSnackbarHostState = remember { SnackbarHostState() }
+fun rememberBolaoSnackbarHostState(): BolaoSnackbarHostState {
+    val delegate = remember { SnackbarHostState() }
+    return remember(delegate) { BolaoSnackbarHostState(delegate) }
+}
 
 @Composable
-fun BolaoSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifier) {
-    SnackbarHost(hostState = hostState, modifier = modifier) { data ->
+fun BolaoSnackbarHost(hostState: BolaoSnackbarHostState, modifier: Modifier = Modifier) {
+    SnackbarHost(hostState = hostState.delegate, modifier = modifier) { data ->
         BolaoSnackbar(data)
     }
 }

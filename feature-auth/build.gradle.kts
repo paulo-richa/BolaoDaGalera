@@ -21,25 +21,29 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            // api (não implementation): funções públicas do design system expõem tipos
-            // desses pacotes na própria assinatura (ex: FabPosition em BolaoScaffold,
-            // ButtonColors em BolaoButton) - se ficassem como implementation, módulos
-            // consumidores que não declaram compose.material3 diretamente (ex:
-            // :feature-auth, de propósito, pra não poder importar material3 bruto)
-            // comilariam sem erro mas gerariam chamadas com ABI incorreta (mangled
-            // name errado), quebrando em runtime com NoSuchMethodError.
-            api(libs.compose.runtime)
-            api(libs.compose.foundation)
-            api(libs.compose.material3)
-            api(libs.compose.ui)
-            api(libs.compose.material.icons.core)
-            implementation(libs.compose.uiToolingPreview)
+            implementation(project(":designsystem"))
+            implementation(project(":core-common"))
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.material.icons.core)
+            implementation(libs.compose.material.icons.extended)
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
+            implementation(libs.kotlinx.coroutines.core)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(project(":core-testing"))
         }
     }
 }
 
 android {
-    namespace = "com.lpstudio.bolaodagalera.designsystem"
+    namespace = "com.lpstudio.bolaodagalera.feature.auth"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {

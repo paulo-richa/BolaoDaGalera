@@ -3,8 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
 }
@@ -21,25 +19,18 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            // api (não implementation): funções públicas do design system expõem tipos
-            // desses pacotes na própria assinatura (ex: FabPosition em BolaoScaffold,
-            // ButtonColors em BolaoButton) - se ficassem como implementation, módulos
-            // consumidores que não declaram compose.material3 diretamente (ex:
-            // :feature-auth, de propósito, pra não poder importar material3 bruto)
-            // comilariam sem erro mas gerariam chamadas com ABI incorreta (mangled
-            // name errado), quebrando em runtime com NoSuchMethodError.
-            api(libs.compose.runtime)
-            api(libs.compose.foundation)
-            api(libs.compose.material3)
-            api(libs.compose.ui)
-            api(libs.compose.material.icons.core)
-            implementation(libs.compose.uiToolingPreview)
+            api(project(":core-common"))
+            implementation(libs.kotlinx.coroutines.core)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }
 
 android {
-    namespace = "com.lpstudio.bolaodagalera.designsystem"
+    namespace = "com.lpstudio.bolaodagalera.core.testing"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {

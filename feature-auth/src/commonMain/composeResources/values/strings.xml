@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- LoginScreen -->
+    <string name="login_logo_content_description">Logo Bolão da Galera</string>
+    <string name="login_title">Bolão da Galera</string>
+    <string name="login_subtitle">Crie e jogue bolões de futebol com os seus amigos</string>
+    <string name="login_field_email_label">E-mail</string>
+    <string name="login_button_change_email">Mudar e-mail</string>
+    <string name="login_field_password_label">Senha</string>
+    <string name="login_password_error_min_length">Mínimo 6 caracteres</string>
+    <string name="login_button_forgot_password">Esqueceu a senha?</string>
+    <string name="login_button_submit">Entrar</string>
+    <string name="login_email_not_found_message">Este e-mail ainda não possui conta no Bolão da Galera.</string>
+    <string name="login_button_create_account_now">CRIAR CONTA AGORA</string>
+    <string name="login_button_continue">Continuar</string>
+
+    <!-- RegisterScreen -->
+    <string name="register_top_bar_title">Criar conta</string>
+    <string name="register_welcome_prefix">Bem-vindo ao</string>
+    <string name="register_app_name">Bolão da Galera</string>
+    <string name="register_name_error_required">Nome obrigatório</string>
+    <string name="register_name_error_invalid">Digite seu nome e sobrenome</string>
+    <string name="register_phone_error_invalid">Telefone inválido (mín. 10 dígitos)</string>
+    <string name="register_nickname_error_invalid">Use apenas letras e números</string>
+    <string name="register_password_error_min_length">Mínimo 6 caracteres</string>
+    <string name="register_confirm_password_error_mismatch">As senhas não coincidem</string>
+    <string name="register_field_name_label">Nome Completo</string>
+    <string name="register_field_email_label">E-mail (ex: joaosilva@gmail.com)</string>
+    <string name="register_field_nickname_label">Apelido (opcional, ex: Fofinho)</string>
+    <string name="register_field_phone_label">Telefone (opcional, ex: 11987654321)</string>
+    <string name="register_field_password_label">Senha (min. 6 caracteres)</string>
+    <string name="register_field_confirm_password_label">Confirmar senha</string>
+    <string name="register_button_submit">Criar conta</string>
+
+    <!-- ProfileScreen -->
+    <string name="profile_top_bar_title">Minha Conta</string>
+    <string name="profile_icon_sign_out_content_description">Sair</string>
+    <string name="profile_sign_out_dialog_title">Sair da conta?</string>
+    <string name="profile_sign_out_dialog_message">Você precisará entrar novamente para acessar seus bolões.</string>
+    <string name="profile_sign_out_dialog_confirm">Sair</string>
+    <string name="profile_delete_account_dialog_title">Excluir conta permanentemente?</string>
+    <string name="profile_delete_account_dialog_message">Esta ação não pode ser desfeita. Todos os seus bolões e palpites serão perdidos.</string>
+    <string name="profile_delete_account_dialog_confirm">Excluir</string>
+    <string name="profile_change_password_dialog_title">Alterar Senha</string>
+    <string name="profile_change_password_dialog_message">Enviaremos um e-mail de recuperação para %1$s para que você possa redefinir sua senha com segurança.</string>
+    <string name="profile_change_password_dialog_confirm">Enviar E-mail</string>
+    <string name="profile_change_password_dialog_dismiss">Cancelar</string>
+    <string name="profile_field_username_label">ID da Conta</string>
+    <string name="profile_field_name_label">Nome Completo (ex: João da Silva)</string>
+    <string name="profile_name_error_invalid">Digite seu nome e sobrenome</string>
+    <string name="profile_field_nickname_label">Apelido (ex: Fofinho)</string>
+    <string name="profile_field_phone_label">Telefone (com DDD, ex: 11987654321)</string>
+    <string name="profile_button_save">Salvar Alterações</string>
+    <string name="profile_option_invite_friends">Convidar Amigos para o App</string>
+    <string name="profile_share_invite_message">Vem jogar o Bolão da Galera comigo! ⚽ Baixe agora e crie seu bolão.\n\nDisponível na Google Play: https://play.google.com/store/apps/details?id=com.lpstudio.bolaodagalera</string>
+    <string name="profile_option_help">Ajuda e Regras</string>
+    <string name="profile_option_change_password">Alterar Senha</string>
+    <string name="profile_option_delete_account">Excluir Minha Conta</string>
+    <string name="profile_version_label">Versão %1$s</string>
+</resources>
