@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.presentation.match
 import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
+import com.lpstudio.bolaodagalera.data.fake.FakeInterstitialAdCounter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
 import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
@@ -66,6 +67,7 @@ class PredictionViewModelTest {
                 FakeCrashReporter(),
                 FakePerformanceMonitor(),
                 FakeAnalyticsTracker(),
+                FakeInterstitialAdCounter(),
                 bolaoId,
                 matchId
             )
@@ -98,6 +100,7 @@ class PredictionViewModelTest {
                 FakeCrashReporter(),
                 FakePerformanceMonitor(),
                 FakeAnalyticsTracker(),
+                FakeInterstitialAdCounter(),
                 bolaoId,
                 "match-que-nao-existe"
             )

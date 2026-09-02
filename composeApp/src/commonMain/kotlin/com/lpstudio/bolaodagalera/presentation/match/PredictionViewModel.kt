@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.presentation.match
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lpstudio.bolaodagalera.ads.InterstitialAdCounter
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Prediction
@@ -11,7 +12,6 @@ import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
-import com.lpstudio.bolaodagalera.util.PredictionAdCounter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +36,7 @@ class PredictionViewModel(
     private val crashReporter: CrashReporter,
     private val performanceMonitor: PerformanceMonitor,
     private val analyticsTracker: AnalyticsTracker,
+    private val interstitialAdCounter: InterstitialAdCounter,
     private val bolaoId: String,
     private val matchId: String
 ) : ViewModel() {
@@ -90,7 +91,7 @@ class PredictionViewModel(
                     "prediction_saved",
                     mapOf("bolao_id" to bolaoId, "match_id" to matchId)
                 )
-                PredictionAdCounter.incrementAndShowIfNecessary()
+                interstitialAdCounter.incrementAndShowIfNecessary()
                 _uiState.update { it.copy(isSaved = true, isLoading = false) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao salvar palpite")

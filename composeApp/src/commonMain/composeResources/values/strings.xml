@@ -226,4 +226,82 @@
 
     <!-- HelpScreen -->
     <string name="help_screen_button_send_request">ENVIAR SOLICITAÇÃO</string>
+
+    <!-- RankingScreen -->
+    <string name="ranking_empty_message">Nenhum participante encontrado</string>
+    <string name="ranking_header_position">#</string>
+    <string name="ranking_header_participant">PARTICIPANTE</string>
+    <string name="ranking_header_points">PTS</string>
+    <string name="ranking_exact_emoji">🎯</string>
+    <string name="ranking_correct_emoji">✅</string>
+    <string name="ranking_legend_title">CRITÉRIOS DE DESEMPATE</string>
+    <string name="ranking_legend_exact_title">Placar Exato</string>
+    <string name="ranking_legend_exact_description">Acerto do resultado cheio da partida.</string>
+    <string name="ranking_legend_correct_title">Resultado</string>
+    <string name="ranking_legend_correct_description">Acerto apenas do vencedor ou do empate.</string>
+    <string name="ranking_podium_crown_emoji">👑</string>
+    <string name="ranking_podium_medal_gold">🥇</string>
+    <string name="ranking_podium_medal_silver">🥈</string>
+    <string name="ranking_podium_medal_bronze">🥉</string>
+    <string name="ranking_podium_points_label">PONTOS</string>
+    <string name="ranking_row_you_suffix">%1$s (Você)</string>
+    <string name="ranking_hits_dialog_title">Acertos de %1$s</string>
+    <string name="ranking_hits_dialog_summary">%1$d pontos ganhos em %2$d palpites</string>
+    <string name="ranking_hits_dialog_empty">Nenhum acerto registrado ainda.</string>
+    <string name="ranking_hits_dialog_close">Fechar</string>
+    <string name="ranking_hit_item_prediction_label">PALPITE</string>
+    <string name="ranking_hit_item_round_prefix">Rodada %1$s</string>
+    <string name="ranking_hit_item_group_prefix">Grupo %1$s</string>
+    <string name="ranking_hit_item_score_label">Placar: %1$sx%2$s</string>
+    <string name="ranking_hit_item_match_names">%1$s x %2$s</string>
+    <string name="ranking_hit_item_prediction_score">%1$sx%2$s</string>
+
+    <!-- MatchPredictionsScreen -->
+    <string name="match_predictions_back_cd">Voltar</string>
+    <string name="match_predictions_title">Palpites da Galera</string>
+    <string name="match_predictions_share_cd">Compartilhar</string>
+    <string name="match_predictions_share_header">📊 *PALPITES DA GALERA*\n\n</string>
+    <string name="match_predictions_share_status_finished"> - Jogo encerrado</string>
+    <string name="match_predictions_share_status_ongoing"> - Jogo em andamento</string>
+    <string name="match_predictions_share_locked">Palpitou 🔒</string>
+    <string name="match_predictions_share_exact_icon"> 🎯</string>
+    <string name="match_predictions_share_correct_icon"> ✅</string>
+    <string name="match_predictions_share_wrong_icon"> ❌</string>
+    <string name="match_predictions_share_points_singular"> - *%1$d PONTO*</string>
+    <string name="match_predictions_share_points_plural"> - *%1$d PONTOS*</string>
+    <string name="match_predictions_share_no_prediction">Sem palpite 😶‍🌫️</string>
+    <string name="match_predictions_status_admin_view">Visualização Admin</string>
+    <string name="match_predictions_status_finished">Jogo encerrado</string>
+    <string name="match_predictions_status_extra_time">Prorrogação</string>
+    <string name="match_predictions_status_penalties">Pênaltis</string>
+    <string name="match_predictions_status_going_extra_time">Indo para prorrogação</string>
+    <string name="match_predictions_status_going_penalties">Indo para pênaltis</string>
+    <string name="match_predictions_status_halftime">Intervalo</string>
+    <string name="match_predictions_status_in_progress">Jogo em andamento</string>
+    <string name="match_predictions_locked_badge">Palpitou</string>
+    <string name="match_predictions_no_prediction">Sem palpite</string>
+
+    <!-- PredictionScreen -->
+    <string name="prediction_back_cd">Voltar</string>
+    <string name="prediction_group_label">Grupo %1$s • %2$s</string>
+    <string name="prediction_vs_label">vs</string>
+    <string name="prediction_score_question">Qual será o placar?</string>
+    <string name="prediction_score_separator">×</string>
+    <string name="prediction_point_exact_emoji">🎯</string>
+    <string name="prediction_point_exact_label">Placar exato</string>
+    <string name="prediction_point_correct_emoji">✅</string>
+    <string name="prediction_point_correct_label">Resultado certo</string>
+    <string name="prediction_point_wrong_emoji">❌</string>
+    <string name="prediction_point_wrong_label">Errou</string>
+    <string name="prediction_rule_emoji">⏱️</string>
+    <string name="prediction_rule_text">Regra: O placar válido para o bolão é o do tempo normal + prorrogação. Pênaltis não são contabilizados.</string>
+    <string name="prediction_button_update">Atualizar palpite</string>
+    <string name="prediction_button_save">Salvar palpite</string>
+    <string name="prediction_success_title">PALPITE SALVO!</string>
+    <string name="prediction_success_subtitle">Boa sorte na torcida!</string>
+    <string name="prediction_stepper_increment">+</string>
+    <string name="prediction_stepper_decrement">–</string>
+    <string name="prediction_points_badge_singular">%1$s pt</string>
+    <string name="prediction_points_badge_plural">%1$s pts</string>
+    <string name="prediction_zero_points">0</string>
 </resources>

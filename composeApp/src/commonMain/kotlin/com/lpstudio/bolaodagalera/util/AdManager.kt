@@ -1,5 +1,7 @@
 package com.lpstudio.bolaodagalera.util
 
+import com.lpstudio.bolaodagalera.ads.InterstitialAdCounter
+
 expect object AdManager {
     fun setEnabled(enabled: Boolean)
 
@@ -8,10 +10,10 @@ expect object AdManager {
     fun showInterstitial()
 }
 
-object PredictionAdCounter {
+object PredictionAdCounter : InterstitialAdCounter {
     private var count = 0
 
-    fun incrementAndShowIfNecessary() {
+    override fun incrementAndShowIfNecessary() {
         count++
         if (count >= 3) {
             AdManager.showInterstitial()
