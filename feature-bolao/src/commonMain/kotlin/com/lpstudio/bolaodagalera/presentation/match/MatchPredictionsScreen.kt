@@ -55,6 +55,7 @@ import bolaodagalera.feature_bolao.generated.resources.Res
 import bolaodagalera.feature_bolao.generated.resources.match_predictions_back_cd
 import bolaodagalera.feature_bolao.generated.resources.match_predictions_locked_badge
 import bolaodagalera.feature_bolao.generated.resources.match_predictions_no_prediction
+import bolaodagalera.feature_bolao.generated.resources.match_predictions_score_separator
 import bolaodagalera.feature_bolao.generated.resources.match_predictions_share_cd
 import bolaodagalera.feature_bolao.generated.resources.match_predictions_share_correct_icon
 import bolaodagalera.feature_bolao.generated.resources.match_predictions_share_exact_icon
@@ -483,7 +484,12 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         BolaoText(hReal.toString(), fontSize = 32.sp, fontWeight = FontWeight.Black, color = Neon)
-                                        BolaoText("×", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                                        BolaoText(
+                                            stringResource(Res.string.match_predictions_score_separator),
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TextMuted
+                                        )
                                         BolaoText(aReal.toString(), fontSize = 32.sp, fontWeight = FontWeight.Black, color = Neon)
                                     }
                                 } else {

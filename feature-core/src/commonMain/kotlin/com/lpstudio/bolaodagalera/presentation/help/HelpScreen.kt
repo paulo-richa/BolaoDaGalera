@@ -55,6 +55,7 @@ import bolaodagalera.feature_core.generated.resources.help_screen_faq_password_a
 import bolaodagalera.feature_core.generated.resources.help_screen_faq_password_question
 import bolaodagalera.feature_core.generated.resources.help_screen_faq_points_answer
 import bolaodagalera.feature_core.generated.resources.help_screen_faq_points_question
+import bolaodagalera.feature_core.generated.resources.help_screen_rule_bullet
 import bolaodagalera.feature_core.generated.resources.help_screen_rule_creation_description
 import bolaodagalera.feature_core.generated.resources.help_screen_rule_creation_extra
 import bolaodagalera.feature_core.generated.resources.help_screen_rule_creation_title
@@ -429,7 +430,11 @@ private fun RuleCard(title: String, description: String, points: List<String> = 
                 Spacer(Modifier.height(12.dp))
                 points.forEach { point ->
                     Row(modifier = Modifier.padding(vertical = 4.dp)) {
-                        BolaoText("•", color = Gold, modifier = Modifier.padding(end = 8.dp))
+                        BolaoText(
+                            stringResource(Res.string.help_screen_rule_bullet),
+                            color = Gold,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
                         BolaoText(point, color = TextMuted, fontSize = 13.sp, lineHeight = 18.sp)
                     }
                 }

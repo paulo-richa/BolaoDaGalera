@@ -32,11 +32,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -52,16 +47,26 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.main_screen_fab_create_bolao
+import bolaodagalera.composeapp.generated.resources.main_screen_fab_join_with_code
+import bolaodagalera.composeapp.generated.resources.main_screen_tab_boloes
+import bolaodagalera.composeapp.generated.resources.main_screen_tab_conta
 import com.lpstudio.bolaodagalera.CommonBackHandler
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
+import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
+import com.lpstudio.bolaodagalera.designsystem.theme.GradientPrimary
+import com.lpstudio.bolaodagalera.designsystem.theme.NavyCard
+import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
+import com.lpstudio.bolaodagalera.designsystem.theme.Neon
+import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.presentation.auth.ProfileScreen
 import com.lpstudio.bolaodagalera.presentation.home.HomeScreen
-import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
-import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
-import com.lpstudio.bolaodagalera.presentation.theme.GradientPrimary
-import com.lpstudio.bolaodagalera.presentation.theme.NavyCard
-import com.lpstudio.bolaodagalera.presentation.theme.NavyElevated
-import com.lpstudio.bolaodagalera.presentation.theme.Neon
-import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MainScreen(
@@ -83,7 +88,7 @@ fun MainScreen(
         }
     }
 
-    Scaffold(
+    BolaoScaffold(
         containerColor = DeepNavy,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
@@ -100,7 +105,7 @@ fun MainScreen(
                 onJoinBolao = onNavigateToJoinBolao
             )
         },
-        floatingActionButtonPosition = FabPosition.Center
+        centerFab = true
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when (selectedTab) {
@@ -140,7 +145,7 @@ private fun MainFabMenu(showMenu: Boolean, onToggleMenu: () -> Unit, onCreateBol
             ) {
                 FabSubItem(
                     icon = Icons.Default.Search,
-                    label = "Entrar com código",
+                    label = stringResource(Res.string.main_screen_fab_join_with_code),
                     onClick = {
                         onToggleMenu()
                         onJoinBolao()
@@ -148,7 +153,7 @@ private fun MainFabMenu(showMenu: Boolean, onToggleMenu: () -> Unit, onCreateBol
                 )
                 FabSubItem(
                     icon = Icons.Default.Add,
-                    label = "Criar novo bolão",
+                    label = stringResource(Res.string.main_screen_fab_create_bolao),
                     onClick = {
                         onToggleMenu()
                         onCreateBolao()
@@ -174,7 +179,7 @@ private fun MainFabMenu(showMenu: Boolean, onToggleMenu: () -> Unit, onCreateBol
                 .clickable(onClick = onToggleMenu),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
+            BolaoIcon(
                 Icons.Default.Add,
                 contentDescription = null,
                 tint = DeepNavy,
@@ -200,14 +205,14 @@ private fun FabSubItem(icon: ImageVector, label: String, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        Icon(icon, null, modifier = Modifier.size(18.dp), tint = Neon)
-        Text(label, fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold)
+        BolaoIcon(icon, null, modifier = Modifier.size(18.dp), tint = Neon)
+        BolaoText(label, fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
 private fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
-    Surface(
+    BolaoSurface(
         color = NavyCard,
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -221,7 +226,7 @@ private fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) 
         ) {
             TabItem(
                 icon = Icons.Default.Home,
-                label = "Bolões",
+                label = stringResource(Res.string.main_screen_tab_boloes),
                 isSelected = selectedTab == 0,
                 onClick = { onTabSelected(0) }
             )
@@ -231,7 +236,7 @@ private fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) 
 
             TabItem(
                 icon = Icons.Default.Person,
-                label = "Conta",
+                label = stringResource(Res.string.main_screen_tab_conta),
                 isSelected = selectedTab == 1,
                 onClick = { onTabSelected(1) }
             )
@@ -252,8 +257,8 @@ private fun TabItem(icon: ImageVector, label: String, isSelected: Boolean, onCli
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(30.dp))
-        Text(
+        BolaoIcon(icon, contentDescription = null, tint = color, modifier = Modifier.size(30.dp))
+        BolaoText(
             text = label,
             color = color,
             fontSize = 13.sp,
