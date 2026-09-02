@@ -11,6 +11,7 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
+import com.lpstudio.bolaodagalera.domain.usecase.EnrichRankingWithParticipantNamesUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.FilterBolaoMatchesUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
@@ -54,7 +55,8 @@ class BolaoViewModel(
     private val authRepository: AuthRepository,
     private val bolaoId: String,
     private val crashReporter: CrashReporter,
-    private val filterBolaoMatches: FilterBolaoMatchesUseCase = FilterBolaoMatchesUseCase()
+    private val filterBolaoMatches: FilterBolaoMatchesUseCase = FilterBolaoMatchesUseCase(),
+    private val enrichRankingWithParticipantNames: EnrichRankingWithParticipantNamesUseCase = EnrichRankingWithParticipantNamesUseCase()
 ) : ViewModel() {
     private val logger = appLogger("BolaoViewModel")
     private val _uiState = MutableStateFlow(BolaoUiState())
@@ -128,21 +130,7 @@ class BolaoViewModel(
                                         predictionRepository.getRanking(bolaoId, championshipId, participants),
                                         flow { emit(authRepository.getUsers(participants)) }
                                     ) { ranking, users ->
-                                        val userMap = users.associateBy { it.id }
-                                        ranking.map { entry ->
-                                            val user = userMap[entry.userId]
-                                            val isGenericName = entry.userName.isBlank() ||
-                                                entry.userName == "Novo Participante" ||
-                                                entry.userName == "Usuário"
-                                            if (user != null && isGenericName) {
-                                                entry.copy(
-                                                    userName = user.name,
-                                                    userNickname = user.nickname.ifBlank { user.username }
-                                                )
-                                            } else {
-                                                entry
-                                            }
-                                        }
+                                        enrichRankingWithParticipantNames(ranking, users)
                                     }
                                 }
                             ) { b, matches, predictions, allPredictions, ranking ->

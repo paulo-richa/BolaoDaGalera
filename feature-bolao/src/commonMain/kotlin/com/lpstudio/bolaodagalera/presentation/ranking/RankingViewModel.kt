@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.Match
+import com.lpstudio.bolaodagalera.domain.model.ParticipantHit
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
@@ -11,6 +12,7 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
+import com.lpstudio.bolaodagalera.domain.usecase.GetParticipantHitsUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.GetRankingUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,8 +27,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class ParticipantHit(val match: Match, val prediction: Prediction, val points: Int)
 
 data class RankingUiState(
     val entries: List<RankingEntry> = emptyList(),
@@ -46,6 +46,7 @@ class RankingViewModel(
     private val crashReporter: CrashReporter,
     private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
     private val getRankingUseCase: GetRankingUseCase = GetRankingUseCase(calculatePointsUseCase),
+    private val getParticipantHits: GetParticipantHitsUseCase = GetParticipantHitsUseCase(calculatePointsUseCase),
     private val bolaoId: String
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(RankingUiState())
@@ -96,30 +97,7 @@ class RankingViewModel(
     }
 
     fun selectParticipant(entry: RankingEntry) {
-        val hits =
-            allPredictions
-                .filter { it.userId == entry.userId }
-                .mapNotNull { pred ->
-                    val match = allMatches.find { it.id == pred.matchId }
-                    if (match != null && match.homeScore != null && match.awayScore != null) {
-                        val points =
-                            pred.points ?: calculatePointsUseCase(
-                                pred,
-                                match.homeScore!!,
-                                match.awayScore!!,
-                                currentBolao.pointsExactScore,
-                                currentBolao.pointsWinnerOrDraw
-                            )
-                        if (points > 0) {
-                            ParticipantHit(match, pred, points)
-                        } else {
-                            null
-                        }
-                    } else {
-                        null
-                    }
-                }
-                .sortedByDescending { it.match.matchDateMillis }
+        val hits = getParticipantHits(entry.userId, allPredictions, allMatches, currentBolao)
 
         _uiState.update {
             it.copy(

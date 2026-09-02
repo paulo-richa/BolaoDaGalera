@@ -83,6 +83,7 @@ import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.domain.model.Match
+import com.lpstudio.bolaodagalera.domain.model.ParticipantHit
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.util.getInitials
 import com.lpstudio.bolaodagalera.util.resolveDisplayName

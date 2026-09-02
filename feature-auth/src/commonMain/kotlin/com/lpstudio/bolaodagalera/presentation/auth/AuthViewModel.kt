@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.domain.usecase.GenerateAvailableUsernameUseCase
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
@@ -32,7 +33,8 @@ class AuthViewModel(
     private val authRepository: AuthRepository,
     private val crashReporter: CrashReporter,
     private val performanceMonitor: PerformanceMonitor,
-    private val analyticsTracker: AnalyticsTracker
+    private val analyticsTracker: AnalyticsTracker,
+    private val generateAvailableUsernameUseCase: GenerateAvailableUsernameUseCase = GenerateAvailableUsernameUseCase(authRepository)
 ) : ViewModel() {
     private val logger = appLogger("AuthViewModel")
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -194,53 +196,7 @@ class AuthViewModel(
 
     fun clearError() = _uiState.update { it.copy(error = null, successMessage = null) }
 
-    suspend fun generateAvailableUsername(fullName: String): String {
-        val parts =
-            fullName.trim().lowercase()
-                .replace(Regex("[^a-z\\s]"), "") // Strip accents/symbols via simplified ASCII filtering
-                .split(" ")
-                .filter { it.length >= 2 }
-
-        if (parts.isEmpty()) return ""
-
-        val firstName = parts[0]
-        val secondName = parts.getOrNull(1) ?: ""
-        val lastPart = parts.last()
-
-        val candidates = mutableListOf<String>()
-        if (secondName.isNotEmpty()) {
-            candidates.add(firstName + secondName)
-            candidates.add(firstName + "." + secondName)
-            candidates.add(firstName.take(1) + secondName)
-        }
-        candidates.add(firstName)
-        if (parts.size >= 3) {
-            candidates.add(firstName.take(1) + secondName.take(1) + lastPart)
-        }
-
-        // Try the predefined candidates first
-        for (candidate in candidates) {
-            try {
-                if (!authRepository.isUsernameInUse(candidate)) return candidate
-            } catch (e: Exception) {
-                // Permission error while signed out: fall back to the first candidate as a suggestion
-                return candidates.firstOrNull() ?: firstName
-            }
-        }
-
-        // Fallback: append a random number when no predefined candidate is available
-        return try {
-            var finalCandidate: String
-            var attempts = 0
-            do {
-                finalCandidate = firstName + kotlin.random.Random.nextInt(100, 999).toString()
-                attempts++
-            } while (attempts < 5 && authRepository.isUsernameInUse(finalCandidate))
-            finalCandidate
-        } catch (e: Exception) {
-            firstName + kotlin.random.Random.nextInt(100, 999).toString()
-        }
-    }
+    suspend fun generateAvailableUsername(fullName: String): String = generateAvailableUsernameUseCase(fullName)
 
     private fun friendlyError(e: Exception): String {
         val msg = e.message?.lowercase() ?: ""
