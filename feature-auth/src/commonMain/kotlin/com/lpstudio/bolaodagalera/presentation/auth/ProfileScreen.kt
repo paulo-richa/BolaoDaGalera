@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -36,7 +35,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import bolaodagalera.feature_auth.generated.resources.Res
 import bolaodagalera.feature_auth.generated.resources.profile_button_save
 import bolaodagalera.feature_auth.generated.resources.profile_change_password_dialog_confirm
@@ -77,6 +75,9 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
 import com.lpstudio.bolaodagalera.designsystem.components.rememberBolaoSnackbarHostState
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
@@ -227,7 +228,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = BolaoSpacing.xxl)
                     .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -238,7 +239,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                 UserAvatar(
                     initials = uiState.user?.name?.getInitials() ?: "?",
                     size = 100.dp,
-                    fontSize = 40.sp,
+                    fontSize = BolaoTypography.displayLarge.fontSize,
                     borderColor = Neon
                 )
 
@@ -246,7 +247,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
 
                 BolaoText(
                     uiState.user?.email ?: "",
-                    fontSize = 14.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     color = TextMuted
                 )
 
@@ -257,11 +258,11 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                     modifier =
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(BolaoRadiusShape.xl)
                         .background(NavyCard)
-                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .border(1.dp, GlassBorder, BolaoRadiusShape.xl)
+                        .padding(BolaoSpacing.xxl),
+                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
                 ) {
                     // Campo ID (Não editável)
                     BolaoTextField(
@@ -281,8 +282,8 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                         BolaoText(
                             stringResource(Res.string.profile_name_error_invalid),
                             color = ErrorRed,
-                            fontSize = 11.sp,
-                            modifier = Modifier.padding(start = 8.dp)
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
+                            modifier = Modifier.padding(start = BolaoSpacing.sm)
                         )
                     }
 
@@ -299,7 +300,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                     )
 
                     uiState.error?.let {
-                        BolaoText(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
+                        BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize, modifier = Modifier.fillMaxWidth())
                     }
 
                     Spacer(Modifier.height(8.dp))
@@ -317,7 +318,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                 // Extra Options
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                 ) {
                     ProfileOptionItem(
                         icon = Icons.Default.Share,
@@ -350,7 +351,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
 
                 BolaoText(
                     stringResource(Res.string.profile_version_label, APP_VERSION),
-                    fontSize = 12.sp,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
                     color = TextSubtle
                 )
 
@@ -375,16 +376,16 @@ private fun ProfileOptionItem(
     BolaoSurface(
         onClick = onClick,
         color = NavyElevated,
-        shape = RoundedCornerShape(12.dp),
+        shape = BolaoRadiusShape.md,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(BolaoSpacing.lg),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
         ) {
             BolaoIcon(icon, null, tint = textColor.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
-            BolaoText(title, color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            BolaoText(title, color = textColor, fontSize = BolaoTypography.bodyLarge.fontSize, fontWeight = FontWeight.Medium)
         }
     }
 }

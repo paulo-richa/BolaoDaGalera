@@ -8,11 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.Gold
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
@@ -28,13 +27,12 @@ fun BolaoChip(text: String, modifier: Modifier = Modifier, containerColor: Color
     Text(
         text = text,
         color = contentColor,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
+        style = BolaoTypography.labelMedium,
         modifier =
         modifier
             .clip(CircleShape)
             .background(containerColor)
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs)
     )
 }
 

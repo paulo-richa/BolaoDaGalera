@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -109,7 +108,10 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
@@ -439,26 +441,26 @@ fun BolaoDetailContent(
             BolaoSurface(
                 modifier = Modifier.fillMaxWidth(0.95f).fillMaxHeight(0.7f),
                 color = NavyCard,
-                shape = RoundedCornerShape(28.dp),
+                shape = BolaoRadiusShape.xxl,
                 border = BorderStroke(1.dp, GlassBorder)
             ) {
-                Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+                Column(modifier = Modifier.fillMaxSize().padding(BolaoSpacing.xxl)) {
                     BolaoText(
                         stringResource(Res.string.bolao_detail_participants_title),
-                        fontSize = 22.sp,
+                        fontSize = BolaoTypography.headlineLarge.fontSize,
                         fontWeight = FontWeight.Black,
                         color = Color.White
                     )
                     BolaoText(
                         stringResource(Res.string.bolao_detail_participants_count, uiState.participants.size),
-                        fontSize = 13.sp,
+                        fontSize = BolaoTypography.bodyLarge.fontSize,
                         color = TextMuted,
-                        modifier = Modifier.padding(bottom = 20.dp)
+                        modifier = Modifier.padding(bottom = BolaoSpacing.xl)
                     )
                     Box(modifier = Modifier.weight(1f)) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md),
                             contentPadding = PaddingValues(vertical = 8.dp)
                         ) {
                             if (isOwner && (uiState.pendingJoinUsers.isNotEmpty() || uiState.pendingExitUsers.isNotEmpty())) {
@@ -466,9 +468,9 @@ fun BolaoDetailContent(
                                     BolaoText(
                                         stringResource(Res.string.bolao_detail_pending_requests_title),
                                         color = Gold,
-                                        fontSize = 14.sp,
+                                        fontSize = BolaoTypography.bodyLarge.fontSize,
                                         fontWeight = FontWeight.Black,
-                                        modifier = Modifier.padding(vertical = 8.dp)
+                                        modifier = Modifier.padding(vertical = BolaoSpacing.sm)
                                     )
                                 }
                                 items(
@@ -501,9 +503,9 @@ fun BolaoDetailContent(
                                     BolaoText(
                                         stringResource(Res.string.bolao_detail_participants_title),
                                         color = TextMuted,
-                                        fontSize = 14.sp,
+                                        fontSize = BolaoTypography.bodyLarge.fontSize,
                                         fontWeight = FontWeight.Black,
-                                        modifier = Modifier.padding(vertical = 8.dp)
+                                        modifier = Modifier.padding(vertical = BolaoSpacing.sm)
                                     )
                                 }
                             }
@@ -511,17 +513,20 @@ fun BolaoDetailContent(
                                 val isOwnerP = p.userId == uiState.bolao?.ownerId
                                 BolaoSurface(
                                     color = NavyElevated,
-                                    shape = RoundedCornerShape(16.dp),
+                                    shape = BolaoRadiusShape.lg,
                                     border = BorderStroke(1.dp, GlassBorder)
                                 ) {
                                     Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(
+                                            horizontal = BolaoSpacing.md,
+                                            vertical = BolaoSpacing.md
+                                        ),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         UserAvatar(
                                             initials = p.userName.getInitials(),
                                             size = 40.dp,
-                                            fontSize = 14.sp,
+                                            fontSize = BolaoTypography.bodyLarge.fontSize,
                                             isOwner = isOwnerP,
                                             borderColor = if (isOwnerP) Gold else Neon.copy(alpha = 0.5f)
                                         )
@@ -530,7 +535,7 @@ fun BolaoDetailContent(
                                             BolaoText(
                                                 text = p.userName,
                                                 color = Color.White,
-                                                fontSize = 14.sp,
+                                                fontSize = BolaoTypography.bodyLarge.fontSize,
                                                 fontWeight = FontWeight.Bold,
                                                 maxLines = 1
                                             )
@@ -538,7 +543,7 @@ fun BolaoDetailContent(
                                                 BolaoText(
                                                     text = "@${p.userNickname.lowercase()}",
                                                     color = TextMuted,
-                                                    fontSize = 11.sp
+                                                    fontSize = BolaoTypography.bodyMedium.fontSize
                                                 )
                                             }
                                         }
@@ -574,7 +579,7 @@ fun BolaoDetailContent(
                                 stringResource(Res.string.bolao_detail_close_button),
                                 color = Neon,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
+                                fontSize = BolaoTypography.titleLarge.fontSize
                             )
                         }
                     }
@@ -596,9 +601,13 @@ fun BolaoDetailContent(
                     BolaoFullScreenLoading()
                 } else {
                     Column(Modifier.fillMaxSize()) {
-                        Box(modifier = Modifier.fillMaxWidth().background(GradientHero).padding(top = 16.dp, bottom = 16.dp)) {
-                            Column(Modifier.padding(horizontal = 20.dp)) {
-                                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().background(
+                                GradientHero
+                            ).padding(top = BolaoSpacing.lg, bottom = BolaoSpacing.lg)
+                        ) {
+                            Column(Modifier.padding(horizontal = BolaoSpacing.xl)) {
+                                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)) {
                                     BolaoIconButton(onClick = onNavigateBack, modifier = Modifier.size(36.dp).offset(x = (-10).dp)) {
                                         BolaoIcon(
                                             Icons.AutoMirrored.Filled.ArrowBack,
@@ -609,10 +618,10 @@ fun BolaoDetailContent(
                                     }
                                     BolaoText(
                                         uiState.bolao?.name ?: stringResource(Res.string.bolao_detail_default_name),
-                                        fontSize = 20.sp,
+                                        fontSize = BolaoTypography.headlineMedium.fontSize,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.White,
-                                        modifier = Modifier.weight(1f).padding(top = 4.dp).offset(x = (-8).dp)
+                                        modifier = Modifier.weight(1f).padding(top = BolaoSpacing.xs).offset(x = (-8).dp)
                                     )
 
                                     BolaoIconButton(onClick = onNavigateToHelp, modifier = Modifier.size(36.dp)) {
@@ -699,7 +708,7 @@ fun BolaoDetailContent(
                                                 modifier =
                                                 Modifier.background(
                                                     NavyCard
-                                                ).border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
+                                                ).border(1.dp, GlassBorder, BolaoRadiusShape.sm)
                                             ) {
                                                 BolaoDropdownMenuItem(text = {
                                                     BolaoText(stringResource(Res.string.bolao_detail_menu_share), color = Color.White)
@@ -736,11 +745,11 @@ fun BolaoDetailContent(
                                         Spacer(Modifier.height(16.dp))
                                         BolaoText(
                                             bolao.description,
-                                            fontSize = 12.sp,
+                                            fontSize = BolaoTypography.bodyMedium.fontSize,
                                             color = TextMuted,
                                             maxLines = 2,
                                             lineHeight = 16.sp,
-                                            modifier = Modifier.padding(horizontal = 4.dp)
+                                            modifier = Modifier.padding(horizontal = BolaoSpacing.xs)
                                         )
                                         Spacer(Modifier.height(12.dp))
                                     }
@@ -753,9 +762,7 @@ fun BolaoDetailContent(
                                                 alpha = 0.1f
                                             ),
                                             shape =
-                                            RoundedCornerShape(
-                                                12.dp
-                                            ),
+                                            BolaoRadiusShape.md,
                                             border =
                                             BorderStroke(
                                                 1.dp,
@@ -767,22 +774,25 @@ fun BolaoDetailContent(
                                             }
                                         ) {
                                             Row(
-                                                modifier = Modifier.padding(12.dp),
+                                                modifier = Modifier.padding(BolaoSpacing.md),
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                                             ) {
-                                                BolaoText(stringResource(Res.string.bolao_detail_warning_emoji), fontSize = 16.sp)
+                                                BolaoText(
+                                                    stringResource(Res.string.bolao_detail_warning_emoji),
+                                                    fontSize = BolaoTypography.titleLarge.fontSize
+                                                )
                                                 BolaoText(
                                                     stringResource(Res.string.bolao_detail_pending_count_message, pCount),
                                                     color = Gold,
-                                                    fontSize = 12.sp,
+                                                    fontSize = BolaoTypography.bodyMedium.fontSize,
                                                     fontWeight = FontWeight.Bold,
                                                     modifier = Modifier.weight(1f)
                                                 )
                                                 BolaoText(
                                                     stringResource(Res.string.bolao_detail_pending_view_button),
                                                     color = Gold,
-                                                    fontSize = 11.sp,
+                                                    fontSize = BolaoTypography.bodyMedium.fontSize,
                                                     fontWeight = FontWeight.Black
                                                 )
                                             }
@@ -791,27 +801,30 @@ fun BolaoDetailContent(
                                     Spacer(Modifier.height(12.dp))
                                     Row(
                                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start),
+                                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md, Alignment.Start),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Row(
                                             modifier =
                                             Modifier.clip(
-                                                RoundedCornerShape(8.dp)
+                                                BolaoRadiusShape.sm
                                             ).background(
                                                 Gold.copy(alpha = 0.15f)
                                             ).border(
                                                 1.dp,
                                                 Gold.copy(alpha = 0.4f),
-                                                RoundedCornerShape(8.dp)
-                                            ).padding(horizontal = 10.dp, vertical = 5.dp),
+                                                BolaoRadiusShape.sm
+                                            ).padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.xs),
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
                                         ) {
-                                            BolaoText(stringResource(Res.string.bolao_detail_key_emoji), fontSize = 12.sp)
+                                            BolaoText(
+                                                stringResource(Res.string.bolao_detail_key_emoji),
+                                                fontSize = BolaoTypography.bodyMedium.fontSize
+                                            )
                                             BolaoText(
                                                 bolao.code,
-                                                fontSize = 13.sp,
+                                                fontSize = BolaoTypography.bodyLarge.fontSize,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Gold,
                                                 letterSpacing = 1.sp
@@ -820,25 +833,28 @@ fun BolaoDetailContent(
                                         Row(
                                             modifier =
                                             Modifier.clip(
-                                                RoundedCornerShape(8.dp)
+                                                BolaoRadiusShape.sm
                                             ).background(
                                                 Neon.copy(alpha = 0.10f)
-                                            ).border(1.dp, Neon.copy(alpha = 0.3f), RoundedCornerShape(8.dp)).clickable {
+                                            ).border(1.dp, Neon.copy(alpha = 0.3f), BolaoRadiusShape.sm).clickable {
                                                 showParticipantsSheet = true
                                             }.padding(
-                                                horizontal = 10.dp,
-                                                vertical = 5.dp
+                                                horizontal = BolaoSpacing.md,
+                                                vertical = BolaoSpacing.xs
                                             ),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement =
                                             Arrangement.spacedBy(
-                                                5.dp
+                                                BolaoSpacing.xs
                                             )
                                         ) {
-                                            BolaoText(stringResource(Res.string.bolao_detail_participants_emoji), fontSize = 12.sp)
+                                            BolaoText(
+                                                stringResource(Res.string.bolao_detail_participants_emoji),
+                                                fontSize = BolaoTypography.bodyMedium.fontSize
+                                            )
                                             BolaoText(
                                                 stringResource(Res.string.bolao_detail_participants_chip, bolao.participants.size),
-                                                fontSize = 12.sp,
+                                                fontSize = BolaoTypography.bodyMedium.fontSize,
                                                 color = Neon,
                                                 fontWeight = FontWeight.SemiBold
                                             )
@@ -846,21 +862,24 @@ fun BolaoDetailContent(
                                         Row(
                                             modifier =
                                             Modifier.clip(
-                                                RoundedCornerShape(8.dp)
+                                                BolaoRadiusShape.sm
                                             ).background(
                                                 Color.White.copy(alpha = 0.05f)
                                             ).border(
                                                 1.dp,
                                                 GlassBorder,
-                                                RoundedCornerShape(8.dp)
-                                            ).padding(horizontal = 10.dp, vertical = 5.dp),
+                                                BolaoRadiusShape.sm
+                                            ).padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.xs),
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
                                         ) {
-                                            BolaoText(stringResource(Res.string.bolao_detail_trophy_emoji), fontSize = 12.sp)
+                                            BolaoText(
+                                                stringResource(Res.string.bolao_detail_trophy_emoji),
+                                                fontSize = BolaoTypography.bodyMedium.fontSize
+                                            )
                                             BolaoText(
                                                 championship.displayName,
-                                                fontSize = 12.sp,
+                                                fontSize = BolaoTypography.bodyMedium.fontSize,
                                                 color = TextMuted,
                                                 fontWeight = FontWeight.Medium
                                             )
@@ -873,9 +892,9 @@ fun BolaoDetailContent(
                                     Modifier.fillMaxWidth().height(
                                         IntrinsicSize.Min
                                     ).clip(
-                                        RoundedCornerShape(12.dp)
-                                    ).background(NavyCard).border(1.dp, GlassBorder, RoundedCornerShape(12.dp)).padding(4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        BolaoRadiusShape.md
+                                    ).background(NavyCard).border(1.dp, GlassBorder, BolaoRadiusShape.md).padding(BolaoSpacing.xs),
+                                    horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
                                 ) {
                                     tabs.forEachIndexed { index, label ->
                                         val selected = selectedTab == index
@@ -893,9 +912,9 @@ fun BolaoDetailContent(
                                             modifier =
                                             Modifier.weight(
                                                 1f
-                                            ).fillMaxHeight().clip(RoundedCornerShape(9.dp)).background(bg).clickable {
+                                            ).fillMaxHeight().clip(BolaoRadiusShape.sm).background(bg).clickable {
                                                 selectedTab = index
-                                            }.padding(vertical = 10.dp, horizontal = 4.dp),
+                                            }.padding(vertical = BolaoSpacing.md, horizontal = BolaoSpacing.xs),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             BolaoText(

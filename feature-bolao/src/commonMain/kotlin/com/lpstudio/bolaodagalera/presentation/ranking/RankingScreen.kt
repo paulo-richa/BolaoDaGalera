@@ -71,6 +71,10 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadius
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
 import com.lpstudio.bolaodagalera.designsystem.theme.Gold
@@ -108,8 +112,8 @@ fun RankingScreen(bolaoId: String) {
                 modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(28.dp),
+                    .padding(horizontal = BolaoSpacing.lg),
+                shape = BolaoRadiusShape.xxl,
                 color = DeepNavy,
                 border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
             ) {
@@ -134,7 +138,7 @@ fun RankingScreen(bolaoId: String) {
 
         uiState.entries.isEmpty() && uiState.error == null ->
             Box(
-                Modifier.fillMaxSize().padding(32.dp),
+                Modifier.fillMaxSize().padding(BolaoSpacing.xxxl),
                 contentAlignment = Alignment.Center
             ) {
                 BolaoText(stringResource(Res.string.ranking_empty_message), color = TextMuted)
@@ -145,7 +149,7 @@ fun RankingScreen(bolaoId: String) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 60.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
                 ) {
                     // ── Podium Section ───────────────────────────────────────────────
                     if (uiState.entries.size >= 3) {
@@ -169,24 +173,24 @@ fun RankingScreen(bolaoId: String) {
                     item(key = "header-stats", contentType = "header") {
                         BolaoSurface(
                             color = NavyCard.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = BolaoRadiusShape.md,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                modifier = Modifier.padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.md),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 BolaoText(
                                     stringResource(Res.string.ranking_header_position),
                                     modifier = Modifier.width(30.dp),
-                                    fontSize = 11.sp,
+                                    fontSize = BolaoTypography.bodyMedium.fontSize,
                                     color = TextMuted,
                                     fontWeight = FontWeight.Bold
                                 )
                                 BolaoText(
                                     stringResource(Res.string.ranking_header_participant),
                                     modifier = Modifier.weight(1f),
-                                    fontSize = 11.sp,
+                                    fontSize = BolaoTypography.bodyMedium.fontSize,
                                     color = TextMuted,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -198,7 +202,7 @@ fun RankingScreen(bolaoId: String) {
                                     BolaoText(
                                         stringResource(Res.string.ranking_header_points),
                                         modifier = Modifier.width(40.dp),
-                                        fontSize = 11.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         color = TextMuted,
                                         fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.Center
@@ -206,13 +210,13 @@ fun RankingScreen(bolaoId: String) {
                                     BolaoText(
                                         stringResource(Res.string.ranking_exact_emoji),
                                         modifier = Modifier.width(30.dp),
-                                        fontSize = 12.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         textAlign = TextAlign.Center
                                     )
                                     BolaoText(
                                         stringResource(Res.string.ranking_correct_emoji),
                                         modifier = Modifier.width(30.dp),
-                                        fontSize = 12.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         textAlign = TextAlign.Center
                                     )
                                 }
@@ -245,50 +249,50 @@ fun RankingScreen(bolaoId: String) {
                             modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 4.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .padding(horizontal = BolaoSpacing.xs)
+                                .clip(BolaoRadiusShape.lg)
                                 .background(NavyCard.copy(alpha = 0.4f))
-                                .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-                                .padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                .border(1.dp, GlassBorder, BolaoRadiusShape.lg)
+                                .padding(BolaoSpacing.xl),
+                            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                         ) {
                             BolaoText(
                                 stringResource(Res.string.ranking_legend_title),
-                                fontSize = 11.sp,
+                                fontSize = BolaoTypography.bodyMedium.fontSize,
                                 fontWeight = FontWeight.Black,
                                 color = Color.White.copy(alpha = 0.5f),
                                 letterSpacing = 1.5.sp
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                BolaoText(stringResource(Res.string.ranking_exact_emoji), fontSize = 14.sp)
+                                BolaoText(stringResource(Res.string.ranking_exact_emoji), fontSize = BolaoTypography.bodyLarge.fontSize)
                                 Spacer(Modifier.width(12.dp))
                                 Column {
                                     BolaoText(
                                         stringResource(Res.string.ranking_legend_exact_title),
-                                        fontSize = 13.sp,
+                                        fontSize = BolaoTypography.bodyLarge.fontSize,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
                                     BolaoText(
                                         stringResource(Res.string.ranking_legend_exact_description),
-                                        fontSize = 11.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         color = TextMuted
                                     )
                                 }
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                BolaoText(stringResource(Res.string.ranking_correct_emoji), fontSize = 14.sp)
+                                BolaoText(stringResource(Res.string.ranking_correct_emoji), fontSize = BolaoTypography.bodyLarge.fontSize)
                                 Spacer(Modifier.width(12.dp))
                                 Column {
                                     BolaoText(
                                         stringResource(Res.string.ranking_legend_correct_title),
-                                        fontSize = 13.sp,
+                                        fontSize = BolaoTypography.bodyLarge.fontSize,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
                                     BolaoText(
                                         stringResource(Res.string.ranking_legend_correct_description),
-                                        fontSize = 11.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         color = TextMuted
                                     )
                                 }
@@ -332,12 +336,12 @@ private fun Podium(
         modifier =
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = BolaoSpacing.xs),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md),
             verticalAlignment = Alignment.Bottom
         ) {
             PodiumPillar(
@@ -403,7 +407,7 @@ private fun PodiumPillar(
                 BolaoText(
                     stringResource(Res.string.ranking_podium_crown_emoji),
                     modifier = Modifier.offset(y = (-18).dp),
-                    fontSize = 20.sp
+                    fontSize = BolaoTypography.headlineMedium.fontSize
                 )
             }
         }
@@ -412,7 +416,7 @@ private fun PodiumPillar(
 
         BolaoText(
             text = entry.userNickname.ifBlank { entry.userName.split(" ").first() },
-            fontSize = 12.sp,
+            fontSize = BolaoTypography.bodyMedium.fontSize,
             fontWeight = FontWeight.Bold,
             color = if (isCurrentUser) Neon else Color.White,
             maxLines = 1
@@ -423,7 +427,7 @@ private fun PodiumPillar(
         // Pillar
         BolaoSurface(
             color = NavyCard,
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            shape = RoundedCornerShape(topStart = BolaoRadius.lg, topEnd = BolaoRadius.lg),
             border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
             modifier =
             Modifier
@@ -442,7 +446,7 @@ private fun PodiumPillar(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    BolaoText(medal, fontSize = 16.sp)
+                    BolaoText(medal, fontSize = BolaoTypography.titleLarge.fontSize)
                     Spacer(Modifier.height(4.dp))
                     BolaoText(
                         text = entry.points.toString(),
@@ -452,7 +456,7 @@ private fun PodiumPillar(
                     )
                     BolaoText(
                         stringResource(Res.string.ranking_podium_points_label),
-                        fontSize = 8.sp,
+                        fontSize = BolaoTypography.labelSmall.fontSize,
                         fontWeight = FontWeight.Bold,
                         color = accentColor,
                         letterSpacing = 1.sp
@@ -470,14 +474,14 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
 
     BolaoSurface(
         color = surfaceColor,
-        shape = RoundedCornerShape(16.dp),
+        shape = BolaoRadiusShape.lg,
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
         modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
         Row(
             modifier =
             Modifier
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.lg),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Position
@@ -487,7 +491,7 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
             ) {
                 BolaoText(
                     text = position.toString(),
-                    fontSize = 14.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     fontWeight = FontWeight.ExtraBold,
                     color = if (position <= 3) Gold else TextMuted
                 )
@@ -497,7 +501,7 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
             UserAvatar(
                 initials = entry.userName.getInitials(),
                 size = 36.dp,
-                fontSize = 14.sp,
+                fontSize = BolaoTypography.bodyLarge.fontSize,
                 borderColor = if (isCurrentUser) Neon else Neon.copy(alpha = 0.3f)
             )
 
@@ -514,7 +518,7 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
                     }
                 BolaoText(
                     text = label,
-                    fontSize = 14.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     maxLines = 1
@@ -530,7 +534,7 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
                 BolaoText(
                     text = entry.points.toString(),
                     modifier = Modifier.width(40.dp),
-                    fontSize = 16.sp,
+                    fontSize = BolaoTypography.titleLarge.fontSize,
                     fontWeight = FontWeight.Black,
                     color = if (isCurrentUser) Neon else Color.White,
                     textAlign = TextAlign.Center
@@ -538,14 +542,14 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
                 BolaoText(
                     text = entry.exactScores.toString(),
                     modifier = Modifier.width(30.dp),
-                    fontSize = 13.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     color = TextMuted,
                     textAlign = TextAlign.Center
                 )
                 BolaoText(
                     text = entry.correctResults.toString(),
                     modifier = Modifier.width(30.dp),
-                    fontSize = 13.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     color = TextMuted,
                     textAlign = TextAlign.Center
                 )
@@ -560,18 +564,18 @@ private fun ParticipantHitsContent(name: String, hits: List<ParticipantHit>, all
         modifier =
         Modifier
             .fillMaxWidth()
-            .padding(24.dp)
+            .padding(BolaoSpacing.xxl)
     ) {
         BolaoText(
             text = stringResource(Res.string.ranking_hits_dialog_title, name),
-            fontSize = 20.sp,
+            fontSize = BolaoTypography.headlineMedium.fontSize,
             fontWeight = FontWeight.Black,
             color = Color.White
         )
         val totalPoints = hits.sumOf { it.points }
         BolaoText(
             text = stringResource(Res.string.ranking_hits_dialog_summary, totalPoints, hits.size),
-            fontSize = 13.sp,
+            fontSize = BolaoTypography.bodyLarge.fontSize,
             color = TextMuted
         )
 
@@ -579,14 +583,18 @@ private fun ParticipantHitsContent(name: String, hits: List<ParticipantHit>, all
 
         if (hits.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = BolaoSpacing.huge),
                 contentAlignment = Alignment.Center
             ) {
-                BolaoText(stringResource(Res.string.ranking_hits_dialog_empty), color = TextMuted, fontSize = 14.sp)
+                BolaoText(
+                    stringResource(Res.string.ranking_hits_dialog_empty),
+                    color = TextMuted,
+                    fontSize = BolaoTypography.bodyLarge.fontSize
+                )
             }
         } else {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md),
                 modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp)
             ) {
                 items(hits.size) { index ->
@@ -641,17 +649,17 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
     BolaoSurface(
         modifier = Modifier.fillMaxWidth(),
         color = accentColor.copy(alpha = 0.08f),
-        shape = RoundedCornerShape(12.dp),
+        shape = BolaoRadiusShape.md,
         border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(BolaoSpacing.lg),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 BolaoText(
                     text = stringResource(Res.string.ranking_hit_item_match_names, hName, aName),
-                    fontSize = 14.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
@@ -671,7 +679,7 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
 
                 BolaoText(
                     text = "$groupInfo$separator$date • $scoreLabel",
-                    fontSize = 11.sp,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
                     color = TextMuted
                 )
             }
@@ -681,7 +689,7 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     BolaoText(
                         text = stringResource(Res.string.ranking_hit_item_prediction_label),
-                        fontSize = 8.sp,
+                        fontSize = BolaoTypography.labelSmall.fontSize,
                         fontWeight = FontWeight.Black,
                         color = TextMuted,
                         letterSpacing = 0.5.sp
@@ -693,7 +701,7 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
                             hit.prediction.homeScore.toString(),
                             hit.prediction.awayScore.toString()
                         ),
-                        fontSize = 16.sp,
+                        fontSize = BolaoTypography.titleLarge.fontSize,
                         fontWeight = FontWeight.Black,
                         color = Color.White
                     )
@@ -712,7 +720,7 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
                 ) {
                     BolaoText(
                         text = "+${hit.points}",
-                        fontSize = 14.sp,
+                        fontSize = BolaoTypography.bodyLarge.fontSize,
                         fontWeight = FontWeight.Black,
                         color = DeepNavy
                     )

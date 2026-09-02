@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
@@ -87,6 +86,9 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
@@ -144,12 +146,14 @@ fun HomeScreen(
     ) {
         uiState.error?.let {
             BolaoSurface(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 90.dp, start = 16.dp, end = 16.dp),
+                modifier = Modifier.align(
+                    Alignment.BottomCenter
+                ).padding(bottom = BolaoSpacing.huge, start = BolaoSpacing.lg, end = BolaoSpacing.lg),
                 color = ErrorRed,
-                shape = RoundedCornerShape(4.dp)
+                shape = BolaoRadiusShape.xs
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(BolaoSpacing.lg),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     BolaoText(it, color = Color.White, modifier = Modifier.weight(1f))
@@ -190,7 +194,7 @@ fun HomeScreen(
                             center = Offset(size.width * 0.9f, 0f)
                         )
                     }
-                    .padding(top = 12.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
+                    .padding(top = BolaoSpacing.md, bottom = BolaoSpacing.xxl, start = BolaoSpacing.xxl, end = BolaoSpacing.xxl)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -200,7 +204,7 @@ fun HomeScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         BolaoText(
                             stringResource(Res.string.home_screen_app_title),
-                            fontSize = 24.sp,
+                            fontSize = BolaoTypography.displaySmall.fontSize,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
                             letterSpacing = (-0.5).sp
@@ -220,18 +224,26 @@ fun HomeScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             BolaoText(
                                 stringResource(Res.string.home_screen_greeting_prefix),
-                                fontSize = 14.sp,
+                                fontSize = BolaoTypography.bodyLarge.fontSize,
                                 color = TextMuted,
                                 fontWeight = FontWeight.Medium
                             )
-                            BolaoText(displayName, fontSize = 14.sp, color = Gold, fontWeight = FontWeight.Bold)
-                            BolaoText(stringResource(Res.string.home_screen_greeting_wave_emoji), fontSize = 14.sp)
+                            BolaoText(
+                                displayName,
+                                fontSize = BolaoTypography.bodyLarge.fontSize,
+                                color = Gold,
+                                fontWeight = FontWeight.Bold
+                            )
+                            BolaoText(
+                                stringResource(Res.string.home_screen_greeting_wave_emoji),
+                                fontSize = BolaoTypography.bodyLarge.fontSize
+                            )
                         }
                     }
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
                     ) {
                         val infiniteTransition = rememberInfiniteTransition(label = "pulse")
                         val pulseScale by infiniteTransition.animateFloat(
@@ -299,7 +311,7 @@ fun HomeScreen(
                         UserAvatar(
                             initials = uiState.user?.name?.getInitials() ?: "C",
                             size = 44.dp,
-                            fontSize = 16.sp,
+                            fontSize = BolaoTypography.titleLarge.fontSize,
                             modifier =
                             Modifier.clickable {
                                 onNavigateToAccount()
@@ -333,17 +345,17 @@ fun HomeScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
                         ) {
                             if (uiState.invitations.isNotEmpty()) {
                                 item {
                                     BolaoText(
                                         stringResource(Res.string.home_screen_section_pending_invitations, uiState.invitations.size),
-                                        fontSize = 11.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         fontWeight = FontWeight.Bold,
                                         color = Gold,
                                         letterSpacing = 1.5.sp,
-                                        modifier = Modifier.padding(bottom = 4.dp)
+                                        modifier = Modifier.padding(bottom = BolaoSpacing.xs)
                                     )
                                 }
                                 items(uiState.invitations, key = { "inv_${it.id}" }) { invitation ->
@@ -362,11 +374,11 @@ fun HomeScreen(
                                 item {
                                     BolaoText(
                                         stringResource(Res.string.home_screen_section_admin_boloes),
-                                        fontSize = 11.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         fontWeight = FontWeight.Bold,
                                         color = TextMuted,
                                         letterSpacing = 1.5.sp,
-                                        modifier = Modifier.padding(bottom = 4.dp, top = 8.dp)
+                                        modifier = Modifier.padding(bottom = BolaoSpacing.xs, top = BolaoSpacing.sm)
                                     )
                                 }
                                 items(adminBoloes, key = {
@@ -377,11 +389,11 @@ fun HomeScreen(
                                 item {
                                     BolaoText(
                                         stringResource(Res.string.home_screen_section_participant_boloes),
-                                        fontSize = 11.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         fontWeight = FontWeight.Bold,
                                         color = TextMuted,
                                         letterSpacing = 1.5.sp,
-                                        modifier = Modifier.padding(bottom = 4.dp, top = 8.dp)
+                                        modifier = Modifier.padding(bottom = BolaoSpacing.xs, top = BolaoSpacing.sm)
                                     )
                                 }
                                 items(participantBoloes, key = {
@@ -402,29 +414,39 @@ fun HomeScreen(
 @Composable
 private fun EmptyState(modifier: Modifier, onCreateClick: () -> Unit, onJoinClick: () -> Unit) {
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier.padding(BolaoSpacing.xxxl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        BolaoText(stringResource(Res.string.home_screen_empty_trophy_emoji), fontSize = 64.sp)
+        BolaoText(stringResource(Res.string.home_screen_empty_trophy_emoji), fontSize = BolaoTypography.displayLarge.fontSize)
         Spacer(Modifier.height(20.dp))
-        BolaoText(stringResource(Res.string.home_screen_empty_title), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        BolaoText(
+            stringResource(Res.string.home_screen_empty_title),
+            fontSize = BolaoTypography.headlineLarge.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
         Spacer(Modifier.height(8.dp))
-        BolaoText(stringResource(Res.string.home_screen_empty_subtitle), fontSize = 14.sp, color = TextMuted, lineHeight = 20.sp)
+        BolaoText(
+            stringResource(Res.string.home_screen_empty_subtitle),
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            color = TextMuted,
+            lineHeight = 20.sp
+        )
         Spacer(Modifier.height(32.dp))
         BolaoButton(text = stringResource(Res.string.home_screen_button_create_bolao), onClick = onCreateClick)
         Spacer(Modifier.height(12.dp))
         BolaoOutlinedButton(
             onClick = onJoinClick,
             modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape = RoundedCornerShape(14.dp),
+            shape = BolaoRadiusShape.lg,
             border = androidx.compose.foundation.BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
             contentColor = Neon
         ) {
             BolaoText(
                 stringResource(Res.string.home_screen_button_join_with_code),
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp
+                fontSize = BolaoTypography.titleLarge.fontSize
             )
         }
     }
@@ -436,20 +458,20 @@ private fun InvitationCard(invitation: Invitation, onAccept: () -> Unit, onDecli
     Box(
         modifier =
         Modifier.fillMaxWidth().clip(
-            RoundedCornerShape(20.dp)
-        ).background(NavyCard).border(1.dp, GlassBorder.copy(alpha = 0.5f), RoundedCornerShape(20.dp)).padding(20.dp)
+            BolaoRadiusShape.xl
+        ).background(NavyCard).border(1.dp, GlassBorder.copy(alpha = 0.5f), BolaoRadiusShape.xl).padding(BolaoSpacing.xl)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier.size(44.dp).clip(CircleShape).background(Gold.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                BolaoText(stringResource(Res.string.home_screen_invitation_emoji), fontSize = 22.sp)
+                BolaoText(stringResource(Res.string.home_screen_invitation_emoji), fontSize = BolaoTypography.headlineLarge.fontSize)
             }
             Spacer(Modifier.height(14.dp))
             BolaoText(
                 text = stringResource(Res.string.home_screen_invitation_message, invitation.inviterName),
-                fontSize = 14.sp,
+                fontSize = BolaoTypography.bodyLarge.fontSize,
                 color = TextMuted,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Medium,
@@ -458,7 +480,7 @@ private fun InvitationCard(invitation: Invitation, onAccept: () -> Unit, onDecli
             Spacer(Modifier.height(10.dp))
             BolaoText(
                 text = invitation.bolaoName.ifBlank { fallbackTitle },
-                fontSize = 22.sp,
+                fontSize = BolaoTypography.headlineLarge.fontSize,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 textAlign = TextAlign.Center,
@@ -467,13 +489,19 @@ private fun InvitationCard(invitation: Invitation, onAccept: () -> Unit, onDecli
             Spacer(Modifier.height(20.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.lg),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 BolaoTextButton(
                     onClick = onDecline,
                     modifier = Modifier.weight(1f).height(48.dp)
-                ) { BolaoText(stringResource(Res.string.home_screen_button_decline), color = TextMuted, fontSize = 14.sp) }
+                ) {
+                    BolaoText(
+                        stringResource(Res.string.home_screen_button_decline),
+                        color = TextMuted,
+                        fontSize = BolaoTypography.bodyLarge.fontSize
+                    )
+                }
                 BolaoButton(
                     text = stringResource(Res.string.home_screen_button_accept_caps),
                     onClick = onAccept,
@@ -489,14 +517,14 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
     Box(
         modifier =
         Modifier.fillMaxWidth().clip(
-            RoundedCornerShape(18.dp)
+            BolaoRadiusShape.xl
         ).background(
             Brush.linearGradient(listOf(NavyElevated, NavyCard))
         ).border(
             1.dp,
             if (isAdmin) Neon.copy(alpha = 0.3f) else GlassBorder,
-            RoundedCornerShape(18.dp)
-        ).clickable(onClick = onClick).padding(18.dp)
+            BolaoRadiusShape.xl
+        ).clickable(onClick = onClick).padding(BolaoSpacing.xl)
     ) {
         Box(
             modifier =
@@ -505,21 +533,21 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
             ).height(
                 48.dp
             ).clip(
-                RoundedCornerShape(2.dp)
+                BolaoRadiusShape.xs
             ).background(
                 if (isAdmin) GradientPrimary else Brush.verticalGradient(listOf(TextMuted, Color.Transparent))
             ).align(Alignment.CenterStart)
         )
-        Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth().padding(start = BolaoSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Row(
                     verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     BolaoText(
                         bolao.name,
-                        fontSize = 17.sp,
+                        fontSize = BolaoTypography.headlineSmall.fontSize,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         modifier = Modifier.weight(1f)
@@ -527,30 +555,30 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                     if (isAdmin) {
                         BolaoText(
                             stringResource(Res.string.home_screen_admin_badge),
-                            fontSize = 9.sp,
+                            fontSize = BolaoTypography.bodySmall.fontSize,
                             fontWeight = FontWeight.Black,
                             color = DeepNavy,
                             modifier =
                             Modifier.padding(
-                                top = 4.dp
-                            ).clip(RoundedCornerShape(4.dp)).background(Neon).padding(horizontal = 6.dp, vertical = 2.dp)
+                                top = BolaoSpacing.xs
+                            ).clip(BolaoRadiusShape.xs).background(Neon).padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs)
                         )
                     }
                 }
                 BolaoText(
                     text = stringResource(Res.string.home_screen_bolao_code_label, bolao.code),
-                    fontSize = 10.sp,
+                    fontSize = BolaoTypography.bodySmall.fontSize,
                     color = Gold.copy(alpha = 0.8f),
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier.padding(top = BolaoSpacing.xs)
                 )
                 Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md), verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)) {
                         BolaoIcon(Icons.Default.Person, null, modifier = Modifier.size(13.dp), tint = Neon)
                         BolaoText(
                             bolao.participants.size.toString(),
-                            fontSize = 12.sp,
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
                             color = Neon,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -558,12 +586,12 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                     Box(
                         modifier =
                         Modifier.clip(
-                            RoundedCornerShape(6.dp)
-                        ).background(Gold.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 3.dp)
+                            BolaoRadiusShape.sm
+                        ).background(Gold.copy(alpha = 0.12f)).padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs)
                     ) {
                         BolaoText(
                             text = Championship.fromId(bolao.championshipId).displayName,
-                            fontSize = 11.sp,
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
                             color = Gold,
                             fontWeight = FontWeight.Bold
                         )
@@ -587,7 +615,7 @@ private fun NotificationDialog(
     BolaoDialog(
         onDismissRequest = onDismiss,
         containerColor = DeepNavy,
-        modifier = Modifier.border(1.dp, GlassBorder, RoundedCornerShape(24.dp)),
+        modifier = Modifier.border(1.dp, GlassBorder, BolaoRadiusShape.xxl),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 BolaoText(
@@ -596,12 +624,12 @@ private fun NotificationDialog(
                     fontWeight = FontWeight.Black
                 )
                 Spacer(Modifier.weight(1f))
-                BolaoText(stringResource(Res.string.home_screen_notification_bell_emoji), fontSize = 18.sp)
+                BolaoText(stringResource(Res.string.home_screen_notification_bell_emoji), fontSize = BolaoTypography.headlineSmall.fontSize)
             }
         },
         text = {
             if (notifications.isEmpty()) {
-                Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxWidth().padding(vertical = BolaoSpacing.xxl), contentAlignment = Alignment.Center) {
                     BolaoText(
                         stringResource(Res.string.home_screen_notification_empty),
                         color = TextMuted,
@@ -609,7 +637,7 @@ private fun NotificationDialog(
                     )
                 }
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
                     items(notifications) { notification ->
                         val bgColor = if (notification.isRead) NavyCard.copy(alpha = 0.6f) else NavyElevated
                         val borderColor = if (notification.isRead) Color.Transparent else Neon.copy(alpha = 0.2f)
@@ -617,17 +645,17 @@ private fun NotificationDialog(
                             modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(BolaoRadiusShape.lg)
                                 .background(bgColor)
-                                .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-                                .padding(16.dp)
+                                .border(1.dp, borderColor, BolaoRadiusShape.lg)
+                                .padding(BolaoSpacing.lg)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 BolaoText(
                                     notification.title,
                                     color = if (notification.isRead) TextMuted else Neon,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
+                                    fontSize = BolaoTypography.bodyLarge.fontSize
                                 )
                                 if (!notification.isRead) {
                                     Spacer(Modifier.width(8.dp))
@@ -638,19 +666,19 @@ private fun NotificationDialog(
                             BolaoText(
                                 notification.message,
                                 color = if (notification.isRead) TextMuted else Color.White,
-                                fontSize = 13.sp,
+                                fontSize = BolaoTypography.bodyLarge.fontSize,
                                 lineHeight = 18.sp
                             )
                             if ((notification.type == NotificationType.INVITATION) && !notification.isRead) {
                                 Spacer(Modifier.height(16.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)) {
                                     BolaoOutlinedButton(
                                         onClick = { onDeclineInvitation(notification.id.removePrefix("invitation_")) },
                                         modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = BolaoRadiusShape.sm,
                                         border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
                                     ) {
-                                        BolaoText(declineText, fontSize = 12.sp, color = TextMuted)
+                                        BolaoText(declineText, fontSize = BolaoTypography.bodyMedium.fontSize, color = TextMuted)
                                     }
                                     BolaoButton(
                                         text = acceptText,

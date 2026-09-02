@@ -10,12 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 
 /**
@@ -31,25 +30,24 @@ fun BolaoEmptyState(
     action: @Composable (() -> Unit)? = null
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(32.dp),
+        modifier = modifier.fillMaxWidth().padding(BolaoSpacing.xxxl),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
     ) {
         if (emoji != null) {
-            Text(emoji, fontSize = 48.sp)
+            Text(emoji, style = BolaoTypography.displayLarge)
         }
         Text(
             title,
             color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
+            style = BolaoTypography.titleLarge,
             textAlign = TextAlign.Center
         )
         if (subtitle != null) {
             Text(
                 subtitle,
                 color = TextMuted,
-                fontSize = 13.sp,
+                style = BolaoTypography.bodyLarge,
                 textAlign = TextAlign.Center
             )
         }

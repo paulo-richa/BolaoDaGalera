@@ -39,6 +39,8 @@ import bolaodagalera.feature_core.generated.resources.maintenance_screen_title
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import org.jetbrains.compose.resources.stringResource
@@ -95,7 +97,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
         Modifier
             .fillMaxSize()
             .background(DeepNavy)
-            .padding(24.dp),
+            .padding(BolaoSpacing.xxl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -135,7 +137,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
         BolaoText(
             text = stringResource(Res.string.maintenance_screen_title),
             color = Color.White,
-            fontSize = 24.sp,
+            fontSize = BolaoTypography.displaySmall.fontSize,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
@@ -145,10 +147,10 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
         BolaoText(
             text = stringResource(Res.string.maintenance_screen_message),
             color = Color.White.copy(alpha = 0.7f),
-            fontSize = 16.sp,
+            fontSize = BolaoTypography.titleLarge.fontSize,
             textAlign = TextAlign.Center,
             lineHeight = 24.sp,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = BolaoSpacing.lg)
         )
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -157,7 +159,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
             BolaoText(
                 stringResource(Res.string.maintenance_screen_button_logout),
                 color = Color.White.copy(alpha = 0.5f),
-                fontSize = 14.sp,
+                fontSize = BolaoTypography.bodyLarge.fontSize,
                 fontWeight = FontWeight.Medium
             )
         }

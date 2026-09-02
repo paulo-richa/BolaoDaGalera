@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
@@ -46,7 +45,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import bolaodagalera.composeapp.generated.resources.Res
 import bolaodagalera.composeapp.generated.resources.main_screen_fab_create_bolao
 import bolaodagalera.composeapp.generated.resources.main_screen_fab_join_with_code
@@ -57,6 +55,9 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientPrimary
@@ -141,7 +142,7 @@ private fun MainFabMenu(showMenu: Boolean, onToggleMenu: () -> Unit, onCreateBol
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
             ) {
                 FabSubItem(
                     icon = Icons.Default.Search,
@@ -196,17 +197,17 @@ private fun MainFabMenu(showMenu: Boolean, onToggleMenu: () -> Unit, onCreateBol
 private fun FabSubItem(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md),
         modifier =
         Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(BolaoRadiusShape.md)
             .background(NavyElevated)
-            .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
+            .border(1.dp, GlassBorder, BolaoRadiusShape.md)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.md)
     ) {
         BolaoIcon(icon, null, modifier = Modifier.size(18.dp), tint = Neon)
-        BolaoText(label, fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold)
+        BolaoText(label, fontSize = BolaoTypography.bodyLarge.fontSize, color = Color.White, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -253,7 +254,7 @@ private fun TabItem(icon: ImageVector, label: String, isSelected: Boolean, onCli
         Modifier
             .clip(CircleShape)
             .clickable(onClick = onClick)
-            .padding(12.dp),
+            .padding(BolaoSpacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -261,7 +262,7 @@ private fun TabItem(icon: ImageVector, label: String, isSelected: Boolean, onCli
         BolaoText(
             text = label,
             color = color,
-            fontSize = 13.sp,
+            fontSize = BolaoTypography.bodyLarge.fontSize,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
     }

@@ -2,7 +2,6 @@ package com.lpstudio.bolaodagalera.designsystem.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LocalTextStyle
@@ -25,8 +24,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassWhite
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyCard
@@ -54,10 +54,10 @@ fun BolaoTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label, color = if (isError) ErrorRed else TextMuted, fontSize = 13.sp) },
+        label = { Text(label, color = if (isError) ErrorRed else TextMuted, style = BolaoTypography.bodyMedium) },
         modifier = modifier.fillMaxWidth(),
         enabled = enabled,
-        shape = RoundedCornerShape(12.dp),
+        shape = BolaoRadiusShape.md,
         isError = isError,
         textStyle = textStyle,
         colors =

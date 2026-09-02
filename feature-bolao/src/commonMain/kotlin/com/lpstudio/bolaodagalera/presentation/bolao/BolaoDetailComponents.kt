@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
@@ -77,6 +76,9 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoLoadingIndicator
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
@@ -137,8 +139,8 @@ fun FilterChip(
     Box(
         modifier =
         modifier.clip(
-            RoundedCornerShape(14.dp)
-        ).background(cColor).border(1.dp, bColor, RoundedCornerShape(14.dp)).then(
+            BolaoRadiusShape.lg
+        ).background(cColor).border(1.dp, bColor, BolaoRadiusShape.lg).then(
             if (isUnlocked) {
                 Modifier.clickable {
                     onClick()
@@ -146,13 +148,13 @@ fun FilterChip(
             } else {
                 Modifier
             }
-        ).padding(vertical = 12.dp, horizontal = 16.dp),
+        ).padding(vertical = BolaoSpacing.md, horizontal = BolaoSpacing.lg),
         contentAlignment = Alignment.Center
     ) {
         BolaoText(
             label,
             color = tColor,
-            fontSize = 11.sp,
+            fontSize = BolaoTypography.bodyMedium.fontSize,
             fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
             maxLines = 1,
             textAlign = TextAlign.Center,
@@ -183,18 +185,18 @@ fun GroupHeader(group: String, isExpanded: Boolean, isCompleted: Boolean, enable
             modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(BolaoRadiusShape.lg)
                 .background(bg)
-                .border(1.dp, bColor, RoundedCornerShape(16.dp))
+                .border(1.dp, bColor, BolaoRadiusShape.lg)
                 .then(if (enabled) Modifier.clickable(onClick = onToggle) else Modifier)
-                .padding(horizontal = 18.dp, vertical = 15.dp),
+                .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.lg),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
                 Box(
                     modifier =
-                    Modifier.width(3.dp).height(16.dp).clip(RoundedCornerShape(2.dp)).background(
+                    Modifier.width(3.dp).height(16.dp).clip(BolaoRadiusShape.xs).background(
                         when {
                             !enabled -> TextMuted.copy(alpha = 0.3f)
                             isCompleted -> Neon
@@ -204,21 +206,27 @@ fun GroupHeader(group: String, isExpanded: Boolean, isCompleted: Boolean, enable
                 )
                 BolaoText(
                     stringResource(Res.string.bolao_detail_components_group_label, group),
-                    fontSize = 14.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     fontWeight = FontWeight.Bold,
                     color = if (enabled) Color.White else TextMuted.copy(alpha = 0.5f)
                 )
                 if (enabled) {
                     if (isCompleted) {
-                        BolaoText(stringResource(Res.string.bolao_detail_components_group_completed_emoji), fontSize = 12.sp)
+                        BolaoText(
+                            stringResource(Res.string.bolao_detail_components_group_completed_emoji),
+                            fontSize = BolaoTypography.bodyMedium.fontSize
+                        )
                     } else {
-                        BolaoText(stringResource(Res.string.bolao_detail_components_group_pending_emoji), fontSize = 12.sp)
+                        BolaoText(
+                            stringResource(Res.string.bolao_detail_components_group_pending_emoji),
+                            fontSize = BolaoTypography.bodyMedium.fontSize
+                        )
                     }
                 } else {
                     BolaoText(
                         stringResource(Res.string.bolao_detail_components_group_locked_emoji),
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(bottom = 1.dp)
+                        fontSize = BolaoTypography.bodySmall.fontSize,
+                        modifier = Modifier.padding(bottom = BolaoSpacing.xs)
                     )
                 }
             }
@@ -295,23 +303,29 @@ fun TeamIcon(crestUrl: String?, flag: AnnotatedString, isTbd: Boolean, size: and
 fun PendingRequestItem(user: User, label: String, accentColor: Color = Neon, onApprove: () -> Unit, onDeny: () -> Unit) {
     BolaoSurface(
         color = NavyElevated,
-        shape = RoundedCornerShape(16.dp),
+        shape = BolaoRadiusShape.lg,
         border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
             UserAvatar(
                 initials = user.name.take(1).uppercase(),
                 size = 40.dp,
-                fontSize = 14.sp,
+                fontSize = BolaoTypography.bodyLarge.fontSize,
                 borderColor = accentColor.copy(alpha = 0.5f)
             )
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                BolaoText(text = user.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                BolaoText(text = label, color = accentColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                BolaoText(
+                    text = user.name,
+                    color = Color.White,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                BolaoText(text = label, color = accentColor, fontSize = BolaoTypography.bodyMedium.fontSize, fontWeight = FontWeight.Medium)
             }
             BolaoIconButton(onClick = onDeny, modifier = Modifier.size(32.dp)) {
                 BolaoIcon(Icons.Default.Close, null, tint = ErrorRed, modifier = Modifier.size(20.dp))

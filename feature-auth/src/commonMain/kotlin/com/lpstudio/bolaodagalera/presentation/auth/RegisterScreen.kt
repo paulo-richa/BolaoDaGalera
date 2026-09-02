@@ -35,7 +35,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import bolaodagalera.feature_auth.generated.resources.Res
 import bolaodagalera.feature_auth.generated.resources.register_app_name
 import bolaodagalera.feature_auth.generated.resources.register_button_submit
@@ -59,6 +58,8 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientBg
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
@@ -187,7 +188,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 28.dp)
+                    .padding(horizontal = BolaoSpacing.xxxl)
                     .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -197,11 +198,11 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                 BolaoText(
                     stringResource(Res.string.register_welcome_prefix),
                     color = TextMuted,
-                    fontSize = 14.sp
+                    fontSize = BolaoTypography.bodyLarge.fontSize
                 )
                 BolaoText(
                     stringResource(Res.string.register_app_name),
-                    fontSize = 28.sp,
+                    fontSize = BolaoTypography.displayMedium.fontSize,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White
                 )
@@ -230,8 +231,8 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             BolaoText(
                                 it,
                                 color = ErrorRed,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                fontSize = BolaoTypography.bodyMedium.fontSize,
+                                modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
                             )
                         }
                     }
@@ -258,8 +259,8 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             BolaoText(
                                 it,
                                 color = ErrorRed,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                fontSize = BolaoTypography.bodyMedium.fontSize,
+                                modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
                             )
                         }
                     }
@@ -281,8 +282,8 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             BolaoText(
                                 it,
                                 color = ErrorRed,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                fontSize = BolaoTypography.bodyMedium.fontSize,
+                                modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
                             )
                         }
                     }
@@ -308,8 +309,8 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             BolaoText(
                                 it,
                                 color = ErrorRed,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                fontSize = BolaoTypography.bodyMedium.fontSize,
+                                modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
                             )
                         }
                     }
@@ -338,8 +339,8 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             BolaoText(
                                 it,
                                 color = ErrorRed,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                fontSize = BolaoTypography.bodyMedium.fontSize,
+                                modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
                             )
                         }
                     }
@@ -366,14 +367,14 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                             BolaoText(
                                 it,
                                 color = ErrorRed,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                fontSize = BolaoTypography.bodyMedium.fontSize,
+                                modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
                             )
                         }
                     }
 
                     uiState.error?.let {
-                        BolaoText(it, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
+                        BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize, modifier = Modifier.fillMaxWidth())
                     }
 
                     Spacer(Modifier.height(4.dp))
