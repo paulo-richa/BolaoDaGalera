@@ -19,8 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -36,18 +34,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.knockout_tab_empty_message
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoFullScreenLoading
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoLinearProgressIndicator
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
-import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.TimeSource
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun KnockoutTab(
@@ -276,7 +278,7 @@ fun KnockoutTab(
                             modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Nenhum jogo de mata-mata hoje.", color = TextMuted, fontSize = 14.sp)
+                            BolaoText(stringResource(Res.string.knockout_tab_empty_message), color = TextMuted, fontSize = 14.sp)
                         }
                     }
                 }
@@ -320,9 +322,8 @@ fun KnockoutTab(
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                    LinearProgressIndicator(
+                    BolaoLinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Neon,
                         trackColor = Color.Transparent
                     )
                 }

@@ -25,21 +25,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,7 +48,55 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.create_bolao_button_add_participants
+import bolaodagalera.composeapp.generated.resources.create_bolao_button_create
+import bolaodagalera.composeapp.generated.resources.create_bolao_button_go_to_bolao
+import bolaodagalera.composeapp.generated.resources.create_bolao_button_share_code
+import bolaodagalera.composeapp.generated.resources.create_bolao_char_count
+import bolaodagalera.composeapp.generated.resources.create_bolao_coming_soon
+import bolaodagalera.composeapp.generated.resources.create_bolao_description_char_count
+import bolaodagalera.composeapp.generated.resources.create_bolao_field_description_label
+import bolaodagalera.composeapp.generated.resources.create_bolao_field_name_label
+import bolaodagalera.composeapp.generated.resources.create_bolao_hero_emoji
+import bolaodagalera.composeapp.generated.resources.create_bolao_hero_subtitle
+import bolaodagalera.composeapp.generated.resources.create_bolao_info_code_message
+import bolaodagalera.composeapp.generated.resources.create_bolao_info_emoji
+import bolaodagalera.composeapp.generated.resources.create_bolao_name_error_too_short
+import bolaodagalera.composeapp.generated.resources.create_bolao_overtime_emoji
+import bolaodagalera.composeapp.generated.resources.create_bolao_overtime_info
+import bolaodagalera.composeapp.generated.resources.create_bolao_scope_full_emoji
+import bolaodagalera.composeapp.generated.resources.create_bolao_scope_groups_closed
+import bolaodagalera.composeapp.generated.resources.create_bolao_scope_groups_emoji
+import bolaodagalera.composeapp.generated.resources.create_bolao_scope_knockout_closed
+import bolaodagalera.composeapp.generated.resources.create_bolao_scope_knockout_emoji
+import bolaodagalera.composeapp.generated.resources.create_bolao_scope_league_emoji
+import bolaodagalera.composeapp.generated.resources.create_bolao_score_exact_label
+import bolaodagalera.composeapp.generated.resources.create_bolao_score_input_decrease
+import bolaodagalera.composeapp.generated.resources.create_bolao_score_input_increase
+import bolaodagalera.composeapp.generated.resources.create_bolao_score_input_point_plural
+import bolaodagalera.composeapp.generated.resources.create_bolao_score_input_point_singular
+import bolaodagalera.composeapp.generated.resources.create_bolao_score_winner_label
+import bolaodagalera.composeapp.generated.resources.create_bolao_section_championship
+import bolaodagalera.composeapp.generated.resources.create_bolao_section_phases
+import bolaodagalera.composeapp.generated.resources.create_bolao_section_scoring
+import bolaodagalera.composeapp.generated.resources.create_bolao_share_message
+import bolaodagalera.composeapp.generated.resources.create_bolao_success_choose_start
+import bolaodagalera.composeapp.generated.resources.create_bolao_success_code_label
+import bolaodagalera.composeapp.generated.resources.create_bolao_success_emoji
+import bolaodagalera.composeapp.generated.resources.create_bolao_success_title
+import bolaodagalera.composeapp.generated.resources.create_bolao_top_bar_title
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoDialog
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoHorizontalDivider
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIconButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoOutlinedButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoRadioButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.domain.model.Bolao
@@ -93,6 +126,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Immutable
@@ -183,7 +217,6 @@ class CreateBolaoViewModel(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: (String) -> Unit, onNavigateBack: () -> Unit) {
     val bolaoRepository = koinInject<BolaoRepository>()
@@ -292,7 +325,8 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
     }
 
     // Helpers de Validação
-    val nameError = if (nameTouched && name.trim().length < 10) "Nome muito curto (mín. 10)" else null
+    val nameErrorText = stringResource(Res.string.create_bolao_name_error_too_short)
+    val nameError = if (nameTouched && name.trim().length < 10) nameErrorText else null
     val isFormValid = name.trim().length in 10..35
 
     LaunchedEffect(uiState.createdBolao) {
@@ -303,7 +337,9 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
 
     if (showSuccessDialog && uiState.createdBolao != null) {
         val bolao = uiState.createdBolao!!
-        AlertDialog(
+        val inviteUrl = "https://bolaodagalera-bb002.web.app/invite?code=${bolao.code}"
+        val shareMessage = stringResource(Res.string.create_bolao_share_message, bolao.name, inviteUrl, bolao.code)
+        BolaoDialog(
             onDismissRequest = {
                 showSuccessDialog = false
                 onCreated(bolao.id)
@@ -314,10 +350,10 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("🎉", fontSize = 48.sp)
+                    BolaoText(stringResource(Res.string.create_bolao_success_emoji), fontSize = 48.sp)
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Bolão Criado!",
+                    BolaoText(
+                        stringResource(Res.string.create_bolao_success_title),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
@@ -329,8 +365,8 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        "Seu código de convite é:",
+                    BolaoText(
+                        stringResource(Res.string.create_bolao_success_code_label),
                         color = TextMuted,
                         fontSize = 14.sp
                     )
@@ -343,7 +379,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                             .border(1.dp, Gold.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                             .padding(horizontal = 24.dp, vertical = 12.dp)
                     ) {
-                        Text(
+                        BolaoText(
                             bolao.code,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -352,8 +388,8 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                         )
                     }
                     Spacer(Modifier.height(20.dp))
-                    Text(
-                        "Escolha como quer começar:",
+                    BolaoText(
+                        stringResource(Res.string.create_bolao_success_choose_start),
                         color = TextMuted,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
@@ -368,35 +404,36 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     BolaoButton(
-                        text = "Adicionar Participantes",
+                        text = stringResource(Res.string.create_bolao_button_add_participants),
                         onClick = {
                             showSuccessDialog = false
                             onNavigateToAddParticipants(bolao.id)
                         }
                     )
-                    OutlinedButton(
+                    BolaoOutlinedButton(
                         onClick = {
-                            val inviteUrl = "https://bolaodagalera-bb002.web.app/invite?code=${bolao.code}"
-                            launcherProvider.shareText(
-                                "Entre no meu bolão '${bolao.name}'! 🏆\n\nLink: $inviteUrl\n\nCódigo: ${bolao.code}"
-                            )
+                            launcherProvider.shareText(shareMessage)
                         },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Neon)
+                        contentColor = Neon
                     ) {
-                        Text("Compartilhar Código", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        BolaoText(
+                            stringResource(Res.string.create_bolao_button_share_code),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp
+                        )
                     }
-                    TextButton(
+                    BolaoTextButton(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = {
                             showSuccessDialog = false
                             onCreated(bolao.id)
                         }
                     ) {
-                        Text(
-                            "Ir para o bolão",
+                        BolaoText(
+                            stringResource(Res.string.create_bolao_button_go_to_bolao),
                             color = TextMuted,
                             fontWeight = FontWeight.Medium
                         )
@@ -413,10 +450,10 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
             .fillMaxSize()
             .background(GradientBg)
     ) {
-        Scaffold(
+        BolaoScaffold(
             containerColor = Color.Transparent,
             topBar = {
-                BolaoTopBar(title = "Novo Bolão", onNavigateBack = onNavigateBack)
+                BolaoTopBar(title = stringResource(Res.string.create_bolao_top_bar_title), onNavigateBack = onNavigateBack)
             }
         ) { padding ->
             Column(
@@ -434,10 +471,10 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("🏆", fontSize = 48.sp)
+                    BolaoText(stringResource(Res.string.create_bolao_hero_emoji), fontSize = 48.sp)
                     Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Crie seu bolão e convide amigos com um código único",
+                    BolaoText(
+                        stringResource(Res.string.create_bolao_hero_subtitle),
                         fontSize = 13.sp,
                         color = TextMuted,
                         textAlign = TextAlign.Center
@@ -459,14 +496,22 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                 ) {
                     // Campeonato
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            "Escolha o Campeonato",
+                        BolaoText(
+                            stringResource(Res.string.create_bolao_section_championship),
                             fontSize = 12.sp,
                             color = TextMuted,
                             fontWeight = FontWeight.Medium
                         )
 
                         val championships = Championship.getAll()
+                        val comingSoonText = stringResource(Res.string.create_bolao_coming_soon)
+                        val phasesLabel = stringResource(Res.string.create_bolao_section_phases)
+                        val scopeFullEmoji = stringResource(Res.string.create_bolao_scope_full_emoji)
+                        val scopeGroupsEmoji = stringResource(Res.string.create_bolao_scope_groups_emoji)
+                        val scopeKnockoutEmoji = stringResource(Res.string.create_bolao_scope_knockout_emoji)
+                        val scopeLeagueEmoji = stringResource(Res.string.create_bolao_scope_league_emoji)
+                        val scopeGroupsClosed = stringResource(Res.string.create_bolao_scope_groups_closed)
+                        val scopeKnockoutClosed = stringResource(Res.string.create_bolao_scope_knockout_closed)
 
                         championships.forEach { championship ->
                             val id = championship.id
@@ -474,7 +519,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                             val isAvailable = championship.isAvailable
                             val isSelected = selectedChampionshipId == id
 
-                            Surface(
+                            BolaoSurface(
                                 modifier =
                                 Modifier
                                     .fillMaxWidth()
@@ -499,15 +544,15 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
                                             Column {
-                                                Text(
+                                                BolaoText(
                                                     label,
                                                     fontSize = 15.sp,
                                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                                                     color = if (isSelected) Color.White else TextMuted
                                                 )
                                                 if (!isAvailable) {
-                                                    Text(
-                                                        "Em breve",
+                                                    BolaoText(
+                                                        comingSoonText,
                                                         fontSize = 10.sp,
                                                         color = Neon.copy(alpha = 0.7f),
                                                         fontWeight = FontWeight.Bold
@@ -517,7 +562,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                         }
 
                                         if (isSelected) {
-                                            Icon(
+                                            BolaoIcon(
                                                 Icons.Default.Check,
                                                 contentDescription = null,
                                                 tint = Neon,
@@ -531,11 +576,11 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
 
                                     if (showScopeOptions) {
                                         Spacer(Modifier.height(12.dp))
-                                        HorizontalDivider(color = GlassBorder, thickness = 0.5.dp)
+                                        BolaoHorizontalDivider(color = GlassBorder, thickness = 0.5.dp)
                                         Spacer(Modifier.height(12.dp))
 
-                                        Text(
-                                            "Fases:",
+                                        BolaoText(
+                                            phasesLabel,
                                             fontSize = 11.sp,
                                             color = TextMuted,
                                             fontWeight = FontWeight.Bold,
@@ -572,10 +617,10 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                     val isScopeSelected = selectedScope == scope && isScopeEnabled
                                                     val scopeEmoji =
                                                         when (scope) {
-                                                            BolaoScope.FULL -> "🏆"
-                                                            BolaoScope.ONLY_GROUPS -> "⚽"
-                                                            BolaoScope.ONLY_KNOCKOUT -> "⚔️"
-                                                            BolaoScope.PONTOS_CORRIDOS -> "📈"
+                                                            BolaoScope.FULL -> scopeFullEmoji
+                                                            BolaoScope.ONLY_GROUPS -> scopeGroupsEmoji
+                                                            BolaoScope.ONLY_KNOCKOUT -> scopeKnockoutEmoji
+                                                            BolaoScope.PONTOS_CORRIDOS -> scopeLeagueEmoji
                                                         }
 
                                                     Row(
@@ -604,7 +649,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                             .padding(horizontal = 12.dp, vertical = 10.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        Text(
+                                                        BolaoText(
                                                             scopeEmoji,
                                                             fontSize = 14.sp,
                                                             modifier = Modifier.alpha(if (isScopeEnabled) 1f else 0.3f)
@@ -612,7 +657,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                         Spacer(Modifier.width(12.dp))
 
                                                         Column(modifier = Modifier.weight(1f)) {
-                                                            Text(
+                                                            BolaoText(
                                                                 scope.label,
                                                                 fontSize = 13.sp,
                                                                 color = if (isScopeSelected) Color.White else TextMuted,
@@ -623,14 +668,14 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                             val errorMsg =
                                                                 when {
                                                                     (scope == BolaoScope.FULL || scope == BolaoScope.ONLY_GROUPS) &&
-                                                                        !isGroupStageAvailable -> "(Fase encerrada)"
+                                                                        !isGroupStageAvailable -> scopeGroupsClosed
                                                                     scope == BolaoScope.ONLY_KNOCKOUT && !isScopeEnabled ->
-                                                                        "(Mata-mata encerrado)"
+                                                                        scopeKnockoutClosed
                                                                     else -> null
                                                                 }
 
                                                             if (errorMsg != null) {
-                                                                Text(
+                                                                BolaoText(
                                                                     errorMsg,
                                                                     fontSize = 10.sp,
                                                                     color = ErrorRed.copy(alpha = 0.7f),
@@ -639,7 +684,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                             }
                                                         }
 
-                                                        RadioButton(
+                                                        BolaoRadioButton(
                                                             enabled = isScopeEnabled,
                                                             selected = isScopeSelected,
                                                             onClick = {
@@ -648,11 +693,8 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                                     selectedMatchId = null
                                                                 }
                                                             },
-                                                            colors =
-                                                            RadioButtonDefaults.colors(
-                                                                selectedColor = Neon,
-                                                                unselectedColor = TextMuted
-                                                            ),
+                                                            selectedColor = Neon,
+                                                            unselectedColor = TextMuted,
                                                             modifier = Modifier.size(20.dp)
                                                         )
                                                     }
@@ -673,7 +715,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                     nameTouched = true
                                 }
                             },
-                            label = "Nome do bolão *",
+                            label = stringResource(Res.string.create_bolao_field_name_label),
                             isError = nameError != null,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
@@ -683,12 +725,12 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             if (nameError != null) {
-                                Text(nameError, color = ErrorRed, fontSize = 11.sp)
+                                BolaoText(nameError, color = ErrorRed, fontSize = 11.sp)
                             } else {
                                 Spacer(Modifier.width(1.dp))
                             }
-                            Text(
-                                "${name.length}/35",
+                            BolaoText(
+                                stringResource(Res.string.create_bolao_char_count, name.length),
                                 color = if (name.length < 10 || name.length > 35) ErrorRed else TextSubtle,
                                 fontSize = 11.sp
                             )
@@ -696,29 +738,18 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     }
 
                     Column {
-                        OutlinedTextField(
+                        BolaoTextField(
                             value = description,
                             onValueChange = { if (it.length <= 115) description = it },
-                            label = { Text("Descrição (opcional)", color = TextMuted, fontSize = 13.sp) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors =
-                            OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Neon,
-                                unfocusedBorderColor = Color(0xFF2A3D55),
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                cursorColor = Neon,
-                                focusedContainerColor = NavyElevated,
-                                unfocusedContainerColor = NavyCard
-                            ),
+                            label = stringResource(Res.string.create_bolao_field_description_label),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            singleLine = false,
                             minLines = 2,
                             maxLines = 3
                         )
-                        Text(
-                            "${description.length}/115",
+                        BolaoText(
+                            stringResource(Res.string.create_bolao_description_char_count, description.length),
                             color = if (description.length >= 115) ErrorRed else TextSubtle,
                             fontSize = 11.sp,
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
@@ -728,8 +759,8 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
 
                     // Scoring System Section
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            "Sistema de Pontuação",
+                        BolaoText(
+                            stringResource(Res.string.create_bolao_section_scoring),
                             fontSize = 12.sp,
                             color = TextMuted,
                             fontWeight = FontWeight.Medium
@@ -740,13 +771,13 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             ScoreInput(
-                                label = "🎯 Placar Exato",
+                                label = stringResource(Res.string.create_bolao_score_exact_label),
                                 value = pointsExact,
                                 onValueChange = { pointsExact = it },
                                 modifier = Modifier.weight(1f)
                             )
                             ScoreInput(
-                                label = "✅ Resultado Certo",
+                                label = stringResource(Res.string.create_bolao_score_winner_label),
                                 value = pointsWinner,
                                 onValueChange = { pointsWinner = it },
                                 modifier = Modifier.weight(1f)
@@ -754,7 +785,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                         }
 
                         // Info sobre prorrogação e pênaltis
-                        Surface(
+                        BolaoSurface(
                             color = Color.White.copy(alpha = 0.05f),
                             shape = RoundedCornerShape(10.dp),
                             border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder.copy(alpha = 0.5f))
@@ -764,9 +795,9 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                 verticalAlignment = Alignment.Top,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Text("⏱️", fontSize = 14.sp)
-                                Text(
-                                    "O placar válido é o do tempo normal + prorrogação. Pênaltis não contam para a pontuação.",
+                                BolaoText(stringResource(Res.string.create_bolao_overtime_emoji), fontSize = 14.sp)
+                                BolaoText(
+                                    stringResource(Res.string.create_bolao_overtime_info),
                                     fontSize = 11.sp,
                                     color = TextMuted,
                                     lineHeight = 15.sp
@@ -776,7 +807,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     }
 
                     uiState.error?.let {
-                        Text(it, color = ErrorRed, fontSize = 12.sp)
+                        BolaoText(it, color = ErrorRed, fontSize = 12.sp)
                     }
 
                     // Info chip
@@ -791,9 +822,9 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("💡", fontSize = 14.sp)
-                        Text(
-                            "Após criar, você receberá um código de 6 caracteres para convidar amigos.",
+                        BolaoText(stringResource(Res.string.create_bolao_info_emoji), fontSize = 14.sp)
+                        BolaoText(
+                            stringResource(Res.string.create_bolao_info_code_message),
                             fontSize = 12.sp,
                             color = Gold.copy(alpha = 0.8f),
                             lineHeight = 16.sp
@@ -804,7 +835,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                 Spacer(Modifier.height(16.dp))
 
                 BolaoButton(
-                    text = "Criar Bolão",
+                    text = stringResource(Res.string.create_bolao_button_create),
                     isLoading = uiState.isLoading,
                     enabled = isFormValid && !uiState.isLoading,
                     onClick = {
@@ -832,7 +863,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
 @Composable
 private fun ScoreInput(label: String, value: Int, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, fontSize = 12.sp, color = TextMuted)
+        BolaoText(label, fontSize = 12.sp, color = TextMuted)
         Row(
             modifier =
             Modifier
@@ -844,34 +875,49 @@ private fun ScoreInput(label: String, value: Int, onValueChange: (Int) -> Unit, 
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(
+            BolaoIconButton(
                 onClick = { if (value > 1) onValueChange(value - 1) },
                 modifier = Modifier.size(36.dp)
             ) {
-                Text("-", color = Neon, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                BolaoText(
+                    stringResource(Res.string.create_bolao_score_input_decrease),
+                    color = Neon,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
+                BolaoText(
                     text = value.toString(),
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Spacer(Modifier.width(4.dp))
-                Text(
-                    text = if (value == 1) "ponto" else "pontos",
+                BolaoText(
+                    text =
+                    if (value == 1) {
+                        stringResource(Res.string.create_bolao_score_input_point_singular)
+                    } else {
+                        stringResource(Res.string.create_bolao_score_input_point_plural)
+                    },
                     color = TextMuted,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
 
-            IconButton(
+            BolaoIconButton(
                 onClick = { onValueChange(value + 1) },
                 modifier = Modifier.size(36.dp)
             ) {
-                Text("+", color = Neon, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                BolaoText(
+                    stringResource(Res.string.create_bolao_score_input_increase),
+                    color = Neon,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
