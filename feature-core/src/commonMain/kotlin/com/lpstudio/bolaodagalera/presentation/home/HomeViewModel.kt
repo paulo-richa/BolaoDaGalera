@@ -10,6 +10,8 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
+import com.lpstudio.bolaodagalera.domain.usecase.DedupeInvitationsByBolaoUseCase
+import com.lpstudio.bolaodagalera.domain.usecase.RespondToInvitationUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +39,9 @@ class HomeViewModel(
     private val bolaoRepository: BolaoRepository,
     private val invitationRepository: InvitationRepository,
     private val notificationRepository: NotificationRepository,
-    private val crashReporter: CrashReporter
+    private val crashReporter: CrashReporter,
+    private val dedupeInvitationsByBolao: DedupeInvitationsByBolaoUseCase = DedupeInvitationsByBolaoUseCase(),
+    private val respondToInvitationUseCase: RespondToInvitationUseCase = RespondToInvitationUseCase(bolaoRepository, invitationRepository)
 ) : ViewModel() {
     private val logger = appLogger("HomeViewModel")
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -73,7 +77,7 @@ class HomeViewModel(
             ) { list1, list2, list3, list4 ->
                 val all = (list1 + list2 + list3 + list4).filter { it.id.isNotBlank() }
                 allInvitationsCache = all
-                all.distinctBy { it.bolaoId } // Ensure the UI shows at most 1 invitation per bolão
+                dedupeInvitationsByBolao(all)
             }.catch { emit(emptyList()) }
 
         // All notification types (invitation, join/leave request, daily digest) are
@@ -126,26 +130,10 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                // 1. On accept, add the participant to the bolão first
-                if (accept) {
-                    logger.d { "[HomeVM] Chamando addParticipantDirectly..." }
-                    bolaoRepository.addParticipantDirectly(bolaoId, user.id)
-                    logger.d { "[HomeVM] addParticipantDirectly concluído." }
-                }
-
-                // 2. Resolve (delete) all of this user's pending invitations for this bolão
-                val toResolve =
-                    (allInvitationsCache + targetInvitation)
-                        .filter { it.bolaoId == bolaoId }
-                        .distinctBy { it.id }
-
-                logger.d { "[HomeVM] Encontrados ${toResolve.size} convites para resolver." }
-
-                toResolve.forEach { inv ->
-                    logger.d { "[HomeVM] Deletando convite ${inv.id}..." }
-                    invitationRepository.respondToInvitation(inv.id, accept)
-                    logger.d { "[HomeVM] Convite ${inv.id} deletado." }
-                }
+                // 1-2. Add the participant (on accept) and resolve every pending
+                // invitation this user has for this bolão
+                respondToInvitationUseCase(user.id, targetInvitation, allInvitationsCache, accept)
+                logger.d { "[HomeVM] Convites resolvidos." }
 
                 // 3. Immediate local cleanup
                 allInvitationsCache =

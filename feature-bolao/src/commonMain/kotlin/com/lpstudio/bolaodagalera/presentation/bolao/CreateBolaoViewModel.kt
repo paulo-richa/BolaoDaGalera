@@ -10,10 +10,11 @@ import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.domain.usecase.CheckKnockoutAvailabilityUseCase
+import com.lpstudio.bolaodagalera.domain.usecase.CheckPhaseAvailabilityUseCase
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
-import com.lpstudio.bolaodagalera.util.TimeSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +35,9 @@ class CreateBolaoViewModel(
     private val matchRepository: MatchRepository,
     private val crashReporter: CrashReporter,
     private val performanceMonitor: PerformanceMonitor,
-    private val analyticsTracker: AnalyticsTracker
+    private val analyticsTracker: AnalyticsTracker,
+    private val checkPhaseAvailability: CheckPhaseAvailabilityUseCase = CheckPhaseAvailabilityUseCase(),
+    private val checkKnockoutAvailability: CheckKnockoutAvailabilityUseCase = CheckKnockoutAvailabilityUseCase()
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CreateBolaoUiState())
     val uiState: StateFlow<CreateBolaoUiState> = _uiState.asStateFlow()
@@ -51,28 +54,10 @@ class CreateBolaoViewModel(
         }
     }
 
-    fun isPhaseAvailable(championshipId: String, phase: Phase): Boolean {
-        val matches = _uiState.value.allMatches.filter { it.championshipId == championshipId && it.phase == phase }
-        if (matches.isEmpty()) return false
+    fun isPhaseAvailable(championshipId: String, phase: Phase): Boolean =
+        checkPhaseAvailability(_uiState.value.allMatches, championshipId, phase)
 
-        val now = TimeSource.nowMillis()
-        // The phase is available only if none of its matches have kicked off yet
-        return matches.all { it.matchDateMillis > now }
-    }
-
-    fun isKnockoutAvailable(championshipId: String): Boolean {
-        val matches =
-            _uiState.value.allMatches.filter {
-                it.championshipId == championshipId &&
-                    it.phase != Phase.GROUP_STAGE &&
-                    it.phase != Phase.FRIENDLIES
-            }
-        if (matches.isEmpty()) return false
-
-        val now = TimeSource.nowMillis()
-        // The knockout stage is available only if none of its matches have kicked off yet
-        return matches.all { it.matchDateMillis > now }
-    }
+    fun isKnockoutAvailable(championshipId: String): Boolean = checkKnockoutAvailability(_uiState.value.allMatches, championshipId)
 
     fun create(
         name: String,
