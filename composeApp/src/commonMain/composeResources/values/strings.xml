@@ -278,4 +278,10 @@
     <string name="standings_tab_header_played">J</string>
     <string name="standings_tab_header_won">V</string>
     <string name="standings_tab_header_goal_diff">SG</string>
+
+    <!-- HomeScreen -->
+    <string name="home_screen_button_create_bolao">Criar bolão</string>
+
+    <!-- HelpScreen -->
+    <string name="help_screen_button_send_request">ENVIAR SOLICITAÇÃO</string>
 </resources>

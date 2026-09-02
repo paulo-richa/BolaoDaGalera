@@ -52,6 +52,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.help_screen_button_send_request
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
@@ -65,6 +67,7 @@ import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -400,7 +403,7 @@ private fun SupportSection(
                 CircularProgressIndicator(color = Neon)
             } else {
                 BolaoButton(
-                    text = "ENVIAR SOLICITAÇÃO",
+                    text = stringResource(Res.string.help_screen_button_send_request),
                     onClick = onSend
                 )
             }

@@ -61,6 +61,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.home_screen_button_create_bolao
 import com.lpstudio.bolaodagalera.ADMOB_ANDROID_BANNER_ID
 import com.lpstudio.bolaodagalera.ADMOB_IOS_BANNER_ID
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
@@ -84,6 +86,7 @@ import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
 import com.lpstudio.bolaodagalera.util.getInitials
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -374,7 +377,7 @@ private fun EmptyState(modifier: Modifier, onCreateClick: () -> Unit, onJoinClic
         Spacer(Modifier.height(8.dp))
         Text("Crie o seu ou entre em um com o código de um amigo", fontSize = 14.sp, color = TextMuted, lineHeight = 20.sp)
         Spacer(Modifier.height(32.dp))
-        BolaoButton(text = "Criar bolão", onClick = onCreateClick)
+        BolaoButton(text = stringResource(Res.string.home_screen_button_create_bolao), onClick = onCreateClick)
         Spacer(Modifier.height(12.dp))
         OutlinedButton(
             onClick = onJoinClick,
