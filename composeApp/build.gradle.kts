@@ -1,3 +1,4 @@
+import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -207,6 +208,8 @@ dependencies {
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit)
+
+    detektPlugins(project(":detekt-rules"))
 }
 
 detekt {
@@ -214,6 +217,22 @@ detekt {
     config.setFrom(file("../config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
     allRules = false
+}
+
+// Regra isolada do design system (sem string hardcoded em componente Bolao*).
+// Task separada da principal pra não misturar com o restante das regras de
+// estilo/complexidade - roda só sobre commonMain, onde vivem as telas.
+val detektDesignSystem by tasks.registering(Detekt::class) {
+    description = "Verifica strings hardcoded em componentes Bolao* (regra do design system)."
+    setSource(files("src/commonMain/kotlin"))
+    config.setFrom(file("../config/detekt/detekt-design-system.yml"))
+    buildUponDefaultConfig = false
+    include("**/*.kt")
+    exclude("**/build/**")
+}
+
+tasks.named("check") {
+    dependsOn(detektDesignSystem)
 }
 
 ktlint {
