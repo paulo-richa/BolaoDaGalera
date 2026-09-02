@@ -1,5 +1,6 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -20,14 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,7 +38,24 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.add_participants_button_send_invite
+import bolaodagalera.composeapp.generated.resources.add_participants_button_share_link
+import bolaodagalera.composeapp.generated.resources.add_participants_default_inviter_name
+import bolaodagalera.composeapp.generated.resources.add_participants_error_send_failed
+import bolaodagalera.composeapp.generated.resources.add_participants_error_user_not_found
+import bolaodagalera.composeapp.generated.resources.add_participants_field_identifier_label
+import bolaodagalera.composeapp.generated.resources.add_participants_info_emoji
+import bolaodagalera.composeapp.generated.resources.add_participants_info_message
+import bolaodagalera.composeapp.generated.resources.add_participants_info_title
+import bolaodagalera.composeapp.generated.resources.add_participants_section_title
+import bolaodagalera.composeapp.generated.resources.add_participants_share_message
+import bolaodagalera.composeapp.generated.resources.add_participants_success_message
+import bolaodagalera.composeapp.generated.resources.add_participants_top_bar_title
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoOutlinedButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.observability.CrashReporter
@@ -59,6 +70,7 @@ import com.lpstudio.bolaodagalera.rememberLauncherProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 private enum class ParticipantInputType {
@@ -69,7 +81,6 @@ private enum class ParticipantInputType {
 
 private val logger = appLogger("AddParticipantsScreen")
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
     var identifier by remember { mutableStateOf("") }
@@ -84,6 +95,13 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
     val invitationRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.InvitationRepository>()
     val crashReporter = koinInject<CrashReporter>()
     var bolaoName by remember { mutableStateOf("") }
+
+    val defaultInviterName = stringResource(Res.string.add_participants_default_inviter_name)
+    val userNotFoundError = stringResource(Res.string.add_participants_error_user_not_found)
+    val sendFailedError = stringResource(Res.string.add_participants_error_send_failed)
+    val webUrl = "https://bolaodagalera-bb002.web.app/invite?code=$bolaoCode"
+    val appUrl = "bolaodagalera://invite?code=$bolaoCode"
+    val shareMessage = stringResource(Res.string.add_participants_share_message, bolaoName, webUrl, appUrl, bolaoCode)
 
     // Carrega o nome e código do bolão ao iniciar
     LaunchedEffect(bolaoId) {
@@ -116,7 +134,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
     ) {
         Column(Modifier.fillMaxSize()) {
             // ── Header ─────────────────────────────────────────────────────────
-            BolaoTopBar(title = "Adicionar Participantes", onNavigateBack = onNavigateBack)
+            BolaoTopBar(title = stringResource(Res.string.add_participants_top_bar_title), onNavigateBack = onNavigateBack)
 
             Column(
                 modifier =
@@ -127,8 +145,8 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
             ) {
                 Spacer(Modifier.height(20.dp))
 
-                Text(
-                    "CONVIDAR AMIGO",
+                BolaoText(
+                    stringResource(Res.string.add_participants_section_title),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextMuted,
@@ -141,7 +159,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                 BolaoTextField(
                     value = identifier,
                     onValueChange = { identifier = it },
-                    label = "E-mail, Telefone ou ID",
+                    label = stringResource(Res.string.add_participants_field_identifier_label),
                     keyboardOptions =
                     KeyboardOptions(
                         keyboardType =
@@ -166,8 +184,8 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                             .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            "Convite enviado com sucesso!",
+                        BolaoText(
+                            stringResource(Res.string.add_participants_success_message),
                             color = SuccessGreen,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
@@ -178,7 +196,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                 }
 
                 error?.let {
-                    Text(
+                    BolaoText(
                         it,
                         color = ErrorRed,
                         fontSize = 12.sp,
@@ -189,7 +207,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
 
                 // Botão Único: Enviar Convite
                 BolaoButton(
-                    text = "Enviar Convite",
+                    text = stringResource(Res.string.add_participants_button_send_invite),
                     isLoading = isLoading,
                     enabled = identifier.isNotBlank() && !isLoading,
                     onClick = {
@@ -198,7 +216,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                             error = null
                             try {
                                 val trimmedId = identifier.trim()
-                                val inviterName = authRepository.currentUser?.name ?: "Alguém"
+                                val inviterName = authRepository.currentUser?.name ?: defaultInviterName
 
                                 // 1. Verificação de existência do usuário no banco de dados
                                 val userExists =
@@ -209,8 +227,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                                     }
 
                                 if (!userExists) {
-                                    error = "Usuário não encontrado. Peça para seu amigo criar uma conta primeiro " +
-                                        "ou compartilhe o link de convite abaixo."
+                                    error = userNotFoundError
                                     isLoading = false
                                     return@launch
                                 }
@@ -244,7 +261,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                                 showSuccessMessage = false
                             } catch (e: Exception) {
                                 crashReporter.recordException(e, "Erro ao enviar convite")
-                                error = "Não foi possível enviar. Verifique sua conexão."
+                                error = sendFailedError
                                 isLoading = false
                             }
                         }
@@ -253,23 +270,22 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
 
                 Spacer(Modifier.height(16.dp))
 
-                OutlinedButton(
+                BolaoOutlinedButton(
                     onClick = {
-                        val webUrl = "https://bolaodagalera-bb002.web.app/invite?code=$bolaoCode"
-                        val appUrl = "bolaodagalera://invite?code=$bolaoCode"
-                        launcherProvider.shareText(
-                            "Entre no meu bolão '$bolaoName'! 🏆\n\nLink: $webUrl\n\n" +
-                                "Se o link não abrir o app automaticamente, use este: $appUrl\n\nCódigo: $bolaoCode"
-                        )
+                        launcherProvider.shareText(shareMessage)
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Neon)
+                    border = BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
+                    contentColor = Neon
                 ) {
-                    Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
+                    BolaoIcon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Compartilhar Link de Convite", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                    BolaoText(
+                        stringResource(Res.string.add_participants_button_share_link),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp
+                    )
                 }
 
                 Spacer(Modifier.height(32.dp))
@@ -284,19 +300,17 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("📢", fontSize = 32.sp)
+                    BolaoText(stringResource(Res.string.add_participants_info_emoji), fontSize = 32.sp)
                     Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Como funciona?",
+                    BolaoText(
+                        stringResource(Res.string.add_participants_info_title),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Adicione seus amigos diretamente via E-mail, Telefone ou ID do app. Eles receberão um " +
-                            "convite instantâneo na tela inicial deles. Alternativamente, compartilhe o link do bolão " +
-                            "para que eles solicitem a entrada.",
+                    BolaoText(
+                        stringResource(Res.string.add_participants_info_message),
                         fontSize = 13.sp,
                         color = TextMuted,
                         textAlign = TextAlign.Center,

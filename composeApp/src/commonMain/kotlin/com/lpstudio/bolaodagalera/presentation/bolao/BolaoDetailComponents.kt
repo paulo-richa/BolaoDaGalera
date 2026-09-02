@@ -23,11 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -46,11 +41,41 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.bolao_common_date_tbd
+import bolaodagalera.composeapp.generated.resources.bolao_common_day_dom
+import bolaodagalera.composeapp.generated.resources.bolao_common_day_qua
+import bolaodagalera.composeapp.generated.resources.bolao_common_day_qui
+import bolaodagalera.composeapp.generated.resources.bolao_common_day_sab
+import bolaodagalera.composeapp.generated.resources.bolao_common_day_seg
+import bolaodagalera.composeapp.generated.resources.bolao_common_day_sex
+import bolaodagalera.composeapp.generated.resources.bolao_common_day_ter
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_abr
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_ago
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_dez
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_fev
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_jan
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_jul
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_jun
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_mai
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_mar
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_nov
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_out
+import bolaodagalera.composeapp.generated.resources.bolao_common_month_set
+import bolaodagalera.composeapp.generated.resources.bolao_detail_components_group_completed_emoji
+import bolaodagalera.composeapp.generated.resources.bolao_detail_components_group_label
+import bolaodagalera.composeapp.generated.resources.bolao_detail_components_group_locked_emoji
+import bolaodagalera.composeapp.generated.resources.bolao_detail_components_group_pending_emoji
 import coil3.compose.LocalPlatformContext
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIconButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoLoadingIndicator
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.User
@@ -67,6 +92,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun FilterChip(
@@ -123,7 +149,7 @@ fun FilterChip(
         ).padding(vertical = 12.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
+        BolaoText(
             label,
             color = tColor,
             fontSize = 11.sp,
@@ -176,20 +202,28 @@ fun GroupHeader(group: String, isExpanded: Boolean, isCompleted: Boolean, enable
                         }
                     )
                 )
-                Text(
-                    "Grupo $group",
+                BolaoText(
+                    stringResource(Res.string.bolao_detail_components_group_label, group),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (enabled) Color.White else TextMuted.copy(alpha = 0.5f)
                 )
                 if (enabled) {
-                    if (isCompleted) Text("✅", fontSize = 12.sp) else Text("⏳", fontSize = 12.sp)
+                    if (isCompleted) {
+                        BolaoText(stringResource(Res.string.bolao_detail_components_group_completed_emoji), fontSize = 12.sp)
+                    } else {
+                        BolaoText(stringResource(Res.string.bolao_detail_components_group_pending_emoji), fontSize = 12.sp)
+                    }
                 } else {
-                    Text("🔒", fontSize = 10.sp, modifier = Modifier.padding(bottom = 1.dp))
+                    BolaoText(
+                        stringResource(Res.string.bolao_detail_components_group_locked_emoji),
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(bottom = 1.dp)
+                    )
                 }
             }
             if (enabled) {
-                Icon(
+                BolaoIcon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     null,
                     tint = TextMuted,
@@ -205,7 +239,7 @@ fun GroupHeader(group: String, isExpanded: Boolean, isCompleted: Boolean, enable
 fun TeamNameText(name: String, modifier: Modifier = Modifier, textAlign: TextAlign = TextAlign.Start) {
     var fontSize by remember(name) { mutableIntStateOf(13) }
     var ready by remember(name) { mutableStateOf(false) }
-    Text(
+    BolaoText(
         text = name,
         modifier = modifier.drawWithContent {
             if (ready) drawContent()
@@ -242,12 +276,12 @@ fun TeamIcon(crestUrl: String?, flag: AnnotatedString, isTbd: Boolean, size: and
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(0.8f),
                 loading = {
-                    CircularProgressIndicator(modifier = Modifier.size(size * 0.5f), strokeWidth = 1.dp, color = Neon)
+                    BolaoLoadingIndicator(modifier = Modifier.size(size * 0.5f))
                 },
-                error = { Text(text = flag, fontSize = (size.value * 0.7f).sp, fontWeight = FontWeight.Bold, color = Color.White) }
+                error = { BolaoText(text = flag, fontSize = (size.value * 0.7f).sp, fontWeight = FontWeight.Bold, color = Color.White) }
             )
         } else {
-            Text(
+            BolaoText(
                 text = flag,
                 fontSize = if (isTbd) (size.value * 0.5f).sp else (size.value * 0.7f).sp,
                 fontWeight = FontWeight.Bold,
@@ -259,7 +293,7 @@ fun TeamIcon(crestUrl: String?, flag: AnnotatedString, isTbd: Boolean, size: and
 
 @Composable
 fun PendingRequestItem(user: User, label: String, accentColor: Color = Neon, onApprove: () -> Unit, onDeny: () -> Unit) {
-    Surface(
+    BolaoSurface(
         color = NavyElevated,
         shape = RoundedCornerShape(16.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
@@ -276,49 +310,54 @@ fun PendingRequestItem(user: User, label: String, accentColor: Color = Neon, onA
             )
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = user.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                Text(text = label, color = accentColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                BolaoText(text = user.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                BolaoText(text = label, color = accentColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
             }
-            IconButton(onClick = onDeny, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Default.Close, null, tint = ErrorRed, modifier = Modifier.size(20.dp))
+            BolaoIconButton(onClick = onDeny, modifier = Modifier.size(32.dp)) {
+                BolaoIcon(Icons.Default.Close, null, tint = ErrorRed, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.width(8.dp))
-            IconButton(onClick = onApprove, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Default.Check, null, tint = Neon, modifier = Modifier.size(20.dp))
+            BolaoIconButton(onClick = onApprove, modifier = Modifier.size(32.dp)) {
+                BolaoIcon(Icons.Default.Check, null, tint = Neon, modifier = Modifier.size(20.dp))
             }
         }
     }
 }
 
+@Composable
 fun formatMatchDate(millis: Long): String {
-    if (millis == Match.NO_DATE_MILLIS) return "Data a definir"
+    if (millis == Match.NO_DATE_MILLIS) return stringResource(Res.string.bolao_common_date_tbd)
     val tz = TimeZone.currentSystemDefault()
     val dt = Instant.fromEpochMilliseconds(millis).toLocalDateTime(tz)
     val dayOfWeek =
-        when (dt.dayOfWeek) {
-            DayOfWeek.MONDAY -> "SEG"
-            DayOfWeek.TUESDAY -> "TER"
-            DayOfWeek.WEDNESDAY -> "QUA"
-            DayOfWeek.THURSDAY -> "QUI"
-            DayOfWeek.FRIDAY -> "SEX"
-            DayOfWeek.SATURDAY -> "SÁB"
-            DayOfWeek.SUNDAY -> "DOM"
-        }
+        stringResource(
+            when (dt.dayOfWeek) {
+                DayOfWeek.MONDAY -> Res.string.bolao_common_day_seg
+                DayOfWeek.TUESDAY -> Res.string.bolao_common_day_ter
+                DayOfWeek.WEDNESDAY -> Res.string.bolao_common_day_qua
+                DayOfWeek.THURSDAY -> Res.string.bolao_common_day_qui
+                DayOfWeek.FRIDAY -> Res.string.bolao_common_day_sex
+                DayOfWeek.SATURDAY -> Res.string.bolao_common_day_sab
+                DayOfWeek.SUNDAY -> Res.string.bolao_common_day_dom
+            }
+        )
     val monthName =
-        when (dt.month) {
-            Month.JANUARY -> "JAN"
-            Month.FEBRUARY -> "FEV"
-            Month.MARCH -> "MAR"
-            Month.APRIL -> "ABR"
-            Month.MAY -> "MAI"
-            Month.JUNE -> "JUN"
-            Month.JULY -> "JUL"
-            Month.AUGUST -> "AGO"
-            Month.SEPTEMBER -> "SET"
-            Month.OCTOBER -> "OUT"
-            Month.NOVEMBER -> "NOV"
-            Month.DECEMBER -> "DEZ"
-        }
+        stringResource(
+            when (dt.month) {
+                Month.JANUARY -> Res.string.bolao_common_month_jan
+                Month.FEBRUARY -> Res.string.bolao_common_month_fev
+                Month.MARCH -> Res.string.bolao_common_month_mar
+                Month.APRIL -> Res.string.bolao_common_month_abr
+                Month.MAY -> Res.string.bolao_common_month_mai
+                Month.JUNE -> Res.string.bolao_common_month_jun
+                Month.JULY -> Res.string.bolao_common_month_jul
+                Month.AUGUST -> Res.string.bolao_common_month_ago
+                Month.SEPTEMBER -> Res.string.bolao_common_month_set
+                Month.OCTOBER -> Res.string.bolao_common_month_out
+                Month.NOVEMBER -> Res.string.bolao_common_month_nov
+                Month.DECEMBER -> Res.string.bolao_common_month_dez
+            }
+        )
     val dayValue = dt.dayOfMonth.toString().padStart(2, '0')
     val hour = dt.hour.toString().padStart(2, '0')
     val minute = dt.minute.toString().padStart(2, '0')

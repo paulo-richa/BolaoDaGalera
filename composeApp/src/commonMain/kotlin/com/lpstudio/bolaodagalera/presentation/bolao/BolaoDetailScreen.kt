@@ -2,6 +2,7 @@ package com.lpstudio.bolaodagalera.presentation.bolao
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,14 +35,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -64,12 +57,58 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.bolao_common_phase_first_leg
+import bolaodagalera.composeapp.generated.resources.bolao_common_phase_second_leg
+import bolaodagalera.composeapp.generated.resources.bolao_common_today_chip
+import bolaodagalera.composeapp.generated.resources.bolao_detail_add_participant_cd
+import bolaodagalera.composeapp.generated.resources.bolao_detail_close_button
+import bolaodagalera.composeapp.generated.resources.bolao_detail_default_name
+import bolaodagalera.composeapp.generated.resources.bolao_detail_edit_cd
+import bolaodagalera.composeapp.generated.resources.bolao_detail_help_cd
+import bolaodagalera.composeapp.generated.resources.bolao_detail_key_emoji
+import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_confirm_member
+import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_confirm_owner
+import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_message_member
+import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_message_owner
+import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_title
+import bolaodagalera.composeapp.generated.resources.bolao_detail_menu_cd
+import bolaodagalera.composeapp.generated.resources.bolao_detail_menu_leave
+import bolaodagalera.composeapp.generated.resources.bolao_detail_menu_share
+import bolaodagalera.composeapp.generated.resources.bolao_detail_nav_back_cd
+import bolaodagalera.composeapp.generated.resources.bolao_detail_participants_chip
+import bolaodagalera.composeapp.generated.resources.bolao_detail_participants_count
+import bolaodagalera.composeapp.generated.resources.bolao_detail_participants_emoji
+import bolaodagalera.composeapp.generated.resources.bolao_detail_participants_title
+import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_count_message
+import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_join_label
+import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_leave_label
+import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_requests_title
+import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_view_button
+import bolaodagalera.composeapp.generated.resources.bolao_detail_share_cd
+import bolaodagalera.composeapp.generated.resources.bolao_detail_share_message
+import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_grupos
+import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_jogos
+import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_mata_mata
+import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_pontos_corridos
+import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_ranking
+import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_rodadas
+import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_tabela
+import bolaodagalera.composeapp.generated.resources.bolao_detail_trophy_emoji
+import bolaodagalera.composeapp.generated.resources.bolao_detail_warning_emoji
 import com.lpstudio.bolaodagalera.ADMOB_ANDROID_BANNER_ID
 import com.lpstudio.bolaodagalera.ADMOB_IOS_BANNER_ID
 import com.lpstudio.bolaodagalera.CommonBackHandler
 import com.lpstudio.bolaodagalera.LauncherProvider
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoConfirmDialog
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoDropdownMenu
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoDropdownMenuItem
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoFullScreenLoading
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIconButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
@@ -97,6 +136,7 @@ import com.lpstudio.bolaodagalera.util.getInitials
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -135,7 +175,6 @@ fun BolaoDetailScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BolaoDetailContent(
     bolaoId: String,
@@ -160,25 +199,45 @@ fun BolaoDetailContent(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val championship = Championship.fromId(uiState.bolao?.championshipId)
 
+    val todayLabel = stringResource(Res.string.bolao_common_today_chip)
+    val tabGrupos = stringResource(Res.string.bolao_detail_tab_grupos)
+    val tabRanking = stringResource(Res.string.bolao_detail_tab_ranking)
+    val tabMataMata = stringResource(Res.string.bolao_detail_tab_mata_mata)
+    val tabPontosCorridos = stringResource(Res.string.bolao_detail_tab_pontos_corridos)
+    val tabTabela = stringResource(Res.string.bolao_detail_tab_tabela)
+    val tabJogos = stringResource(Res.string.bolao_detail_tab_jogos)
+    val tabRodadas = stringResource(Res.string.bolao_detail_tab_rodadas)
+    val firstLegFormat = stringResource(Res.string.bolao_common_phase_first_leg, "%1\$s")
+    val secondLegFormat = stringResource(Res.string.bolao_common_phase_second_leg, "%1\$s")
+
     val tabs =
-        remember(uiState.bolao?.scope, uiState.bolao?.championshipId, championship) {
+        remember(
+            uiState.bolao?.scope,
+            uiState.bolao?.championshipId,
+            championship,
+            tabGrupos,
+            tabRanking,
+            tabMataMata,
+            tabPontosCorridos,
+            tabTabela
+        ) {
             when (uiState.bolao?.scope) {
-                BolaoScope.ONLY_GROUPS -> listOf("Grupos", "Ranking")
-                BolaoScope.ONLY_KNOCKOUT -> listOf("Mata-Mata", "Ranking")
+                BolaoScope.ONLY_GROUPS -> listOf(tabGrupos, tabRanking)
+                BolaoScope.ONLY_KNOCKOUT -> listOf(tabMataMata, tabRanking)
                 BolaoScope.PONTOS_CORRIDOS -> {
-                    val list = mutableListOf("Pontos Corridos", "Ranking")
-                    if (championship.hasStandings) list.add("Tabela")
+                    val list = mutableListOf(tabPontosCorridos, tabRanking)
+                    if (championship.hasStandings) list.add(tabTabela)
                     list
                 }
                 else -> {
                     if (championship.isPointsBased) {
-                        val list = mutableListOf("Pontos Corridos", "Ranking")
-                        if (championship.hasStandings) list.add("Tabela")
+                        val list = mutableListOf(tabPontosCorridos, tabRanking)
+                        if (championship.hasStandings) list.add(tabTabela)
                         list
                     } else if (championship.isGroupsAndKnockout) {
-                        listOf("Grupos", "Mata-Mata", "Ranking")
+                        listOf(tabGrupos, tabMataMata, tabRanking)
                     } else {
-                        listOf("Mata-Mata", "Ranking")
+                        listOf(tabMataMata, tabRanking)
                     }
                 }
             }
@@ -210,7 +269,7 @@ fun BolaoDetailContent(
         )
     }
 
-    val knockoutDefaults = remember(uiState.matches, championship.isTwoLegged) {
+    val knockoutDefaults = remember(uiState.matches, championship.isTwoLegged, firstLegFormat, secondLegFormat, todayLabel) {
         val phases = listOf(
             Phase.ROUND_OF_32,
             Phase.ROUND_OF_16,
@@ -225,7 +284,10 @@ fun BolaoDetailContent(
                 if (p == Phase.FINAL || p == Phase.THIRD_PLACE) {
                     listOf(p.label)
                 } else {
-                    listOf("${p.label} - Ida", "${p.label} - Volta")
+                    listOf(
+                        firstLegFormat.replace("%1\$s", p.label),
+                        secondLegFormat.replace("%1\$s", p.label)
+                    )
                 }
             }
         } else {
@@ -244,7 +306,7 @@ fun BolaoDetailContent(
         }
 
         if (hasTodayKo) {
-            Phase.FRIENDLIES to "⚽️ HOJE"
+            Phase.FRIENDLIES to todayLabel
         } else {
             val next = labels.find { l ->
                 val base = l.substringBefore(" - ")
@@ -258,7 +320,7 @@ fun BolaoDetailContent(
                 val p = Phase.entries.find { it.label == next.substringBefore(" - ") }
                 p to next
             } else {
-                Phase.FRIENDLIES to "⚽️ HOJE"
+                Phase.FRIENDLIES to todayLabel
             }
         }
     }
@@ -302,8 +364,8 @@ fun BolaoDetailContent(
     ) {
         val currentTabLabel = tabs.getOrNull(selectedTab)
         when (currentTabLabel) {
-            "Grupos", "Jogos", "Rodadas", "Pontos Corridos" -> selectedRound == defaultRound
-            "Mata-Mata" -> {
+            tabGrupos, tabJogos, tabRodadas, tabPontosCorridos -> selectedRound == defaultRound
+            tabMataMata -> {
                 selectedPhase == defaultPhase && (selectedLabel == defaultLabel || selectedLabel == null)
             }
             else -> false
@@ -316,10 +378,10 @@ fun BolaoDetailContent(
         } else {
             val currentTabLabel = tabs.getOrNull(selectedTab)
             when (currentTabLabel) {
-                "Grupos", "Jogos", "Rodadas", "Pontos Corridos" -> {
+                tabGrupos, tabJogos, tabRodadas, tabPontosCorridos -> {
                     selectedRound = defaultRound
                 }
-                "Mata-Mata" -> {
+                tabMataMata -> {
                     selectedPhase = defaultPhase
                     selectedLabel = defaultLabel
                 }
@@ -332,7 +394,7 @@ fun BolaoDetailContent(
         if (uiState.matches.isEmpty()) return@LaunchedEffect
         if (!hasAutoSelectedTab) {
             if (uiState.matches.all { it.isFinished }) {
-                tabs.indexOf("Ranking").takeIf { it != -1 }?.let {
+                tabs.indexOf(tabRanking).takeIf { it != -1 }?.let {
                     selectedTab = it
                     hasAutoSelectedTab = true
                     return@LaunchedEffect
@@ -353,14 +415,19 @@ fun BolaoDetailContent(
     if (showLeaveDialog) {
         val leaveMessage =
             if (isOwner) {
-                "Você é o dono deste bolão. Se sair, o bolão continuará existindo mas ficará sem administrador."
+                stringResource(Res.string.bolao_detail_leave_dialog_message_owner)
             } else {
-                "O administrador precisará confirmar sua saída para que você seja removido do ranking."
+                stringResource(Res.string.bolao_detail_leave_dialog_message_member)
             }
         BolaoConfirmDialog(
-            title = "Sair do Bolão?",
+            title = stringResource(Res.string.bolao_detail_leave_dialog_title),
             message = leaveMessage,
-            confirmText = if (isOwner) "Sair" else "Pedir para sair",
+            confirmText =
+            if (isOwner) {
+                stringResource(Res.string.bolao_detail_leave_dialog_confirm_owner)
+            } else {
+                stringResource(Res.string.bolao_detail_leave_dialog_confirm_member)
+            },
             isDestructive = true,
             onConfirm = {
                 showLeaveDialog = false
@@ -372,16 +439,21 @@ fun BolaoDetailContent(
 
     if (showParticipantsSheet) {
         androidx.compose.ui.window.Dialog(onDismissRequest = { showParticipantsSheet = false }) {
-            Surface(
+            BolaoSurface(
                 modifier = Modifier.fillMaxWidth(0.95f).fillMaxHeight(0.7f),
                 color = NavyCard,
                 shape = RoundedCornerShape(28.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+                border = BorderStroke(1.dp, GlassBorder)
             ) {
                 Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-                    Text("Participantes", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White)
-                    Text(
-                        "${uiState.participants.size} pessoas no bolão",
+                    BolaoText(
+                        stringResource(Res.string.bolao_detail_participants_title),
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                    BolaoText(
+                        stringResource(Res.string.bolao_detail_participants_count, uiState.participants.size),
                         fontSize = 13.sp,
                         color = TextMuted,
                         modifier = Modifier.padding(bottom = 20.dp)
@@ -394,8 +466,8 @@ fun BolaoDetailContent(
                         ) {
                             if (isOwner && (uiState.pendingJoinUsers.isNotEmpty() || uiState.pendingExitUsers.isNotEmpty())) {
                                 item {
-                                    Text(
-                                        "Solicitações Pendentes",
+                                    BolaoText(
+                                        stringResource(Res.string.bolao_detail_pending_requests_title),
                                         color = Gold,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Black,
@@ -405,21 +477,32 @@ fun BolaoDetailContent(
                                 items(
                                     uiState.pendingJoinUsers
                                 ) { user ->
-                                    PendingRequestItem(user = user, label = "Quer entrar", onApprove = {
-                                        onApproveJoin(user.id, true)
-                                    }, onDeny = { onApproveJoin(user.id, false) })
+                                    PendingRequestItem(
+                                        user = user,
+                                        label = stringResource(Res.string.bolao_detail_pending_join_label),
+                                        onApprove = {
+                                            onApproveJoin(user.id, true)
+                                        },
+                                        onDeny = { onApproveJoin(user.id, false) }
+                                    )
                                 }
                                 items(
                                     uiState.pendingExitUsers
                                 ) { user ->
-                                    PendingRequestItem(user = user, label = "Quer sair", accentColor = ErrorRed, onApprove = {
-                                        onApproveLeave(user.id, true)
-                                    }, onDeny = { onApproveLeave(user.id, false) })
+                                    PendingRequestItem(
+                                        user = user,
+                                        label = stringResource(Res.string.bolao_detail_pending_leave_label),
+                                        accentColor = ErrorRed,
+                                        onApprove = {
+                                            onApproveLeave(user.id, true)
+                                        },
+                                        onDeny = { onApproveLeave(user.id, false) }
+                                    )
                                 }
                                 item {
                                     Spacer(Modifier.height(16.dp))
-                                    Text(
-                                        "Participantes",
+                                    BolaoText(
+                                        stringResource(Res.string.bolao_detail_participants_title),
                                         color = TextMuted,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Black,
@@ -429,10 +512,10 @@ fun BolaoDetailContent(
                             }
                             items(uiState.participants.sortedBy { it.userName.lowercase() }) { p ->
                                 val isOwnerP = p.userId == uiState.bolao?.ownerId
-                                Surface(
+                                BolaoSurface(
                                     color = NavyElevated,
                                     shape = RoundedCornerShape(16.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+                                    border = BorderStroke(1.dp, GlassBorder)
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
@@ -447,7 +530,7 @@ fun BolaoDetailContent(
                                         )
                                         Spacer(Modifier.width(14.dp))
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(
+                                            BolaoText(
                                                 text = p.userName,
                                                 color = Color.White,
                                                 fontSize = 14.sp,
@@ -455,7 +538,7 @@ fun BolaoDetailContent(
                                                 maxLines = 1
                                             )
                                             if (p.userNickname.isNotBlank()) {
-                                                Text(
+                                                BolaoText(
                                                     text = "@${p.userNickname.lowercase()}",
                                                     color = TextMuted,
                                                     fontSize = 11.sp
@@ -481,7 +564,7 @@ fun BolaoDetailContent(
                     }
                     Spacer(Modifier.height(16.dp))
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                        TextButton(
+                        BolaoTextButton(
                             onClick = {
                                 showParticipantsSheet = false
                             },
@@ -489,11 +572,24 @@ fun BolaoDetailContent(
                             PaddingValues(
                                 horizontal = 16.dp
                             )
-                        ) { Text("Fechar", color = Neon, fontWeight = FontWeight.Bold, fontSize = 15.sp) }
+                        ) {
+                            BolaoText(
+                                stringResource(Res.string.bolao_detail_close_button),
+                                color = Neon,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    val shareMessage = uiState.bolao?.let { b ->
+        val web = "https://bolaodagalera-bb002.web.app/invite?code=${b.code}"
+        val app = "bolaodagalera://invite?code=${b.code}"
+        stringResource(Res.string.bolao_detail_share_message, b.name, web, app, b.code)
     }
 
     Box(modifier = Modifier.fillMaxSize().background(DeepNavy)) {
@@ -506,57 +602,49 @@ fun BolaoDetailContent(
                         Box(modifier = Modifier.fillMaxWidth().background(GradientHero).padding(top = 16.dp, bottom = 16.dp)) {
                             Column(Modifier.padding(horizontal = 20.dp)) {
                                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    IconButton(onClick = onNavigateBack, modifier = Modifier.size(36.dp).offset(x = (-10).dp)) {
-                                        Icon(
+                                    BolaoIconButton(onClick = onNavigateBack, modifier = Modifier.size(36.dp).offset(x = (-10).dp)) {
+                                        BolaoIcon(
                                             Icons.AutoMirrored.Filled.ArrowBack,
-                                            "Voltar",
+                                            stringResource(Res.string.bolao_detail_nav_back_cd),
                                             tint = Color.White,
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
-                                    Text(
-                                        uiState.bolao?.name ?: "Bolão",
+                                    BolaoText(
+                                        uiState.bolao?.name ?: stringResource(Res.string.bolao_detail_default_name),
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.White,
                                         modifier = Modifier.weight(1f).padding(top = 4.dp).offset(x = (-8).dp)
                                     )
 
-                                    IconButton(onClick = onNavigateToHelp, modifier = Modifier.size(36.dp)) {
-                                        Icon(
+                                    BolaoIconButton(onClick = onNavigateToHelp, modifier = Modifier.size(36.dp)) {
+                                        BolaoIcon(
                                             Icons.AutoMirrored.Outlined.HelpOutline,
-                                            "Ajuda",
+                                            stringResource(Res.string.bolao_detail_help_cd),
                                             tint = TextMuted,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
 
                                     if (isOwner) {
-                                        IconButton(
+                                        BolaoIconButton(
                                             onClick = {
-                                                uiState.bolao?.let { b ->
-                                                    val web = "https://bolaodagalera-bb002.web.app/invite?code=${b.code}"
-                                                    val app = "bolaodagalera://invite?code=${b.code}"
-                                                    launcherProvider.shareText(
-                                                        "Entre no meu bolão '${b.name}'! 🏆\n\nLink: $web\n\n" +
-                                                            "Se o link não abrir o app automaticamente, use este: $app\n\n" +
-                                                            "Código: ${b.code}"
-                                                    )
-                                                }
+                                                shareMessage?.let { launcherProvider.shareText(it) }
                                             },
                                             modifier =
                                             Modifier.size(
                                                 36.dp
                                             )
                                         ) {
-                                            Icon(
+                                            BolaoIcon(
                                                 Icons.Default.Share,
-                                                "Compartilhar",
+                                                stringResource(Res.string.bolao_detail_share_cd),
                                                 tint = TextMuted,
                                                 modifier = Modifier.size(20.dp)
                                             )
                                         }
-                                        IconButton(
+                                        BolaoIconButton(
                                             onClick = {
                                                 onNavigateToAddParticipants(bolaoId)
                                             },
@@ -564,8 +652,15 @@ fun BolaoDetailContent(
                                             Modifier.size(
                                                 36.dp
                                             )
-                                        ) { Icon(Icons.Default.PersonAdd, "Adicionar", tint = Neon, modifier = Modifier.size(20.dp)) }
-                                        IconButton(
+                                        ) {
+                                            BolaoIcon(
+                                                Icons.Default.PersonAdd,
+                                                stringResource(Res.string.bolao_detail_add_participant_cd),
+                                                tint = Neon,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                        BolaoIconButton(
                                             onClick = {
                                                 onNavigateToEdit(bolaoId)
                                             },
@@ -573,10 +668,17 @@ fun BolaoDetailContent(
                                             Modifier.size(
                                                 36.dp
                                             )
-                                        ) { Icon(Icons.Default.Edit, "Editar", tint = Neon, modifier = Modifier.size(20.dp)) }
+                                        ) {
+                                            BolaoIcon(
+                                                Icons.Default.Edit,
+                                                stringResource(Res.string.bolao_detail_edit_cd),
+                                                tint = Neon,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
                                     } else {
                                         Box {
-                                            IconButton(
+                                            BolaoIconButton(
                                                 onClick = {
                                                     showMenu = true
                                                 },
@@ -585,14 +687,14 @@ fun BolaoDetailContent(
                                                     36.dp
                                                 )
                                             ) {
-                                                Icon(
+                                                BolaoIcon(
                                                     Icons.Default.MoreVert,
-                                                    "Menu",
+                                                    stringResource(Res.string.bolao_detail_menu_cd),
                                                     tint = Color.White,
                                                     modifier = Modifier.size(22.dp)
                                                 )
                                             }
-                                            DropdownMenu(
+                                            BolaoDropdownMenu(
                                                 expanded = showMenu,
                                                 onDismissRequest = {
                                                     showMenu = false
@@ -602,10 +704,10 @@ fun BolaoDetailContent(
                                                     NavyCard
                                                 ).border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
                                             ) {
-                                                DropdownMenuItem(text = {
-                                                    Text("Compartilhar", color = Color.White)
+                                                BolaoDropdownMenuItem(text = {
+                                                    BolaoText(stringResource(Res.string.bolao_detail_menu_share), color = Color.White)
                                                 }, leadingIcon = {
-                                                    Icon(
+                                                    BolaoIcon(
                                                         Icons.Default.Share,
                                                         null,
                                                         tint = TextMuted,
@@ -613,20 +715,12 @@ fun BolaoDetailContent(
                                                     )
                                                 }, onClick = {
                                                     showMenu = false
-                                                    uiState.bolao?.let { b ->
-                                                        val web = "https://bolaodagalera-bb002.web.app/invite?code=${b.code}"
-                                                        val app = "bolaodagalera://invite?code=${b.code}"
-                                                        launcherProvider.shareText(
-                                                            "Entre no meu bolão '${b.name}'! 🏆\n\nLink: $web\n\n" +
-                                                                "Se o link não abrir o app automaticamente, use este: $app\n\n" +
-                                                                "Código: ${b.code}"
-                                                        )
-                                                    }
+                                                    shareMessage?.let { launcherProvider.shareText(it) }
                                                 })
-                                                DropdownMenuItem(text = {
-                                                    Text("Sair do Bolão", color = ErrorRed)
+                                                BolaoDropdownMenuItem(text = {
+                                                    BolaoText(stringResource(Res.string.bolao_detail_menu_leave), color = ErrorRed)
                                                 }, leadingIcon = {
-                                                    Icon(
+                                                    BolaoIcon(
                                                         Icons.AutoMirrored.Filled.ExitToApp,
                                                         null,
                                                         tint = ErrorRed,
@@ -643,7 +737,7 @@ fun BolaoDetailContent(
                                 uiState.bolao?.let { bolao ->
                                     if (bolao.description.isNotBlank()) {
                                         Spacer(Modifier.height(16.dp))
-                                        Text(
+                                        BolaoText(
                                             bolao.description,
                                             fontSize = 12.sp,
                                             color = TextMuted,
@@ -656,7 +750,7 @@ fun BolaoDetailContent(
                                     if (isOwner && (bolao.pendingParticipants.isNotEmpty() || bolao.pendingExits.isNotEmpty())) {
                                         Spacer(Modifier.height(12.dp))
                                         val pCount = bolao.pendingParticipants.size + bolao.pendingExits.size
-                                        Surface(
+                                        BolaoSurface(
                                             color =
                                             Gold.copy(
                                                 alpha = 0.1f
@@ -666,7 +760,7 @@ fun BolaoDetailContent(
                                                 12.dp
                                             ),
                                             border =
-                                            androidx.compose.foundation.BorderStroke(
+                                            BorderStroke(
                                                 1.dp,
                                                 Gold.copy(alpha = 0.3f)
                                             ),
@@ -680,15 +774,20 @@ fun BolaoDetailContent(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                                             ) {
-                                                Text("⚠️", fontSize = 16.sp)
-                                                Text(
-                                                    "$pCount solicitações pendentes.",
+                                                BolaoText(stringResource(Res.string.bolao_detail_warning_emoji), fontSize = 16.sp)
+                                                BolaoText(
+                                                    stringResource(Res.string.bolao_detail_pending_count_message, pCount),
                                                     color = Gold,
                                                     fontSize = 12.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     modifier = Modifier.weight(1f)
                                                 )
-                                                Text("VER", color = Gold, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                                                BolaoText(
+                                                    stringResource(Res.string.bolao_detail_pending_view_button),
+                                                    color = Gold,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Black
+                                                )
                                             }
                                         }
                                     }
@@ -712,8 +811,8 @@ fun BolaoDetailContent(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
-                                            Text("🔑", fontSize = 12.sp)
-                                            Text(
+                                            BolaoText(stringResource(Res.string.bolao_detail_key_emoji), fontSize = 12.sp)
+                                            BolaoText(
                                                 bolao.code,
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
@@ -739,9 +838,9 @@ fun BolaoDetailContent(
                                                 5.dp
                                             )
                                         ) {
-                                            Text("👥", fontSize = 12.sp)
-                                            Text(
-                                                "${bolao.participants.size} participantes",
+                                            BolaoText(stringResource(Res.string.bolao_detail_participants_emoji), fontSize = 12.sp)
+                                            BolaoText(
+                                                stringResource(Res.string.bolao_detail_participants_chip, bolao.participants.size),
                                                 fontSize = 12.sp,
                                                 color = Neon,
                                                 fontWeight = FontWeight.SemiBold
@@ -761,8 +860,8 @@ fun BolaoDetailContent(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(5.dp)
                                         ) {
-                                            Text("🏆", fontSize = 12.sp)
-                                            Text(
+                                            BolaoText(stringResource(Res.string.bolao_detail_trophy_emoji), fontSize = 12.sp)
+                                            BolaoText(
                                                 championship.displayName,
                                                 fontSize = 12.sp,
                                                 color = TextMuted,
@@ -802,7 +901,7 @@ fun BolaoDetailContent(
                                             }.padding(vertical = 10.dp, horizontal = 4.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Text(
+                                            BolaoText(
                                                 label,
                                                 color = txtColor,
                                                 fontSize = if (tabs.size > 2 && label.length > 10) 13.sp else 14.sp,
@@ -822,8 +921,8 @@ fun BolaoDetailContent(
                             filtered.filter { it.phase == Phase.GROUP_STAGE }
                         }
                         Box(Modifier.weight(1f)) {
-                            when (tabs.getOrNull(selectedTab) ?: "Grupos") {
-                                "Grupos", "Jogos", "Rodadas", "Pontos Corridos" ->
+                            when (tabs.getOrNull(selectedTab) ?: tabGrupos) {
+                                tabGrupos, tabJogos, tabRodadas, tabPontosCorridos ->
                                     GroupStageTab(
                                         matches = groups.ifEmpty { filtered },
                                         predictions = uiState.userPredictions,
@@ -838,7 +937,7 @@ fun BolaoDetailContent(
                                         onShowAllPredictions = { onNavigateToAllPredictions(it.id) },
                                         onOpenAdminScoreDialog = { matchToUpdate = it }
                                     )
-                                "Mata-Mata" ->
+                                tabMataMata ->
                                     KnockoutTab(
                                         matches = filtered,
                                         predictions = uiState.userPredictions,
@@ -855,8 +954,8 @@ fun BolaoDetailContent(
                                         onOpenAdminScoreDialog = { matchToUpdate = it },
                                         championship = championship
                                     )
-                                "Ranking" -> RankingScreen(bolaoId = bolaoId)
-                                "Tabela" -> {
+                                tabRanking -> RankingScreen(bolaoId = bolaoId)
+                                tabTabela -> {
                                     val champId = uiState.bolao?.championshipId ?: "UNKNOWN"
                                     StandingsTab(matches = uiState.allMatches.filter { it.championshipId == champId })
                                 }

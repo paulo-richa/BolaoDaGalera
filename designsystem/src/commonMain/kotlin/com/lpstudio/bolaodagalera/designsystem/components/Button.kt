@@ -1,8 +1,10 @@
 package com.lpstudio.bolaodagalera.designsystem.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -83,9 +86,22 @@ fun BolaoOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
+    shape: Shape = ButtonDefaults.outlinedShape,
+    contentColor: Color = ButtonDefaults.outlinedButtonColors().contentColor,
+    border: BorderStroke? = ButtonDefaults.outlinedButtonBorder(enabled),
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    content: @Composable RowScope.() -> Unit
 ) {
-    OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled, content = content)
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = shape,
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor),
+        border = border,
+        contentPadding = contentPadding,
+        content = content
+    )
 }
 
 @Composable

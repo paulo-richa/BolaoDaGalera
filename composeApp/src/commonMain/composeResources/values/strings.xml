@@ -57,4 +57,225 @@
     <string name="profile_option_change_password">Alterar Senha</string>
     <string name="profile_option_delete_account">Excluir Minha Conta</string>
     <string name="profile_version_label">Versão %1$s</string>
+
+    <!-- Shared (bolao feature: date formatting, "hoje" chip, two-legged phase suffixes) -->
+    <string name="bolao_common_today_chip">⚽️ HOJE</string>
+    <string name="bolao_common_phase_first_leg">%1$s - Ida</string>
+    <string name="bolao_common_phase_second_leg">%1$s - Volta</string>
+    <string name="bolao_common_date_tbd">Data a definir</string>
+    <string name="bolao_common_day_seg">SEG</string>
+    <string name="bolao_common_day_ter">TER</string>
+    <string name="bolao_common_day_qua">QUA</string>
+    <string name="bolao_common_day_qui">QUI</string>
+    <string name="bolao_common_day_sex">SEX</string>
+    <string name="bolao_common_day_sab">SÁB</string>
+    <string name="bolao_common_day_dom">DOM</string>
+    <string name="bolao_common_month_jan">JAN</string>
+    <string name="bolao_common_month_fev">FEV</string>
+    <string name="bolao_common_month_mar">MAR</string>
+    <string name="bolao_common_month_abr">ABR</string>
+    <string name="bolao_common_month_mai">MAI</string>
+    <string name="bolao_common_month_jun">JUN</string>
+    <string name="bolao_common_month_jul">JUL</string>
+    <string name="bolao_common_month_ago">AGO</string>
+    <string name="bolao_common_month_set">SET</string>
+    <string name="bolao_common_month_out">OUT</string>
+    <string name="bolao_common_month_nov">NOV</string>
+    <string name="bolao_common_month_dez">DEZ</string>
+
+    <!-- BolaoDetailComponents -->
+    <string name="bolao_detail_components_group_label">Grupo %1$s</string>
+    <string name="bolao_detail_components_group_completed_emoji">✅</string>
+    <string name="bolao_detail_components_group_pending_emoji">⏳</string>
+    <string name="bolao_detail_components_group_locked_emoji">🔒</string>
+
+    <!-- RodadaSelector -->
+    <string name="rodada_selector_chip_tomorrow">AMANHÃ</string>
+    <string name="rodada_selector_chip_round">Rodada %1$d</string>
+
+    <!-- AddParticipantsScreen -->
+    <string name="add_participants_top_bar_title">Adicionar Participantes</string>
+    <string name="add_participants_section_title">CONVIDAR AMIGO</string>
+    <string name="add_participants_field_identifier_label">E-mail, Telefone ou ID</string>
+    <string name="add_participants_success_message">Convite enviado com sucesso!</string>
+    <string name="add_participants_default_inviter_name">Alguém</string>
+    <string name="add_participants_error_user_not_found">Usuário não encontrado. Peça para seu amigo criar uma conta primeiro ou compartilhe o link de convite abaixo.</string>
+    <string name="add_participants_error_send_failed">Não foi possível enviar. Verifique sua conexão.</string>
+    <string name="add_participants_button_send_invite">Enviar Convite</string>
+    <string name="add_participants_share_message">Entre no meu bolão \'%1$s\'! 🏆\n\nLink: %2$s\n\nSe o link não abrir o app automaticamente, use este: %3$s\n\nCódigo: %4$s</string>
+    <string name="add_participants_button_share_link">Compartilhar Link de Convite</string>
+    <string name="add_participants_info_emoji">📢</string>
+    <string name="add_participants_info_title">Como funciona?</string>
+    <string name="add_participants_info_message">Adicione seus amigos diretamente via E-mail, Telefone ou ID do app. Eles receberão um convite instantâneo na tela inicial deles. Alternativamente, compartilhe o link do bolão para que eles solicitem a entrada.</string>
+
+    <!-- BolaoDetailScreen -->
+    <string name="bolao_detail_default_name">Bolão</string>
+    <string name="bolao_detail_nav_back_cd">Voltar</string>
+    <string name="bolao_detail_help_cd">Ajuda</string>
+    <string name="bolao_detail_share_cd">Compartilhar</string>
+    <string name="bolao_detail_add_participant_cd">Adicionar</string>
+    <string name="bolao_detail_edit_cd">Editar</string>
+    <string name="bolao_detail_menu_cd">Menu</string>
+    <string name="bolao_detail_menu_share">Compartilhar</string>
+    <string name="bolao_detail_menu_leave">Sair do Bolão</string>
+    <string name="bolao_detail_leave_dialog_title">Sair do Bolão?</string>
+    <string name="bolao_detail_leave_dialog_message_owner">Você é o dono deste bolão. Se sair, o bolão continuará existindo mas ficará sem administrador.</string>
+    <string name="bolao_detail_leave_dialog_message_member">O administrador precisará confirmar sua saída para que você seja removido do ranking.</string>
+    <string name="bolao_detail_leave_dialog_confirm_owner">Sair</string>
+    <string name="bolao_detail_leave_dialog_confirm_member">Pedir para sair</string>
+    <string name="bolao_detail_share_message">Entre no meu bolão \'%1$s\'! 🏆\n\nLink: %2$s\n\nSe o link não abrir o app automaticamente, use este: %3$s\n\nCódigo: %4$s</string>
+    <string name="bolao_detail_pending_requests_title">Solicitações Pendentes</string>
+    <string name="bolao_detail_participants_title">Participantes</string>
+    <string name="bolao_detail_participants_count">%1$d pessoas no bolão</string>
+    <string name="bolao_detail_close_button">Fechar</string>
+    <string name="bolao_detail_pending_join_label">Quer entrar</string>
+    <string name="bolao_detail_pending_leave_label">Quer sair</string>
+    <string name="bolao_detail_pending_count_message">%1$d solicitações pendentes.</string>
+    <string name="bolao_detail_pending_view_button">VER</string>
+    <string name="bolao_detail_warning_emoji">⚠️</string>
+    <string name="bolao_detail_key_emoji">🔑</string>
+    <string name="bolao_detail_participants_emoji">👥</string>
+    <string name="bolao_detail_participants_chip">%1$d participantes</string>
+    <string name="bolao_detail_trophy_emoji">🏆</string>
+    <string name="bolao_detail_tab_grupos">Grupos</string>
+    <string name="bolao_detail_tab_ranking">Ranking</string>
+    <string name="bolao_detail_tab_mata_mata">Mata-Mata</string>
+    <string name="bolao_detail_tab_pontos_corridos">Pontos Corridos</string>
+    <string name="bolao_detail_tab_tabela">Tabela</string>
+    <string name="bolao_detail_tab_jogos">Jogos</string>
+    <string name="bolao_detail_tab_rodadas">Rodadas</string>
+
+    <!-- CreateBolaoScreen -->
+    <string name="create_bolao_name_error_too_short">Nome muito curto (mín. 10)</string>
+    <string name="create_bolao_success_emoji">🎉</string>
+    <string name="create_bolao_success_title">Bolão Criado!</string>
+    <string name="create_bolao_success_code_label">Seu código de convite é:</string>
+    <string name="create_bolao_success_choose_start">Escolha como quer começar:</string>
+    <string name="create_bolao_button_add_participants">Adicionar Participantes</string>
+    <string name="create_bolao_share_message">Entre no meu bolão \'%1$s\'! 🏆\n\nLink: %2$s\n\nCódigo: %3$s</string>
+    <string name="create_bolao_button_share_code">Compartilhar Código</string>
+    <string name="create_bolao_button_go_to_bolao">Ir para o bolão</string>
+    <string name="create_bolao_top_bar_title">Novo Bolão</string>
+    <string name="create_bolao_hero_emoji">🏆</string>
+    <string name="create_bolao_hero_subtitle">Crie seu bolão e convide amigos com um código único</string>
+    <string name="create_bolao_section_championship">Escolha o Campeonato</string>
+    <string name="create_bolao_coming_soon">Em breve</string>
+    <string name="create_bolao_section_phases">Fases:</string>
+    <string name="create_bolao_scope_full_emoji">🏆</string>
+    <string name="create_bolao_scope_groups_emoji">⚽</string>
+    <string name="create_bolao_scope_knockout_emoji">⚔️</string>
+    <string name="create_bolao_scope_league_emoji">📈</string>
+    <string name="create_bolao_scope_groups_closed">(Fase encerrada)</string>
+    <string name="create_bolao_scope_knockout_closed">(Mata-mata encerrado)</string>
+    <string name="create_bolao_field_name_label">Nome do bolão *</string>
+    <string name="create_bolao_char_count">%1$d/35</string>
+    <string name="create_bolao_field_description_label">Descrição (opcional)</string>
+    <string name="create_bolao_description_char_count">%1$d/115</string>
+    <string name="create_bolao_section_scoring">Sistema de Pontuação</string>
+    <string name="create_bolao_score_exact_label">🎯 Placar Exato</string>
+    <string name="create_bolao_score_winner_label">✅ Resultado Certo</string>
+    <string name="create_bolao_overtime_emoji">⏱️</string>
+    <string name="create_bolao_overtime_info">O placar válido é o do tempo normal + prorrogação. Pênaltis não contam para a pontuação.</string>
+    <string name="create_bolao_info_emoji">💡</string>
+    <string name="create_bolao_info_code_message">Após criar, você receberá um código de 6 caracteres para convidar amigos.</string>
+    <string name="create_bolao_button_create">Criar Bolão</string>
+    <string name="create_bolao_score_input_decrease">-</string>
+    <string name="create_bolao_score_input_increase">+</string>
+    <string name="create_bolao_score_input_point_singular">ponto</string>
+    <string name="create_bolao_score_input_point_plural">pontos</string>
+
+    <!-- EditBolaoScreen -->
+    <string name="edit_bolao_success_message">Configurações salvas com sucesso!</string>
+    <string name="edit_bolao_error_message">Erro: %1$s</string>
+    <string name="edit_bolao_delete_dialog_title">Excluir Bolão?</string>
+    <string name="edit_bolao_delete_dialog_message">Esta ação não pode ser desfeita. Todos os participantes e palpites serão removidos.</string>
+    <string name="edit_bolao_delete_dialog_confirm">Excluir</string>
+    <string name="edit_bolao_remove_participant_dialog_title">Remover Participante?</string>
+    <string name="edit_bolao_remove_participant_dialog_message">Tem certeza que deseja remover %1$s deste bolão? Ele perderá todos os palpites feitos.</string>
+    <string name="edit_bolao_remove_participant_dialog_confirm">Remover</string>
+    <string name="edit_bolao_top_bar_title">Configurações</string>
+    <string name="edit_bolao_delete_icon_cd">Excluir</string>
+    <string name="edit_bolao_section_general">DADOS GERAIS</string>
+    <string name="edit_bolao_field_name_label">Nome do Bolão</string>
+    <string name="edit_bolao_name_error_min_length">Mínimo 10 caracteres</string>
+    <string name="edit_bolao_char_count">%1$d/35</string>
+    <string name="edit_bolao_field_description_label">Descrição</string>
+    <string name="edit_bolao_description_char_count">%1$d/115</string>
+    <string name="edit_bolao_section_type">TIPO DO BOLÃO</string>
+    <string name="edit_bolao_scope_league_emoji">📈</string>
+    <string name="edit_bolao_scope_full_emoji">🏆</string>
+    <string name="edit_bolao_scope_groups_emoji">⚽</string>
+    <string name="edit_bolao_scope_knockout_emoji">⚔️</string>
+    <string name="edit_bolao_scope_league_label">Pontos Corridos</string>
+    <string name="edit_bolao_scope_toggle_knockout">Incluir fase de Mata-Mata</string>
+    <string name="edit_bolao_scope_league_locked">Este campeonato segue o formato de pontos corridos.</string>
+    <string name="edit_bolao_scope_knockout_started">O Mata-Mata já está em andamento e não pode ser removido.</string>
+    <string name="edit_bolao_scope_locked_generic">O tipo deste bolão não pode ser alterado.</string>
+    <string name="edit_bolao_section_scoring">SISTEMA DE PONTUAÇÃO</string>
+    <string name="edit_bolao_score_exact_label">🎯 Placar Exato</string>
+    <string name="edit_bolao_score_winner_label">✅ Resultado Certo</string>
+    <string name="edit_bolao_overtime_emoji">⏱️</string>
+    <string name="edit_bolao_overtime_info">O placar válido é o do tempo normal + prorrogação. Pênaltis não contam para a pontuação.</string>
+    <string name="edit_bolao_button_save">Salvar Alterações</string>
+    <string name="edit_bolao_section_participants">PARTICIPANTES</string>
+    <string name="edit_bolao_button_add">Adicionar</string>
+    <string name="edit_bolao_owner_emoji">👑</string>
+    <string name="edit_bolao_member_emoji">👤</string>
+    <string name="edit_bolao_participant_owner_self">%1$s (Você/Dono)</string>
+    <string name="edit_bolao_participant_self">%1$s (Você)</string>
+    <string name="edit_bolao_remove_participant_cd">Remover</string>
+    <string name="edit_bolao_score_input_decrease">-</string>
+    <string name="edit_bolao_score_input_increase">+</string>
+    <string name="edit_bolao_score_input_point_singular">ponto</string>
+    <string name="edit_bolao_score_input_point_plural">pontos</string>
+
+    <!-- GroupStageTab -->
+    <string name="group_stage_tab_empty_today">Nenhum jogo programado para hoje.</string>
+    <string name="group_stage_tab_empty_tomorrow">Nenhum jogo programado para amanhã.</string>
+
+    <!-- JoinBolaoScreen -->
+    <string name="join_bolao_code_error_length">Código deve ter 6 caracteres</string>
+    <string name="join_bolao_request_sent_title">Solicitação Enviada!</string>
+    <string name="join_bolao_request_sent_message">O dono do bolão recebeu seu convite. Aguarde a aprovação dele para começar a palpitar!</string>
+    <string name="join_bolao_request_sent_confirm">OK</string>
+    <string name="join_bolao_top_bar_title">Entrar em Bolão</string>
+    <string name="join_bolao_key_emoji">🔑</string>
+    <string name="join_bolao_title">Digite o código do bolão</string>
+    <string name="join_bolao_subtitle">Peça o código de 6 caracteres para quem criou o bolão.</string>
+    <string name="join_bolao_field_code_label">Código</string>
+    <string name="join_bolao_button_join">Entrar no Bolão</string>
+
+    <!-- KnockoutTab -->
+    <string name="knockout_tab_empty_message">Nenhum jogo de mata-mata hoje.</string>
+
+    <!-- MatchCard -->
+    <string name="match_card_social_badge_label">PALPITES DA GALERA</string>
+    <string name="match_card_first_leg_score">IDA: %1$s</string>
+    <string name="match_card_points_singular">+1 PONTO</string>
+    <string name="match_card_points_plural">+%1$d PONTOS</string>
+    <string name="match_card_vs_label">vs</string>
+    <string name="match_card_edit_prediction">EDITAR PALPITE</string>
+    <string name="match_card_make_prediction">TOQUE PARA PALPITAR</string>
+    <string name="match_card_coming_soon">EM BREVE VOCÊ PODERÁ PALPITAR</string>
+    <string name="match_card_status_finished">JOGO ENCERRADO</string>
+    <string name="match_card_status_extra_time">PRORROGAÇÃO</string>
+    <string name="match_card_status_penalties">PÊNALTIS</string>
+    <string name="match_card_status_going_extra_time">INDO PARA PRORROGAÇÃO</string>
+    <string name="match_card_status_going_penalties">INDO PARA PÊNALTIS</string>
+    <string name="match_card_status_halftime">INTERVALO</string>
+    <string name="match_card_status_in_progress">JOGO EM ANDAMENTO</string>
+    <string name="match_card_admin_dialog_title">Ajustar Placar Oficial</string>
+    <string name="match_card_admin_dialog_message">Defina o placar real de %1$s x %2$s</string>
+    <string name="match_card_admin_dialog_versus">x</string>
+    <string name="match_card_admin_dialog_save">SALVAR</string>
+    <string name="match_card_admin_dialog_cancel">CANCELAR</string>
+
+    <!-- StandingsTab -->
+    <string name="standings_tab_empty_message">Aguardando início dos jogos...</string>
+    <string name="standings_tab_header_position">#</string>
+    <string name="standings_tab_header_team">TIME</string>
+    <string name="standings_tab_header_points">P</string>
+    <string name="standings_tab_header_played">J</string>
+    <string name="standings_tab_header_won">V</string>
+    <string name="standings_tab_header_goal_diff">SG</string>
 </resources>
