@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- HomeScreen -->
+    <string name="home_screen_button_create_bolao">Criar bolão</string>
+    <string name="home_screen_error_snackbar_dismiss">OK</string>
+    <string name="home_screen_app_title">Bolão da Galera</string>
+    <string name="home_screen_greeting_prefix">Olá, </string>
+    <string name="home_screen_greeting_wave_emoji"> 👋</string>
+    <string name="home_screen_notifications_cd">Notificações</string>
+    <string name="home_screen_button_join_with_code">Entrar com código</string>
+    <string name="home_screen_empty_title">Sem bolões ainda</string>
+    <string name="home_screen_empty_trophy_emoji">🏆</string>
+    <string name="home_screen_empty_subtitle">Crie o seu ou entre em um com o código de um amigo</string>
+    <string name="home_screen_section_pending_invitations">CONVITES PENDENTES (%1$d)</string>
+    <string name="home_screen_section_admin_boloes">MEUS BOLÕES (ADMIN)</string>
+    <string name="home_screen_section_participant_boloes">BOLÕES QUE PARTICIPO</string>
+    <string name="home_screen_invitation_emoji">📩</string>
+    <string name="home_screen_invitation_message">%1$s te convidou para o bolão:</string>
+    <string name="home_screen_button_decline">Recusar</string>
+    <string name="home_screen_button_accept_caps">ACEITAR</string>
+    <string name="home_screen_admin_badge">ADMIN</string>
+    <string name="home_screen_bolao_code_label">Código: %1$s</string>
+    <string name="home_screen_notification_dialog_title">Notificações</string>
+    <string name="home_screen_notification_bell_emoji">🔔</string>
+    <string name="home_screen_notification_empty">Tudo em dia! Sem alertas por enquanto.</string>
+    <string name="home_screen_button_accept">Aceitar</string>
+    <string name="home_screen_notification_dialog_close">FECHAR</string>
+
+    <!-- HelpScreen -->
+    <string name="help_screen_button_send_request">ENVIAR SOLICITAÇÃO</string>
+    <string name="help_screen_confirm_dialog_title">Confirmar Envio</string>
+    <string name="help_screen_confirm_dialog_message">Deseja enviar sua solicitação de suporte agora?</string>
+    <string name="help_screen_confirm_dialog_confirm">SIM, ENVIAR</string>
+    <string name="help_screen_confirm_dialog_dismiss">CANCELAR</string>
+    <string name="help_screen_error_dialog_title">Falha no Envio</string>
+    <string name="help_screen_error_dialog_message">Ocorreu um erro ao enviar sua mensagem. Verifique sua conexão e tente novamente.</string>
+    <string name="help_screen_error_dialog_confirm">TENTAR NOVAMENTE</string>
+    <string name="help_screen_top_bar_title">Central de Ajuda</string>
+    <string name="help_screen_back_cd">Voltar</string>
+    <string name="help_screen_tab_rules">Regras</string>
+    <string name="help_screen_tab_faq">FAQ</string>
+    <string name="help_screen_tab_support">Suporte</string>
+    <string name="help_screen_rule_scoring_title">Como Funciona a Pontuação?</string>
+    <string name="help_screen_rule_scoring_description">O objetivo é acertar o placar dos jogos. Existem dois níveis de acerto:</string>
+    <string name="help_screen_rule_scoring_point_exact">3 PONTOS: Acerto exato do placar (Ex: Você palpitou 2x1 e o jogo foi 2x1).</string>
+    <string name="help_screen_rule_scoring_point_partial">1 PONTO: Acerto do vencedor ou empate, mas erro no número de gols (Ex: Você palpitou 2x1, mas o jogo foi 1x0).</string>
+    <string name="help_screen_rule_time_title">Tempo de Jogo</string>
+    <string name="help_screen_rule_time_description">Atenção! Vale apenas o resultado do tempo normal (90 minutos + acréscimos).</string>
+    <string name="help_screen_rule_time_extra">Gols em prorrogação ou disputa de pênaltis não são contabilizados no nosso app.</string>
+    <string name="help_screen_rule_deadline_title">Prazo para Palpites</string>
+    <string name="help_screen_rule_deadline_description">Você pode enviar ou alterar seu palpite até 1 minuto antes do início oficial da partida.</string>
+    <string name="help_screen_rule_deadline_extra">Após o fechamento, os palpites ficam bloqueados para edição.</string>
+    <string name="help_screen_rule_creation_title">Criação de Bolões</string>
+    <string name="help_screen_rule_creation_description">Qualquer usuário pode criar um bolão e convidar amigos através do código único gerado.</string>
+    <string name="help_screen_rule_creation_extra">O criador do bolão é o Administrador e tem o poder de aceitar novos membros.</string>
+    <string name="help_screen_faq_join_question">Como entro em um bolão?</string>
+    <string name="help_screen_faq_join_answer">Basta clicar em \'Entrar com código\' na tela inicial e digitar o código compartilhado pelo seu amigo.</string>
+    <string name="help_screen_faq_points_question">Meus pontos não atualizaram, o que fazer?</string>
+    <string name="help_screen_faq_points_answer">Os rankings são atualizados automaticamente alguns minutos após o encerramento oficial do jogo pela nossa API. Caso haja um atraso incomum, o suporte do aplicativo monitora e ajusta os placares reais para garantir a pontuação correta.</string>
+    <string name="help_screen_faq_multiple_question">Posso participar de quantos bolões?</string>
+    <string name="help_screen_faq_multiple_answer">Não há limite! Você pode participar de quantos bolões desejar simultaneamente.</string>
+    <string name="help_screen_faq_password_question">Esqueci minha senha, como recupero?</string>
+    <string name="help_screen_faq_password_answer">Na tela de login, utilize a opção \'Esqueci minha senha\' para receber um link de redefinição no seu e-mail cadastrado.</string>
+    <string name="help_screen_support_success_title">Solicitação enviada!</string>
+    <string name="help_screen_support_success_subtitle">Retornaremos em breve.</string>
+    <string name="help_screen_support_title">Precisa de ajuda ou tem uma sugestão?</string>
+    <string name="help_screen_support_subtitle">Descreva sua situação abaixo e clique em enviar. Nossa equipe receberá sua mensagem diretamente.</string>
+    <string name="help_screen_support_field_placeholder">Reclamação, pedido de ajuda ou sugestão...</string>
+
+    <!-- MaintenanceScreen -->
+    <string name="maintenance_screen_icon_cd">Manutenção</string>
+    <string name="maintenance_screen_title">Intervalo para Ajustes!</string>
+    <string name="maintenance_screen_message">Nossa equipe entrou em campo para fazer alguns ajustes técnicos. Voltamos logo após o comercial!</string>
+    <string name="maintenance_screen_button_logout">Sair da conta</string>
+
+    <!-- SplashScreen -->
+    <string name="splash_screen_logo_emoji">⚽</string>
+    <string name="splash_screen_app_title">BOLÃO DA GALERA</string>
+    <string name="splash_screen_tagline">CRIE SEU TIME, DÊ SEU PALPITE</string>
+    <string name="splash_screen_studio_label">LP STUDIO</string>
+</resources>
