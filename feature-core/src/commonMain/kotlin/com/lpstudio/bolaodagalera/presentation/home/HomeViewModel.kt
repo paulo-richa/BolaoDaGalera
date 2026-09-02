@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.Bolao
+import com.lpstudio.bolaodagalera.domain.model.ErrorCategory
 import com.lpstudio.bolaodagalera.domain.model.Invitation
 import com.lpstudio.bolaodagalera.domain.model.Notification
 import com.lpstudio.bolaodagalera.domain.model.User
@@ -10,6 +11,7 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
+import com.lpstudio.bolaodagalera.domain.usecase.ClassifyExceptionUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.DedupeInvitationsByBolaoUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.RespondToInvitationUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
@@ -41,7 +43,8 @@ class HomeViewModel(
     private val notificationRepository: NotificationRepository,
     private val crashReporter: CrashReporter,
     private val dedupeInvitationsByBolao: DedupeInvitationsByBolaoUseCase = DedupeInvitationsByBolaoUseCase(),
-    private val respondToInvitationUseCase: RespondToInvitationUseCase = RespondToInvitationUseCase(bolaoRepository, invitationRepository)
+    private val respondToInvitationUseCase: RespondToInvitationUseCase = RespondToInvitationUseCase(bolaoRepository, invitationRepository),
+    private val classifyException: ClassifyExceptionUseCase = ClassifyExceptionUseCase()
 ) : ViewModel() {
     private val logger = appLogger("HomeViewModel")
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -157,12 +160,10 @@ class HomeViewModel(
                 crashReporter.recordException(e, "Erro ao processar convite")
                 logger.e(e) { "[HomeVM] ERRO ao processar convite" }
 
-                val msg = e.message?.lowercase() ?: ""
                 val friendly =
-                    if (msg.contains("permission")) {
-                        "Erro de permissão ao aceitar convite. Verifique se você já está no bolão."
-                    } else {
-                        "Não foi possível processar o convite. Tente novamente."
+                    when (classifyException(e)) {
+                        ErrorCategory.PERMISSION -> "Erro de permissão ao aceitar convite. Verifique se você já está no bolão."
+                        else -> "Não foi possível processar o convite. Tente novamente."
                     }
 
                 _uiState.update { it.copy(error = friendly, isLoading = false) }
