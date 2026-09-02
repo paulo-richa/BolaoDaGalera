@@ -46,7 +46,10 @@ fun BolaoTextField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     modifier: Modifier = Modifier,
     accentColor: Color = Neon,
-    textStyle: TextStyle = LocalTextStyle.current
+    textStyle: TextStyle = LocalTextStyle.current,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE
 ) {
     OutlinedTextField(
         value = value,
@@ -77,7 +80,9 @@ fun BolaoTextField(
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        singleLine = true
+        singleLine = singleLine,
+        minLines = minLines,
+        maxLines = maxLines
     )
 }
 

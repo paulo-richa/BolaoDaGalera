@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
@@ -23,12 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,8 +43,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.join_bolao_button_join
+import bolaodagalera.composeapp.generated.resources.join_bolao_code_error_length
+import bolaodagalera.composeapp.generated.resources.join_bolao_field_code_label
+import bolaodagalera.composeapp.generated.resources.join_bolao_key_emoji
+import bolaodagalera.composeapp.generated.resources.join_bolao_request_sent_confirm
+import bolaodagalera.composeapp.generated.resources.join_bolao_request_sent_message
+import bolaodagalera.composeapp.generated.resources.join_bolao_request_sent_title
+import bolaodagalera.composeapp.generated.resources.join_bolao_subtitle
+import bolaodagalera.composeapp.generated.resources.join_bolao_title
+import bolaodagalera.composeapp.generated.resources.join_bolao_top_bar_title
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoDialog
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoGlassCard
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
@@ -65,7 +73,6 @@ import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
 import com.lpstudio.bolaodagalera.presentation.theme.Gold
 import com.lpstudio.bolaodagalera.presentation.theme.GradientBg
 import com.lpstudio.bolaodagalera.presentation.theme.GradientGold
-import com.lpstudio.bolaodagalera.presentation.theme.NavyCard
 import com.lpstudio.bolaodagalera.presentation.theme.NavyElevated
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,6 +80,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Immutable
@@ -121,7 +129,6 @@ class JoinBolaoViewModel(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavigateBack: () -> Unit) {
     val bolaoRepository = koinInject<BolaoRepository>()
@@ -135,7 +142,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
     var code by remember(initialCode) { mutableStateOf(initialCode) }
     var codeTouched by remember(initialCode) { mutableStateOf(initialCode.isNotEmpty()) }
 
-    val codeError = if (codeTouched && code.length < 6) "Código deve ter 6 caracteres" else null
+    val codeError = if (codeTouched && code.length < 6) stringResource(Res.string.join_bolao_code_error_length) else null
 
     LaunchedEffect(initialCode) {
         if (initialCode.length == 6) {
@@ -150,19 +157,18 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
     }
 
     if (uiState.requestSent) {
-        AlertDialog(
+        BolaoDialog(
             onDismissRequest = onNavigateBack,
             containerColor = DeepNavy,
-            title = { Text("Solicitação Enviada!", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = {
+                BolaoText(stringResource(Res.string.join_bolao_request_sent_title), color = Color.White, fontWeight = FontWeight.Bold)
+            },
             text = {
-                Text(
-                    "O dono do bolão recebeu seu convite. Aguarde a aprovação dele para começar a palpitar!",
-                    color = TextMuted
-                )
+                BolaoText(stringResource(Res.string.join_bolao_request_sent_message), color = TextMuted)
             },
             confirmButton = {
                 BolaoButton(
-                    text = "OK",
+                    text = stringResource(Res.string.join_bolao_request_sent_confirm),
                     onClick = onNavigateBack
                 )
             }
@@ -190,10 +196,10 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                 )
         )
 
-        Scaffold(
+        BolaoScaffold(
             containerColor = Color.Transparent,
             topBar = {
-                BolaoTopBar(title = "Entrar em Bolão", onNavigateBack = onNavigateBack)
+                BolaoTopBar(title = stringResource(Res.string.join_bolao_top_bar_title), onNavigateBack = onNavigateBack)
             }
         ) { padding ->
             val scrollState = rememberScrollState()
@@ -208,18 +214,18 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("🔑", fontSize = 64.sp)
+                BolaoText(stringResource(Res.string.join_bolao_key_emoji), fontSize = 64.sp)
                 Spacer(Modifier.height(16.dp))
-                Text(
-                    "Digite o código do bolão",
+                BolaoText(
+                    stringResource(Res.string.join_bolao_title),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(
-                    "Peça o código de 6 caracteres para quem criou o bolão.",
+                BolaoText(
+                    stringResource(Res.string.join_bolao_subtitle),
                     fontSize = 14.sp,
                     color = TextMuted,
                     textAlign = TextAlign.Center,
@@ -233,28 +239,15 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    OutlinedTextField(
+                    BolaoTextField(
                         value = code,
                         onValueChange = {
                             if (it.length <= 6) code = it.uppercase()
                             codeTouched = true
                         },
-                        label = { Text("Código", color = if (codeError != null) ErrorRed else TextMuted, fontSize = 13.sp) },
-                        modifier = Modifier.fillMaxWidth(),
+                        label = stringResource(Res.string.join_bolao_field_code_label),
                         isError = codeError != null,
-                        shape = RoundedCornerShape(12.dp),
-                        colors =
-                        OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Gold,
-                            unfocusedBorderColor = Color(0xFF2A3D55),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = Gold,
-                            focusedContainerColor = NavyElevated,
-                            unfocusedContainerColor = NavyCard,
-                            errorBorderColor = ErrorRed,
-                            errorLabelColor = ErrorRed
-                        ),
+                        accentColor = Gold,
                         keyboardOptions =
                         KeyboardOptions(
                             capitalization = KeyboardCapitalization.Characters,
@@ -264,7 +257,6 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                         KeyboardActions(
                             onDone = { if (code.length == 6) viewModel.join(code) }
                         ),
-                        singleLine = true,
                         textStyle =
                         TextStyle(
                             fontSize = 28.sp,
@@ -275,7 +267,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                         )
                     )
 
-                    codeError?.let { Text(it, color = ErrorRed, fontSize = 11.sp) }
+                    codeError?.let { BolaoText(it, color = ErrorRed, fontSize = 11.sp) }
 
                     // Char counter dots
                     Row(
@@ -296,14 +288,14 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                     }
 
                     uiState.error?.let {
-                        Text(it, color = ErrorRed, fontSize = 12.sp, textAlign = TextAlign.Center)
+                        BolaoText(it, color = ErrorRed, fontSize = 12.sp, textAlign = TextAlign.Center)
                     }
                 }
 
                 Spacer(Modifier.height(24.dp))
 
                 BolaoButton(
-                    text = "Entrar no Bolão",
+                    text = stringResource(Res.string.join_bolao_button_join),
                     isLoading = uiState.isLoading,
                     enabled = code.length == 6 && !uiState.isLoading,
                     gradient = GradientGold,

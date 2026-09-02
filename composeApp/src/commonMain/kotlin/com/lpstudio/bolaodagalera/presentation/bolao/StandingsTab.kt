@@ -1,6 +1,5 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,13 +8,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -28,6 +24,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.standings_tab_empty_message
+import bolaodagalera.composeapp.generated.resources.standings_tab_header_goal_diff
+import bolaodagalera.composeapp.generated.resources.standings_tab_header_played
+import bolaodagalera.composeapp.generated.resources.standings_tab_header_points
+import bolaodagalera.composeapp.generated.resources.standings_tab_header_position
+import bolaodagalera.composeapp.generated.resources.standings_tab_header_team
+import bolaodagalera.composeapp.generated.resources.standings_tab_header_won
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.StandingsCalculator
 import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
@@ -37,13 +43,20 @@ import com.lpstudio.bolaodagalera.presentation.theme.NavyCard
 import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun StandingsTab(matches: List<Match>) {
     val standings = remember(matches) { StandingsCalculator.calculate(matches) }
     if (standings.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Aguardando início dos jogos...", color = TextMuted) }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            BolaoText(stringResource(Res.string.standings_tab_empty_message), color = TextMuted)
+        }
     } else {
+        val headerPoints = stringResource(Res.string.standings_tab_header_points)
+        val headerPlayed = stringResource(Res.string.standings_tab_header_played)
+        val headerWon = stringResource(Res.string.standings_tab_header_won)
+        val headerGoalDiff = stringResource(Res.string.standings_tab_header_goal_diff)
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
@@ -54,11 +67,23 @@ fun StandingsTab(matches: List<Match>) {
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("#", modifier = Modifier.width(24.dp), fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold)
-                    Text("TIME", modifier = Modifier.weight(1f), fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Bold)
+                    BolaoText(
+                        stringResource(Res.string.standings_tab_header_position),
+                        modifier = Modifier.width(24.dp),
+                        fontSize = 11.sp,
+                        color = TextMuted,
+                        fontWeight = FontWeight.Bold
+                    )
+                    BolaoText(
+                        stringResource(Res.string.standings_tab_header_team),
+                        modifier = Modifier.weight(1f),
+                        fontSize = 11.sp,
+                        color = TextMuted,
+                        fontWeight = FontWeight.Bold
+                    )
                     Row(modifier = Modifier.width(140.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        listOf("P", "J", "V", "SG").forEach {
-                            Text(
+                        listOf(headerPoints, headerPlayed, headerWon, headerGoalDiff).forEach {
+                            BolaoText(
                                 it,
                                 modifier = Modifier.width(35.dp),
                                 fontSize = 11.sp,
@@ -86,7 +111,7 @@ fun StandingsTab(matches: List<Match>) {
                         isZ4 -> ErrorRed
                         else -> null
                     }
-                Surface(
+                BolaoSurface(
                     color =
                     when {
                         isG4 -> Neon.copy(alpha = 0.05f)
@@ -108,7 +133,7 @@ fun StandingsTab(matches: List<Match>) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
+                        BolaoText(
                             "${index + 1}",
                             modifier = Modifier.width(24.dp),
                             fontSize = 12.sp,
@@ -117,7 +142,7 @@ fun StandingsTab(matches: List<Match>) {
                         )
                         TeamIcon(crestUrl = crest ?: team.teamCrest, flag = AnnotatedString(flag), isTbd = false, size = 24.dp)
                         Spacer(Modifier.width(10.dp))
-                        Text(
+                        BolaoText(
                             name,
                             modifier = Modifier.weight(1f),
                             fontSize = 13.sp,
@@ -126,7 +151,7 @@ fun StandingsTab(matches: List<Match>) {
                             maxLines = 1
                         )
                         Row(modifier = Modifier.width(140.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(
+                            BolaoText(
                                 "${team.points}",
                                 modifier = Modifier.width(35.dp),
                                 fontSize = 13.sp,
@@ -134,21 +159,21 @@ fun StandingsTab(matches: List<Match>) {
                                 color = accentColor ?: Color.White,
                                 textAlign = TextAlign.Center
                             )
-                            Text(
+                            BolaoText(
                                 "${team.played}",
                                 modifier = Modifier.width(35.dp),
                                 fontSize = 12.sp,
                                 color = TextMuted,
                                 textAlign = TextAlign.Center
                             )
-                            Text(
+                            BolaoText(
                                 "${team.won}",
                                 modifier = Modifier.width(35.dp),
                                 fontSize = 12.sp,
                                 color = TextMuted,
                                 textAlign = TextAlign.Center
                             )
-                            Text(
+                            BolaoText(
                                 "${team.goalDifference}",
                                 modifier = Modifier.width(35.dp),
                                 fontSize = 12.sp,

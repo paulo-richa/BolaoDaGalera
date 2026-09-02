@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -39,16 +37,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.group_stage_tab_empty_today
+import bolaodagalera.composeapp.generated.resources.group_stage_tab_empty_tomorrow
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoLinearProgressIndicator
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
-import com.lpstudio.bolaodagalera.presentation.theme.Neon
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.TimeSource
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
 
 /** Sentinela de [selectedRound] para a aba "Amanhã" (0 já é usado por "Hoje"). */
 const val TOMORROW_ROUND = -1
@@ -199,11 +202,11 @@ fun GroupStageTab(
                     item {
                         Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
                             val msg = if (selectedRound == 0) {
-                                "Nenhum jogo programado para hoje."
+                                stringResource(Res.string.group_stage_tab_empty_today)
                             } else {
-                                "Nenhum jogo programado para amanhã."
+                                stringResource(Res.string.group_stage_tab_empty_tomorrow)
                             }
-                            Text(msg, color = TextMuted, fontSize = 14.sp)
+                            BolaoText(msg, color = TextMuted, fontSize = 14.sp)
                         }
                     }
                 }
@@ -278,9 +281,8 @@ fun GroupStageTab(
                 )
             }
             if (isLoading) {
-                LinearProgressIndicator(
+                BolaoLinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
-                    color = Neon,
                     trackColor = Color.Transparent
                 )
             }

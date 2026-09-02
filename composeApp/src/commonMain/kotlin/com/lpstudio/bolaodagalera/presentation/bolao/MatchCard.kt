@@ -26,15 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +44,35 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import bolaodagalera.composeapp.generated.resources.Res
+import bolaodagalera.composeapp.generated.resources.bolao_common_date_tbd
+import bolaodagalera.composeapp.generated.resources.match_card_admin_dialog_cancel
+import bolaodagalera.composeapp.generated.resources.match_card_admin_dialog_message
+import bolaodagalera.composeapp.generated.resources.match_card_admin_dialog_save
+import bolaodagalera.composeapp.generated.resources.match_card_admin_dialog_title
+import bolaodagalera.composeapp.generated.resources.match_card_admin_dialog_versus
+import bolaodagalera.composeapp.generated.resources.match_card_coming_soon
+import bolaodagalera.composeapp.generated.resources.match_card_edit_prediction
+import bolaodagalera.composeapp.generated.resources.match_card_first_leg_score
+import bolaodagalera.composeapp.generated.resources.match_card_make_prediction
+import bolaodagalera.composeapp.generated.resources.match_card_points_plural
+import bolaodagalera.composeapp.generated.resources.match_card_points_singular
+import bolaodagalera.composeapp.generated.resources.match_card_social_badge_label
+import bolaodagalera.composeapp.generated.resources.match_card_status_extra_time
+import bolaodagalera.composeapp.generated.resources.match_card_status_finished
+import bolaodagalera.composeapp.generated.resources.match_card_status_going_extra_time
+import bolaodagalera.composeapp.generated.resources.match_card_status_going_penalties
+import bolaodagalera.composeapp.generated.resources.match_card_status_halftime
+import bolaodagalera.composeapp.generated.resources.match_card_status_in_progress
+import bolaodagalera.composeapp.generated.resources.match_card_status_penalties
+import bolaodagalera.composeapp.generated.resources.match_card_vs_label
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoDialog
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoHorizontalDivider
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoScoreField
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
@@ -66,6 +86,7 @@ import com.lpstudio.bolaodagalera.presentation.theme.OrangeNeon
 import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MatchCard(
@@ -191,7 +212,7 @@ fun MatchCard(
     val isExp = now >= (match.matchDateMillis - 60_000) || isFinished
     val isLock = isExp || forceLocked || isGhost || isTbd
     val cardBg = if (isLive) Brush.verticalGradient(listOf(NavyElevated, DeepNavy)) else null
-    Surface(
+    BolaoSurface(
         modifier = Modifier.fillMaxWidth(),
         color = if (isLive) Color.Transparent else NavyElevated,
         shape = RoundedCornerShape(12.dp),
@@ -221,7 +242,7 @@ fun MatchCard(
         ) {
             val showGalera = showSocialBadge && (isAdmin || isExp) && !isTbd && !isGhost
             if (showGalera) {
-                Surface(
+                BolaoSurface(
                     onClick = onShowAllPredictions,
                     color = OrangeNeon.copy(alpha = 0.2f),
                     shape = RoundedCornerShape(
@@ -244,9 +265,9 @@ fun MatchCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.Check, null, tint = OrangeNeon, modifier = Modifier.size(12.dp))
-                        Text(
-                            "PALPITES DA GALERA",
+                        BolaoIcon(Icons.Default.Check, null, tint = OrangeNeon, modifier = Modifier.size(12.dp))
+                        BolaoText(
+                            stringResource(Res.string.match_card_social_badge_label),
                             color = OrangeNeon,
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Black,
@@ -257,14 +278,14 @@ fun MatchCard(
             }
 
             if (ida != null) {
-                Surface(
+                BolaoSurface(
                     color = Gold.copy(alpha = 0.15f),
                     shape = RoundedCornerShape(bottomEnd = 10.dp, topStart = 12.dp),
                     border = androidx.compose.foundation.BorderStroke(0.5.dp, Gold.copy(alpha = 0.3f)),
                     modifier = Modifier.align(Alignment.TopStart)
                 ) {
-                    Text(
-                        text = "IDA: $ida",
+                    BolaoText(
+                        text = stringResource(Res.string.match_card_first_leg_score, ida),
                         fontSize = 8.sp,
                         fontWeight = FontWeight.Black,
                         color = Gold,
@@ -274,11 +295,11 @@ fun MatchCard(
             }
 
             if (!(isFin && hasPrediction)) {
-                Text(
+                BolaoText(
                     // Enquanto o confronto não estiver confirmado (times TBD), não
                     // mostra a data mesmo que a API já tenha publicado uma para o
                     // "slot" da fase - evita sugerir um confronto que ainda não existe.
-                    text = if (isTbd) "Data a definir" else formatMatchDate(match.matchDateMillis),
+                    text = if (isTbd) stringResource(Res.string.bolao_common_date_tbd) else formatMatchDate(match.matchDateMillis),
                     fontSize = 9.sp,
                     color = Color.White,
                     letterSpacing = 0.2.sp,
@@ -299,7 +320,7 @@ fun MatchCard(
                         (hP > aP && hR > aR) || (hP < aP && hR < aR) || (hP == aP && hR == aR) -> 1
                         else -> 0
                     }
-                Surface(
+                BolaoSurface(
                     color =
                     when (pts) {
                         3 -> Neon.copy(alpha = 0.15f)
@@ -309,8 +330,14 @@ fun MatchCard(
                     shape = RoundedCornerShape(bottomStart = 10.dp, topEnd = 16.dp),
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
-                    Text(
-                        text = if (pts == 1) "+1 PONTO" else "+$pts PONTOS",
+                    BolaoText(
+                        text = if (pts ==
+                            1
+                        ) {
+                            stringResource(Res.string.match_card_points_singular)
+                        } else {
+                            stringResource(Res.string.match_card_points_plural, pts)
+                        },
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Black,
                         color =
@@ -362,15 +389,15 @@ fun MatchCard(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("$hP", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = sColor)
-                                    Text(
+                                    BolaoText("$hP", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = sColor)
+                                    BolaoText(
                                         "×",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = sColor.copy(alpha = 0.6f),
                                         modifier = Modifier.padding(horizontal = 8.dp)
                                     )
-                                    Text("$aP", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = sColor)
+                                    BolaoText("$aP", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = sColor)
                                 }
                             }
                         } else {
@@ -382,7 +409,12 @@ fun MatchCard(
                                     .padding(horizontal = 12.dp, vertical = 6.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("vs", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted.copy(alpha = 0.7f))
+                                BolaoText(
+                                    stringResource(Res.string.match_card_vs_label),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextMuted.copy(alpha = 0.7f)
+                                )
                             }
                         }
                     }
@@ -397,7 +429,7 @@ fun MatchCard(
                 }
                 if (canPred) {
                     Spacer(Modifier.height(10.dp))
-                    HorizontalDivider(color = GlassBorder, thickness = 0.5.dp)
+                    BolaoHorizontalDivider(color = GlassBorder, thickness = 0.5.dp)
                     Spacer(Modifier.height(12.dp))
                     Row(
                         modifier =
@@ -407,10 +439,15 @@ fun MatchCard(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Edit, null, modifier = Modifier.size(13.dp), tint = Neon)
+                        BolaoIcon(Icons.Default.Edit, null, modifier = Modifier.size(13.dp), tint = Neon)
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = if (hasPrediction) "EDITAR PALPITE" else "TOQUE PARA PALPITAR",
+                        BolaoText(
+                            text =
+                            if (hasPrediction) {
+                                stringResource(Res.string.match_card_edit_prediction)
+                            } else {
+                                stringResource(Res.string.match_card_make_prediction)
+                            },
                             fontSize = 11.sp,
                             color = Neon,
                             fontWeight = FontWeight.ExtraBold,
@@ -420,15 +457,15 @@ fun MatchCard(
                 } else if (isLock) {
                     val dColor = if (isLive) Neon.copy(alpha = 0.3f) else GlassBorder
                     Spacer(Modifier.height(14.dp))
-                    HorizontalDivider(color = dColor, thickness = 0.5.dp)
+                    BolaoHorizontalDivider(color = dColor, thickness = 0.5.dp)
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
                         if ((forceLocked || isTbd) && !match.isFinished) {
-                            Text(
-                                text = "EM BREVE VOCÊ PODERÁ PALPITAR",
+                            BolaoText(
+                                text = stringResource(Res.string.match_card_coming_soon),
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Black,
                                 color = Neon.copy(alpha = 0.6f),
@@ -438,13 +475,13 @@ fun MatchCard(
                         } else {
                             val sT =
                                 when {
-                                    isFin -> "JOGO ENCERRADO"
-                                    match.status == "EXTRA_TIME" -> "PRORROGAÇÃO"
-                                    match.status == "PENALTIES" -> "PÊNALTIS"
-                                    match.status == "PAUSED_EXTRA_TIME" -> "INDO PARA PRORROGAÇÃO"
-                                    match.status == "PAUSED_PENALTIES" -> "INDO PARA PÊNALTIS"
-                                    match.status == "PAUSED" -> "INTERVALO"
-                                    else -> "JOGO EM ANDAMENTO"
+                                    isFin -> stringResource(Res.string.match_card_status_finished)
+                                    match.status == "EXTRA_TIME" -> stringResource(Res.string.match_card_status_extra_time)
+                                    match.status == "PENALTIES" -> stringResource(Res.string.match_card_status_penalties)
+                                    match.status == "PAUSED_EXTRA_TIME" -> stringResource(Res.string.match_card_status_going_extra_time)
+                                    match.status == "PAUSED_PENALTIES" -> stringResource(Res.string.match_card_status_going_penalties)
+                                    match.status == "PAUSED" -> stringResource(Res.string.match_card_status_halftime)
+                                    else -> stringResource(Res.string.match_card_status_in_progress)
                                 }
                             val aC = if (isFin) Color.White else Neon
                             Row(
@@ -462,7 +499,7 @@ fun MatchCard(
                                     Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Neon.copy(alpha = alpha)))
                                     Spacer(Modifier.width(6.dp))
                                 }
-                                Text(
+                                BolaoText(
                                     text = sT,
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Black,
@@ -486,15 +523,15 @@ fun MatchCard(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("${match.homeScore ?: 0}", fontSize = 16.sp, fontWeight = FontWeight.Black, color = aC)
-                                    Text(
+                                    BolaoText("${match.homeScore ?: 0}", fontSize = 16.sp, fontWeight = FontWeight.Black, color = aC)
+                                    BolaoText(
                                         "×",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = aC.copy(alpha = 0.5f),
                                         modifier = Modifier.padding(horizontal = 4.dp)
                                     )
-                                    Text("${match.awayScore ?: 0}", fontSize = 16.sp, fontWeight = FontWeight.Black, color = aC)
+                                    BolaoText("${match.awayScore ?: 0}", fontSize = 16.sp, fontWeight = FontWeight.Black, color = aC)
                                 }
                             }
                         }
@@ -509,81 +546,65 @@ fun MatchCard(
 fun AdminScoreDialog(match: Match, onDismiss: () -> Unit, onConfirm: (Int?, Int?) -> Unit) {
     var hS by remember { mutableStateOf(match.homeScore?.toString() ?: "0") }
     var aS by remember { mutableStateOf(match.awayScore?.toString() ?: "0") }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Ajustar Placar Oficial", color = Color.White) }, text = {
-        Column(modifier = Modifier.imePadding().padding(bottom = 24.dp)) {
-            Text(
-                "Defina o placar real de ${match.homeTeam} x ${match.awayTeam}",
-                fontSize = 14.sp,
-                color = TextMuted,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextField(
-                    value = hS,
-                    onValueChange = {
-                        if (it.length <= 2) {
-                            hS =
-                                it.filter { c ->
-                                    c.isDigit()
-                                }
-                        }
-                    },
-                    modifier =
-                    Modifier.width(
-                        64.dp
-                    ),
-                    textStyle =
-                    LocalTextStyle.current.copy(
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = GlassWhite,
-                        unfocusedContainerColor = GlassWhite.copy(alpha = 0.5f)
-                    )
+    BolaoDialog(
+        onDismissRequest = onDismiss,
+        title = { BolaoText(stringResource(Res.string.match_card_admin_dialog_title), color = Color.White) },
+        text = {
+            Column(modifier = Modifier.imePadding().padding(bottom = 24.dp)) {
+                BolaoText(
+                    stringResource(Res.string.match_card_admin_dialog_message, match.homeTeam, match.awayTeam),
+                    fontSize = 14.sp,
+                    color = TextMuted,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
-                Text("x", modifier = Modifier.padding(horizontal = 16.dp), color = Color.White, fontWeight = FontWeight.Bold)
-                TextField(
-                    value = aS,
-                    onValueChange = {
-                        if (it.length <= 2) {
-                            aS =
-                                it.filter { c ->
-                                    c.isDigit()
-                                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BolaoScoreField(
+                        value = hS,
+                        onValueChange = {
+                            if (it.length <= 2) {
+                                hS =
+                                    it.filter { c ->
+                                        c.isDigit()
+                                    }
+                            }
                         }
-                    },
-                    modifier =
-                    Modifier.width(
-                        64.dp
-                    ),
-                    textStyle =
-                    LocalTextStyle.current.copy(
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = GlassWhite,
-                        unfocusedContainerColor = GlassWhite.copy(alpha = 0.5f)
                     )
-                )
+                    BolaoText(
+                        stringResource(Res.string.match_card_admin_dialog_versus),
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                    BolaoScoreField(
+                        value = aS,
+                        onValueChange = {
+                            if (it.length <= 2) {
+                                aS =
+                                    it.filter { c ->
+                                        c.isDigit()
+                                    }
+                            }
+                        }
+                    )
+                }
             }
-        }
-    }, confirmButton = {
-        TextButton(onClick = {
-            onConfirm(hS.toIntOrNull() ?: 0, aS.toIntOrNull() ?: 0)
-        }) {
-            Text("SALVAR", color = Neon, fontWeight = FontWeight.Bold)
-        }
-    }, dismissButton = {
-        TextButton(onClick = onDismiss) {
-            Text("CANCELAR", color = Color.White.copy(alpha = 0.6f))
-        }
-    }, containerColor = DeepNavy, shape = RoundedCornerShape(16.dp))
+        },
+        confirmButton = {
+            BolaoTextButton(onClick = {
+                onConfirm(hS.toIntOrNull() ?: 0, aS.toIntOrNull() ?: 0)
+            }) {
+                BolaoText(stringResource(Res.string.match_card_admin_dialog_save), color = Neon, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            BolaoTextButton(onClick = onDismiss) {
+                BolaoText(stringResource(Res.string.match_card_admin_dialog_cancel), color = Color.White.copy(alpha = 0.6f))
+            }
+        },
+        containerColor = DeepNavy
+    )
 }
