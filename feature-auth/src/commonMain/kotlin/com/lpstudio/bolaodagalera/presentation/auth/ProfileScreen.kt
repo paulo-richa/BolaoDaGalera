@@ -20,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
@@ -41,19 +43,23 @@ import bolaodagalera.feature_auth.generated.resources.profile_change_password_di
 import bolaodagalera.feature_auth.generated.resources.profile_change_password_dialog_dismiss
 import bolaodagalera.feature_auth.generated.resources.profile_change_password_dialog_message
 import bolaodagalera.feature_auth.generated.resources.profile_change_password_dialog_title
-import bolaodagalera.feature_auth.generated.resources.profile_delete_account_dialog_confirm
-import bolaodagalera.feature_auth.generated.resources.profile_delete_account_dialog_message
-import bolaodagalera.feature_auth.generated.resources.profile_delete_account_dialog_title
+import bolaodagalera.feature_auth.generated.resources.profile_delete_account_final_dialog_confirm
+import bolaodagalera.feature_auth.generated.resources.profile_delete_account_final_dialog_message
+import bolaodagalera.feature_auth.generated.resources.profile_delete_account_final_dialog_title
+import bolaodagalera.feature_auth.generated.resources.profile_delete_account_warning_dialog_confirm
+import bolaodagalera.feature_auth.generated.resources.profile_delete_account_warning_dialog_message
+import bolaodagalera.feature_auth.generated.resources.profile_delete_account_warning_dialog_title
 import bolaodagalera.feature_auth.generated.resources.profile_field_name_label
 import bolaodagalera.feature_auth.generated.resources.profile_field_nickname_label
 import bolaodagalera.feature_auth.generated.resources.profile_field_phone_label
 import bolaodagalera.feature_auth.generated.resources.profile_field_username_label
-import bolaodagalera.feature_auth.generated.resources.profile_icon_sign_out_content_description
+import bolaodagalera.feature_auth.generated.resources.profile_menu_content_description
 import bolaodagalera.feature_auth.generated.resources.profile_name_error_invalid
 import bolaodagalera.feature_auth.generated.resources.profile_option_change_password
 import bolaodagalera.feature_auth.generated.resources.profile_option_delete_account
 import bolaodagalera.feature_auth.generated.resources.profile_option_help
 import bolaodagalera.feature_auth.generated.resources.profile_option_invite_friends
+import bolaodagalera.feature_auth.generated.resources.profile_option_sign_out
 import bolaodagalera.feature_auth.generated.resources.profile_share_invite_message
 import bolaodagalera.feature_auth.generated.resources.profile_sign_out_dialog_confirm
 import bolaodagalera.feature_auth.generated.resources.profile_sign_out_dialog_message
@@ -64,6 +70,8 @@ import com.lpstudio.bolaodagalera.APP_VERSION
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoConfirmDialog
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoDialog
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoDropdownMenu
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoDropdownMenuItem
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoIconButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
@@ -109,8 +117,10 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
     var nickname by remember { mutableStateOf(value = "") }
     var phone by remember { mutableStateOf(value = "") }
     var showSignOutDialog by remember { mutableStateOf(value = false) }
-    var showDeleteAccountDialog by remember { mutableStateOf(value = false) }
+    var showDeleteAccountWarningDialog by remember { mutableStateOf(value = false) }
+    var showDeleteAccountFinalDialog by remember { mutableStateOf(value = false) }
     var showChangePasswordDialog by remember { mutableStateOf(value = false) }
+    var showMenu by remember { mutableStateOf(value = false) }
 
     val isNameValid = ValidationUtils.isValidFullName(name)
     val shareInviteMessage = stringResource(Res.string.profile_share_invite_message)
@@ -148,17 +158,33 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
         )
     }
 
-    if (showDeleteAccountDialog) {
+    // Deleting the account is destructive and irreversible, so it requires two
+    // sequential confirmations instead of the usual single dialog.
+    if (showDeleteAccountWarningDialog) {
         BolaoConfirmDialog(
-            title = stringResource(Res.string.profile_delete_account_dialog_title),
-            message = stringResource(Res.string.profile_delete_account_dialog_message),
-            confirmText = stringResource(Res.string.profile_delete_account_dialog_confirm),
+            title = stringResource(Res.string.profile_delete_account_warning_dialog_title),
+            message = stringResource(Res.string.profile_delete_account_warning_dialog_message),
+            confirmText = stringResource(Res.string.profile_delete_account_warning_dialog_confirm),
             isDestructive = true,
             onConfirm = {
-                showDeleteAccountDialog = false
+                showDeleteAccountWarningDialog = false
+                showDeleteAccountFinalDialog = true
+            },
+            onDismiss = { showDeleteAccountWarningDialog = false }
+        )
+    }
+
+    if (showDeleteAccountFinalDialog) {
+        BolaoConfirmDialog(
+            title = stringResource(Res.string.profile_delete_account_final_dialog_title),
+            message = stringResource(Res.string.profile_delete_account_final_dialog_message),
+            confirmText = stringResource(Res.string.profile_delete_account_final_dialog_confirm),
+            isDestructive = true,
+            onConfirm = {
+                showDeleteAccountFinalDialog = false
                 // viewModel.deleteAccount() // Not yet implemented
             },
-            onDismiss = { showDeleteAccountDialog = false }
+            onDismiss = { showDeleteAccountFinalDialog = false }
         )
     }
 
@@ -212,12 +238,32 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                     title = stringResource(Res.string.profile_top_bar_title),
                     onNavigateBack = onNavigateBack,
                     actions = {
-                        BolaoIconButton(onClick = { showSignOutDialog = true }) {
-                            BolaoIcon(
-                                Icons.AutoMirrored.Filled.ExitToApp,
-                                stringResource(Res.string.profile_icon_sign_out_content_description),
-                                tint = ErrorRed
-                            )
+                        Box {
+                            BolaoIconButton(onClick = { showMenu = true }) {
+                                BolaoIcon(
+                                    Icons.Default.MoreVert,
+                                    stringResource(Res.string.profile_menu_content_description),
+                                    tint = Color.White
+                                )
+                            }
+                            BolaoDropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                                modifier = Modifier.background(NavyCard).border(1.dp, GlassBorder, BolaoRadiusShape.sm)
+                            ) {
+                                BolaoDropdownMenuItem(
+                                    text = {
+                                        BolaoText(stringResource(Res.string.profile_option_delete_account), color = ErrorRed)
+                                    },
+                                    leadingIcon = {
+                                        BolaoIcon(Icons.Default.DeleteForever, null, tint = ErrorRed, modifier = Modifier.size(18.dp))
+                                    },
+                                    onClick = {
+                                        showMenu = false
+                                        showDeleteAccountWarningDialog = true
+                                    }
+                                )
+                            }
                         }
                     }
                 )
@@ -340,10 +386,10 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                     }
                     ProfileOptionItem(
                         icon = Icons.AutoMirrored.Filled.ExitToApp,
-                        title = stringResource(Res.string.profile_option_delete_account),
+                        title = stringResource(Res.string.profile_option_sign_out),
                         textColor = ErrorRed
                     ) {
-                        showDeleteAccountDialog = true
+                        showSignOutDialog = true
                     }
                 }
 

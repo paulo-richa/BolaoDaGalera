@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -175,7 +174,6 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
         Modifier
             .fillMaxSize()
             .background(GradientBg)
-            .systemBarsPadding()
     ) {
         BolaoScaffold(
             containerColor = Color.Transparent,
