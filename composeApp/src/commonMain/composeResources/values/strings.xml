@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- HomeScreen -->
-    <string name="home_screen_button_create_bolao">Criar bolão</string>
-
-    <!-- HelpScreen -->
-    <string name="help_screen_button_send_request">ENVIAR SOLICITAÇÃO</string>
-</resources>

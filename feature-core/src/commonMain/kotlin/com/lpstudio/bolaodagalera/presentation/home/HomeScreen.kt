@@ -34,15 +34,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -61,32 +52,60 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import bolaodagalera.composeapp.generated.resources.Res
-import bolaodagalera.composeapp.generated.resources.home_screen_button_create_bolao
-import com.lpstudio.bolaodagalera.ADMOB_ANDROID_BANNER_ID
-import com.lpstudio.bolaodagalera.ADMOB_IOS_BANNER_ID
+import bolaodagalera.feature_core.generated.resources.Res
+import bolaodagalera.feature_core.generated.resources.home_screen_admin_badge
+import bolaodagalera.feature_core.generated.resources.home_screen_app_title
+import bolaodagalera.feature_core.generated.resources.home_screen_bolao_code_label
+import bolaodagalera.feature_core.generated.resources.home_screen_button_accept
+import bolaodagalera.feature_core.generated.resources.home_screen_button_accept_caps
+import bolaodagalera.feature_core.generated.resources.home_screen_button_create_bolao
+import bolaodagalera.feature_core.generated.resources.home_screen_button_decline
+import bolaodagalera.feature_core.generated.resources.home_screen_button_join_with_code
+import bolaodagalera.feature_core.generated.resources.home_screen_empty_subtitle
+import bolaodagalera.feature_core.generated.resources.home_screen_empty_title
+import bolaodagalera.feature_core.generated.resources.home_screen_empty_trophy_emoji
+import bolaodagalera.feature_core.generated.resources.home_screen_error_snackbar_dismiss
+import bolaodagalera.feature_core.generated.resources.home_screen_greeting_prefix
+import bolaodagalera.feature_core.generated.resources.home_screen_greeting_wave_emoji
+import bolaodagalera.feature_core.generated.resources.home_screen_invitation_emoji
+import bolaodagalera.feature_core.generated.resources.home_screen_invitation_message
+import bolaodagalera.feature_core.generated.resources.home_screen_notification_bell_emoji
+import bolaodagalera.feature_core.generated.resources.home_screen_notification_dialog_close
+import bolaodagalera.feature_core.generated.resources.home_screen_notification_dialog_title
+import bolaodagalera.feature_core.generated.resources.home_screen_notification_empty
+import bolaodagalera.feature_core.generated.resources.home_screen_notifications_cd
+import bolaodagalera.feature_core.generated.resources.home_screen_section_admin_boloes
+import bolaodagalera.feature_core.generated.resources.home_screen_section_participant_boloes
+import bolaodagalera.feature_core.generated.resources.home_screen_section_pending_invitations
+import com.lpstudio.bolaodagalera.ads.AdBannerProvider
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoDialog
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoLoadingIndicator
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoOutlinedButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
+import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
+import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
+import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
+import com.lpstudio.bolaodagalera.designsystem.theme.Gold
+import com.lpstudio.bolaodagalera.designsystem.theme.GradientHero
+import com.lpstudio.bolaodagalera.designsystem.theme.GradientPrimary
+import com.lpstudio.bolaodagalera.designsystem.theme.NavyCard
+import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
+import com.lpstudio.bolaodagalera.designsystem.theme.Neon
+import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
+import com.lpstudio.bolaodagalera.designsystem.theme.TextSubtle
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Invitation
 import com.lpstudio.bolaodagalera.domain.model.Notification
 import com.lpstudio.bolaodagalera.domain.model.NotificationType
-import com.lpstudio.bolaodagalera.getPlatform
-import com.lpstudio.bolaodagalera.presentation.components.AdBanner
-import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
-import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
-import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
-import com.lpstudio.bolaodagalera.presentation.theme.Gold
-import com.lpstudio.bolaodagalera.presentation.theme.GradientHero
-import com.lpstudio.bolaodagalera.presentation.theme.GradientPrimary
-import com.lpstudio.bolaodagalera.presentation.theme.NavyCard
-import com.lpstudio.bolaodagalera.presentation.theme.NavyElevated
-import com.lpstudio.bolaodagalera.presentation.theme.Neon
-import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
-import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
 import com.lpstudio.bolaodagalera.util.getInitials
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -98,6 +117,7 @@ fun HomeScreen(
 ) {
     val viewModel: HomeViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    val adBannerProvider = koinInject<AdBannerProvider>()
     var showNotifications by remember { mutableStateOf(false) }
 
     if (showNotifications) {
@@ -123,17 +143,24 @@ fun HomeScreen(
             .background(DeepNavy)
     ) {
         uiState.error?.let {
-            Snackbar(
+            BolaoSurface(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 90.dp, start = 16.dp, end = 16.dp),
-                containerColor = ErrorRed,
-                contentColor = Color.White,
-                action = {
-                    TextButton(onClick = { viewModel.clearError() }) {
-                        Text("OK", color = Color.White, fontWeight = FontWeight.Bold)
+                color = ErrorRed,
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BolaoText(it, color = Color.White, modifier = Modifier.weight(1f))
+                    BolaoTextButton(onClick = { viewModel.clearError() }) {
+                        BolaoText(
+                            stringResource(Res.string.home_screen_error_snackbar_dismiss),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
-            ) {
-                Text(it)
             }
         }
 
@@ -171,8 +198,8 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Bolão da Galera",
+                        BolaoText(
+                            stringResource(Res.string.home_screen_app_title),
                             fontSize = 24.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
@@ -191,9 +218,14 @@ fun HomeScreen(
                             }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Olá, ", fontSize = 14.sp, color = TextMuted, fontWeight = FontWeight.Medium)
-                            Text(displayName, fontSize = 14.sp, color = Gold, fontWeight = FontWeight.Bold)
-                            Text(" 👋", fontSize = 14.sp)
+                            BolaoText(
+                                stringResource(Res.string.home_screen_greeting_prefix),
+                                fontSize = 14.sp,
+                                color = TextMuted,
+                                fontWeight = FontWeight.Medium
+                            )
+                            BolaoText(displayName, fontSize = 14.sp, color = Gold, fontWeight = FontWeight.Bold)
+                            BolaoText(stringResource(Res.string.home_screen_greeting_wave_emoji), fontSize = 14.sp)
                         }
                     }
 
@@ -234,7 +266,12 @@ fun HomeScreen(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Outlined.Notifications, "Notificações", tint = Color.White, modifier = Modifier.size(22.dp))
+                            BolaoIcon(
+                                Icons.Outlined.Notifications,
+                                stringResource(Res.string.home_screen_notifications_cd),
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
                             if (uiState.hasUnreadNotifications) {
                                 val neonYellow = Color(0xFFFFF176)
                                 Box(
@@ -283,7 +320,7 @@ fun HomeScreen(
                         Box(
                             Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
-                        ) { CircularProgressIndicator(color = Neon, strokeWidth = 2.dp) }
+                        ) { BolaoLoadingIndicator() }
                     } else if (uiState.boloes.isEmpty() && uiState.invitations.isEmpty()) {
                         EmptyState(
                             modifier = Modifier.fillMaxSize(),
@@ -300,8 +337,8 @@ fun HomeScreen(
                         ) {
                             if (uiState.invitations.isNotEmpty()) {
                                 item {
-                                    Text(
-                                        "CONVITES PENDENTES (${uiState.invitations.size})",
+                                    BolaoText(
+                                        stringResource(Res.string.home_screen_section_pending_invitations, uiState.invitations.size),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Gold,
@@ -323,8 +360,8 @@ fun HomeScreen(
                             }
                             if (adminBoloes.isNotEmpty()) {
                                 item {
-                                    Text(
-                                        "MEUS BOLÕES (ADMIN)",
+                                    BolaoText(
+                                        stringResource(Res.string.home_screen_section_admin_boloes),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = TextMuted,
@@ -338,8 +375,8 @@ fun HomeScreen(
                             }
                             if (participantBoloes.isNotEmpty()) {
                                 item {
-                                    Text(
-                                        "BOLÕES QUE PARTICIPO",
+                                    BolaoText(
+                                        stringResource(Res.string.home_screen_section_participant_boloes),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = TextMuted,
@@ -357,9 +394,7 @@ fun HomeScreen(
             }
 
             // ── Banner Ad ────────────────────────────────────────────────────
-            val platform = getPlatform().name.lowercase()
-            val adId = if (platform.contains("android")) ADMOB_ANDROID_BANNER_ID else ADMOB_IOS_BANNER_ID
-            AdBanner(modifier = Modifier.fillMaxWidth().height(50.dp).background(DeepNavy), adId = adId)
+            adBannerProvider.Banner(modifier = Modifier.fillMaxWidth().height(50.dp).background(DeepNavy))
         }
     }
 }
@@ -371,28 +406,33 @@ private fun EmptyState(modifier: Modifier, onCreateClick: () -> Unit, onJoinClic
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("🏆", fontSize = 64.sp)
+        BolaoText(stringResource(Res.string.home_screen_empty_trophy_emoji), fontSize = 64.sp)
         Spacer(Modifier.height(20.dp))
-        Text("Sem bolões ainda", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        BolaoText(stringResource(Res.string.home_screen_empty_title), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
         Spacer(Modifier.height(8.dp))
-        Text("Crie o seu ou entre em um com o código de um amigo", fontSize = 14.sp, color = TextMuted, lineHeight = 20.sp)
+        BolaoText(stringResource(Res.string.home_screen_empty_subtitle), fontSize = 14.sp, color = TextMuted, lineHeight = 20.sp)
         Spacer(Modifier.height(32.dp))
         BolaoButton(text = stringResource(Res.string.home_screen_button_create_bolao), onClick = onCreateClick)
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(
+        BolaoOutlinedButton(
             onClick = onJoinClick,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(14.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Neon)
+            contentColor = Neon
         ) {
-            Text("Entrar com código", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            BolaoText(
+                stringResource(Res.string.home_screen_button_join_with_code),
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp
+            )
         }
     }
 }
 
 @Composable
 private fun InvitationCard(invitation: Invitation, onAccept: () -> Unit, onDecline: () -> Unit) {
+    val fallbackTitle = stringResource(Res.string.home_screen_app_title)
     Box(
         modifier =
         Modifier.fillMaxWidth().clip(
@@ -404,11 +444,11 @@ private fun InvitationCard(invitation: Invitation, onAccept: () -> Unit, onDecli
                 modifier = Modifier.size(44.dp).clip(CircleShape).background(Gold.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text("📩", fontSize = 22.sp)
+                BolaoText(stringResource(Res.string.home_screen_invitation_emoji), fontSize = 22.sp)
             }
             Spacer(Modifier.height(14.dp))
-            Text(
-                text = "${invitation.inviterName} te convidou para o bolão:",
+            BolaoText(
+                text = stringResource(Res.string.home_screen_invitation_message, invitation.inviterName),
                 fontSize = 14.sp,
                 color = TextMuted,
                 textAlign = TextAlign.Center,
@@ -416,11 +456,8 @@ private fun InvitationCard(invitation: Invitation, onAccept: () -> Unit, onDecli
                 lineHeight = 20.sp
             )
             Spacer(Modifier.height(10.dp))
-            Text(
-                text =
-                invitation.bolaoName.ifBlank {
-                    "Bolão da Galera"
-                },
+            BolaoText(
+                text = invitation.bolaoName.ifBlank { fallbackTitle },
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -433,18 +470,15 @@ private fun InvitationCard(invitation: Invitation, onAccept: () -> Unit, onDecli
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(
+                BolaoTextButton(
                     onClick = onDecline,
                     modifier = Modifier.weight(1f).height(48.dp)
-                ) { Text("Recusar", color = TextMuted, fontSize = 14.sp) }
-                Button(
+                ) { BolaoText(stringResource(Res.string.home_screen_button_decline), color = TextMuted, fontSize = 14.sp) }
+                BolaoButton(
+                    text = stringResource(Res.string.home_screen_button_accept_caps),
                     onClick = onAccept,
-                    modifier = Modifier.weight(1.3f).height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Neon)
-                ) {
-                    Text("ACEITAR", fontSize = 14.sp, fontWeight = FontWeight.Black, color = DeepNavy, letterSpacing = 1.sp)
-                }
+                    modifier = Modifier.weight(1.3f).height(48.dp)
+                )
             }
         }
     }
@@ -483,10 +517,16 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(bolao.name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.weight(1f))
+                    BolaoText(
+                        bolao.name,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.weight(1f)
+                    )
                     if (isAdmin) {
-                        Text(
-                            "ADMIN",
+                        BolaoText(
+                            stringResource(Res.string.home_screen_admin_badge),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Black,
                             color = DeepNavy,
@@ -497,8 +537,8 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                         )
                     }
                 }
-                Text(
-                    text = "Código: ${bolao.code}",
+                BolaoText(
+                    text = stringResource(Res.string.home_screen_bolao_code_label, bolao.code),
                     fontSize = 10.sp,
                     color = Gold.copy(alpha = 0.8f),
                     fontWeight = FontWeight.Bold,
@@ -507,8 +547,13 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Person, null, modifier = Modifier.size(13.dp), tint = Neon)
-                        Text(bolao.participants.size.toString(), fontSize = 12.sp, color = Neon, fontWeight = FontWeight.SemiBold)
+                        BolaoIcon(Icons.Default.Person, null, modifier = Modifier.size(13.dp), tint = Neon)
+                        BolaoText(
+                            bolao.participants.size.toString(),
+                            fontSize = 12.sp,
+                            color = Neon,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                     Box(
                         modifier =
@@ -516,7 +561,7 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                             RoundedCornerShape(6.dp)
                         ).background(Gold.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
-                        Text(
+                        BolaoText(
                             text = Championship.fromId(bolao.championshipId).displayName,
                             fontSize = 11.sp,
                             color = Gold,
@@ -525,7 +570,7 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                     }
                 }
             }
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = TextSubtle, modifier = Modifier.size(22.dp))
+            BolaoIcon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = TextSubtle, modifier = Modifier.size(22.dp))
         }
     }
 }
@@ -537,23 +582,31 @@ private fun NotificationDialog(
     onDeclineInvitation: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    val declineText = stringResource(Res.string.home_screen_button_decline)
+    val acceptText = stringResource(Res.string.home_screen_button_accept)
+    BolaoDialog(
         onDismissRequest = onDismiss,
         containerColor = DeepNavy,
-        shape = RoundedCornerShape(24.dp),
-        tonalElevation = 8.dp,
         modifier = Modifier.border(1.dp, GlassBorder, RoundedCornerShape(24.dp)),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Notificações", color = Color.White, fontWeight = FontWeight.Black)
+                BolaoText(
+                    stringResource(Res.string.home_screen_notification_dialog_title),
+                    color = Color.White,
+                    fontWeight = FontWeight.Black
+                )
                 Spacer(Modifier.weight(1f))
-                Text("🔔", fontSize = 18.sp)
+                BolaoText(stringResource(Res.string.home_screen_notification_bell_emoji), fontSize = 18.sp)
             }
         },
         text = {
             if (notifications.isEmpty()) {
                 Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
-                    Text("Tudo em dia! Sem alertas por enquanto.", color = TextMuted, textAlign = TextAlign.Center)
+                    BolaoText(
+                        stringResource(Res.string.home_screen_notification_empty),
+                        color = TextMuted,
+                        textAlign = TextAlign.Center
+                    )
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -570,7 +623,7 @@ private fun NotificationDialog(
                                 .padding(16.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
+                                BolaoText(
                                     notification.title,
                                     color = if (notification.isRead) TextMuted else Neon,
                                     fontWeight = FontWeight.Bold,
@@ -582,7 +635,7 @@ private fun NotificationDialog(
                                 }
                             }
                             Spacer(Modifier.height(4.dp))
-                            Text(
+                            BolaoText(
                                 notification.message,
                                 color = if (notification.isRead) TextMuted else Color.White,
                                 fontSize = 13.sp,
@@ -591,26 +644,23 @@ private fun NotificationDialog(
                             if ((notification.type == NotificationType.INVITATION) && !notification.isRead) {
                                 Spacer(Modifier.height(16.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(
+                                    BolaoOutlinedButton(
                                         onClick = { onDeclineInvitation(notification.id.removePrefix("invitation_")) },
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(8.dp),
                                         border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
                                     ) {
-                                        Text("Recusar", fontSize = 12.sp, color = TextMuted)
+                                        BolaoText(declineText, fontSize = 12.sp, color = TextMuted)
                                     }
-                                    Button(
+                                    BolaoButton(
+                                        text = acceptText,
                                         onClick = {
                                             notification.bolaoId?.let {
                                                 onAcceptInvitation(notification.id.removePrefix("invitation_"), it)
                                             }
                                         },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Neon)
-                                    ) {
-                                        Text("Aceitar", fontSize = 12.sp, color = DeepNavy, fontWeight = FontWeight.Bold)
-                                    }
+                                        modifier = Modifier.weight(1f)
+                                    )
                                 }
                             }
                         }
@@ -619,8 +669,8 @@ private fun NotificationDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("FECHAR", color = TextMuted, fontWeight = FontWeight.Bold)
+            BolaoTextButton(onClick = onDismiss) {
+                BolaoText(stringResource(Res.string.home_screen_notification_dialog_close), color = TextMuted, fontWeight = FontWeight.Bold)
             }
         }
     )

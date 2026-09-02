@@ -20,9 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsSoccer
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,8 +31,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
-import com.lpstudio.bolaodagalera.presentation.theme.Neon
+import bolaodagalera.feature_core.generated.resources.Res
+import bolaodagalera.feature_core.generated.resources.maintenance_screen_button_logout
+import bolaodagalera.feature_core.generated.resources.maintenance_screen_icon_cd
+import bolaodagalera.feature_core.generated.resources.maintenance_screen_message
+import bolaodagalera.feature_core.generated.resources.maintenance_screen_title
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
+import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
+import com.lpstudio.bolaodagalera.designsystem.theme.Neon
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MaintenanceScreen(onLogout: () -> Unit) {
@@ -112,9 +118,9 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
             )
 
             // Bola de Futebol
-            Icon(
+            BolaoIcon(
                 imageVector = Icons.Default.SportsSoccer,
-                contentDescription = "Manutenção",
+                contentDescription = stringResource(Res.string.maintenance_screen_icon_cd),
                 modifier =
                 Modifier
                     .size(80.dp)
@@ -126,8 +132,8 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        Text(
-            text = "Intervalo para Ajustes!",
+        BolaoText(
+            text = stringResource(Res.string.maintenance_screen_title),
             color = Color.White,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
@@ -136,8 +142,8 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Nossa equipe entrou em campo para fazer alguns ajustes técnicos. Voltamos logo após o comercial!",
+        BolaoText(
+            text = stringResource(Res.string.maintenance_screen_message),
             color = Color.White.copy(alpha = 0.7f),
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
@@ -147,9 +153,9 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        TextButton(onClick = onLogout) {
-            Text(
-                "Sair da conta",
+        BolaoTextButton(onClick = onLogout) {
+            BolaoText(
+                stringResource(Res.string.maintenance_screen_button_logout),
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium

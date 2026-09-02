@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,11 +32,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
-import com.lpstudio.bolaodagalera.presentation.theme.GradientPrimary
-import com.lpstudio.bolaodagalera.presentation.theme.Neon
-import com.lpstudio.bolaodagalera.presentation.theme.TextSubtle
+import bolaodagalera.feature_core.generated.resources.Res
+import bolaodagalera.feature_core.generated.resources.splash_screen_app_title
+import bolaodagalera.feature_core.generated.resources.splash_screen_logo_emoji
+import bolaodagalera.feature_core.generated.resources.splash_screen_studio_label
+import bolaodagalera.feature_core.generated.resources.splash_screen_tagline
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoLinearProgressIndicator
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
+import com.lpstudio.bolaodagalera.designsystem.theme.GradientPrimary
+import com.lpstudio.bolaodagalera.designsystem.theme.Neon
+import com.lpstudio.bolaodagalera.designsystem.theme.TextSubtle
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SplashScreen(onSplashFinished: () -> Unit) {
@@ -95,22 +101,22 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
                         .border(2.dp, Neon.copy(alpha = 0.5f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("⚽", fontSize = 60.sp)
+                    BolaoText(stringResource(Res.string.splash_screen_logo_emoji), fontSize = 60.sp)
                 }
             }
 
             Spacer(Modifier.height(24.dp))
 
-            Text(
-                "BOLÃO DA GALERA",
+            BolaoText(
+                stringResource(Res.string.splash_screen_app_title),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
                 letterSpacing = 2.sp
             )
 
-            Text(
-                "CRIE SEU TIME, DÊ SEU PALPITE",
+            BolaoText(
+                stringResource(Res.string.splash_screen_tagline),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = Neon,
@@ -121,20 +127,19 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
 
             // Thin Neon Loading Bar
             Box(modifier = Modifier.width(180.dp)) {
-                LinearProgressIndicator(
+                BolaoLinearProgressIndicator(
                     modifier =
                     Modifier
                         .fillMaxWidth()
                         .height(2.dp)
                         .clip(CircleShape),
-                    color = Neon,
                     trackColor = Color.White.copy(alpha = 0.1f)
                 )
             }
         }
 
-        Text(
-            "LP STUDIO",
+        BolaoText(
+            stringResource(Res.string.splash_screen_studio_label),
             modifier =
             Modifier
                 .align(Alignment.BottomCenter)

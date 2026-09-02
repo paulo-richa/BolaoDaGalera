@@ -73,6 +73,7 @@ kotlin {
             implementation(project(":core-data"))
             implementation(project(":feature-auth"))
             implementation(project(":feature-bolao"))
+            implementation(project(":feature-core"))
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
