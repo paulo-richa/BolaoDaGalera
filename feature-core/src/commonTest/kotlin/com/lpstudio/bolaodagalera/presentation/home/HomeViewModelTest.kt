@@ -1,5 +1,6 @@
 package com.lpstudio.bolaodagalera.presentation.home
 
+import app.cash.turbine.test
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
@@ -141,7 +142,46 @@ class HomeViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state.notifications.any { it.type == NotificationType.ROUND_SUMMARY })
-        assertTrue(state.hasUnreadNotifications)
+    }
+
+    @Test
+    fun `cada nova notificacao do servidor emite um uiState reativamente, sem chamar o viewmodel`() = runTest {
+        viewModel.uiState.test {
+            assertTrue(awaitItem().notifications.isEmpty())
+
+            // Simulates a Cloud Function writing directly to Firestore - the ViewModel
+            // never calls into the repository itself, it only observes the flow.
+            notificationRepository.seed(
+                testUser.id,
+                Notification(
+                    id = "invite-1",
+                    title = "Novo convite",
+                    message = "Você foi convidado para um bolão.",
+                    timestamp = 1_000L,
+                    type = NotificationType.INVITATION
+                )
+            )
+            val afterFirst = awaitItem()
+            assertEquals(1, afterFirst.notifications.size)
+            assertTrue(afterFirst.hasUnreadNotifications)
+
+            notificationRepository.seed(
+                testUser.id,
+                Notification(
+                    id = "round-summary-1",
+                    title = "Fim de rodada!",
+                    message = "Você fez 4 pontos na Rodada 26.",
+                    timestamp = 2_000L,
+                    type = NotificationType.ROUND_SUMMARY
+                )
+            )
+            val afterSecond = awaitItem()
+            assertEquals(2, afterSecond.notifications.size)
+            // Sorted by timestamp descending - the newest one comes first.
+            assertEquals(NotificationType.ROUND_SUMMARY, afterSecond.notifications.first().type)
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test

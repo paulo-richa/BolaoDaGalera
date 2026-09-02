@@ -1,5 +1,6 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
+import app.cash.turbine.test
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
@@ -132,5 +133,34 @@ class BolaoViewModelTest {
         assertTrue(state.isLeaveSuccess)
         val bolao = bolaoRepository.getBolao("bolao-1")
         assertFalse("pauloricha" in bolao.participants)
+    }
+
+    @Test
+    fun `uma nova partida no repositorio reflete reativamente no uiState, sem chamar o viewmodel`() = runTest {
+        viewModel.uiState.test {
+            assertEquals(1, awaitItem().allMatches.size)
+
+            // Simulates a Cloud Function syncing a new fixture - the ViewModel never calls
+            // into the repository itself, it only observes matchRepository.getMatches().
+            matchRepository.upsertMatch(
+                Match(
+                    id = "m2",
+                    homeTeam = "River Plate",
+                    awayTeam = "Boca Juniors",
+                    homeTeamCode = "RIV",
+                    awayTeamCode = "BOC",
+                    homeTeamFlag = "",
+                    awayTeamFlag = "",
+                    matchDateMillis = 1_700_100_000_000L,
+                    phase = Phase.GROUP_STAGE,
+                    championshipId = "LIBERTADORES"
+                )
+            )
+            val updated = awaitItem()
+            assertEquals(2, updated.allMatches.size)
+            assertTrue(updated.allMatches.any { it.id == "m2" })
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }
