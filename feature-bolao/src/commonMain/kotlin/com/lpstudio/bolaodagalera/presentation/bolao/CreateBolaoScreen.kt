@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -99,6 +98,9 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassWhite
@@ -350,7 +352,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    BolaoText(stringResource(Res.string.create_bolao_success_emoji), fontSize = 48.sp)
+                    BolaoText(stringResource(Res.string.create_bolao_success_emoji), fontSize = BolaoTypography.displayLarge.fontSize)
                     Spacer(Modifier.height(8.dp))
                     BolaoText(
                         stringResource(Res.string.create_bolao_success_title),
@@ -368,20 +370,20 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     BolaoText(
                         stringResource(Res.string.create_bolao_success_code_label),
                         color = TextMuted,
-                        fontSize = 14.sp
+                        fontSize = BolaoTypography.bodyLarge.fontSize
                     )
                     Spacer(Modifier.height(16.dp))
                     Box(
                         modifier =
                         Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(BolaoRadiusShape.md)
                             .background(Gold.copy(alpha = 0.15f))
-                            .border(1.dp, Gold.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                            .border(1.dp, Gold.copy(alpha = 0.4f), BolaoRadiusShape.md)
+                            .padding(horizontal = BolaoSpacing.xxl, vertical = BolaoSpacing.md)
                     ) {
                         BolaoText(
                             bolao.code,
-                            fontSize = 28.sp,
+                            fontSize = BolaoTypography.displayMedium.fontSize,
                             fontWeight = FontWeight.ExtraBold,
                             color = Gold,
                             letterSpacing = 2.sp
@@ -391,7 +393,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     BolaoText(
                         stringResource(Res.string.create_bolao_success_choose_start),
                         color = TextMuted,
-                        fontSize = 13.sp,
+                        fontSize = BolaoTypography.bodyLarge.fontSize,
                         textAlign = TextAlign.Center,
                         lineHeight = 18.sp
                     )
@@ -400,7 +402,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
             confirmButton = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     BolaoButton(
@@ -415,14 +417,14 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                             launcherProvider.shareText(shareMessage)
                         },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = BolaoRadiusShape.lg,
                         border = androidx.compose.foundation.BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
                         contentColor = Neon
                     ) {
                         BolaoText(
                             stringResource(Res.string.create_bolao_button_share_code),
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
+                            fontSize = BolaoTypography.titleLarge.fontSize
                         )
                     }
                     BolaoTextButton(
@@ -462,20 +464,20 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     .fillMaxSize()
                     .padding(padding)
                     .imePadding()
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = BolaoSpacing.xxl)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
+                verticalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
             ) {
                 // Hero section
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    BolaoText(stringResource(Res.string.create_bolao_hero_emoji), fontSize = 48.sp)
+                    BolaoText(stringResource(Res.string.create_bolao_hero_emoji), fontSize = BolaoTypography.displayLarge.fontSize)
                     Spacer(Modifier.height(4.dp))
                     BolaoText(
                         stringResource(Res.string.create_bolao_hero_subtitle),
-                        fontSize = 13.sp,
+                        fontSize = BolaoTypography.bodyLarge.fontSize,
                         color = TextMuted,
                         textAlign = TextAlign.Center
                     )
@@ -488,17 +490,17 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     modifier =
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(BolaoRadiusShape.xl)
                         .background(GlassWhite)
-                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                        .padding(horizontal = 20.dp, vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .border(1.dp, GlassBorder, BolaoRadiusShape.xl)
+                        .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.xl),
+                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                 ) {
                     // Campeonato
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
                         BolaoText(
                             stringResource(Res.string.create_bolao_section_championship),
-                            fontSize = 12.sp,
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
                             color = TextMuted,
                             fontWeight = FontWeight.Medium
                         )
@@ -523,17 +525,17 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                 modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(BolaoRadiusShape.md)
                                     .border(
                                         width = 1.dp,
                                         color = if (isSelected) Neon else GlassBorder.copy(alpha = 0.5f),
-                                        shape = RoundedCornerShape(12.dp)
+                                        shape = BolaoRadiusShape.md
                                     )
                                     .alpha(if (isAvailable) 1f else 0.5f)
                                     .clickable(enabled = isAvailable) { selectedChampionshipId = id },
                                 color = if (isSelected) NavyElevated else NavyCard.copy(alpha = 0.7f)
                             ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
+                                Column(modifier = Modifier.padding(BolaoSpacing.lg)) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically,
@@ -541,19 +543,19 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                                         ) {
                                             Column {
                                                 BolaoText(
                                                     label,
-                                                    fontSize = 15.sp,
+                                                    fontSize = BolaoTypography.titleLarge.fontSize,
                                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                                                     color = if (isSelected) Color.White else TextMuted
                                                 )
                                                 if (!isAvailable) {
                                                     BolaoText(
                                                         comingSoonText,
-                                                        fontSize = 10.sp,
+                                                        fontSize = BolaoTypography.bodySmall.fontSize,
                                                         color = Neon.copy(alpha = 0.7f),
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -581,7 +583,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
 
                                         BolaoText(
                                             phasesLabel,
-                                            fontSize = 11.sp,
+                                            fontSize = BolaoTypography.bodyMedium.fontSize,
                                             color = TextMuted,
                                             fontWeight = FontWeight.Bold,
                                             letterSpacing = 0.5.sp
@@ -589,7 +591,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
 
                                         Spacer(Modifier.height(12.dp))
 
-                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Column(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)) {
                                             BolaoScope.entries
                                                 .filter { scope ->
                                                     // Filtros de visibilidade do escopo baseados no campeonato e datas
@@ -627,7 +629,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                         modifier =
                                                         Modifier
                                                             .fillMaxWidth()
-                                                            .clip(RoundedCornerShape(10.dp))
+                                                            .clip(BolaoRadiusShape.md)
                                                             .background(
                                                                 if (isScopeSelected) Neon.copy(alpha = 0.1f) else Color.Transparent
                                                             )
@@ -640,18 +642,18 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                                 } else {
                                                                     GlassBorder.copy(alpha = 0.5f)
                                                                 },
-                                                                RoundedCornerShape(10.dp)
+                                                                BolaoRadiusShape.md
                                                             )
                                                             .clickable(enabled = isScopeEnabled) {
                                                                 selectedScope = scope
                                                                 selectedMatchId = null
                                                             }
-                                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                                            .padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.md),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
                                                         BolaoText(
                                                             scopeEmoji,
-                                                            fontSize = 14.sp,
+                                                            fontSize = BolaoTypography.bodyLarge.fontSize,
                                                             modifier = Modifier.alpha(if (isScopeEnabled) 1f else 0.3f)
                                                         )
                                                         Spacer(Modifier.width(12.dp))
@@ -659,7 +661,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                         Column(modifier = Modifier.weight(1f)) {
                                                             BolaoText(
                                                                 scope.label,
-                                                                fontSize = 13.sp,
+                                                                fontSize = BolaoTypography.bodyLarge.fontSize,
                                                                 color = if (isScopeSelected) Color.White else TextMuted,
                                                                 fontWeight = if (isScopeSelected) FontWeight.Bold else FontWeight.Normal,
                                                                 modifier = Modifier.alpha(if (isScopeEnabled) 1f else 0.3f)
@@ -677,7 +679,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                                                             if (errorMsg != null) {
                                                                 BolaoText(
                                                                     errorMsg,
-                                                                    fontSize = 10.sp,
+                                                                    fontSize = BolaoTypography.bodySmall.fontSize,
                                                                     color = ErrorRed.copy(alpha = 0.7f),
                                                                     lineHeight = 12.sp
                                                                 )
@@ -721,18 +723,18 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                         )
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             if (nameError != null) {
-                                BolaoText(nameError, color = ErrorRed, fontSize = 11.sp)
+                                BolaoText(nameError, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize)
                             } else {
                                 Spacer(Modifier.width(1.dp))
                             }
                             BolaoText(
                                 stringResource(Res.string.create_bolao_char_count, name.length),
                                 color = if (name.length < 10 || name.length > 35) ErrorRed else TextSubtle,
-                                fontSize = 11.sp
+                                fontSize = BolaoTypography.bodyMedium.fontSize
                             )
                         }
                     }
@@ -751,24 +753,24 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                         BolaoText(
                             stringResource(Res.string.create_bolao_description_char_count, description.length),
                             color = if (description.length >= 115) ErrorRed else TextSubtle,
-                            fontSize = 11.sp,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs),
                             textAlign = TextAlign.End
                         )
                     }
 
                     // Scoring System Section
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)) {
                         BolaoText(
                             stringResource(Res.string.create_bolao_section_scoring),
-                            fontSize = 12.sp,
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
                             color = TextMuted,
                             fontWeight = FontWeight.Medium
                         )
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                         ) {
                             ScoreInput(
                                 label = stringResource(Res.string.create_bolao_score_exact_label),
@@ -787,18 +789,21 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                         // Info sobre prorrogação e pênaltis
                         BolaoSurface(
                             color = Color.White.copy(alpha = 0.05f),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = BolaoRadiusShape.md,
                             border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder.copy(alpha = 0.5f))
                         ) {
                             Row(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(BolaoSpacing.md),
                                 verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                             ) {
-                                BolaoText(stringResource(Res.string.create_bolao_overtime_emoji), fontSize = 14.sp)
+                                BolaoText(
+                                    stringResource(Res.string.create_bolao_overtime_emoji),
+                                    fontSize = BolaoTypography.bodyLarge.fontSize
+                                )
                                 BolaoText(
                                     stringResource(Res.string.create_bolao_overtime_info),
-                                    fontSize = 11.sp,
+                                    fontSize = BolaoTypography.bodyMedium.fontSize,
                                     color = TextMuted,
                                     lineHeight = 15.sp
                                 )
@@ -807,7 +812,7 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                     }
 
                     uiState.error?.let {
-                        BolaoText(it, color = ErrorRed, fontSize = 12.sp)
+                        BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize)
                     }
 
                     // Info chip
@@ -815,17 +820,17 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                         modifier =
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
+                            .clip(BolaoRadiusShape.md)
                             .background(Gold.copy(alpha = 0.08f))
-                            .border(1.dp, Gold.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
-                            .padding(10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            .border(1.dp, Gold.copy(alpha = 0.2f), BolaoRadiusShape.md)
+                            .padding(BolaoSpacing.md),
+                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        BolaoText(stringResource(Res.string.create_bolao_info_emoji), fontSize = 14.sp)
+                        BolaoText(stringResource(Res.string.create_bolao_info_emoji), fontSize = BolaoTypography.bodyLarge.fontSize)
                         BolaoText(
                             stringResource(Res.string.create_bolao_info_code_message),
-                            fontSize = 12.sp,
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
                             color = Gold.copy(alpha = 0.8f),
                             lineHeight = 16.sp
                         )
@@ -862,16 +867,16 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
 
 @Composable
 private fun ScoreInput(label: String, value: Int, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        BolaoText(label, fontSize = 12.sp, color = TextMuted)
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)) {
+        BolaoText(label, fontSize = BolaoTypography.bodyMedium.fontSize, color = TextMuted)
         Row(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(BolaoRadiusShape.md)
                 .background(NavyCard)
-                .border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
-                .padding(4.dp),
+                .border(1.dp, GlassBorder, BolaoRadiusShape.md)
+                .padding(BolaoSpacing.xs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -882,7 +887,7 @@ private fun ScoreInput(label: String, value: Int, onValueChange: (Int) -> Unit, 
                 BolaoText(
                     stringResource(Res.string.create_bolao_score_input_decrease),
                     color = Neon,
-                    fontSize = 20.sp,
+                    fontSize = BolaoTypography.headlineMedium.fontSize,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -891,7 +896,7 @@ private fun ScoreInput(label: String, value: Int, onValueChange: (Int) -> Unit, 
                 BolaoText(
                     text = value.toString(),
                     color = Color.White,
-                    fontSize = 16.sp,
+                    fontSize = BolaoTypography.titleLarge.fontSize,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Spacer(Modifier.width(4.dp))
@@ -903,7 +908,7 @@ private fun ScoreInput(label: String, value: Int, onValueChange: (Int) -> Unit, 
                         stringResource(Res.string.create_bolao_score_input_point_plural)
                     },
                     color = TextMuted,
-                    fontSize = 11.sp,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -915,7 +920,7 @@ private fun ScoreInput(label: String, value: Int, onValueChange: (Int) -> Unit, 
                 BolaoText(
                     stringResource(Res.string.create_bolao_score_input_increase),
                     color = Neon,
-                    fontSize = 20.sp,
+                    fontSize = BolaoTypography.headlineMedium.fontSize,
                     fontWeight = FontWeight.Bold
                 )
             }

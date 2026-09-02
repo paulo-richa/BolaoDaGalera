@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -58,6 +57,9 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoOutlinedButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
@@ -140,14 +142,14 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                 modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = BolaoSpacing.xxl)
                     .verticalScroll(rememberScrollState())
             ) {
                 Spacer(Modifier.height(20.dp))
 
                 BolaoText(
                     stringResource(Res.string.add_participants_section_title),
-                    fontSize = 11.sp,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
                     fontWeight = FontWeight.Bold,
                     color = TextMuted,
                     letterSpacing = 1.5.sp
@@ -178,16 +180,16 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                         modifier =
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(BolaoRadiusShape.md)
                             .background(SuccessGreen.copy(alpha = 0.1f))
-                            .border(1.dp, SuccessGreen.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .padding(16.dp),
+                            .border(1.dp, SuccessGreen.copy(alpha = 0.3f), BolaoRadiusShape.md)
+                            .padding(BolaoSpacing.lg),
                         contentAlignment = Alignment.Center
                     ) {
                         BolaoText(
                             stringResource(Res.string.add_participants_success_message),
                             color = SuccessGreen,
-                            fontSize = 14.sp,
+                            fontSize = BolaoTypography.bodyLarge.fontSize,
                             fontWeight = FontWeight.Medium,
                             textAlign = TextAlign.Center
                         )
@@ -199,8 +201,8 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                     BolaoText(
                         it,
                         color = ErrorRed,
-                        fontSize = 12.sp,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                        fontSize = BolaoTypography.bodyMedium.fontSize,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.lg),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -275,7 +277,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                         launcherProvider.shareText(shareMessage)
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = BolaoRadiusShape.lg,
                     border = BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
                     contentColor = Neon
                 ) {
@@ -284,7 +286,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                     BolaoText(
                         stringResource(Res.string.add_participants_button_share_link),
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp
+                        fontSize = BolaoTypography.titleLarge.fontSize
                     )
                 }
 
@@ -295,23 +297,23 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                     modifier =
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(BolaoRadiusShape.lg)
                         .background(NavyElevated)
-                        .padding(20.dp),
+                        .padding(BolaoSpacing.xl),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    BolaoText(stringResource(Res.string.add_participants_info_emoji), fontSize = 32.sp)
+                    BolaoText(stringResource(Res.string.add_participants_info_emoji), fontSize = BolaoTypography.displayMedium.fontSize)
                     Spacer(Modifier.height(12.dp))
                     BolaoText(
                         stringResource(Res.string.add_participants_info_title),
-                        fontSize = 16.sp,
+                        fontSize = BolaoTypography.titleLarge.fontSize,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Spacer(Modifier.height(8.dp))
                     BolaoText(
                         stringResource(Res.string.add_participants_info_message),
-                        fontSize = 13.sp,
+                        fontSize = BolaoTypography.bodyLarge.fontSize,
                         color = TextMuted,
                         textAlign = TextAlign.Center,
                         lineHeight = 20.sp

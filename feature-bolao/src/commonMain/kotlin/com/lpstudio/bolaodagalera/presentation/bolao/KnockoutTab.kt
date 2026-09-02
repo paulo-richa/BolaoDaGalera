@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import bolaodagalera.feature_bolao.generated.resources.Res
@@ -39,6 +38,8 @@ import bolaodagalera.feature_bolao.generated.resources.knockout_tab_empty_messag
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoFullScreenLoading
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoLinearProgressIndicator
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.domain.model.Championship
@@ -155,7 +156,7 @@ fun KnockoutTab(
     }
     Column(Modifier.fillMaxSize()) {
         if (labels.isNotEmpty()) {
-            Box(modifier = Modifier.fillMaxWidth().background(DeepNavy).padding(vertical = 8.dp)) {
+            Box(modifier = Modifier.fillMaxWidth().background(DeepNavy).padding(vertical = BolaoSpacing.sm)) {
                 KnockoutPhaseSelector(
                     labels = labels,
                     selectedLabel = selectedLabel,
@@ -270,15 +271,19 @@ fun KnockoutTab(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
             ) {
                 if (phaseMatches.isEmpty() && selectedPhase == Phase.FRIENDLIES) {
                     item {
                         Box(
-                            modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = BolaoSpacing.huge),
                             contentAlignment = Alignment.Center
                         ) {
-                            BolaoText(stringResource(Res.string.knockout_tab_empty_message), color = TextMuted, fontSize = 14.sp)
+                            BolaoText(
+                                stringResource(Res.string.knockout_tab_empty_message),
+                                color = TextMuted,
+                                fontSize = BolaoTypography.bodyLarge.fontSize
+                            )
                         }
                     }
                 }
@@ -355,8 +360,8 @@ fun KnockoutPhaseSelector(
     Box(modifier = Modifier.fillMaxWidth()) {
         androidx.compose.foundation.lazy.LazyRow(
             state = listState,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = BolaoSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
             if (showHoje) {

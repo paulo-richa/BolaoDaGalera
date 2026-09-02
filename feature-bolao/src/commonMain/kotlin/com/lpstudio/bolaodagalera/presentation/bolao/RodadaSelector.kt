@@ -16,6 +16,7 @@ import bolaodagalera.feature_bolao.generated.resources.Res
 import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
 import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_round
 import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_tomorrow
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -41,7 +42,7 @@ fun RodadaSelector(selected: Int, unlocked: Set<Int>, showHoje: Boolean, showAma
     androidx.compose.foundation.lazy.LazyRow(
         state = listState,
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
         contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
         if (showHoje) item { FilterChip(label = todayLabel, isSelected = selected == 0, isUnlocked = true, onClick = { onSelect(0) }) }

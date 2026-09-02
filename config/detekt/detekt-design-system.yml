@@ -25,3 +25,9 @@ bolao-design-system:
   active: true
   NoHardcodedStringInDesignSystem:
     active: true
+  NoRawFontSize:
+    active: true
+  NoRawCornerRadius:
+    active: true
+  NoRawSpacingDp:
+    active: true

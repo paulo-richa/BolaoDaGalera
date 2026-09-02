@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -24,11 +23,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientPrimary
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
@@ -48,7 +47,7 @@ fun BolaoButton(
         modifier
             .fillMaxWidth()
             .height(52.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(BolaoRadiusShape.lg)
             .background(if (enabled) gradient else Brush.horizontalGradient(listOf(NavyElevated, NavyElevated))),
         contentAlignment = Alignment.Center
     ) {
@@ -72,8 +71,7 @@ fun BolaoButton(
             } else {
                 Text(
                     text,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
+                    style = BolaoTypography.labelLarge,
                     color = if (enabled) DeepNavy else TextMuted
                 )
             }

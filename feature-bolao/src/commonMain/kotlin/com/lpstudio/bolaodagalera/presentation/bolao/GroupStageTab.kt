@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import bolaodagalera.feature_bolao.generated.resources.Res
@@ -42,6 +41,8 @@ import bolaodagalera.feature_bolao.generated.resources.group_stage_tab_empty_tod
 import bolaodagalera.feature_bolao.generated.resources.group_stage_tab_empty_tomorrow
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoLinearProgressIndicator
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.domain.model.Match
@@ -179,7 +180,7 @@ fun GroupStageTab(
         }
     }
     Column(Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxWidth().background(DeepNavy).padding(vertical = 8.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().background(DeepNavy).padding(vertical = BolaoSpacing.sm)) {
             RodadaSelector(
                 selected = selectedRound,
                 unlocked = unlocked,
@@ -196,23 +197,23 @@ fun GroupStageTab(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
+                verticalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
             ) {
                 if (roundMatches.isEmpty() && (selectedRound == 0 || selectedRound == TOMORROW_ROUND)) {
                     item {
-                        Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                        Box(Modifier.fillMaxWidth().padding(top = BolaoSpacing.huge), contentAlignment = Alignment.Center) {
                             val msg = if (selectedRound == 0) {
                                 stringResource(Res.string.group_stage_tab_empty_today)
                             } else {
                                 stringResource(Res.string.group_stage_tab_empty_tomorrow)
                             }
-                            BolaoText(msg, color = TextMuted, fontSize = 14.sp)
+                            BolaoText(msg, color = TextMuted, fontSize = BolaoTypography.bodyLarge.fontSize)
                         }
                     }
                 }
                 if ((selectedRound == 0 || selectedRound == TOMORROW_ROUND) && roundMatches.isNotEmpty()) {
                     items(roundMatches, key = { it.id }) { m ->
-                        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.sm)) {
                             MatchCard(
                                 match = m,
                                 prediction = predictions[m.id],
@@ -246,7 +247,7 @@ fun GroupStageTab(
                                 exit = shrinkVertically()
                             ) {
                                 Column(
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.sm)
                                 ) {
                                     MatchCard(
                                         match = m,

@@ -39,6 +39,8 @@ import bolaodagalera.feature_core.generated.resources.splash_screen_studio_label
 import bolaodagalera.feature_core.generated.resources.splash_screen_tagline
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoLinearProgressIndicator
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientPrimary
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
@@ -101,7 +103,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
                         .border(2.dp, Neon.copy(alpha = 0.5f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    BolaoText(stringResource(Res.string.splash_screen_logo_emoji), fontSize = 60.sp)
+                    BolaoText(stringResource(Res.string.splash_screen_logo_emoji), fontSize = BolaoTypography.displayLarge.fontSize)
                 }
             }
 
@@ -109,7 +111,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
 
             BolaoText(
                 stringResource(Res.string.splash_screen_app_title),
-                fontSize = 32.sp,
+                fontSize = BolaoTypography.displayMedium.fontSize,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
                 letterSpacing = 2.sp
@@ -117,7 +119,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
 
             BolaoText(
                 stringResource(Res.string.splash_screen_tagline),
-                fontSize = 11.sp,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
                 fontWeight = FontWeight.Bold,
                 color = Neon,
                 letterSpacing = 2.sp
@@ -143,8 +145,8 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
             modifier =
             Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp),
-            fontSize = 10.sp,
+                .padding(bottom = BolaoSpacing.xxxl),
+            fontSize = BolaoTypography.bodySmall.fontSize,
             color = TextSubtle,
             letterSpacing = 1.sp
         )

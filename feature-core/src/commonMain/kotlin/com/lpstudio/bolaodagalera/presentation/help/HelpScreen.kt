@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -87,6 +86,9 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
 import com.lpstudio.bolaodagalera.designsystem.theme.Gold
@@ -182,10 +184,10 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                 modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.lg)
+                    .clip(BolaoRadiusShape.md)
                     .background(NavyCard)
-                    .padding(4.dp)
+                    .padding(BolaoSpacing.xs)
             ) {
                 val tabLabels =
                     listOf(
@@ -199,16 +201,16 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                         modifier =
                         Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(BolaoRadiusShape.sm)
                             .background(if (selected) Neon else Color.Transparent)
                             .clickable { selectedTab = index }
-                            .padding(vertical = 10.dp),
+                            .padding(vertical = BolaoSpacing.md),
                         contentAlignment = Alignment.Center
                     ) {
                         BolaoText(
                             text = label,
                             color = if (selected) DeepNavy else TextMuted,
-                            fontSize = 14.sp,
+                            fontSize = BolaoTypography.bodyLarge.fontSize,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
                         )
                     }
@@ -241,7 +243,7 @@ private fun RulesSection() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
     ) {
         item {
             RuleCard(
@@ -291,23 +293,23 @@ private fun FaqSection() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
     ) {
         items(faqs) { (question, answer) ->
             var expanded by remember { mutableStateOf(false) }
             BolaoSurface(
                 color = NavyElevated,
-                shape = RoundedCornerShape(16.dp),
+                shape = BolaoRadiusShape.lg,
                 border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
                 modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(BolaoSpacing.lg)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         BolaoText(
                             text = question,
                             modifier = Modifier.weight(1f),
                             color = Color.White,
-                            fontSize = 15.sp,
+                            fontSize = BolaoTypography.titleLarge.fontSize,
                             fontWeight = FontWeight.Bold
                         )
                         BolaoIcon(
@@ -320,9 +322,9 @@ private fun FaqSection() {
                         BolaoText(
                             text = answer,
                             color = TextMuted,
-                            fontSize = 14.sp,
+                            fontSize = BolaoTypography.bodyLarge.fontSize,
                             lineHeight = 20.sp,
-                            modifier = Modifier.padding(top = 12.dp)
+                            modifier = Modifier.padding(top = BolaoSpacing.md)
                         )
                     }
                 }
@@ -340,7 +342,7 @@ private fun SupportSection(
     onSend: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
+        modifier = Modifier.fillMaxSize().padding(BolaoSpacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (showSuccess) {
@@ -356,7 +358,11 @@ private fun SupportSection(
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
-                    BolaoText(stringResource(Res.string.help_screen_support_success_subtitle), color = TextMuted, fontSize = 14.sp)
+                    BolaoText(
+                        stringResource(Res.string.help_screen_support_success_subtitle),
+                        color = TextMuted,
+                        fontSize = BolaoTypography.bodyLarge.fontSize
+                    )
                 }
             }
         } else {
@@ -364,7 +370,7 @@ private fun SupportSection(
                 modifier =
                 Modifier
                     .size(64.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(BolaoRadiusShape.xl)
                     .background(Neon.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -376,7 +382,7 @@ private fun SupportSection(
             BolaoText(
                 stringResource(Res.string.help_screen_support_title),
                 color = Color.White,
-                fontSize = 18.sp,
+                fontSize = BolaoTypography.headlineSmall.fontSize,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
@@ -384,9 +390,9 @@ private fun SupportSection(
             BolaoText(
                 stringResource(Res.string.help_screen_support_subtitle),
                 color = TextMuted,
-                fontSize = 14.sp,
+                fontSize = BolaoTypography.bodyLarge.fontSize,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
+                modifier = Modifier.padding(top = BolaoSpacing.sm, bottom = BolaoSpacing.xxl),
                 lineHeight = 20.sp
             )
 
@@ -418,24 +424,24 @@ private fun SupportSection(
 private fun RuleCard(title: String, description: String, points: List<String> = emptyList(), extra: String? = null) {
     BolaoSurface(
         color = NavyElevated,
-        shape = RoundedCornerShape(16.dp),
+        shape = BolaoRadiusShape.lg,
         border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            BolaoText(title, color = Neon, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Column(modifier = Modifier.padding(BolaoSpacing.lg)) {
+            BolaoText(title, color = Neon, fontSize = BolaoTypography.titleLarge.fontSize, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            BolaoText(description, color = Color.White, fontSize = 14.sp, lineHeight = 20.sp)
+            BolaoText(description, color = Color.White, fontSize = BolaoTypography.bodyLarge.fontSize, lineHeight = 20.sp)
 
             if (points.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 points.forEach { point ->
-                    Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                    Row(modifier = Modifier.padding(vertical = BolaoSpacing.xs)) {
                         BolaoText(
                             stringResource(Res.string.help_screen_rule_bullet),
                             color = Gold,
-                            modifier = Modifier.padding(end = 8.dp)
+                            modifier = Modifier.padding(end = BolaoSpacing.sm)
                         )
-                        BolaoText(point, color = TextMuted, fontSize = 13.sp, lineHeight = 18.sp)
+                        BolaoText(point, color = TextMuted, fontSize = BolaoTypography.bodyLarge.fontSize, lineHeight = 18.sp)
                     }
                 }
             }
@@ -446,11 +452,11 @@ private fun RuleCard(title: String, description: String, points: List<String> = 
                     modifier =
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(BolaoRadiusShape.sm)
                         .background(Gold.copy(alpha = 0.1f))
-                        .padding(12.dp)
+                        .padding(BolaoSpacing.md)
                 ) {
-                    BolaoText(extra, color = Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    BolaoText(extra, color = Gold, fontSize = BolaoTypography.bodyMedium.fontSize, fontWeight = FontWeight.Bold)
                 }
             }
         }

@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
@@ -88,6 +87,9 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoLoadingIndicator
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
 import com.lpstudio.bolaodagalera.designsystem.theme.Gold
@@ -218,13 +220,13 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                 center = Offset(size.width * 0.9f, 0f)
                             )
                         }
-                        .padding(top = 12.dp, bottom = 24.dp)
+                        .padding(top = BolaoSpacing.md, bottom = BolaoSpacing.xxl)
                 ) {
-                    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.xl)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
                         ) {
                             BolaoIconButton(onClick = onNavigateBack, modifier = Modifier.size(36.dp)) {
                                 BolaoIcon(
@@ -237,7 +239,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
 
                             BolaoText(
                                 stringResource(Res.string.match_predictions_title),
-                                fontSize = 20.sp,
+                                fontSize = BolaoTypography.headlineMedium.fontSize,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color.White,
                                 modifier = Modifier.weight(1f),
@@ -368,7 +370,12 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         parts.forEachIndexed { index, part ->
                                             append(part)
                                             if (index < parts.size - 1) {
-                                                withStyle(style = SpanStyle(fontSize = 11.sp, fontWeight = FontWeight.Normal)) {
+                                                withStyle(
+                                                    style = SpanStyle(
+                                                        fontSize = BolaoTypography.bodyMedium.fontSize,
+                                                        fontWeight = FontWeight.Normal
+                                                    )
+                                                ) {
                                                     append(" ou ")
                                                 }
                                             }
@@ -387,7 +394,12 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         parts.forEachIndexed { index, part ->
                                             append(part)
                                             if (index < parts.size - 1) {
-                                                withStyle(style = SpanStyle(fontSize = 11.sp, fontWeight = FontWeight.Normal)) {
+                                                withStyle(
+                                                    style = SpanStyle(
+                                                        fontSize = BolaoTypography.bodyMedium.fontSize,
+                                                        fontWeight = FontWeight.Normal
+                                                    )
+                                                ) {
                                                     append(" ou ")
                                                 }
                                             }
@@ -447,7 +459,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
 
                             val isLive = !isActuallyFinished && !isAdminViewingBeforeStart && hasStarted
 
-                            Column(Modifier.padding(horizontal = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Column(Modifier.padding(horizontal = BolaoSpacing.md), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     if (isLive) {
                                         val infiniteTransition = rememberInfiniteTransition()
@@ -471,7 +483,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                     }
                                     BolaoText(
                                         statusLabel,
-                                        fontSize = 11.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isAdminViewingBeforeStart) Gold else TextMuted,
                                         letterSpacing = 0.5.sp
@@ -481,16 +493,26 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                 if (!isAdminViewingBeforeStart) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
                                     ) {
-                                        BolaoText(hReal.toString(), fontSize = 32.sp, fontWeight = FontWeight.Black, color = Neon)
+                                        BolaoText(
+                                            hReal.toString(),
+                                            fontSize = BolaoTypography.displayMedium.fontSize,
+                                            fontWeight = FontWeight.Black,
+                                            color = Neon
+                                        )
                                         BolaoText(
                                             stringResource(Res.string.match_predictions_score_separator),
-                                            fontSize = 20.sp,
+                                            fontSize = BolaoTypography.headlineMedium.fontSize,
                                             fontWeight = FontWeight.Bold,
                                             color = TextMuted
                                         )
-                                        BolaoText(aReal.toString(), fontSize = 32.sp, fontWeight = FontWeight.Black, color = Neon)
+                                        BolaoText(
+                                            aReal.toString(),
+                                            fontSize = BolaoTypography.displayMedium.fontSize,
+                                            fontWeight = FontWeight.Black,
+                                            color = Neon
+                                        )
                                     }
                                 } else {
                                     BolaoIcon(
@@ -545,7 +567,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                         BolaoHorizontalDivider(
                             color = GlassBorder,
                             thickness = 1.dp,
-                            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
+                            modifier = Modifier.padding(start = BolaoSpacing.xxl, end = BolaoSpacing.xxl, bottom = BolaoSpacing.md)
                         )
                     }
 
@@ -556,18 +578,18 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
 
                         BolaoSurface(
                             color = NavyElevated,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = BolaoRadiusShape.lg,
                             border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)
+                            modifier = Modifier.padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.xs)
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.lg),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 UserAvatar(
                                     initials = participant.userName.getInitials(),
                                     size = 36.dp,
-                                    fontSize = 14.sp,
+                                    fontSize = BolaoTypography.bodyLarge.fontSize,
                                     borderColor = Neon.copy(alpha = 0.5f)
                                 )
                                 Spacer(Modifier.width(12.dp))
@@ -576,38 +598,48 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                     BolaoText(
                                         text = if (hasNickname) participant.userNickname else participant.userName,
                                         color = Color.White,
-                                        fontSize = 15.sp,
+                                        fontSize = BolaoTypography.titleLarge.fontSize,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1
                                     )
                                     if (hasNickname) {
-                                        BolaoText(text = participant.userName, color = TextMuted, fontSize = 11.sp, maxLines = 1)
+                                        BolaoText(
+                                            text = participant.userName,
+                                            color = TextMuted,
+                                            fontSize = BolaoTypography.bodyMedium.fontSize,
+                                            maxLines = 1
+                                        )
                                     }
                                 }
                                 if (pred != null) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                                     ) {
                                         if (isAdminViewingBeforeStart && participant.userId != currentUserId) {
-                                            BolaoText(lockedBadge, color = Neon, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            BolaoText(
+                                                lockedBadge,
+                                                color = Neon,
+                                                fontSize = BolaoTypography.bodyLarge.fontSize,
+                                                fontWeight = FontWeight.Bold
+                                            )
                                         } else {
                                             Box(
                                                 modifier =
                                                 Modifier.clip(
-                                                    RoundedCornerShape(8.dp)
+                                                    BolaoRadiusShape.sm
                                                 ).background(
                                                     DeepNavy.copy(alpha = 0.6f)
                                                 ).border(
                                                     1.dp,
                                                     GlassBorder,
-                                                    RoundedCornerShape(8.dp)
-                                                ).padding(horizontal = 10.dp, vertical = 6.dp)
+                                                    BolaoRadiusShape.sm
+                                                ).padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.sm)
                                             ) {
                                                 BolaoText(
                                                     "${pred.homeScore} × ${pred.awayScore}",
                                                     color = Color.White,
-                                                    fontSize = 14.sp,
+                                                    fontSize = BolaoTypography.bodyLarge.fontSize,
                                                     fontWeight = FontWeight.Bold
                                                 )
                                             }
@@ -624,27 +656,32 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                                 Modifier.width(
                                                     44.dp
                                                 ).clip(
-                                                    RoundedCornerShape(10.dp)
+                                                    BolaoRadiusShape.md
                                                 ).background(
                                                     pointsColor.copy(alpha = 0.12f)
                                                 ).border(
                                                     1.dp,
                                                     pointsColor.copy(alpha = 0.2f),
-                                                    RoundedCornerShape(10.dp)
-                                                ).padding(vertical = 6.dp),
+                                                    BolaoRadiusShape.md
+                                                ).padding(vertical = BolaoSpacing.sm),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 BolaoText(
                                                     text = if (pts > 0) "+$pts" else "0",
                                                     color = pointsColor,
-                                                    fontSize = 15.sp,
+                                                    fontSize = BolaoTypography.titleLarge.fontSize,
                                                     fontWeight = FontWeight.Black
                                                 )
                                             }
                                         }
                                     }
                                 } else {
-                                    BolaoText(noPredictionLabel, color = TextSubtle, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                    BolaoText(
+                                        noPredictionLabel,
+                                        color = TextSubtle,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 }
                             }
                         }

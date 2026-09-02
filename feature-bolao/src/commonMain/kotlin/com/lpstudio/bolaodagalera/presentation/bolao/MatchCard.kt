@@ -73,6 +73,10 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoScoreField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadius
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
@@ -143,7 +147,7 @@ fun MatchCard(
                     p.forEachIndexed { i, _ ->
                         append(p[i])
                         if (i < p.size - 1) {
-                            withStyle(style = SpanStyle(fontSize = 12.sp)) {
+                            withStyle(style = SpanStyle(fontSize = BolaoTypography.bodyMedium.fontSize)) {
                                 append(" ou ")
                             }
                         }
@@ -161,7 +165,7 @@ fun MatchCard(
                     p.forEachIndexed { i, _ ->
                         append(p[i])
                         if (i < p.size - 1) {
-                            withStyle(style = SpanStyle(fontSize = 12.sp)) {
+                            withStyle(style = SpanStyle(fontSize = BolaoTypography.bodyMedium.fontSize)) {
                                 append(" ou ")
                             }
                         }
@@ -215,7 +219,7 @@ fun MatchCard(
     BolaoSurface(
         modifier = Modifier.fillMaxWidth(),
         color = if (isLive) Color.Transparent else NavyElevated,
-        shape = RoundedCornerShape(12.dp),
+        shape = BolaoRadiusShape.md,
         border = androidx.compose.foundation.BorderStroke(1.dp, if (isLive) Neon.copy(alpha = 0.5f) else bColor)
     ) {
         Box(
@@ -246,8 +250,8 @@ fun MatchCard(
                     onClick = onShowAllPredictions,
                     color = OrangeNeon.copy(alpha = 0.2f),
                     shape = RoundedCornerShape(
-                        bottomStart = 10.dp,
-                        bottomEnd = 10.dp
+                        bottomStart = BolaoRadius.md,
+                        bottomEnd = BolaoRadius.md
                     ),
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
@@ -259,17 +263,17 @@ fun MatchCard(
                 ) {
                     Row(
                         modifier = Modifier.padding(
-                            horizontal = 12.dp,
-                            vertical = 5.dp
+                            horizontal = BolaoSpacing.md,
+                            vertical = BolaoSpacing.xs
                         ),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
                     ) {
                         BolaoIcon(Icons.Default.Check, null, tint = OrangeNeon, modifier = Modifier.size(12.dp))
                         BolaoText(
                             stringResource(Res.string.match_card_social_badge_label),
                             color = OrangeNeon,
-                            fontSize = 8.sp,
+                            fontSize = BolaoTypography.labelSmall.fontSize,
                             fontWeight = FontWeight.Black,
                             letterSpacing = 0.6.sp
                         )
@@ -280,16 +284,16 @@ fun MatchCard(
             if (ida != null) {
                 BolaoSurface(
                     color = Gold.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(bottomEnd = 10.dp, topStart = 12.dp),
+                    shape = RoundedCornerShape(bottomEnd = BolaoRadius.md, topStart = BolaoRadius.md),
                     border = androidx.compose.foundation.BorderStroke(0.5.dp, Gold.copy(alpha = 0.3f)),
                     modifier = Modifier.align(Alignment.TopStart)
                 ) {
                     BolaoText(
                         text = stringResource(Res.string.match_card_first_leg_score, ida),
-                        fontSize = 8.sp,
+                        fontSize = BolaoTypography.labelSmall.fontSize,
                         fontWeight = FontWeight.Black,
                         color = Gold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.sm)
                     )
                 }
             }
@@ -300,13 +304,13 @@ fun MatchCard(
                     // mostra a data mesmo que a API já tenha publicado uma para o
                     // "slot" da fase - evita sugerir um confronto que ainda não existe.
                     text = if (isTbd) stringResource(Res.string.bolao_common_date_tbd) else formatMatchDate(match.matchDateMillis),
-                    fontSize = 9.sp,
+                    fontSize = BolaoTypography.bodySmall.fontSize,
                     color = Color.White,
                     letterSpacing = 0.2.sp,
                     modifier =
                     Modifier
                         .align(if (!showGalera) Alignment.TopCenter else Alignment.TopEnd)
-                        .padding(top = 10.dp, end = if (!showGalera) 0.dp else 12.dp)
+                        .padding(top = BolaoSpacing.md, end = if (!showGalera) BolaoSpacing.xs else BolaoSpacing.md)
                 )
             }
             if (isFin && hasPrediction) {
@@ -327,7 +331,7 @@ fun MatchCard(
                         1 -> Gold.copy(alpha = 0.15f)
                         else -> ErrorRed.copy(alpha = 0.1f)
                     },
-                    shape = RoundedCornerShape(bottomStart = 10.dp, topEnd = 16.dp),
+                    shape = RoundedCornerShape(bottomStart = BolaoRadius.md, topEnd = BolaoRadius.lg),
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     BolaoText(
@@ -338,7 +342,7 @@ fun MatchCard(
                         } else {
                             stringResource(Res.string.match_card_points_plural, pts)
                         },
-                        fontSize = 9.sp,
+                        fontSize = BolaoTypography.bodySmall.fontSize,
                         fontWeight = FontWeight.Black,
                         color =
                         when (pts) {
@@ -346,11 +350,11 @@ fun MatchCard(
                             1 -> Gold
                             else -> ErrorRed
                         },
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.sm)
                     )
                 }
             }
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(BolaoSpacing.md)) {
                 Spacer(Modifier.height(if (isLock || canPred) 32.dp else 16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -360,12 +364,12 @@ fun MatchCard(
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = if (hName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = if (hName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(BolaoSpacing.md)
                     ) {
                         TeamIcon(crestUrl = hCrest ?: match.homeTeamCrest, flag = hAnn, isTbd = isTbd, size = 32.dp)
                         if (hName.isNotEmpty()) TeamNameText(name = hName, modifier = Modifier.weight(1f))
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 8.dp)) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = BolaoSpacing.sm)) {
                         if (hasPrediction) {
                             val hR = match.homeScore ?: 0
                             val aR = match.awayScore ?: 0
@@ -382,36 +386,46 @@ fun MatchCard(
                             Box(
                                 modifier =
                                 Modifier
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(BolaoRadiusShape.md)
                                     .background(Brush.linearGradient(listOf(sColor.copy(0.15f), sColor.copy(0.05f))))
-                                    .then(if (isExact) Modifier.border(2.dp, Neon, RoundedCornerShape(12.dp)) else Modifier)
-                                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                                    .then(if (isExact) Modifier.border(2.dp, Neon, BolaoRadiusShape.md) else Modifier)
+                                    .padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.md),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    BolaoText("$hP", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = sColor)
+                                    BolaoText(
+                                        "$hP",
+                                        fontSize = BolaoTypography.displaySmall.fontSize,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = sColor
+                                    )
                                     BolaoText(
                                         "×",
-                                        fontSize = 16.sp,
+                                        fontSize = BolaoTypography.titleLarge.fontSize,
                                         fontWeight = FontWeight.Bold,
                                         color = sColor.copy(alpha = 0.6f),
-                                        modifier = Modifier.padding(horizontal = 8.dp)
+                                        modifier = Modifier.padding(horizontal = BolaoSpacing.sm)
                                     )
-                                    BolaoText("$aP", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = sColor)
+                                    BolaoText(
+                                        "$aP",
+                                        fontSize = BolaoTypography.displaySmall.fontSize,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = sColor
+                                    )
                                 }
                             }
                         } else {
                             Box(
                                 modifier =
                                 Modifier
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(BolaoRadiusShape.sm)
                                     .background(Brush.linearGradient(listOf(GlassWhite, GlassWhite)))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    .padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.sm),
                                 contentAlignment = Alignment.Center
                             ) {
                                 BolaoText(
                                     stringResource(Res.string.match_card_vs_label),
-                                    fontSize = 11.sp,
+                                    fontSize = BolaoTypography.bodyMedium.fontSize,
                                     fontWeight = FontWeight.Bold,
                                     color = TextMuted.copy(alpha = 0.7f)
                                 )
@@ -421,7 +435,14 @@ fun MatchCard(
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = if (aName.isEmpty()) Arrangement.Center else Arrangement.spacedBy(10.dp, Alignment.End)
+                        horizontalArrangement = if (aName.isEmpty()) {
+                            Arrangement.Center
+                        } else {
+                            Arrangement.spacedBy(
+                                BolaoSpacing.md,
+                                Alignment.End
+                            )
+                        }
                     ) {
                         if (aName.isNotEmpty()) TeamNameText(name = aName, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
                         TeamIcon(crestUrl = aCrest ?: match.awayTeamCrest, flag = aAnn, isTbd = isTbd, size = 32.dp)
@@ -434,8 +455,8 @@ fun MatchCard(
                     Row(
                         modifier =
                         Modifier.fillMaxWidth().clip(
-                            RoundedCornerShape(10.dp)
-                        ).background(Neon.copy(alpha = 0.08f)).padding(vertical = 8.dp),
+                            BolaoRadiusShape.md
+                        ).background(Neon.copy(alpha = 0.08f)).padding(vertical = BolaoSpacing.sm),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -448,7 +469,7 @@ fun MatchCard(
                             } else {
                                 stringResource(Res.string.match_card_make_prediction)
                             },
-                            fontSize = 11.sp,
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
                             color = Neon,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.5.sp
@@ -466,11 +487,11 @@ fun MatchCard(
                         if ((forceLocked || isTbd) && !match.isFinished) {
                             BolaoText(
                                 text = stringResource(Res.string.match_card_coming_soon),
-                                fontSize = 9.sp,
+                                fontSize = BolaoTypography.bodySmall.fontSize,
                                 fontWeight = FontWeight.Black,
                                 color = Neon.copy(alpha = 0.6f),
                                 letterSpacing = 0.5.sp,
-                                modifier = Modifier.padding(top = 8.dp)
+                                modifier = Modifier.padding(top = BolaoSpacing.sm)
                             )
                         } else {
                             val sT =
@@ -487,7 +508,7 @@ fun MatchCard(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier.padding(top = BolaoSpacing.xs)
                             ) {
                                 if (isLive) {
                                     val inf = rememberInfiniteTransition()
@@ -501,7 +522,7 @@ fun MatchCard(
                                 }
                                 BolaoText(
                                     text = sT,
-                                    fontSize = 9.sp,
+                                    fontSize = BolaoTypography.bodySmall.fontSize,
                                     fontWeight = FontWeight.Black,
                                     color = aC.copy(alpha = 0.7f),
                                     letterSpacing = 0.8.sp
@@ -510,8 +531,8 @@ fun MatchCard(
                             Box(
                                 modifier =
                                 Modifier.padding(
-                                    top = 2.dp
-                                ).clip(RoundedCornerShape(6.dp)).background(aC.copy(alpha = 0.08f)).then(
+                                    top = BolaoSpacing.xs
+                                ).clip(BolaoRadiusShape.sm).background(aC.copy(alpha = 0.08f)).then(
                                     if (isAdmin) {
                                         Modifier.clickable {
                                             onOpenAdminScoreDialog()
@@ -519,19 +540,29 @@ fun MatchCard(
                                     } else {
                                         Modifier
                                     }
-                                ).padding(horizontal = 8.dp, vertical = 1.dp),
+                                ).padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    BolaoText("${match.homeScore ?: 0}", fontSize = 16.sp, fontWeight = FontWeight.Black, color = aC)
+                                    BolaoText(
+                                        "${match.homeScore ?: 0}",
+                                        fontSize = BolaoTypography.titleLarge.fontSize,
+                                        fontWeight = FontWeight.Black,
+                                        color = aC
+                                    )
                                     BolaoText(
                                         "×",
-                                        fontSize = 12.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         fontWeight = FontWeight.Bold,
                                         color = aC.copy(alpha = 0.5f),
-                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                        modifier = Modifier.padding(horizontal = BolaoSpacing.xs)
                                     )
-                                    BolaoText("${match.awayScore ?: 0}", fontSize = 16.sp, fontWeight = FontWeight.Black, color = aC)
+                                    BolaoText(
+                                        "${match.awayScore ?: 0}",
+                                        fontSize = BolaoTypography.titleLarge.fontSize,
+                                        fontWeight = FontWeight.Black,
+                                        color = aC
+                                    )
                                 }
                             }
                         }
@@ -550,12 +581,12 @@ fun AdminScoreDialog(match: Match, onDismiss: () -> Unit, onConfirm: (Int?, Int?
         onDismissRequest = onDismiss,
         title = { BolaoText(stringResource(Res.string.match_card_admin_dialog_title), color = Color.White) },
         text = {
-            Column(modifier = Modifier.imePadding().padding(bottom = 24.dp)) {
+            Column(modifier = Modifier.imePadding().padding(bottom = BolaoSpacing.xxl)) {
                 BolaoText(
                     stringResource(Res.string.match_card_admin_dialog_message, match.homeTeam, match.awayTeam),
-                    fontSize = 14.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     color = TextMuted,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = BolaoSpacing.lg)
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -575,7 +606,7 @@ fun AdminScoreDialog(match: Match, onDismiss: () -> Unit, onConfirm: (Int?, Int?
                     )
                     BolaoText(
                         stringResource(Res.string.match_card_admin_dialog_versus),
-                        modifier = Modifier.padding(horizontal = 16.dp),
+                        modifier = Modifier.padding(horizontal = BolaoSpacing.lg),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )

@@ -11,7 +11,10 @@ class BolaoRuleSetProvider : RuleSetProvider {
         RuleSet(
             ruleSetId,
             listOf(
-                NoHardcodedStringInDesignSystem(config)
+                NoHardcodedStringInDesignSystem(config),
+                NoRawFontSize(config),
+                NoRawCornerRadius(config),
+                NoRawSpacingDp(config)
             )
         )
 }

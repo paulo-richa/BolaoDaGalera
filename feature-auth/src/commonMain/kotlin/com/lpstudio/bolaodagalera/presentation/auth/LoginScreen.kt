@@ -64,6 +64,8 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoGlassCard
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.Gold
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientBg
@@ -140,7 +142,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                 modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 28.dp)
+                    .padding(horizontal = BolaoSpacing.xxxl)
                     .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
@@ -157,7 +159,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
 
                 BolaoText(
                     stringResource(Res.string.login_title),
-                    fontSize = 34.sp,
+                    fontSize = BolaoTypography.displayMedium.fontSize,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     letterSpacing = (-0.5).sp
@@ -165,7 +167,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                 Spacer(Modifier.height(4.dp))
                 BolaoText(
                     stringResource(Res.string.login_subtitle),
-                    fontSize = 14.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     color = Gold,
                     fontWeight = FontWeight.Medium,
                     letterSpacing = 1.5.sp,
@@ -208,8 +210,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                             BolaoText(
                                 it,
                                 color = ErrorRed,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                fontSize = BolaoTypography.bodyMedium.fontSize,
+                                modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
                             )
                         }
 
@@ -222,7 +224,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                                 BolaoText(
                                     stringResource(Res.string.login_button_change_email),
                                     color = Neon,
-                                    fontSize = 12.sp,
+                                    fontSize = BolaoTypography.bodyMedium.fontSize,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -230,7 +232,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                     }
 
                     AnimatedVisibility(visible = uiState.emailExists == true) {
-                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)) {
                             Column {
                                 BolaoTextField(
                                     value = password,
@@ -260,8 +262,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                                     BolaoText(
                                         it,
                                         color = ErrorRed,
-                                        fontSize = 11.sp,
-                                        modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
+                                        modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
                                     )
                                 }
 
@@ -273,7 +275,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                                     BolaoText(
                                         stringResource(Res.string.login_button_forgot_password),
                                         color = Gold,
-                                        fontSize = 12.sp,
+                                        fontSize = BolaoTypography.bodyMedium.fontSize,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -292,14 +294,14 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                     AnimatedVisibility(visible = uiState.emailExists == false) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
                         ) {
                             BolaoText(
                                 stringResource(Res.string.login_email_not_found_message),
                                 color = Gold,
-                                fontSize = 13.sp,
+                                fontSize = BolaoTypography.bodyLarge.fontSize,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 8.dp)
+                                modifier = Modifier.padding(horizontal = BolaoSpacing.sm)
                             )
 
                             BolaoButton(
@@ -324,7 +326,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                         BolaoText(
                             it,
                             color = ErrorRed,
-                            fontSize = 12.sp,
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -333,7 +335,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                         BolaoText(
                             it,
                             color = Neon,
-                            fontSize = 12.sp,
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center
                         )

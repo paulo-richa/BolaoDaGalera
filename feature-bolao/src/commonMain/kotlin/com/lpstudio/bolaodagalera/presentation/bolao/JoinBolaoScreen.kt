@@ -61,6 +61,8 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
@@ -209,16 +211,16 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                     .fillMaxSize()
                     .padding(padding)
                     .imePadding()
-                    .padding(horizontal = 28.dp)
+                    .padding(horizontal = BolaoSpacing.xxxl)
                     .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                BolaoText(stringResource(Res.string.join_bolao_key_emoji), fontSize = 64.sp)
+                BolaoText(stringResource(Res.string.join_bolao_key_emoji), fontSize = BolaoTypography.displayLarge.fontSize)
                 Spacer(Modifier.height(16.dp))
                 BolaoText(
                     stringResource(Res.string.join_bolao_title),
-                    fontSize = 22.sp,
+                    fontSize = BolaoTypography.headlineLarge.fontSize,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     textAlign = TextAlign.Center
@@ -226,7 +228,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                 Spacer(Modifier.height(6.dp))
                 BolaoText(
                     stringResource(Res.string.join_bolao_subtitle),
-                    fontSize = 14.sp,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
                     color = TextMuted,
                     textAlign = TextAlign.Center,
                     lineHeight = 20.sp
@@ -237,7 +239,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                 // Code input card
                 BolaoGlassCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
                 ) {
                     BolaoTextField(
                         value = code,
@@ -259,7 +261,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                         ),
                         textStyle =
                         TextStyle(
-                            fontSize = 28.sp,
+                            fontSize = BolaoTypography.displayMedium.fontSize,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 10.sp,
                             textAlign = TextAlign.Center,
@@ -267,11 +269,11 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                         )
                     )
 
-                    codeError?.let { BolaoText(it, color = ErrorRed, fontSize = 11.sp) }
+                    codeError?.let { BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize) }
 
                     // Char counter dots
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         for (i in 0 until 6) {
@@ -288,7 +290,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                     }
 
                     uiState.error?.let {
-                        BolaoText(it, color = ErrorRed, fontSize = 12.sp, textAlign = TextAlign.Center)
+                        BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize, textAlign = TextAlign.Center)
                     }
                 }
 

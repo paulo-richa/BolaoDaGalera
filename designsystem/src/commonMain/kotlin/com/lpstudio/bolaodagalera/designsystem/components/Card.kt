@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassWhite
@@ -38,7 +39,7 @@ fun BolaoCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.()
             .clip(MaterialTheme.shapes.large)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(1.dp, GlassBorder, MaterialTheme.shapes.large)
-            .padding(16.dp),
+            .padding(BolaoSpacing.lg),
         content = content
     )
 }
@@ -62,7 +63,7 @@ private fun BolaoCardPreview() {
 @Composable
 fun BolaoGlassCard(
     modifier: Modifier = Modifier,
-    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(14.dp),
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(BolaoSpacing.md),
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -70,10 +71,10 @@ fun BolaoGlassCard(
         modifier =
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(BolaoRadiusShape.xl)
             .background(GlassWhite)
-            .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-            .padding(24.dp),
+            .border(1.dp, GlassBorder, BolaoRadiusShape.xl)
+            .padding(BolaoSpacing.xxl),
         verticalArrangement = verticalArrangement,
         horizontalAlignment = horizontalAlignment,
         content = content
