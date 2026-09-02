@@ -3,8 +3,10 @@ package com.lpstudio.bolaodagalera.presentation.auth
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lpstudio.bolaodagalera.domain.model.ErrorCategory
 import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.domain.usecase.ClassifyExceptionUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.GenerateAvailableUsernameUseCase
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
@@ -34,7 +36,8 @@ class AuthViewModel(
     private val crashReporter: CrashReporter,
     private val performanceMonitor: PerformanceMonitor,
     private val analyticsTracker: AnalyticsTracker,
-    private val generateAvailableUsernameUseCase: GenerateAvailableUsernameUseCase = GenerateAvailableUsernameUseCase(authRepository)
+    private val generateAvailableUsernameUseCase: GenerateAvailableUsernameUseCase = GenerateAvailableUsernameUseCase(authRepository),
+    private val classifyException: ClassifyExceptionUseCase = ClassifyExceptionUseCase()
 ) : ViewModel() {
     private val logger = appLogger("AuthViewModel")
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -199,26 +202,17 @@ class AuthViewModel(
     suspend fun generateAvailableUsername(fullName: String): String = generateAvailableUsernameUseCase(fullName)
 
     private fun friendlyError(e: Exception): String {
-        val msg = e.message?.lowercase() ?: ""
         logger.e(e) { "Auth Error Debug" } // Internal debug log
-        return when {
-            msg.contains("incorrect") || msg.contains("invalid-credential") || msg.contains("password") || msg.contains("wrong") ->
-                "E-mail ou senha incorretos. Verifique os dados e tente novamente."
-            msg.contains("user-not-found") || msg.contains("no user") ->
-                "Usuário não encontrado. Crie uma conta para acessar."
-            msg.contains("email-already") || msg.contains("email já") || msg.contains("collision") || msg.contains("already-in-use") ->
-                "Este e-mail já está sendo usado em outra conta."
-            msg.contains("network") || msg.contains("connection") || msg.contains("timeout") ->
-                "Erro de conexão. Verifique sua internet e tente novamente."
-            msg.contains("too many requests") || msg.contains("blocked") ->
-                "Muitas tentativas falhas. Sua conta foi temporariamente bloqueada por segurança."
-            msg.contains("weak-password") ->
-                "A senha é muito fraca. Use pelo menos 6 caracteres."
-            msg.contains("invalid-email") ->
-                "O formato do e-mail é inválido."
-            msg.contains("permission") || msg.contains("permissão") ->
-                "Aguardando autenticação para acessar dados. Tente novamente em instantes."
-            else -> "Ocorreu um erro inesperado. Por favor, tente novamente."
+        return when (classifyException(e)) {
+            ErrorCategory.INVALID_CREDENTIALS -> "E-mail ou senha incorretos. Verifique os dados e tente novamente."
+            ErrorCategory.USER_NOT_FOUND -> "Usuário não encontrado. Crie uma conta para acessar."
+            ErrorCategory.ALREADY_IN_USE -> "Este e-mail já está sendo usado em outra conta."
+            ErrorCategory.NETWORK -> "Erro de conexão. Verifique sua internet e tente novamente."
+            ErrorCategory.RATE_LIMITED -> "Muitas tentativas falhas. Sua conta foi temporariamente bloqueada por segurança."
+            ErrorCategory.WEAK_PASSWORD -> "A senha é muito fraca. Use pelo menos 6 caracteres."
+            ErrorCategory.INVALID_EMAIL -> "O formato do e-mail é inválido."
+            ErrorCategory.PERMISSION -> "Aguardando autenticação para acessar dados. Tente novamente em instantes."
+            ErrorCategory.UNKNOWN -> "Ocorreu um erro inesperado. Por favor, tente novamente."
         }
     }
 }
