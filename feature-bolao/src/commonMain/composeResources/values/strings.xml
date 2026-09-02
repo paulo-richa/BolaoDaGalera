@@ -274,6 +274,7 @@
     <string name="match_predictions_status_in_progress">Jogo em andamento</string>
     <string name="match_predictions_locked_badge">Palpitou</string>
     <string name="match_predictions_no_prediction">Sem palpite</string>
+    <string name="match_predictions_score_separator">×</string>
 
     <!-- PredictionScreen -->
     <string name="prediction_back_cd">Voltar</string>

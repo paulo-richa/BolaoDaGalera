@@ -66,6 +66,7 @@
     <string name="help_screen_support_title">Precisa de ajuda ou tem uma sugestão?</string>
     <string name="help_screen_support_subtitle">Descreva sua situação abaixo e clique em enviar. Nossa equipe receberá sua mensagem diretamente.</string>
     <string name="help_screen_support_field_placeholder">Reclamação, pedido de ajuda ou sugestão...</string>
+    <string name="help_screen_rule_bullet">•</string>
 
     <!-- MaintenanceScreen -->
     <string name="maintenance_screen_icon_cd">Manutenção</string>

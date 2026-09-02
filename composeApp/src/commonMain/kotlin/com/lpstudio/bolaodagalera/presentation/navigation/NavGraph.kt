@@ -2,7 +2,6 @@ package com.lpstudio.bolaodagalera.presentation.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +20,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoLoadingIndicator
 import com.lpstudio.bolaodagalera.presentation.MainScreen
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
 import com.lpstudio.bolaodagalera.presentation.auth.LoginScreen
@@ -44,7 +44,7 @@ fun NavGraph() {
 
     if (!authUiState.isAuthChecked) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            BolaoLoadingIndicator()
         }
         return
     }
