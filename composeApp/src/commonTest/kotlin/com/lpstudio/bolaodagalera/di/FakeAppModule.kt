@@ -28,7 +28,12 @@ import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
+import com.lpstudio.bolaodagalera.presentation.bolao.AddParticipantsViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
+import com.lpstudio.bolaodagalera.presentation.bolao.CreateBolaoViewModel
+import com.lpstudio.bolaodagalera.presentation.bolao.EditBolaoViewModel
+import com.lpstudio.bolaodagalera.presentation.bolao.JoinBolaoViewModel
+import com.lpstudio.bolaodagalera.presentation.help.HelpViewModel
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
 import com.lpstudio.bolaodagalera.presentation.match.PredictionViewModel
 import com.lpstudio.bolaodagalera.presentation.ranking.RankingViewModel
@@ -74,4 +79,9 @@ val fakeAppModule =
                 bolaoId = bolaoId
             )
         }
+        viewModel { CreateBolaoViewModel(get(), get(), get(), get(), get(), get()) }
+        viewModel { (bolaoId: String) -> EditBolaoViewModel(get(), get(), get(), bolaoId, get()) }
+        viewModel { JoinBolaoViewModel(get(), get(), get(), get(), get()) }
+        viewModel { (bolaoId: String) -> AddParticipantsViewModel(get(), get(), get(), get(), bolaoId) }
+        viewModel { HelpViewModel(get(), get()) }
     }
