@@ -1,5 +1,6 @@
 package com.lpstudio.bolaodagalera.presentation.auth
 
+import app.cash.turbine.test
 import com.lpstudio.bolaodagalera.data.fake.FAKE_FRIEND
 import com.lpstudio.bolaodagalera.data.fake.FAKE_USER
 import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
@@ -52,6 +53,23 @@ class AuthViewModelTest {
         assertEquals(FAKE_USER.id, state.user?.id)
         assertFalse(state.isLoading)
         assertNull(state.error)
+    }
+
+    @Test
+    fun `mudanca externa no authStateFlow reflete reativamente no uiState`() = runTest {
+        viewModel.uiState.test {
+            assertNull(awaitItem().user)
+
+            // Simulates Firebase Auth's own listener firing (e.g. token refresh, another
+            // tab/device signing in) - not a call the ViewModel itself triggered.
+            authRepository.setUser(FAKE_USER)
+            assertEquals(FAKE_USER.id, awaitItem().user?.id)
+
+            authRepository.setUser(null)
+            assertNull(awaitItem().user)
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test

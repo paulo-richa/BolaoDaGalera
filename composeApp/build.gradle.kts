@@ -105,6 +105,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.turbine)
             implementation(project(":core-testing"))
         }
     }
@@ -120,7 +121,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 27
         versionName = "3.2.3"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.lpstudio.bolaodagalera.CustomTestRunner"
     }
     packaging {
         resources {
@@ -183,6 +184,8 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
     debugImplementation(libs.compose.ui.test.manifest)
     androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(project(":core-testing"))
 
     // Unit Tests
     testImplementation(libs.kotlin.test)
