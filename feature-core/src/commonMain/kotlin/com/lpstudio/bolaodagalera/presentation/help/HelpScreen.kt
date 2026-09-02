@@ -23,11 +23,11 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,31 +96,22 @@ import com.lpstudio.bolaodagalera.designsystem.theme.NavyCard
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
-import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
-import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HelpScreen(onNavigateBack: () -> Unit) {
-    val supportRepository = koinInject<SupportRepository>()
-    val authRepository = koinInject<AuthRepository>()
-    val scope = rememberCoroutineScope()
+    val viewModel = koinViewModel<HelpViewModel>()
+    val uiState by viewModel.uiState.collectAsState()
 
     var message by remember { mutableStateOf("") }
-    var isSending by remember { mutableStateOf(false) }
-    var showSuccess by remember { mutableStateOf(false) }
     var showConfirmDialog by remember { mutableStateOf(false) }
-    var showErrorDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    // Auto-dismiss the success state after 3 seconds
-    LaunchedEffect(showSuccess) {
-        if (showSuccess) {
-            kotlinx.coroutines.delay(3000.milliseconds)
-            showSuccess = false
+    // Clear the input field once the message is sent successfully
+    LaunchedEffect(uiState.showSuccess) {
+        if (uiState.showSuccess) {
+            message = ""
         }
     }
 
@@ -133,39 +124,21 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
             dismissText = stringResource(Res.string.help_screen_confirm_dialog_dismiss),
             onConfirm = {
                 showConfirmDialog = false
-                if (message.isNotBlank() && !isSending) {
-                    scope.launch {
-                        isSending = true
-                        try {
-                            val user = authRepository.currentUser
-                            supportRepository.sendSupportTicket(
-                                userId = user?.id ?: "anonymous",
-                                userEmail = user?.email ?: "no-email",
-                                message = message
-                            )
-                            message = "" // Clear the input after a successful send
-                            showSuccess = true
-                        } catch (_: Exception) {
-                            showErrorDialog = true
-                        } finally {
-                            isSending = false
-                        }
-                    }
-                }
+                viewModel.sendSupportMessage(message)
             },
             onDismiss = { showConfirmDialog = false }
         )
     }
 
     // Error dialog
-    if (showErrorDialog) {
+    if (uiState.showError) {
         BolaoConfirmDialog(
             title = stringResource(Res.string.help_screen_error_dialog_title),
             message = stringResource(Res.string.help_screen_error_dialog_message),
             confirmText = stringResource(Res.string.help_screen_error_dialog_confirm),
             isDestructive = true,
-            onConfirm = { showErrorDialog = false },
-            onDismiss = { showErrorDialog = false }
+            onConfirm = viewModel::dismissError,
+            onDismiss = viewModel::dismissError
         )
     }
 
@@ -225,8 +198,8 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                         SupportSection(
                             message = message,
                             onMessageChange = { message = it },
-                            isSending = isSending,
-                            showSuccess = showSuccess
+                            isSending = uiState.isSending,
+                            showSuccess = uiState.showSuccess
                         ) {
                             if (message.isNotBlank()) {
                                 showConfirmDialog = true

@@ -23,10 +23,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import bolaodagalera.feature_bolao.generated.resources.Res
 import bolaodagalera.feature_bolao.generated.resources.add_participants_button_send_invite
 import bolaodagalera.feature_bolao.generated.resources.add_participants_button_share_link
-import bolaodagalera.feature_bolao.generated.resources.add_participants_default_inviter_name
 import bolaodagalera.feature_bolao.generated.resources.add_participants_error_send_failed
 import bolaodagalera.feature_bolao.generated.resources.add_participants_error_user_not_found
 import bolaodagalera.feature_bolao.generated.resources.add_participants_field_identifier_label
@@ -66,66 +65,40 @@ import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.SuccessGreen
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
-import com.lpstudio.bolaodagalera.observability.CrashReporter
-import com.lpstudio.bolaodagalera.observability.appLogger
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-
-private enum class ParticipantInputType {
-    EMAIL,
-    PHONE,
-    USER
-}
-
-private val logger = appLogger("AddParticipantsScreen")
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
+    val viewModel = koinViewModel<AddParticipantsViewModel>(key = bolaoId) { parametersOf(bolaoId) }
+    val uiState by viewModel.uiState.collectAsState()
     var identifier by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var showSuccessMessage by remember { mutableStateOf(false) }
-    var bolaoCode by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
     val launcherProvider = rememberLauncherProvider()
-    val bolaoRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.BolaoRepository>()
-    val authRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.AuthRepository>()
-    val invitationRepository = koinInject<com.lpstudio.bolaodagalera.domain.repository.InvitationRepository>()
-    val crashReporter = koinInject<CrashReporter>()
-    var bolaoName by remember { mutableStateOf("") }
 
-    val defaultInviterName = stringResource(Res.string.add_participants_default_inviter_name)
     val userNotFoundError = stringResource(Res.string.add_participants_error_user_not_found)
     val sendFailedError = stringResource(Res.string.add_participants_error_send_failed)
-    val webUrl = "https://bolaodagalera-bb002.web.app/invite?code=$bolaoCode"
-    val appUrl = "bolaodagalera://invite?code=$bolaoCode"
-    val shareMessage = stringResource(Res.string.add_participants_share_message, bolaoName, webUrl, appUrl, bolaoCode)
+    val error =
+        when (uiState.error) {
+            AddParticipantsError.USER_NOT_FOUND -> userNotFoundError
+            AddParticipantsError.SEND_FAILED -> sendFailedError
+            null -> null
+        }
+    val webUrl = "https://bolaodagalera-bb002.web.app/invite?code=${uiState.bolaoCode}"
+    val appUrl = "bolaodagalera://invite?code=${uiState.bolaoCode}"
+    val shareMessage =
+        stringResource(Res.string.add_participants_share_message, uiState.bolaoName, webUrl, appUrl, uiState.bolaoCode)
 
-    // Load pool name and code on entry so the invite link/message can be built.
-    LaunchedEffect(bolaoId) {
-        try {
-            val bolao = bolaoRepository.getBolao(bolaoId)
-            bolaoName = bolao.name
-            bolaoCode = bolao.code
-        } catch (e: Exception) {
-            crashReporter.recordException(e, "Failed to load pool data for invitation")
+    // Clear the input field once the invite is sent successfully
+    LaunchedEffect(uiState.showSuccessMessage) {
+        if (uiState.showSuccessMessage) {
+            identifier = ""
         }
     }
 
-    // Infer the input type from its shape to route validation and keyboard type.
-    val detectedType =
-        remember(identifier) {
-            val trimmed = identifier.trim()
-            when {
-                trimmed.contains("@") && trimmed.contains(".") -> ParticipantInputType.EMAIL
-                trimmed.filter { it.isDigit() }.length >= 8 -> ParticipantInputType.PHONE
-                else -> ParticipantInputType.USER
-            }
-        }
+    // Infer the input type from its shape to route the keyboard type.
+    val detectedType = remember(identifier) { viewModel.detectInputType(identifier) }
 
     Box(
         modifier =
@@ -175,7 +148,7 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
 
                 Spacer(Modifier.height(24.dp))
 
-                if (showSuccessMessage) {
+                if (uiState.showSuccessMessage) {
                     Box(
                         modifier =
                         Modifier
@@ -210,64 +183,9 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
                 // Single action: send invitation
                 BolaoButton(
                     text = stringResource(Res.string.add_participants_button_send_invite),
-                    isLoading = isLoading,
-                    enabled = identifier.isNotBlank() && !isLoading,
-                    onClick = {
-                        scope.launch {
-                            isLoading = true
-                            error = null
-                            try {
-                                val trimmedId = identifier.trim()
-                                val inviterName = authRepository.currentUser?.name ?: defaultInviterName
-
-                                // 1. Check the user exists in the database before inviting
-                                val userExists =
-                                    when (detectedType) {
-                                        ParticipantInputType.EMAIL -> authRepository.isEmailInUse(trimmedId.lowercase())
-                                        ParticipantInputType.PHONE -> authRepository.isPhoneInUse(trimmedId.filter { it.isDigit() })
-                                        ParticipantInputType.USER -> authRepository.isUsernameInUse(trimmedId.lowercase())
-                                    }
-
-                                if (!userExists) {
-                                    error = userNotFoundError
-                                    isLoading = false
-                                    return@launch
-                                }
-
-                                // 2. Send the in-app invitation
-                                val inviteeIdentifier =
-                                    when (detectedType) {
-                                        ParticipantInputType.EMAIL -> trimmedId.lowercase()
-                                        ParticipantInputType.PHONE -> trimmedId.filter { it.isDigit() }
-                                        ParticipantInputType.USER -> trimmedId.lowercase()
-                                    }
-
-                                try {
-                                    withTimeout(3000) {
-                                        invitationRepository.sendInvitation(
-                                            bolaoId = bolaoId,
-                                            bolaoName = bolaoName,
-                                            inviterName = inviterName,
-                                            inviteeIdentifier = inviteeIdentifier
-                                        )
-                                    }
-                                } catch (e: Exception) {
-                                    logger.w(e) { "In-app invitation queued for later delivery (slow network)" }
-                                }
-
-                                isLoading = false
-                                showSuccessMessage = true
-                                identifier = ""
-
-                                delay(3000)
-                                showSuccessMessage = false
-                            } catch (e: Exception) {
-                                crashReporter.recordException(e, "Failed to send invitation")
-                                error = sendFailedError
-                                isLoading = false
-                            }
-                        }
-                    }
+                    isLoading = uiState.isLoading,
+                    enabled = identifier.isNotBlank() && !uiState.isLoading,
+                    onClick = { viewModel.sendInvite(identifier) }
                 )
 
                 Spacer(Modifier.height(16.dp))

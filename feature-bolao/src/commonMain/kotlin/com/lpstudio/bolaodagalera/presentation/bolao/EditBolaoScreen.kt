@@ -26,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,8 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import bolaodagalera.feature_bolao.generated.resources.Res
 import bolaodagalera.feature_bolao.generated.resources.edit_bolao_button_add
 import bolaodagalera.feature_bolao.generated.resources.edit_bolao_button_save
@@ -113,130 +110,12 @@ import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.designsystem.theme.TextSubtle
-import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.model.Championship
-import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
-import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
-import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
-import com.lpstudio.bolaodagalera.observability.CrashReporter
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-
-@Immutable
-data class EditBolaoUiState(
-    val bolao: Bolao? = null,
-    val participants: List<com.lpstudio.bolaodagalera.domain.model.User> = emptyList(),
-    val isLoading: Boolean = false,
-    val isDeleted: Boolean = false,
-    val showSuccessMessage: Boolean = false,
-    val error: String? = null
-)
-
-class EditBolaoViewModel(
-    private val bolaoRepository: BolaoRepository,
-    private val authRepository: AuthRepository,
-    private val matchRepository: MatchRepository,
-    private val bolaoId: String,
-    private val crashReporter: CrashReporter
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(EditBolaoUiState())
-    val uiState: StateFlow<EditBolaoUiState> = _uiState.asStateFlow()
-
-    private val _isKnockoutStarted = MutableStateFlow(false)
-    val isKnockoutStarted: StateFlow<Boolean> = _isKnockoutStarted.asStateFlow()
-
-    val currentUserId = authRepository.currentUser?.id
-
-    init {
-        loadData()
-    }
-
-    private fun loadData() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                val bolao = bolaoRepository.getBolao(bolaoId)
-                val participants = authRepository.getUsers(bolao.participants)
-                _uiState.update {
-                    it.copy(
-                        bolao = bolao,
-                        participants = participants,
-                        isLoading = false
-                    )
-                }
-
-                // Check knockout status for this specific championship
-                matchRepository.getMatches(bolao.championshipId).collect { matches ->
-                    val now = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
-                    val knockoutStarted =
-                        matches.any {
-                            it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.GROUP_STAGE &&
-                                it.phase != com.lpstudio.bolaodagalera.domain.model.Phase.FRIENDLIES &&
-                                (it.isFinished || now >= it.matchDateMillis)
-                        }
-                    _isKnockoutStarted.value = knockoutStarted
-                }
-            } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao carregar dados do bolão")
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
-            }
-        }
-    }
-
-    fun update(name: String, description: String, scope: BolaoScope, pointsExact: Int, pointsWinner: Int) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                bolaoRepository.updateBolao(bolaoId, name, description, scope, pointsExact, pointsWinner)
-                val updatedBolao = bolaoRepository.getBolao(bolaoId)
-                _uiState.update { it.copy(bolao = updatedBolao, isLoading = false, showSuccessMessage = true) }
-                kotlinx.coroutines.delay(3000)
-                _uiState.update { it.copy(showSuccessMessage = false) }
-            } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao atualizar bolão")
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
-            }
-        }
-    }
-
-    fun delete() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                withTimeout(10000) {
-                    bolaoRepository.deleteBolao(bolaoId)
-                }
-                _uiState.update { it.copy(isDeleted = true, isLoading = false) }
-            } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao excluir bolão")
-                _uiState.update { it.copy(error = e.message ?: "Erro desconhecido ao excluir", isLoading = false) }
-            }
-        }
-    }
-
-    fun removeParticipant(userId: String) {
-        viewModelScope.launch {
-            try {
-                bolaoRepository.removeParticipant(bolaoId, userId)
-                // Refresh data
-                val bolao = bolaoRepository.getBolao(bolaoId)
-                val participants = authRepository.getUsers(bolao.participants)
-                _uiState.update { it.copy(bolao = bolao, participants = participants) }
-            } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao remover participante")
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
-    }
-}
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun EditBolaoScreen(
@@ -245,13 +124,9 @@ fun EditBolaoScreen(
     onBolaoDeleted: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val bolaoRepository = koinInject<BolaoRepository>()
-    val authRepository = koinInject<AuthRepository>()
-    val matchRepository = koinInject<MatchRepository>()
-    val crashReporter = koinInject<CrashReporter>()
-    val viewModel = remember(bolaoId) { EditBolaoViewModel(bolaoRepository, authRepository, matchRepository, bolaoId, crashReporter) }
+    val viewModel = koinViewModel<EditBolaoViewModel>(key = bolaoId) { parametersOf(bolaoId) }
     val uiState by viewModel.uiState.collectAsState()
-    val isKnockoutStarted by viewModel.isKnockoutStarted.collectAsState()
+    val isKnockoutStarted = uiState.isKnockoutStarted
     val snackbarHostState = rememberBolaoSnackbarHostState()
 
     var name by remember { mutableStateOf("") }

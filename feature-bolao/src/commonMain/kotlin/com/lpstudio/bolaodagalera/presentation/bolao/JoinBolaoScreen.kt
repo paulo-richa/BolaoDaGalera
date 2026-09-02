@@ -23,7 +23,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,8 +40,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import bolaodagalera.feature_bolao.generated.resources.Res
 import bolaodagalera.feature_bolao.generated.resources.join_bolao_button_join
 import bolaodagalera.feature_bolao.generated.resources.join_bolao_code_error_length
@@ -71,75 +68,12 @@ import com.lpstudio.bolaodagalera.designsystem.theme.GradientBg
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientGold
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
-import com.lpstudio.bolaodagalera.domain.model.Bolao
-import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
-import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
-import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
-import com.lpstudio.bolaodagalera.observability.CrashReporter
-import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-
-@Immutable
-data class JoinBolaoUiState(
-    val isLoading: Boolean = false,
-    val joinedBolao: Bolao? = null,
-    val requestSent: Boolean = false,
-    val alreadyMemberBolaoId: String? = null,
-    val error: String? = null
-)
-
-class JoinBolaoViewModel(
-    private val bolaoRepository: BolaoRepository,
-    private val authRepository: AuthRepository,
-    private val crashReporter: CrashReporter,
-    private val performanceMonitor: PerformanceMonitor,
-    private val analyticsTracker: AnalyticsTracker
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(JoinBolaoUiState())
-    val uiState: StateFlow<JoinBolaoUiState> = _uiState.asStateFlow()
-
-    fun join(code: String) {
-        val userId = authRepository.currentUser?.id ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, requestSent = false) }
-            try {
-                // Uses requestJoinBolao so the owner must approve the request
-                val bolao =
-                    performanceMonitor.trace("join_bolao") {
-                        bolaoRepository.requestJoinBolao(code.trim().uppercase(), userId)
-                    }
-
-                if (userId in bolao.participants) {
-                    // Rule 4: already a member, signal to navigate directly
-                    _uiState.update { it.copy(alreadyMemberBolaoId = bolao.id, isLoading = false) }
-                } else {
-                    // Rule 3: new join request sent
-                    analyticsTracker.logEvent("bolao_join_requested", mapOf("bolao_id" to bolao.id))
-                    _uiState.update { it.copy(joinedBolao = bolao, requestSent = true, isLoading = false) }
-                }
-            } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao entrar no bolão")
-                _uiState.update { it.copy(error = e.message ?: "Código inválido.", isLoading = false) }
-            }
-        }
-    }
-}
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavigateBack: () -> Unit) {
-    val bolaoRepository = koinInject<BolaoRepository>()
-    val authRepository = koinInject<AuthRepository>()
-    val crashReporter = koinInject<CrashReporter>()
-    val performanceMonitor = koinInject<PerformanceMonitor>()
-    val analyticsTracker = koinInject<AnalyticsTracker>()
-    val viewModel =
-        remember { JoinBolaoViewModel(bolaoRepository, authRepository, crashReporter, performanceMonitor, analyticsTracker) }
+    val viewModel = koinViewModel<JoinBolaoViewModel>()
     val uiState by viewModel.uiState.collectAsState()
     var code by remember(initialCode) { mutableStateOf(initialCode) }
     var codeTouched by remember(initialCode) { mutableStateOf(initialCode.isNotEmpty()) }
