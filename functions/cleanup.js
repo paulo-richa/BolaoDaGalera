@@ -12,19 +12,19 @@ async function cleanupDeletedBoloes(db) {
         for (const doc of snapshot.docs) {
             const bolaoId = doc.id;
 
-            // 1. Deletar Subcollection Predictions
+            // 1. Delete predictions subcollection
             const predsSnap = await doc.ref.collection("predictions").get();
             const batch = db.batch();
             predsSnap.forEach(pDoc => batch.delete(pDoc.ref));
             await batch.commit();
 
-            // 2. Deletar Convites vinculados
+            // 2. Delete linked invitations
             const invitesSnap = await db.collection("invitations").where("bolaoId", "==", bolaoId).get();
             const inviteBatch = db.batch();
             invitesSnap.forEach(iDoc => inviteBatch.delete(iDoc.ref));
             await inviteBatch.commit();
 
-            // 3. Deletar o documento do Bolão
+            // 3. Delete the bolao document
             await doc.ref.delete();
             logger.info(`Bolão ${bolaoId} removido permanentemente.`);
         }

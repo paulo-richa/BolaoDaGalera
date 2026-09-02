@@ -59,14 +59,14 @@ class LoginScreenTest {
 
     @Before
     fun setup() {
-        // Sem isso, a coroutine lançada em viewModelScope.launch (checkEmail,
-        // login, etc.) nunca roda: Dispatchers.Main não existe por padrão em
-        // testes JVM/Robolectric. UnconfinedTestDispatcher executa a coroutine
-        // imediatamente e de forma síncrona ao ser lançada.
+        // Without this, the coroutine launched in viewModelScope.launch (checkEmail,
+        // login, etc.) never runs: Dispatchers.Main does not exist by default in
+        // JVM/Robolectric tests. UnconfinedTestDispatcher executes the coroutine
+        // immediately and synchronously when launched.
         Dispatchers.setMain(UnconfinedTestDispatcher())
         stopKoin()
         authRepository = FakeAuthRepository()
-        authRepository.setUser(null) // Começa deslogado, na tela de Login
+        authRepository.setUser(null) // Starts logged out, on the Login screen
 
         startKoin {
             modules(

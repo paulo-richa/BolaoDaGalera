@@ -19,8 +19,8 @@ import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 
 /**
- * Pill pequena pra status/tags (ex: "Pendente", "Ao vivo", nome de fase).
- * Substitui os vários badges hand-rolled hoje espalhados pelas telas.
+ * Small pill for status/tags (e.g. "Pending", "Live", phase name).
+ * Replaces the various hand-rolled badges currently scattered across screens.
  */
 @Composable
 fun BolaoChip(text: String, modifier: Modifier = Modifier, containerColor: Color = NavyElevated, contentColor: Color = TextMuted) {

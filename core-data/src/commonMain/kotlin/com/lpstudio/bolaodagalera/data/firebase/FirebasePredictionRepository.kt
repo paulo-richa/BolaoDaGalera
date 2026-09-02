@@ -95,11 +95,11 @@ class FirebasePredictionRepository(
         kotlinx.coroutines.flow.flowOf(emptyList())
     }
 
-    // Sem try/catch aqui de propósito: savePrediction() usa este resultado para
-    // decidir entre criar ou atualizar o palpite. Engolir a exceção e devolver
-    // null fazia parecer que "não existe palpite ainda" quando na real a
-    // leitura só falhou por rede - e savePrediction criava um palpite
-    // duplicado em vez de atualizar o existente.
+    // Intentionally no try/catch here: savePrediction() uses this result to decide
+    // between creating or updating a prediction. Swallowing the exception and
+    // returning null made it look like "no prediction exists yet" when the read
+    // had actually just failed due to network issues - causing savePrediction to
+    // create a duplicate prediction instead of updating the existing one.
     override suspend fun getUserPredictionForMatch(userId: String, bolaoId: String, matchId: String): Prediction? {
         val snapshot =
             getPredictionsCollection(bolaoId)
@@ -161,9 +161,9 @@ class FirebasePredictionRepository(
                         )
                     }.toMutableList()
 
-                // Se houver participantes que ainda não estão no ranking (ex: recém-entraram),
-                // adicionamos eles com 0 pontos para aparecerem na lista.
-                // O nome real será enriquecido pelo ViewModel buscando na coleção de users.
+                // If there are participants not yet in the ranking (e.g. just joined),
+                // add them with 0 points so they appear in the list.
+                // The actual name is enriched by the ViewModel by looking up the users collection.
                 val existingIds = entries.map { it.userId }.toSet()
                 participantIds.forEach { pid ->
                     if (pid !in existingIds) {

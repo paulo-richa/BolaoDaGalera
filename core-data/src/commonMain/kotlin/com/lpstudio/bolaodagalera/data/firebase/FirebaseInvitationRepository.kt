@@ -70,7 +70,7 @@ class FirebaseInvitationRepository(private val bolaoRepository: BolaoRepository,
                 .get()
 
         if (existing.documents.isNotEmpty()) {
-            // Se já existe um convite pendente, apenas atualiza o timestamp e o nome do inviter (caso mude)
+            // If a pending invitation already exists, just update the timestamp and inviter name (in case it changed)
             val docId = existing.documents.first().id
             collection.document(docId).update(
                 "createdAtMillis" to TimeSource.nowMillis(),
@@ -92,8 +92,8 @@ class FirebaseInvitationRepository(private val bolaoRepository: BolaoRepository,
     }
 
     override suspend fun respondToInvitation(invitationId: String, accept: Boolean) {
-        // Agora, em vez de apenas atualizar o status, deletamos o convite
-        // pois ele já foi processado (aceito ou recusado)
+        // Instead of just updating the status, delete the invitation
+        // since it has already been processed (accepted or declined)
         collection.document(invitationId).delete()
     }
 }

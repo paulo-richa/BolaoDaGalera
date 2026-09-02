@@ -4,10 +4,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 
 /**
- * Escala de raio de canto do app (só números pares). O Material 3 só define
- * 5 papéis oficiais (extraSmall...extraLarge, ver [BolaoShapes]), mas o app
- * usa raios intermediários (ex: 20dp) com bastante frequência - esta escala
- * cobre esses casos sem forçar tudo nos 5 papéis do M3.
+ * App corner-radius scale (even numbers only). Material 3 only defines
+ * 5 official roles (extraSmall...extraLarge, see [BolaoShapes]), but the app
+ * uses intermediate radii (e.g. 20dp) quite frequently - this scale covers
+ * those cases without forcing everything into the 5 M3 roles.
  */
 object BolaoRadius {
     val xs = 4.dp

@@ -1,7 +1,7 @@
 const { logger } = require("firebase-functions");
 const { notifyUser } = require("./notifications");
 
-/** "Hoje" em America/Sao_Paulo (mesmo fuso que o client usa pra decidir "jogos de hoje"). */
+/** "Today" in America/Sao_Paulo (same timezone the client uses to decide "today's matches"). */
 function todayWindowMillis(now = new Date()) {
     const parts = new Intl.DateTimeFormat("en-CA", {
         timeZone: "America/Sao_Paulo",
@@ -19,13 +19,12 @@ function todayWindowMillis(now = new Date()) {
 }
 
 /**
- * Jogos de hoje relevantes pra ESSE bolão, respeitando o escopo
- * (ONLY_GROUPS/ONLY_KNOCKOUT/specificMatchId) - sem isso um bolão só de
- * mata-mata lembraria o usuário de jogos da fase de grupos que ele nem
- * consegue ver na lista dele. Não replica o corte de rodada (round cutoff)
- * do FilterBolaoMatchesUseCase do client - caso raro (bolão criado no meio
- * da temporada) e o custo de duplicar aquela lógica aqui não compensa por
- * enquanto.
+ * Today's matches relevant to THIS bolao, respecting its scope
+ * (ONLY_GROUPS/ONLY_KNOCKOUT/specificMatchId) - without this, a
+ * knockout-only bolao would remind users about group-stage matches they
+ * can't even see in their list. Does not replicate the round cutoff logic
+ * from the client's FilterBolaoMatchesUseCase - a rare case (bolao created
+ * mid-season) not worth duplicating that logic here for now.
  */
 function relevantMatchesForBolao(bolao, matchesTodayByChampionship) {
     const matches = matchesTodayByChampionship[bolao.championshipId] || [];
@@ -42,9 +41,9 @@ function relevantMatchesForBolao(bolao, matchesTodayByChampionship) {
 }
 
 /**
- * Monta { userId -> quantidade de jogos de hoje ainda sem palpite }, somando
- * em todos os bolões que o usuário participa (cada bolão conta separado,
- * mesmo que seja o mesmo jogo real - são palpites independentes).
+ * Builds { userId -> count of today's matches still without a prediction },
+ * summed across every bolao the user participates in (each bolao counts
+ * separately, even for the same real-world match - predictions are independent).
  */
 async function computeMissingPredictionsByUser(db) {
     const { startMillis, endMillis } = todayWindowMillis();
@@ -80,8 +79,8 @@ async function computeMissingPredictionsByUser(db) {
 
         const relevantIds = relevant.map((m) => m.id);
         const predictedCountByUser = {};
-        // "in" aceita até 30 valores - jogos de UM dia num único bolão nunca
-        // chegam nem perto disso.
+        // "in" accepts up to 30 values - a single bolao's matches for ONE
+        // day never come close to that limit.
         const predictionsSnap = await bolaoDoc.ref.collection("predictions")
             .where("matchId", "in", relevantIds)
             .get();

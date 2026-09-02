@@ -18,9 +18,9 @@ import androidx.compose.ui.unit.dp
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
 
 /**
- * Top app bar padrão do app: fundo transparente, texto/ícones brancos, sem
- * elevação - o mesmo padrão hoje repetido (com pequenas variações) em quase
- * toda tela com Scaffold + TopAppBar.
+ * Standard app top bar: transparent background, white text/icons, no
+ * elevation - the same pattern currently repeated (with minor variations)
+ * on nearly every screen with a Scaffold + TopAppBar.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

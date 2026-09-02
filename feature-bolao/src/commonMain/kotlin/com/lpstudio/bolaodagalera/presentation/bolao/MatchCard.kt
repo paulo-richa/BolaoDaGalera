@@ -300,9 +300,9 @@ fun MatchCard(
 
             if (!(isFin && hasPrediction)) {
                 BolaoText(
-                    // Enquanto o confronto não estiver confirmado (times TBD), não
-                    // mostra a data mesmo que a API já tenha publicado uma para o
-                    // "slot" da fase - evita sugerir um confronto que ainda não existe.
+                    // While the matchup isn't confirmed (teams TBD), don't show a date
+                    // even if the API already published one for the phase "slot" —
+                    // avoids suggesting a matchup that doesn't exist yet.
                     text = if (isTbd) stringResource(Res.string.bolao_common_date_tbd) else formatMatchDate(match.matchDateMillis),
                     fontSize = BolaoTypography.bodySmall.fontSize,
                     color = Color.White,

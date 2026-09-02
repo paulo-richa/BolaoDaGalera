@@ -87,10 +87,10 @@ fun BolaoTextField(
 }
 
 /**
- * Campo compacto (2 dígitos, centralizado) para entrada rápida de placar -
- * usado no diálogo de ajuste manual de placar oficial (ex: [BolaoDialog]
- * com times de admin). Estilo "filled" (não outlined), distinto do
- * [BolaoTextField] padrão do app.
+ * Compact field (2 digits, centered) for quick score entry - used in the
+ * manual official-score adjustment dialog (e.g. [BolaoDialog] with admin
+ * teams). "Filled" style (not outlined), distinct from the app's standard
+ * [BolaoTextField].
  */
 @Composable
 fun BolaoScoreField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {

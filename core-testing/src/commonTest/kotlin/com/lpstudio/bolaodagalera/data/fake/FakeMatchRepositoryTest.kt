@@ -14,7 +14,7 @@ class FakeMatchRepositoryTest {
     @Test
     fun `getMatches should return list of matches`() = runTest {
         val matches = repository.getMatches("LIBERTADORES").first()
-        assertTrue(matches.isEmpty()) // Atualmente o seed está vazio
+        assertTrue(matches.isEmpty()) // Currently the seed is empty
     }
 
     @Test

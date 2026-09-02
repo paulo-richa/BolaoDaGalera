@@ -1,11 +1,12 @@
 package com.lpstudio.bolaodagalera.observability
 
 /**
- * Reporta falhas inesperadas (não-fatais) pra investigação depois - erro de
- * rede, dado corrompido, etc. Não é pra todo catch: fluxos esperados
- * (validação, "já existe") só devem logar local, sem poluir o painel.
- * No iOS ainda não temos Crashlytics configurado (mesma decisão do FCM:
- * Android primeiro), então createCrashReporter() devolve um no-op lá.
+ * Reports unexpected (non-fatal) failures for later investigation - network
+ * errors, corrupted data, etc. Not meant for every catch block: expected
+ * flows (validation, "already exists") should only log locally, to avoid
+ * polluting the dashboard. Crashlytics is not yet configured on iOS (same
+ * decision as FCM: Android first), so createCrashReporter() returns a
+ * no-op there.
  */
 interface CrashReporter {
     fun recordException(throwable: Throwable, message: String? = null)

@@ -15,7 +15,7 @@ async function exportCollections() {
 
   console.log("🚀 Iniciando Backup...");
 
-  // 1. Coleções de primeiro nível
+  // 1. Top-level collections
   for (const colName of collections) {
     console.log(`📦 Baixando coleção: ${colName}...`);
     const snapshot = await db.collection(colName).get();
@@ -26,7 +26,7 @@ async function exportCollections() {
     });
   }
 
-  // 1.1 Palpites dentro dos Bolões (Subcollections)
+  // 1.1 Predictions inside boloes (subcollections)
   console.log(`📦 Baixando palpites dentro de cada bolão...`);
   const boloesSnap = await db.collection("boloes").get();
   for (const bolaoDoc of boloesSnap.docs) {
@@ -40,7 +40,7 @@ async function exportCollections() {
     });
   }
 
-  // 2. Campeonatos e suas subcollections (matches)
+  // 2. Championships and their subcollections (matches)
   console.log(`📦 Baixando campeonatos e subcoleções de jogos...`);
   backup["championships"] = {};
   const championshipsSnap = await db.collection("championships").get();
@@ -58,7 +58,7 @@ async function exportCollections() {
     });
   }
 
-  // 3. Antiga coleção matches (se ainda existir)
+  // 3. Legacy matches collection (if it still exists)
   const oldMatchesSnap = await db.collection("matches").get();
   if (!oldMatchesSnap.empty) {
     console.log(`⚠️ Backup da antiga coleção 'matches' (ainda contém dados)...`);
@@ -68,7 +68,7 @@ async function exportCollections() {
     });
   }
 
-  // 4. Antiga coleção predictions (se ainda existir)
+  // 4. Legacy predictions collection (if it still exists)
   const oldPredictionsSnap = await db.collection("predictions").get();
   if (!oldPredictionsSnap.empty) {
     console.log(`⚠️ Backup da antiga coleção 'predictions' (ainda contém dados)...`);

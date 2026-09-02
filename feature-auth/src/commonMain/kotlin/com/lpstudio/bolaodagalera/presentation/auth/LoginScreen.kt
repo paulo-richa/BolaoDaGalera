@@ -94,13 +94,13 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
 
     LaunchedEffect(keyboardHeight) {
         if (keyboardHeight > 0.dp) {
-            // Pequeno delay para o Compose recompor a Column com o novo Spacer no final
+            // Small delay to let Compose recompose the Column with the trailing spacer
             kotlinx.coroutines.delay(100.milliseconds)
             scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
 
-    // Helpers de Validação
+    // Validation helpers
     val emailError = if (emailTouched) ValidationUtils.validateEmail(email) else null
 
     val passwordErrorText = stringResource(Res.string.login_password_error_min_length)
@@ -343,7 +343,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                 }
 
                 Spacer(Modifier.height(48.dp))
-                // Cushion aumentado para 300dp para garantir folga entre campo e teclado
+                // 300dp cushion to keep clearance between the field and the keyboard
                 if (keyboardHeight > 0.dp) {
                     Spacer(Modifier.height(300.dp))
                 }

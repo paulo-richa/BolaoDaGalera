@@ -1,9 +1,9 @@
 package com.lpstudio.bolaodagalera.observability
 
 /**
- * Eventos de negócio (login, cadastro, criar/entrar em bolão, salvar
- * palpite) via Firebase Analytics no Android. No iOS ainda é um no-op,
- * mas a interface já é KMP-pronta.
+ * Business events (login, signup, create/join pool, save prediction) via
+ * Firebase Analytics on Android. Still a no-op on iOS, but the interface
+ * is already KMP-ready.
  */
 interface AnalyticsTracker {
     fun logEvent(name: String, params: Map<String, Any?> = emptyMap())

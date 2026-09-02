@@ -2,11 +2,11 @@ const admin = require("firebase-admin");
 const axios = require("axios");
 const { logger } = require("firebase-functions");
 
-// Inicialização
+// Initialization
 admin.initializeApp();
 const db = admin.firestore();
 
-// Módulos internos
+// Internal modules
 const { syncBrasileirao } = require("./brasileirao");
 const { syncLibertadores } = require("./libertadores");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
@@ -20,13 +20,13 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 
-// Chave da football-data.org, armazenada no Secret Manager (nunca no código).
-// Definir com: firebase functions:secrets:set FOOTBALL_DATA_API_KEY
+// football-data.org key, stored in Secret Manager (never in code).
+// Set with: firebase functions:secrets:set FOOTBALL_DATA_API_KEY
 const footballDataApiKey = defineSecret("FOOTBALL_DATA_API_KEY");
 
-// Token para proteger endpoints administrativos (recálculo de ranking,
-// sync manual). Definir com: firebase functions:secrets:set ADMIN_TOKEN
-// Chamar passando o header "x-admin-token: <valor>".
+// Token to protect administrative endpoints (ranking recalculation,
+// manual sync). Set with: firebase functions:secrets:set ADMIN_TOKEN
+// Call passing the header "x-admin-token: <value>".
 const adminToken = defineSecret("ADMIN_TOKEN");
 
 function requireAdminToken(req, res) {
@@ -38,8 +38,8 @@ function requireAdminToken(req, res) {
 }
 
 /**
- * Gatilho: Quando um jogo é atualizado no Firestore.
- * Se o jogo estiver finalizado, calcula os rankings.
+ * Trigger: fires when a match is updated in Firestore.
+ * If the match is finished, calculates the rankings.
  */
 exports.onMatchUpdate = onDocumentWritten(
     { document: "championships/{championshipId}/matches/{matchId}", timeoutSeconds: 300, memory: "256MiB" },
@@ -48,9 +48,9 @@ exports.onMatchUpdate = onDocumentWritten(
         if (!afterData) return;
 
         const beforeData = event.data.before.data();
-        // O sync reescreve o documento (lastSync novo) mesmo sem o placar mudar de
-        // verdade - sem essa checagem, recalculamos o ranking do zero a cada sync,
-        // mesmo quando nada relevante mudou.
+        // Sync rewrites the document (new lastSync) even when the score hasn't
+        // actually changed - without this check, we'd recalculate the ranking
+        // from scratch on every sync, even when nothing relevant changed.
         const scoreChanged = !beforeData ||
             beforeData.status !== afterData.status ||
             beforeData.homeScore !== afterData.homeScore ||
@@ -67,15 +67,15 @@ exports.onMatchUpdate = onDocumentWritten(
 );
 
 /**
- * Notificações push: convite recebido, pedidos pendentes, resumos, etc.
- * (funções individuais registradas conforme cada tipo é implementado).
+ * Push notifications: invitation received, pending requests, digests, etc.
+ * (individual functions registered as each type is implemented).
  */
 const notificationTriggers = makeNotificationTriggers(db, admin);
 exports.onInvitationCreated = notificationTriggers.onInvitationCreated;
 exports.onBolaoUpdated = notificationTriggers.onBolaoUpdated;
 
 /**
- * Endpoint para forçar a recalculação de todos os rankings (Útil após migrações).
+ * Endpoint to force recalculation of all rankings (useful after migrations).
  */
 exports.recalculateAllRankings = onRequest({ timeoutSeconds: 540, memory: "512MiB", secrets: [adminToken] }, async (req, res) => {
     if (!requireAdminToken(req, res)) return;
@@ -87,13 +87,13 @@ exports.recalculateAllRankings = onRequest({ timeoutSeconds: 540, memory: "512Mi
 });
 
 /**
- * Sincronização Manual da Libertadores via HTTP (Zero custos).
- * Chamada pelo GitHub Actions (agendamento externo, gratuito).
+ * Manual Libertadores sync via HTTP (zero cost).
+ * Called by GitHub Actions (external, free scheduling).
  *
- * Fonte única de verdade: football-data.org. Não calculamos/adivinhamos
- * quem avança de fase aqui — só gravamos exatamente o que a API manda.
- * Quando a API publicar o próximo confronto, o sync normal já traz os
- * times e a data certos.
+ * Single source of truth: football-data.org. We do not calculate/guess
+ * who advances to the next phase here — we only write exactly what the
+ * API returns. Once the API publishes the next matchup, the regular sync
+ * already brings the correct teams and date.
  */
 exports.syncLibertadoresHTTP = onRequest({ secrets: [footballDataApiKey, adminToken] }, async (req, res) => {
     if (!requireAdminToken(req, res)) return;
@@ -109,8 +109,8 @@ exports.syncLibertadoresHTTP = onRequest({ secrets: [footballDataApiKey, adminTo
 });
 
 /**
- * Sincronização Manual do Brasileirão via HTTP (Zero custos).
- * Chamada pelo GitHub Actions (agendamento externo, gratuito).
+ * Manual Brasileirao sync via HTTP (zero cost).
+ * Called by GitHub Actions (external, free scheduling).
  */
 exports.syncBrasileiraoHTTP = onRequest({ secrets: [footballDataApiKey, adminToken] }, async (req, res) => {
     if (!requireAdminToken(req, res)) return;
@@ -126,16 +126,16 @@ exports.syncBrasileiraoHTTP = onRequest({ secrets: [footballDataApiKey, adminTok
 });
 
 /**
- * Verifica se existe jogo LIVE ou próximo do horário (30 min antes até 30
- * min depois do início). Usado tanto pelo endpoint HTTP de debug quanto
- * pela function agendada que roda a cada minuto.
+ * Checks whether a match is LIVE or near kickoff (30 min before to 30
+ * min after start). Used both by the debug HTTP endpoint and by the
+ * scheduled function that runs every minute.
  */
 async function checkShouldSyncFrequently() {
     const now = Date.now();
     const THIRTY_MIN = 30 * 60 * 1000;
 
-    // A API nunca manda literalmente "LIVE" — os status reais de jogo em
-    // andamento são estes (mesma lista usada no app para exibir "AO VIVO").
+    // The API never literally sends "LIVE" — these are the actual statuses
+    // for a match in progress (same list the app uses to display "LIVE").
     const liveSnap = await db.collectionGroup("matches")
         .where("status", "in", ["IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTIES", "LIVE"])
         .limit(1)
@@ -159,8 +159,8 @@ async function checkShouldSyncFrequently() {
 }
 
 /**
- * Endpoint de debug/manual para inspecionar o resultado de
- * checkShouldSyncFrequently() sem precisar esperar o agendamento.
+ * Debug/manual endpoint to inspect the result of
+ * checkShouldSyncFrequently() without waiting for the scheduled run.
  */
 exports.checkSyncFrequency = onRequest(async (req, res) => {
     try {
@@ -172,9 +172,9 @@ exports.checkSyncFrequency = onRequest(async (req, res) => {
 });
 
 /**
- * Agendamento fixo (Cloud Scheduler nativo do Firebase, sem custo dentro
- * da faixa grátis): 4x/dia (02h, 09h, 14h, 18h, horário de Brasília),
- * garante sincronização mesmo sem jogo ao vivo.
+ * Fixed schedule (Firebase's native Cloud Scheduler, free within the free
+ * tier): 4x/day (02h, 09h, 14h, 18h, Brasilia time), guarantees sync even
+ * without a live match.
  */
 exports.scheduledFixedSync = onSchedule(
     { schedule: "0 2,9,14,18 * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey], timeoutSeconds: 300, memory: "256MiB" },
@@ -186,9 +186,9 @@ exports.scheduledFixedSync = onSchedule(
 );
 
 /**
- * Agendamento "a cada 3 minutos" (Cloud Scheduler nativo do Firebase): só
- * chama a sincronização de verdade quando há jogo LIVE ou próximo do
- * início, mantendo o custo desprezível fora das janelas de jogo.
+ * "Every 3 minutes" schedule (Firebase's native Cloud Scheduler): only
+ * triggers the actual sync when there's a LIVE match or one about to
+ * start, keeping the cost negligible outside match windows.
  */
 exports.scheduledLiveCheck = onSchedule(
     { schedule: "*/3 * * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey], timeoutSeconds: 170, memory: "256MiB" },
@@ -203,9 +203,10 @@ exports.scheduledLiveCheck = onSchedule(
 );
 
 /**
- * Limpeza diária (Cloud Scheduler nativo do Firebase): remove bolões
- * marcados como deletados há mais de 7 dias (e seus palpites/convites) e
- * convites pendentes expirados há mais de 7 dias.
+ * Daily cleanup (Firebase's native Cloud Scheduler): removes boloes
+ * marked as deleted more than 7 days ago (along with their
+ * predictions/invitations) and pending invitations expired more than 7
+ * days ago.
  */
 exports.scheduledCleanup = onSchedule(
     { schedule: "0 4 * * *", timeZone: "America/Sao_Paulo" },
@@ -216,9 +217,9 @@ exports.scheduledCleanup = onSchedule(
 );
 
 /**
- * Resumo diário (Cloud Scheduler nativo do Firebase): às 09h de Brasília,
- * avisa cada usuário quantos jogos de hoje ele ainda não palpitou, somando
- * em todos os bolões que participa.
+ * Daily digest (Firebase's native Cloud Scheduler): at 09h Brasilia time,
+ * notifies each user how many of today's matches they still haven't
+ * predicted, summed across every bolao they participate in.
  */
 exports.scheduledDailyDigest = onSchedule(
     { schedule: "0 9 * * *", timeZone: "America/Sao_Paulo", timeoutSeconds: 300, memory: "256MiB" },
@@ -228,11 +229,11 @@ exports.scheduledDailyDigest = onSchedule(
 );
 
 /**
- * Lembrete por jogo (Cloud Scheduler nativo do Firebase): a cada 15 min,
- * avisa quem ainda não palpitou um jogo que começa em menos de 1h.
- * matchReminders/{bolaoId}_{matchId}_{userId} garante que o mesmo lembrete
- * nunca é enviado duas vezes, mesmo cobrindo a mesma janela em execuções
- * sucessivas.
+ * Per-match reminder (Firebase's native Cloud Scheduler): every 15 min,
+ * notifies users who haven't predicted a match starting in under 1h.
+ * matchReminders/{bolaoId}_{matchId}_{userId} guarantees the same
+ * reminder is never sent twice, even when the same window is covered
+ * across successive runs.
  */
 exports.scheduledMatchReminder = onSchedule(
     { schedule: "*/15 * * * *", timeZone: "America/Sao_Paulo", timeoutSeconds: 300, memory: "256MiB" },

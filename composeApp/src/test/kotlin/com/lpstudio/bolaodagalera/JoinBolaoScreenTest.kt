@@ -122,7 +122,7 @@ class JoinBolaoScreenTest {
     @Test
     fun membro_existente_navega_direto_sem_dialogo() {
         var joinedBolaoId: String? = null
-        startKoinWithUser(FAKE_USER) // já é participante do bolao-1
+        startKoinWithUser(FAKE_USER) // already a participant of bolao-1
         setJoinBolaoContent(onJoined = { joinedBolaoId = it })
 
         composeTestRule.onNodeWithText("Código").performTextInput("LIB026")

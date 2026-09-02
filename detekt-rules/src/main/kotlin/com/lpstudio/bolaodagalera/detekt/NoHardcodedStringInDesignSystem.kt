@@ -15,10 +15,10 @@ import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 
 /**
- * BolaoDaGalera design-system rule: nenhum texto visível ao usuário pode ser
- * um literal de string - tudo precisa vir de stringResource(Res.string.xxx).
- * Flags string literais passadas pros parâmetros de texto de componentes
- * `Bolao*` do :designsystem.
+ * BolaoDaGalera design-system rule: no user-visible text may be a string
+ * literal - it must come from stringResource(Res.string.xxx).
+ * Flags string literals passed to the text parameters of `Bolao*`
+ * :designsystem components.
  */
 class NoHardcodedStringInDesignSystem(config: Config = Config.empty) : Rule(config) {
     override val issue =
@@ -71,8 +71,8 @@ class NoHardcodedStringInDesignSystem(config: Config = Config.empty) : Rule(conf
     }
 
     /**
-     * Funções @Preview usam dados de demonstração de propósito - não são texto
-     * real exibido ao usuário em produção, então ficam fora da regra.
+     * @Preview functions intentionally use sample data - it is not real text
+     * shown to users in production, so they are exempt from this rule.
      */
     private fun isInsidePreview(expression: KtCallExpression): Boolean {
         val enclosingFunction = expression.getStrictParentOfType<KtNamedFunction>() ?: return false

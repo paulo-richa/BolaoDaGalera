@@ -102,7 +102,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
     val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
 
     LaunchedEffect(keyboardHeight) {
-        // Removido scroll automático para o final em formulários longos
+        // Auto-scroll-to-end intentionally disabled for long forms
     }
 
     var name by remember { mutableStateOf(value = "") }
@@ -156,7 +156,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
             isDestructive = true,
             onConfirm = {
                 showDeleteAccountDialog = false
-                // viewModel.deleteAccount() // A implementar
+                // viewModel.deleteAccount() // Not yet implemented
             },
             onDismiss = { showDeleteAccountDialog = false }
         )
@@ -233,7 +233,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(Modifier.height(24.dp))
-                // Spacer(Modifier.height(10.dp)) // Removido para subir o header ao máximo
+                // Spacer(Modifier.height(10.dp)) // Removed to pull the header up as high as possible
 
                 // Avatar large
                 UserAvatar(
@@ -264,7 +264,7 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                         .padding(BolaoSpacing.xxl),
                     verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
                 ) {
-                    // Campo ID (Não editável)
+                    // ID field (read-only)
                     BolaoTextField(
                         value = uiState.user?.username ?: "",
                         onValueChange = { },

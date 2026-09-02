@@ -2,10 +2,11 @@ const { onDocumentCreated, onDocumentWritten } = require("firebase-functions/v2/
 const { notifyUser } = require("./notifications");
 
 /**
- * inviteeIdentifier é o e-mail, username (minúsculos) ou telefone (só
- * dígitos) que o convidante digitou (AddParticipantsScreen) - nunca o uid
- * direto. Resolve pra um uid tentando cada campo, na mesma ordem que o
- * client já usa pra procurar convites (ver HomeViewModel.loadUserData).
+ * inviteeIdentifier is the email, username (lowercase), or phone number
+ * (digits only) the inviter typed in (AddParticipantsScreen) - never the
+ * uid directly. Resolves to a uid by trying each field, in the same order
+ * the client already uses to look up invitations (see
+ * HomeViewModel.loadUserData).
  */
 async function findUserIdByIdentifier(db, identifier) {
     const usersRef = db.collection("users");
@@ -25,9 +26,9 @@ function makeNotificationTriggers(db, admin) {
         if (!inviteeIdentifier || !bolaoId) return;
 
         const userId = await findUserIdByIdentifier(db, inviteeIdentifier);
-        // Convite pra alguém sem conta ainda (ou identifier que não bate com
-        // nenhum campo) - o convite continua funcionando por código/link,
-        // só não tem push pra mandar.
+        // Invitation for someone without an account yet (or an identifier
+        // matching no field) - the invitation still works via code/link,
+        // there's just no push to send.
         if (!userId) return;
 
         await notifyUser(db, admin, userId, {
@@ -38,10 +39,10 @@ function makeNotificationTriggers(db, admin) {
         });
     });
 
-    // Diff simples entre before/after: só o que apareceu de novo no array
-    // vira notificação. Assim o gatilho fica idempotente mesmo disparando em
-    // toda escrita do bolão (aprovação, edição, etc.) - um uid só "aparece"
-    // uma vez, quando é adicionado.
+    // Simple before/after diff: only what's newly appeared in the array
+    // triggers a notification. This keeps the trigger idempotent even
+    // when firing on every write to the bolao (approval, edit, etc.) - a
+    // uid only "appears" once, when it's added.
     function newEntries(beforeList, afterList) {
         const before = new Set(beforeList || []);
         return (afterList || []).filter((id) => !before.has(id));
@@ -49,7 +50,7 @@ function makeNotificationTriggers(db, admin) {
 
     const onBolaoUpdated = onDocumentWritten("boloes/{bolaoId}", async (event) => {
         const afterData = event.data?.after?.data();
-        if (!afterData) return; // bolão apagado, nada a notificar
+        if (!afterData) return; // bolao deleted, nothing to notify
 
         const beforeData = event.data?.before?.data();
         const bolaoId = event.params.bolaoId;

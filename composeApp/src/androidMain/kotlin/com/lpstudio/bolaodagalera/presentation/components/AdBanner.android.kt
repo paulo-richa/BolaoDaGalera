@@ -19,7 +19,7 @@ actual fun AdBannerNative(modifier: Modifier, adId: String) {
             }
         },
         update = { adView ->
-            // Atualizações se necessário
+            // Updates if needed
         }
     )
 }

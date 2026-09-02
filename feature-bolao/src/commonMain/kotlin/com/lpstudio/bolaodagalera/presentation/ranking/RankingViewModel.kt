@@ -65,10 +65,10 @@ class RankingViewModel(
     private fun loadData() {
         viewModelScope.launch {
             try {
-                // Observa Bolão, Jogos e Palpites simultaneamente. O ranking usa o
-                // valor oficial de pontos calculado pela Cloud Function quando
-                // disponível, e só estima localmente os jogos que ela ainda não
-                // processou - ver GetRankingUseCase.
+                // Observes the pool, matches, and predictions simultaneously. The ranking
+                // uses the official points value computed by the Cloud Function when
+                // available, and only estimates locally the matches it hasn't processed
+                // yet — see GetRankingUseCase.
                 bolaoRepository.getBolaoFlow(bolaoId).flatMapLatest { bolao ->
                     currentBolao = bolao
                     val participants = bolao.participants

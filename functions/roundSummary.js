@@ -2,6 +2,7 @@ const { logger } = require("firebase-functions");
 const { calculatePoints } = require("./scoring");
 const { notifyUser } = require("./notifications");
 
+// User-facing labels (used directly in notification titles) - keep in Portuguese
 const PHASE_LABELS = {
     GROUP_STAGE: "Fase de Grupos",
     ROUND_OF_32: "16-avos",
@@ -13,10 +14,11 @@ const PHASE_LABELS = {
 };
 
 /**
- * Pontos corridos (Brasileirão) usam "Rodada N" (extraído do campo group,
- * que brasileirao.js já grava exatamente nesse formato) - mata-mata/grupos
- * usa a fase (Oitavas, Quartas...), por decisão do produto: só as fases de
- * mata-mata geram resumo pra campeonatos não pontos-corridos.
+ * League format (Brasileirao) uses "Rodada N" (extracted from the group
+ * field, which brasileirao.js already writes in exactly that format) -
+ * knockout/group championships use the phase (Round of 16,
+ * Quarterfinals...), by product decision: only knockout phases generate
+ * a summary for non-league championships.
  */
 function roundKeyForMatch(championship, match) {
     if (championship && championship.isPointsBased) {
@@ -33,7 +35,7 @@ function roundLabel(championship, roundKey) {
     return PHASE_LABELS[roundKey] || roundKey;
 }
 
-/** Essa rodada/fase é relevante pro escopo desse bolão? */
+/** Is this round/phase relevant to this bolao's scope? */
 function roundAppliesToBolao(bolao, roundKey, roundMatchIds) {
     if (bolao.specificMatchId) return roundMatchIds.includes(bolao.specificMatchId);
     if (bolao.scope === "ONLY_GROUPS") return roundKey === "GROUP_STAGE" || roundKey.startsWith("RODADA_");
@@ -47,7 +49,7 @@ function chunk(list, size) {
     return chunks;
 }
 
-/** Firestore "in" aceita no máximo 30 valores por query. */
+/** Firestore "in" accepts at most 30 values per query. */
 async function fetchPredictionsForMatches(predictionsRef, matchIds) {
     const docs = [];
     for (const ids of chunk(matchIds, 30)) {
@@ -58,10 +60,10 @@ async function fetchPredictionsForMatches(predictionsRef, matchIds) {
 }
 
 /**
- * Tenta "trancar" essa rodada/fase pra essa notificação nunca ser
- * processada duas vezes (mesma partida disparando onMatchUpdate de novo, ou
- * duas partidas do mesmo round finalizando quase juntas). create() falha se
- * o documento já existe.
+ * Attempts to "lock" this round/phase so this notification is never
+ * processed twice (same match triggering onMatchUpdate again, or two
+ * matches from the same round finishing almost simultaneously). create()
+ * fails if the document already exists.
  */
 async function claimRoundCompletion(db, lockKey) {
     try {
@@ -74,10 +76,10 @@ async function claimRoundCompletion(db, lockKey) {
 }
 
 /**
- * Chamado depois que um jogo é marcado FINISHED (ver onMatchUpdate). Verifica
- * se isso fecha a rodada/fase inteira do campeonato e, se sim, manda o
- * resumo (pontos, acertos, erros) pra cada participante de cada bolão
- * daquele campeonato que tem essa rodada no escopo.
+ * Called after a match is marked FINISHED (see onMatchUpdate). Checks
+ * whether this closes the championship's entire round/phase and, if so,
+ * sends the summary (points, hits, misses) to every participant of every
+ * bolao from that championship whose scope includes this round.
  */
 async function checkRoundCompletionAndNotify(db, admin, championshipId, match) {
     try {
@@ -138,7 +140,7 @@ async function checkRoundCompletionAndNotify(db, admin, championshipId, match) {
 
             for (const userId of participants) {
                 const stats = byUser[userId];
-                if (!stats) continue; // não palpitou nada nessa rodada nesse bolão
+                if (!stats) continue; // no predictions made for this round in this bolao
 
                 await notifyUser(db, admin, userId, {
                     title: `Fim da ${label}! 🏁`,

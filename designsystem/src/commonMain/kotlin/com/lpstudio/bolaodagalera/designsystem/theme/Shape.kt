@@ -4,10 +4,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 
 /**
- * Escala de formas do Material 3 (extraSmall...extraLarge), calibrada pelos
- * raios de canto mais usados no app (levantamento real do código: 12dp é o
- * mais comum, seguido de 8dp, 16dp e 20dp). Ver [BolaoRadius] pra valores
- * intermediários que não se encaixam nos 5 papéis oficiais do M3.
+ * Material 3 shape scale (extraSmall...extraLarge), calibrated from the
+ * corner radii actually used across the app (code audit: 12dp is the most
+ * common, followed by 8dp, 16dp, and 20dp). See [BolaoRadius] for
+ * intermediate values that don't fit the 5 official M3 roles.
  */
 val BolaoShapes =
     Shapes(

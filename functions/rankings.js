@@ -2,7 +2,7 @@ const { calculatePoints } = require("./scoring");
 const { logger } = require("firebase-functions");
 
 /**
- * Atualiza os pontos de cada palpite e o ranking geral do bolão para uma partida específica.
+ * Updates the points of each prediction and the bolao's overall ranking for a specific match.
  */
 async function updateMatchRankings(db, admin, championshipId, matchId, actualScore) {
     logger.info(`Atualizando rankings para o jogo ${matchId} do campeonato ${championshipId}`);
@@ -17,7 +17,7 @@ async function updateMatchRankings(db, admin, championshipId, matchId, actualSco
         const bolaoId = bolaoDoc.id;
         const bolaoData = bolaoDoc.data();
 
-        // Pega as regras de pontuação do bolão (com fallback para 3 e 1)
+        // Get the bolao's scoring rules (falling back to 3 and 1)
         const pExact = bolaoData.pointsExactScore || 3;
         const pResult = bolaoData.pointsWinnerOrDraw || 1;
 
@@ -47,7 +47,7 @@ async function updateMatchRankings(db, admin, championshipId, matchId, actualSco
 }
 
 /**
- * Recalcula o total de pontos de usuários específicos em um bolão.
+ * Recalculates the total points of specific users in a bolao.
  */
 async function refreshUserRankings(db, admin, bolaoId, userIds) {
     const bolaoDoc = await db.collection("boloes").doc(bolaoId).get();
@@ -96,7 +96,7 @@ async function refreshUserRankings(db, admin, bolaoId, userIds) {
 }
 
 /**
- * Função utilitária para recalcular TODO o ranking de um bolão.
+ * Utility function to recalculate the ENTIRE ranking of a bolao.
  */
 async function fullRecalculateRanking(db, admin, bolaoId) {
     const bolaoDoc = await db.collection("boloes").doc(bolaoId).get();
@@ -107,7 +107,7 @@ async function fullRecalculateRanking(db, admin, bolaoId) {
     const pExact = bolaoData.pointsExactScore || 3;
     const pResult = bolaoData.pointsWinnerOrDraw || 1;
 
-    // 1. Pega todos os resultados reais do campeonato
+    // 1. Get all real results for the championship
     const matchesSnapshot = await db.collection("championships").doc(championshipId).collection("matches").get();
     const matchScores = {};
     matchesSnapshot.forEach(doc => {
@@ -117,7 +117,7 @@ async function fullRecalculateRanking(db, admin, bolaoId) {
         }
     });
 
-    // 2. Atualiza todos os palpites com os pontos corretos baseados nas regras DESTE bolão
+    // 2. Update all predictions with the correct points based on THIS bolao's rules
     const predictionsSnapshot = await db.collection("boloes").doc(bolaoId).collection("predictions").get();
     const batch = db.batch();
 
@@ -132,7 +132,7 @@ async function fullRecalculateRanking(db, admin, bolaoId) {
 
     await batch.commit();
 
-    // 3. Atualiza o ranking dos participantes
+    // 3. Update the participants' ranking
     const participants = bolaoData.participants || [];
     await refreshUserRankings(db, admin, bolaoId, participants);
 }

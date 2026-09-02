@@ -5,8 +5,8 @@ import co.touchlab.kermit.Severity
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 /**
- * Encaminha logs de nível Info ou acima para o Crashlytics como breadcrumbs,
- * dando contexto do que aconteceu no app pouco antes de um crash reportado.
+ * Forwards Info-level and above logs to Crashlytics as breadcrumbs,
+ * providing context about what happened in the app shortly before a reported crash.
  */
 class CrashlyticsLogWriter : LogWriter() {
     override fun log(severity: Severity, message: String, tag: String, throwable: Throwable?) {
@@ -14,8 +14,8 @@ class CrashlyticsLogWriter : LogWriter() {
         try {
             FirebaseCrashlytics.getInstance().log("[$tag] $message")
         } catch (e: IllegalStateException) {
-            // Firebase pode não estar inicializado (ex: testes Robolectric) - breadcrumb é
-            // um "nice to have", nunca deve derrubar o app ou quebrar um teste por causa disso.
+            // Firebase may not be initialized (e.g. Robolectric tests) - the breadcrumb is
+            // a "nice to have" and must never crash the app or break a test because of this.
         }
     }
 }

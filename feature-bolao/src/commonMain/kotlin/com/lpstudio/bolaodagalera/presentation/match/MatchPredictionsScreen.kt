@@ -152,7 +152,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
     val hReal = match?.homeScore ?: 0
     val aReal = match?.awayScore ?: 0
     val matchDate = match?.matchDateMillis ?: 0L
-    // Forçamos o estado "Finalizado" se o jogo começou há mais de 3 horas e tem placar
+    // Force the "Finished" state if the match started more than 3 hours ago and has a score
     val isActuallyFinished =
         (match?.status == "FINISHED") ||
             (match?.status == "PENALTIES") ||
@@ -195,7 +195,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
             }
         } else {
             Column(Modifier.fillMaxSize()) {
-                // ── Header Premium unificado (Igual Imagem 1) ───────────────────────
+                // ── Unified premium header ───────────────────────────────────────────
                 Box(
                     modifier =
                     Modifier
@@ -284,7 +284,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                                         append("\n\n")
                                     }
 
-                                // Ordenação Alfabética pelo Apelido/Nome exibido se o jogo estiver em andamento
+                                // Alphabetical sort by displayed nickname/name while the match is ongoing
                                 val shareItems =
                                     if (isOngoing) {
                                         itemsList.sortedBy { (it.first.userNickname.ifBlank { it.first.userName }).lowercase() }
@@ -344,7 +344,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
 
                         Spacer(Modifier.height(24.dp))
 
-                        // Score Info (DENTRO do Header para dar a altura correta)
+                        // Score info (inside the header to get the correct height)
                         val (hName, hFlag, hResolvedCrest) =
                             resolveDisplayName(
                                 match.id,
@@ -558,7 +558,7 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
                     }
                 }
 
-                // ── Lista de Palpites ────────────────────────────────────────────────
+                // ── Predictions list ─────────────────────────────────────────────────
                 LazyColumn(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentPadding = PaddingValues(top = 16.dp, bottom = 40.dp)

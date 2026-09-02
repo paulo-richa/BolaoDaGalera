@@ -49,7 +49,7 @@ import org.jetbrains.compose.resources.stringResource
 fun MaintenanceScreen(onLogout: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition()
 
-    // Animação de Rotação (Bola girando)
+    // Rotation animation (spinning ball)
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -60,7 +60,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
         )
     )
 
-    // Animação de Pulo (Quique da bola)
+    // Bounce animation (ball hop)
     val bounceTranslation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = -100f,
@@ -71,7 +71,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
         )
     )
 
-    // Animação da Sombra (Aumenta/Diminui com o pulo)
+    // Shadow animation (grows/shrinks in sync with the bounce)
     val shadowScale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0.5f,
@@ -105,7 +105,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
             modifier = Modifier.height(200.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
-            // Sombra Neon no chão
+            // Neon shadow on the ground
             Box(
                 modifier =
                 Modifier
@@ -119,7 +119,7 @@ fun MaintenanceScreen(onLogout: () -> Unit) {
                     .blur(10.dp)
             )
 
-            // Bola de Futebol
+            // Soccer ball
             BolaoIcon(
                 imageVector = Icons.Default.SportsSoccer,
                 contentDescription = stringResource(Res.string.maintenance_screen_icon_cd),

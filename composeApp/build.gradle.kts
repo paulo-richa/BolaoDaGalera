@@ -214,11 +214,11 @@ detekt {
     allRules = false
 }
 
-// Regra isolada do design system (sem string hardcoded em componente Bolao*).
-// Task separada da principal pra não misturar com o restante das regras de
-// estilo/complexidade - roda só sobre commonMain, onde vivem as telas.
+// Isolated design-system ruleset (no hardcoded strings in Bolao* components).
+// Kept separate from the main task to avoid mixing with style/complexity
+// rules - runs only over commonMain, where the screens live.
 val detektDesignSystem by tasks.registering(Detekt::class) {
-    description = "Verifica strings hardcoded em componentes Bolao* (regra do design system)."
+    description = "Checks for hardcoded strings in Bolao* components (design-system rule)."
     setSource(files("src/commonMain/kotlin"))
     config.setFrom(file("../config/detekt/detekt-design-system.yml"))
     buildUponDefaultConfig = false

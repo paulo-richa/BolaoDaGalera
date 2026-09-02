@@ -39,10 +39,10 @@ private fun NotificationDto.toDomain(id: String) = Notification(
 )
 
 /**
- * Notificações são gravadas só pelas Cloud Functions (Admin SDK, ignora as
- * regras) - o cliente só lê e marca como lido. Isso garante que o histórico
- * reflete exatamente o que foi de fato enviado por push, sem depender de
- * cálculo local que se perde ao reiniciar o app.
+ * Notifications are written only by Cloud Functions (Admin SDK, bypasses
+ * security rules) - the client only reads and marks them as read. This
+ * guarantees the history reflects exactly what was actually sent via push,
+ * without relying on local state that would be lost on app restart.
  */
 class FirebaseNotificationRepository(private val crashReporter: CrashReporter) : NotificationRepository {
     private val logger = appLogger("FirebaseNotificationRepository")

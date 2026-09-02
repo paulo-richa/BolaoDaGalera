@@ -18,8 +18,8 @@ import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 
 /**
- * Estado vazio padrão (emoji/ícone + título + subtítulo opcional + ação
- * opcional), pro caso comum de "lista sem itens ainda" nas telas do app.
+ * Standard empty state (emoji/icon + title + optional subtitle + optional
+ * action), for the common "list with no items yet" case across the app's screens.
  */
 @Composable
 fun BolaoEmptyState(

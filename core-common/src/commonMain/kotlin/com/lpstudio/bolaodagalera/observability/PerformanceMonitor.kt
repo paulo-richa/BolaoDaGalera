@@ -1,9 +1,10 @@
 package com.lpstudio.bolaodagalera.observability
 
 /**
- * Mede a duração de operações de negócio críticas (login, criar/entrar em
- * bolão, salvar palpite etc.) via Firebase Performance Monitoring no
- * Android. No iOS ainda é um no-op, mas a interface já é KMP-pronta.
+ * Measures the duration of critical business operations (login,
+ * create/join pool, save prediction, etc.) via Firebase Performance
+ * Monitoring on Android. Still a no-op on iOS, but the interface is
+ * already KMP-ready.
  */
 interface PerformanceMonitor {
     suspend fun <T> trace(name: String, block: suspend () -> T): T

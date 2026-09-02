@@ -1,5 +1,5 @@
 const BR_TEAMS = {
-    // Sincronizado diretamente com a API v4 em 2026-01
+    // Synced directly from API v4 in 2026-01
     "Fluminense FC": { name: "Fluminense", flag: "", code: "FLU", crest: "https://crests.football-data.org/1765.png" },
     "Fluminense": { name: "Fluminense", flag: "", code: "FLU", crest: "https://crests.football-data.org/1765.png" },
 

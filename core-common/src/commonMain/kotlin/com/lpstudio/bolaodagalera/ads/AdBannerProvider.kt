@@ -4,10 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 /**
- * Abstrai a renderização do banner de anúncios da implementação real do SDK
- * (que fica em :composeApp, pelo mesmo motivo do [InterstitialAdCounter]:
- * o AdBanner real depende de bindings de Ads específicos de plataforma só
- * resolvíveis no módulo com o plugin native.cocoapods no iOS).
+ * Abstracts ad banner rendering from the actual SDK implementation
+ * (which lives in :composeApp, for the same reason as [InterstitialAdCounter]:
+ * the real AdBanner depends on platform-specific Ads bindings that can only
+ * be resolved in the module with the native.cocoapods plugin on iOS).
  */
 interface AdBannerProvider {
     @Composable

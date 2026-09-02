@@ -82,7 +82,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    // Estados para controlar se o campo já foi interagido (para não mostrar erro logo de cara)
+    // Tracks whether each field has been interacted with, to suppress premature error display
     var nameTouched by remember { mutableStateOf(false) }
     var nicknameTouched by remember { mutableStateOf(false) }
     var phoneTouched by remember { mutableStateOf(false) }
@@ -97,11 +97,11 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
     val scrollState = rememberScrollState()
     val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
 
-    // Lógica de Geração Automática de ID
+    // Automatic ID generation logic
     LaunchedEffect(name) {
         val parts = name.trim().split(" ").filter { it.isNotBlank() }
         if ((parts.size >= 2) && !isGeneratingUsername) {
-            // Pequeno delay para não disparar a cada tecla se a pessoa digitar rápido
+            // Debounce so this doesn't fire on every keystroke while typing fast
             kotlinx.coroutines.delay(800.milliseconds)
             isGeneratingUsername = true
             try {
@@ -116,12 +116,12 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
     }
 
     LaunchedEffect(keyboardHeight) {
-        // Removido scroll automático para o final, pois o formulário é longo e esconde o topo
+        // Auto-scroll-to-end intentionally disabled: the form is long and would hide the top
     }
 
     LaunchedEffect(uiState.user) { if (uiState.user != null) onRegisterSuccess() }
 
-    // Helpers de Validação
+    // Validation helpers
     val nameErrorRequiredText = stringResource(Res.string.register_name_error_required)
     val nameErrorInvalidText = stringResource(Res.string.register_name_error_invalid)
     val nameError =
@@ -210,7 +210,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                 Spacer(Modifier.height(32.dp))
 
                 BolaoGlassCard {
-                    // Campo Nome
+                    // Name field
                     Column {
                         BolaoTextField(
                             value = name,
@@ -237,7 +237,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                         }
                     }
 
-                    // Campo Email - Movido para baixo do nome
+                    // Email field - placed below the name field
                     Column {
                         BolaoTextField(
                             value = email,
@@ -265,7 +265,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                         }
                     }
 
-                    // Campo Apelido
+                    // Nickname field
                     Column {
                         BolaoTextField(
                             value = nickname,
@@ -288,7 +288,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                         }
                     }
 
-                    // Campo Telefone
+                    // Phone field
                     Column {
                         BolaoTextField(
                             value = phone,
@@ -315,9 +315,9 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                         }
                     }
 
-                    // Campo Email - Removido daqui pois foi movido para cima
+                    // Email field - removed from here; relocated above
 
-                    // Campo Senha
+                    // Password field
                     Column {
                         BolaoTextField(
                             value = password,
@@ -345,7 +345,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                         }
                     }
 
-                    // Campo Confirmar Senha
+                    // Confirm password field
                     Column {
                         BolaoTextField(
                             value = confirmPassword,
@@ -385,7 +385,7 @@ fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -> Unit, onN
                         enabled = isFormValid && !uiState.isLoading && !isGeneratingUsername
                     ) {
                         if (username.isBlank()) {
-                            // Caso o usuário tenha sido muito rápido, gera o ID agora
+                            // Debounced generation may not have completed yet if the user submitted quickly
                             scope.launch {
                                 isGeneratingUsername = true
                                 val generated = viewModel.generateAvailableUsername(name)

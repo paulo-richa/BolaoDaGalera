@@ -86,8 +86,8 @@ class FilterBolaoMatchesUseCaseTest {
     fun `dedupe de fase de grupos mantem apenas o jogo mais avancado do mesmo confronto`() {
         val bolao = Bolao()
         val matches = listOf(
-            // "GS-A-1" e "GS-A-2" caem na mesma rodada (groupRound() mapeia 1,2 -> 1),
-            // simulando o mesmo confronto reaparecendo com um id diferente.
+            // "GS-A-1" and "GS-A-2" fall into the same round (groupRound() maps 1,2 -> 1),
+            // simulating the same matchup reappearing with a different id.
             match("GS-A-1", phase = Phase.GROUP_STAGE, homeTeamCode = "PAL", awayTeamCode = "FLA", status = null),
             match("GS-A-2", phase = Phase.GROUP_STAGE, homeTeamCode = "PAL", awayTeamCode = "FLA", status = "FINISHED")
         )
@@ -151,10 +151,10 @@ class FilterBolaoMatchesUseCaseTest {
         Championship.setCache(listOf(Championship(id = "BRASILEIRAO", isPointsBased = true)))
         val bolao = Bolao(championshipId = "BRASILEIRAO", createdAtMillis = 100_000L)
         val matches = listOf(
-            // Rodada 1: ambos os jogos já ocorreram antes da criação do bolão (>50% encerrada).
+            // Round 1: both matches already happened before the bolao was created (>50% finished).
             match("M-R1-1", matchDateMillis = 1_000L),
             match("M-R1-2", matchDateMillis = 2_000L),
-            // Rodada 2: ainda não começou.
+            // Round 2: not started yet.
             match("M-R2-1", matchDateMillis = 200_000L)
         )
 

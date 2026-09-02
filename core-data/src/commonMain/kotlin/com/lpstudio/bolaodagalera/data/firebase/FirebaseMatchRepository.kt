@@ -63,8 +63,8 @@ private fun Match.toDto() = MatchDto(
 )
 
 /**
- * Repositório de Jogos via Firebase Firestore.
- * Organizado por Subcollections: championships/{championshipId}/matches/{matchId}
+ * Match repository backed by Firebase Firestore.
+ * Organized via subcollections: championships/{championshipId}/matches/{matchId}
  */
 class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchRepository {
     private val logger = appLogger("FirebaseMatchRepository")
@@ -167,9 +167,9 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
         }
     }
 
-    // Usado só para achar jogos "de hoje" (lembrete de palpite pendente na Home),
-    // então basta uma janela de alguns dias em vez da história inteira de todos
-    // os campeonatos - reduz leituras e o tamanho do listener em aberto.
+    // Used only to find "today's" matches (pending-prediction reminder on Home),
+    // so a window of a few days is enough instead of the entire history of all
+    // championships - this reduces reads and the size of the open listener.
     override fun getAllMatches(): Flow<List<Match>> {
         val now = TimeSource.nowMillis()
         val window = 3 * 24 * 3600_000L

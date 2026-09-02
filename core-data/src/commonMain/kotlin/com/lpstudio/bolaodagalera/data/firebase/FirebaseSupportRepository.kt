@@ -8,7 +8,7 @@ class FirebaseSupportRepository : SupportRepository {
     private val db = Firebase.firestore
 
     override suspend fun sendSupportTicket(userId: String, userEmail: String, message: String) {
-        // Usamos serverTimestamp para o ID e data para evitar erros de importação de Clock no DTO
+        // Use a millis timestamp for the ID and date to avoid Clock import issues in the DTO
         val timestamp = com.lpstudio.bolaodagalera.util.TimeSource.nowMillis()
         val ticketId = "ticket_${timestamp}_$userId"
 

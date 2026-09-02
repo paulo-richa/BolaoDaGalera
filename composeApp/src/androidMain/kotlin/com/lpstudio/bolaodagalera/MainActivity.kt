@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
     private val crashReporter: CrashReporter by inject()
 
     private val requestNotificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* usuário decidiu, nada a fazer aqui */ }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* user decided, nothing to do here */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -42,10 +42,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Inicializa o AdMob
+        // Initialize AdMob
         MobileAds.initialize(this) {}
 
-        // Provê a atividade para o AdManager
+        // Provide the activity to AdManager
         AdManager.init(this)
 
         requestNotificationPermissionIfNeeded()
@@ -66,9 +66,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // onNewToken só dispara quando o Firebase gera um token NOVO - num app já
-    // instalado o token pode já existir de antes do usuário logar, então
-    // registramos o token atual toda vez que o estado de login muda.
+    // onNewToken only fires when Firebase generates a NEW token - on an already
+    // installed app the token may already exist from before the user logged in,
+    // so we register the current token every time the login state changes.
     private fun registerFcmTokenOnLogin() {
         lifecycleScope.launch {
             authRepository.authStateFlow.collectLatest { user ->
@@ -77,9 +77,9 @@ class MainActivity : ComponentActivity() {
                     val token = getFcmToken()
                     notificationRepository.registerFcmToken(user.id, token)
                 } catch (e: kotlinx.coroutines.CancellationException) {
-                    // authStateFlow emitiu de novo (ex: cache -> doc real do Firestore)
-                    // antes do token terminar de buscar - collectLatest cancela essa
-                    // coleta e já reprocessa com o valor novo, nada a fazer aqui.
+                    // authStateFlow emitted again (e.g. cache -> real Firestore doc)
+                    // before the token fetch completed - collectLatest cancels this
+                    // collection and already reprocesses with the new value, nothing to do here.
                     throw e
                 } catch (e: Exception) {
                     crashReporter.recordException(e, "Erro ao registrar fcmToken no login")

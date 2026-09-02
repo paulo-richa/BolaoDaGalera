@@ -301,7 +301,7 @@ fun RankingScreen(bolaoId: String) {
                     }
                 }
 
-                // Sombra/Blur no topo
+                // Top shadow/blur
                 Box(
                     modifier =
                     Modifier
@@ -311,7 +311,7 @@ fun RankingScreen(bolaoId: String) {
                         .align(Alignment.TopCenter)
                 )
 
-                // Sombra/Blur na base
+                // Bottom shadow/blur
                 Box(
                     modifier =
                     Modifier
@@ -685,7 +685,7 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Palpite
+                // Prediction
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     BolaoText(
                         text = stringResource(Res.string.ranking_hit_item_prediction_label),
@@ -709,7 +709,7 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
 
                 Spacer(Modifier.width(16.dp))
 
-                // Pontos
+                // Points
                 Box(
                     modifier =
                     Modifier

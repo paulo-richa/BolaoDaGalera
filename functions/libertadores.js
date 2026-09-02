@@ -9,7 +9,7 @@ async function syncLibertadores(db, admin, axios) {
     const matchesRef = db.collection("championships").doc("LIBERTADORES").collection("matches");
 
     try {
-        // Busca dados com fallback automático
+        // Fetch data with automatic fallback
         const apiData = await getLibertadoresData(axios);
 
         if (apiData && apiData.matches) {
@@ -19,9 +19,9 @@ async function syncLibertadores(db, admin, axios) {
             const now = Date.now();
             const knockoutPairs = {};
 
-            // Mapeamento Estrito de Oitavas (Ida e Volta para a mesma Chave)
+            // Strict Round of 16 mapping (leg 1 and leg 2 to the same key)
             const r16Mapping = {
-                564456: 1, 564465: 1, // Estudiantes vs Católica
+                564456: 1, 564465: 1, // Estudiantes vs Catolica
                 564462: 2, 564470: 2, // Rosario vs Corinthians
                 564460: 3, 564468: 3, // Cruzeiro vs Flamengo
                 564457: 4, 564464: 4, // Tolima vs Ind. del Valle
@@ -50,15 +50,15 @@ async function syncLibertadores(db, admin, axios) {
                     knockoutOrder = r16Mapping[m.id] || 0;
                     const isVolta = m.matchday === 2 || m.id > 564462;
 
-                    // MAPA DE IDs DE PRODUÇÃO (Baseado nos palpites reais dos usuários)
+                    // PRODUCTION ID MAP (based on users' real existing predictions)
                     const productionIds = {
-                        "564456-L1": "CLI-2026-R16-1-L1", // Estudiantes Ida
-                        "564462-L1": "CLI-2026-R16-2-L1", // Corinthians Ida
-                        "564459-L1": "CLI-2026-R16-6-L1", // Palmeiras Ida
-                        "564470-L2": "CLI-2026-M564470-L2", // Corinthians Volta
-                        "564466-L2": "CLI-2026-M564466-L2", // Palmeiras Volta
-                        "564464-L2": "CLI-2026-M564464-L2", // Ind. del Valle Volta
-                        "564469-L2": "CLI-2026-M564469-L2", // LDU Volta
+                        "564456-L1": "CLI-2026-R16-1-L1", // Estudiantes leg 1
+                        "564462-L1": "CLI-2026-R16-2-L1", // Corinthians leg 1
+                        "564459-L1": "CLI-2026-R16-6-L1", // Palmeiras leg 1
+                        "564470-L2": "CLI-2026-M564470-L2", // Corinthians leg 2
+                        "564466-L2": "CLI-2026-M564466-L2", // Palmeiras leg 2
+                        "564464-L2": "CLI-2026-M564464-L2", // Ind. del Valle leg 2
+                        "564469-L2": "CLI-2026-M564469-L2", // LDU leg 2
                         "564465-L2": "CLI-2026-M564465-L2",
                         "564468-L2": "CLI-2026-M564468-L2",
                         "564467-L2": "CLI-2026-M564467-L2",
@@ -68,8 +68,8 @@ async function syncLibertadores(db, admin, axios) {
                     const key = `${m.id}-${isVolta ? "L2" : "L1"}`;
                     matchId = productionIds[key] || `CLI-2026-R16-${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
                 } else if (mappedPhase === "QUARTERFINALS") {
-                    // Quartas: API traz em pares (Ida/Volta para cada confronto)
-                    // Mapeamos por ordem de aparecer e alternância
+                    // Quarterfinals: the API returns pairs (leg 1/leg 2 for each tie)
+                    // We map them by order of appearance and alternation
                     const qfMatches = resCLI.data.matches
                         .filter(x => x.stage === "QUARTER_FINALS")
                         .sort((a, b) => a.id - b.id);
@@ -80,13 +80,13 @@ async function syncLibertadores(db, admin, axios) {
                         const isVolta = idx % 2 === 1; // 0,1 -> QF1; 2,3 -> QF2; etc
                         matchId = `CLI-2026-QF${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
 
-                        // ⚠️  IMPORTANTE: Na Volta (L2), times devem estar INVERTIDOS
-                        // Se for Volta e times são iguais aos da Ida, inverte
-                        // (troca as REFERÊNCIAS das variáveis, nunca os campos dos
-                        // objetos de LIB_TEAMS — esses são compartilhados/mutáveis
-                        // e mutar seus campos corromperia o cadastro do time para
-                        // todos os outros jogos processados nesta e em futuras
-                        // execuções da function)
+                        // IMPORTANT: in leg 2 (L2), teams must be SWAPPED.
+                        // If this is leg 2 and teams match leg 1, swap them
+                        // (swaps the variable REFERENCES only, never the fields
+                        // of the LIB_TEAMS objects themselves — those are
+                        // shared/mutable, and mutating their fields would
+                        // corrupt the team record for every other match
+                        // processed in this and future function runs)
                         if (isVolta && idx > 0) {
                             const idaMatch = qfMatches[idx - 1];
                             if (hName === idaMatch.homeTeam?.name && aName === idaMatch.awayTeam?.name) {
@@ -99,11 +99,11 @@ async function syncLibertadores(db, admin, axios) {
                             }
                         }
                     } else {
-                        // Fallback (nunca deve acontecer)
+                        // Fallback (should never happen)
                         matchId = `CLI-2026-M${m.id}`;
                     }
                 } else if (mappedPhase === "SEMIFINALS") {
-                    // Semis: Mesmo padrão das Quartas
+                    // Semifinals: same pattern as quarterfinals
                     const sfMatches = resCLI.data.matches
                         .filter(x => x.stage === "SEMI_FINALS")
                         .sort((a, b) => a.id - b.id);
@@ -114,9 +114,9 @@ async function syncLibertadores(db, admin, axios) {
                         const isVolta = idx % 2 === 1; // 0,1 -> SF1; 2,3 -> SF2
                         matchId = `CLI-2026-SF${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
 
-                        // ⚠️  IMPORTANTE: Na Volta (L2), times devem estar INVERTIDOS
-                        // (troca as referências, não os campos dos objetos — ver
-                        // comentário equivalente no bloco de QUARTERFINALS acima)
+                        // IMPORTANT: in leg 2 (L2), teams must be SWAPPED
+                        // (swaps references only, not object fields — see the
+                        // equivalent comment in the QUARTERFINALS block above)
                         if (isVolta && idx > 0) {
                             const idaMatch = sfMatches[idx - 1];
                             if (hName === idaMatch.homeTeam?.name && aName === idaMatch.awayTeam?.name) {
@@ -132,7 +132,7 @@ async function syncLibertadores(db, admin, axios) {
                         matchId = `CLI-2026-M${m.id}`;
                     }
                 } else if (mappedPhase === "FINAL") {
-                    // Final: sempre um único jogo (sem Ida/Volta)
+                    // Final: always a single match (no leg 1/leg 2)
                     matchId = `CLI-2026-FINAL`;
                     knockoutOrder = 1;
                 }
@@ -140,16 +140,16 @@ async function syncLibertadores(db, admin, axios) {
                 const matchTime = Date.parse(m.utcDate);
                 let targetStatus = m.status;
 
-                // LÓGICA DE PLACAR: Sempre priorizar tempo normal (90 min)
+                // SCORE LOGIC: always prioritize regulation time (90 min)
                 const s = m.score;
                 let hScore = null, aScore = null;
                 if (s) {
-                    // Se existe regularTime, ele é o nosso 90 minutos oficial (independente de duration)
+                    // If regularTime exists, it's our official 90 minutes (regardless of duration)
                     if (s.regularTime && s.regularTime.home !== null) {
                         hScore = s.regularTime.home;
                         aScore = s.regularTime.away;
                     } else {
-                        // Fallback para fullTime se for o único disponível
+                        // Fall back to fullTime if it's the only value available
                         hScore = s.fullTime?.home ?? null;
                         aScore = s.fullTime?.away ?? null;
                     }
@@ -164,12 +164,12 @@ async function syncLibertadores(db, admin, axios) {
                     continue;
                 }
 
-                // TRAVA DE SEGURANÇA: nunca aceitar um retrocesso da API (ex.: um jogo
-                // já FINISHED com placar real virar algo diferente com placar nulo).
+                // SAFETY LOCK: never accept a regression from the API (e.g. a match
+                // already FINISHED with a real score reverting to something else with a null score).
                 const existingData = currentDoc.exists ? currentDoc.data() : null;
-                // Usa m.status (valor CRU da API), não targetStatus, pelo mesmo
-                // motivo do brasileirao.js: a promoção heurística para FINISHED
-                // após 4h parado não deve disfarçar um dado ainda incompleto.
+                // Uses m.status (raw API value), not targetStatus, for the same
+                // reason as brasileirao.js: the heuristic promotion to FINISHED
+                // after 4h stalled should not disguise still-incomplete data.
                 const existingIsFinal = existingData && existingData.status === "FINISHED" &&
                     existingData.homeScore !== null && existingData.awayScore !== null;
                 if (existingIsFinal && (m.status !== "FINISHED" || hScore === null || aScore === null)) {
@@ -194,7 +194,7 @@ async function syncLibertadores(db, admin, axios) {
                     source: "api"
                 };
 
-                // SÓ ATUALIZA TIMES SE A API TROUXER NOMES REAIS ou se o campo no banco estiver vazio/TBD
+                // ONLY UPDATE TEAMS IF THE API RETURNS REAL NAMES or if the field in the database is empty/TBD
                 const existing = currentDoc.data();
                 if (hTeam.code !== "TBD" || !existing || existing.homeTeamCode === "TBD") {
                     updates.homeTeam = hTeam.name;
@@ -211,7 +211,7 @@ async function syncLibertadores(db, admin, axios) {
 
                 batch.set(matchesRef.doc(matchId), updates, { merge: true });
 
-                // Detectar mudança de mandos e migrar palpites se necessário (Quartas/Semis/Final)
+                // Detect home/away swaps and migrate predictions if needed (QF/SF/Final)
                 if (existing && (mappedPhase === "QUARTERFINALS" || mappedPhase === "SEMIFINALS" || mappedPhase === "FINAL")) {
                     const oldHomeCode = existing.homeTeamCode;
                     const oldAwayCode = existing.awayTeamCode;
@@ -219,7 +219,7 @@ async function syncLibertadores(db, admin, axios) {
                     const newAwayCode = updates.awayTeamCode;
 
                     if (oldHomeCode && oldAwayCode && (oldHomeCode !== newHomeCode || oldAwayCode !== newAwayCode)) {
-                        // Times mudaram - vai precisar migrar palpites após o batch
+                        // Teams changed - predictions will need migrating after the batch
                         migrationsNeeded.push({
                             matchId,
                             oldMatch: existing,
@@ -230,7 +230,7 @@ async function syncLibertadores(db, admin, axios) {
             }
             await batch.commit();
 
-            // Processar migrações de palpites (depois do commit para evitar locks)
+            // Process prediction migrations (after the commit, to avoid locks)
             for (const migration of migrationsNeeded) {
                 await migratePredictionsIfMatchChanged(db, migration.matchId, migration.oldMatch, migration.newMatch);
             }

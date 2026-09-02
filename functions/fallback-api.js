@@ -1,14 +1,14 @@
 const { logger } = require("firebase-functions");
 
 /**
- * Sistema de cache + retry para garantir dados verificados
- * Fonte única de verdade: football-data.org (gratuita e confiável)
+ * Cache + retry system to guarantee verified data.
+ * Single source of truth: football-data.org (free and reliable).
  *
- * Estratégia:
- * 1. Tenta football-data.org com retry
- * 2. Se falhar, usa cache anterior (se houver)
- * 3. Se não houver cache, aguarda próxima sincronização
- * 4. NUNCA cria dados provisórios
+ * Strategy:
+ * 1. Try football-data.org with retry
+ * 2. On failure, fall back to the previous cache (if any)
+ * 3. If no cache exists, wait for the next sync
+ * 4. NEVER fabricate provisional data
  */
 
 let lastSuccessfulData = null;
@@ -17,11 +17,11 @@ async function getLibertadoresData(axios) {
     const API_KEY = process.env.FOOTBALL_DATA_KEY || require("./config").API_KEY;
 
     try {
-        // Sempre busca dado fresco da API - o cache abaixo só existe como
-        // fallback para quando a requisição falhar (rede/API fora do ar).
-        // Usá-lo no caminho feliz travava o placar ao vivo por até 1h,
-        // já que uma instância "quente" do Cloud Run reaproveitava o cache
-        // mesmo com o scheduler rodando de 3 em 3 minutos.
+        // Always fetch fresh data from the API - the cache below exists only
+        // as a fallback for when the request fails (network/API down).
+        // Using it on the happy path froze the live score for up to 1h,
+        // since a "warm" Cloud Run instance would reuse the cache even
+        // with the scheduler running every 3 minutes.
         logger.info("📡 Sincronizando com football-data.org...");
 
         const response = await axios.get(
@@ -48,7 +48,7 @@ async function getLibertadoresData(axios) {
     } catch (error) {
         logger.warn(`⚠️  Erro ao sincronizar (${error.message})`);
 
-        // Tenta usar cache anterior se houver
+        // Fall back to the previous cache, if any
         if (lastSuccessfulData) {
             logger.info("📦 Usando cache anterior como fallback");
             return lastSuccessfulData;

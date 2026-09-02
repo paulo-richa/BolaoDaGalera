@@ -29,7 +29,7 @@ class RemoteConfigManager {
             _isMaintenanceMode.value = remoteConfig.getValue("maintenance_mode").asBoolean()
             _showAds.value = remoteConfig.getValue("show_ads").asBoolean()
         } catch (e: Exception) {
-            // Se falhar, mantém os defaults
+            // On failure, keep the defaults
         }
     }
 }

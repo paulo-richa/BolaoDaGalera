@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 const axios = require("axios");
 
-// Inicialização do Firebase Admin (ajuste o caminho se necessário)
+// Firebase Admin initialization (adjust the path if needed)
 const serviceAccount = require("./serviceAccountKey.json");
 
 admin.initializeApp({
@@ -11,8 +11,8 @@ admin.initializeApp({
 const db = admin.firestore();
 
 /**
- * Script de administração para forçar placares.
- * Agora suporta subcollections: championships/{id}/matches
+ * Administration script to force match scores.
+ * Now supports subcollections: championships/{id}/matches
  */
 async function fixMatchScore(championshipId, matchId, homeScore, awayScore, status = 'FINISHED') {
   console.log(`📦 Ajustando ${matchId} em ${championshipId}...`);
@@ -30,7 +30,7 @@ async function fixMatchScore(championshipId, matchId, homeScore, awayScore, stat
 }
 
 async function run() {
-  // Exemplo de uso:
+  // Usage example:
   // await fixMatchScore('LIBERTADORES', 'CLI-M12345', 2, 1);
 
   console.log("🏁 Operação concluída.");

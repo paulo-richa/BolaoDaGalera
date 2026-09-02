@@ -21,13 +21,14 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            // api (não implementation): funções públicas do design system expõem tipos
-            // desses pacotes na própria assinatura (ex: FabPosition em BolaoScaffold,
-            // ButtonColors em BolaoButton) - se ficassem como implementation, módulos
-            // consumidores que não declaram compose.material3 diretamente (ex:
-            // :feature-auth, de propósito, pra não poder importar material3 bruto)
-            // comilariam sem erro mas gerariam chamadas com ABI incorreta (mangled
-            // name errado), quebrando em runtime com NoSuchMethodError.
+            // api (not implementation): public design-system functions expose types
+            // from these packages in their own signatures (e.g. FabPosition in
+            // BolaoScaffold, ButtonColors in BolaoButton). If declared as
+            // implementation, consumer modules that don't declare compose.material3
+            // directly (e.g. :feature-auth, intentionally, to prevent importing raw
+            // material3) would compile without error but generate calls with an
+            // incorrect ABI (mangled name mismatch), failing at runtime with
+            // NoSuchMethodError.
             api(libs.compose.runtime)
             api(libs.compose.foundation)
             api(libs.compose.material3)

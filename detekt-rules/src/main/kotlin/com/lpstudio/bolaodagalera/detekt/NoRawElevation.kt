@@ -14,9 +14,9 @@ import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 
 /**
- * BolaoDaGalera design-system rule: `tonalElevation`/`shadowElevation` não
- * podem receber um valor `N.dp` literal - use `BolaoElevation.levelX` (os 6
- * níveis oficiais de tonal elevation do Material 3).
+ * BolaoDaGalera design-system rule: `tonalElevation`/`shadowElevation` must
+ * not receive a literal `N.dp` value - use `BolaoElevation.levelX` (the 6
+ * official Material 3 tonal elevation levels) instead.
  */
 class NoRawElevation(config: Config = Config.empty) : Rule(config) {
     override val issue =

@@ -14,9 +14,9 @@ import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 
 /**
- * BolaoDaGalera design-system rule: nenhum tamanho de fonte pode ser um
- * literal `N.sp` - use `style = BolaoTypography.xxx` (a escala tipográfica
- * calibrada do :designsystem) em vez de `fontSize = N.sp`.
+ * BolaoDaGalera design-system rule: no font size may be a literal `N.sp` -
+ * use `style = BolaoTypography.xxx` (the calibrated :designsystem type
+ * scale) instead of `fontSize = N.sp`.
  */
 class NoRawFontSize(config: Config = Config.empty) : Rule(config) {
     override val issue =

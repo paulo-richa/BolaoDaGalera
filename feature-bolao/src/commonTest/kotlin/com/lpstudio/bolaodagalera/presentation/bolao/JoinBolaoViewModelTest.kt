@@ -28,7 +28,7 @@ class JoinBolaoViewModelTest {
     private lateinit var authRepository: FakeAuthRepository
     private lateinit var viewModel: JoinBolaoViewModel
 
-    // O bolão fake "bolao-1" tem código "LIB026" e já inclui FAKE_USER (pauloricha) como participante.
+    // The fake pool "bolao-1" has code "LIB026" and already includes FAKE_USER (pauloricha) as a participant.
     private val existingBolaoCode = "LIB026"
 
     @BeforeTest
@@ -47,7 +47,7 @@ class JoinBolaoViewModelTest {
 
     @Test
     fun `join quando ja e participante sinaliza alreadyMemberBolaoId`() = runTest {
-        authRepository.setUser(FAKE_USER) // já está em bolao-1
+        authRepository.setUser(FAKE_USER) // already a member of bolao-1
 
         viewModel.join(existingBolaoCode)
 
@@ -59,7 +59,7 @@ class JoinBolaoViewModelTest {
 
     @Test
     fun `join com codigo valido para usuario novo envia pedido`() = runTest {
-        authRepository.setUser(FAKE_FRIEND) // não está em bolao-1
+        authRepository.setUser(FAKE_FRIEND) // not a member of bolao-1
 
         viewModel.join(existingBolaoCode)
 

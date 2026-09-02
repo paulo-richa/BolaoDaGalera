@@ -6,11 +6,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Escala tipográfica do Material 3 (displayLarge...labelSmall), calibrada
- * pelos tamanhos realmente usados no app hoje (levantamento do código: 11sp
- * e 14sp são os mais comuns) em vez dos tamanhos padrão do M3 - o visual do
- * app é mais denso que o default. Escala de tamanhos: só números pares (8,
- * 10, 12, 14, 16, 18, 20, 22, 24, 32, 48).
+ * Material 3 type scale (displayLarge...labelSmall), calibrated from the
+ * sizes actually used across the app (code audit: 11sp and 14sp are the
+ * most common) instead of M3's default sizes - the app's visual style is
+ * denser than the default. Size scale: even numbers only (8, 10, 12, 14,
+ * 16, 18, 20, 22, 24, 32, 48).
  */
 val BolaoTypography =
     Typography(

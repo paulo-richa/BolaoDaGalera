@@ -34,7 +34,7 @@ class PredictionViewModelTest {
     private lateinit var viewModel: PredictionViewModel
 
     private val userId = "pauloricha"
-    private val bolaoId = "bolao-1" // championshipId = LIBERTADORES (fake pré-existente)
+    private val bolaoId = "bolao-1" // championshipId = LIBERTADORES (pre-existing fake)
     private val matchId = "match-1"
 
     @BeforeTest

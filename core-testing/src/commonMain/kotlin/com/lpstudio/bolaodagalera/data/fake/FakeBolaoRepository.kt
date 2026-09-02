@@ -27,7 +27,7 @@ class FakeBolaoRepository : BolaoRepository {
             )
         )
 
-    /** Quando != null, a próxima chamada a createBolao lança esta exceção (para simular erros). */
+    /** When non-null, the next call to createBolao throws this exception, to simulate errors. */
     var createBolaoException: Exception? = null
 
     override fun getUserBoloes(userId: String): Flow<List<Bolao>> = boloesState.map { list -> list.filter { userId in it.participants } }

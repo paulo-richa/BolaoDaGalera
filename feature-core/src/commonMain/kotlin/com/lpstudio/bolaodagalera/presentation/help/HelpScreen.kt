@@ -116,7 +116,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
     var showErrorDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    // Reset da tela de sucesso após 3 segundos
+    // Auto-dismiss the success state after 3 seconds
     LaunchedEffect(showSuccess) {
         if (showSuccess) {
             kotlinx.coroutines.delay(3000.milliseconds)
@@ -124,7 +124,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
         }
     }
 
-    // Diálogo de Confirmação
+    // Confirmation dialog
     if (showConfirmDialog) {
         BolaoConfirmDialog(
             title = stringResource(Res.string.help_screen_confirm_dialog_title),
@@ -143,7 +143,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                                 userEmail = user?.email ?: "no-email",
                                 message = message
                             )
-                            message = "" // Limpa o texto após sucesso
+                            message = "" // Clear the input after a successful send
                             showSuccess = true
                         } catch (_: Exception) {
                             showErrorDialog = true
@@ -157,7 +157,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
         )
     }
 
-    // Diálogo de Erro
+    // Error dialog
     if (showErrorDialog) {
         BolaoConfirmDialog(
             title = stringResource(Res.string.help_screen_error_dialog_title),
@@ -179,7 +179,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
         containerColor = DeepNavy
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Tabs Personalizadas
+            // Custom tabs
             Row(
                 modifier =
                 Modifier

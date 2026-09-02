@@ -16,9 +16,9 @@ import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 
 /**
- * Diálogo de confirmação padrão (título + mensagem + confirmar/cancelar),
- * pro padrão repetido de "tem certeza que deseja...?" nas telas do app.
- * [isDestructive] pinta o botão de confirmação em vermelho (ex: excluir).
+ * Standard confirmation dialog (title + message + confirm/cancel), for the
+ * repeated "are you sure you want to...?" pattern across the app's screens.
+ * [isDestructive] paints the confirm button red (e.g. delete actions).
  */
 @Composable
 fun BolaoConfirmDialog(
@@ -55,9 +55,9 @@ fun BolaoConfirmDialog(
 }
 
 /**
- * Diálogo genérico com slots customizados, para os casos que não se
- * encaixam no formato confirmar/cancelar do [BolaoConfirmDialog] (ex:
- * diálogo de sucesso com emoji, formulário embutido).
+ * Generic dialog with customizable slots, for cases that don't fit the
+ * confirm/cancel shape of [BolaoConfirmDialog] (e.g. a success dialog with
+ * an emoji, or an embedded form).
  */
 @Composable
 fun BolaoDialog(

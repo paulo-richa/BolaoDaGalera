@@ -15,8 +15,8 @@ import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 
 /**
- * Spinner padrão do app (cor Neon). Use direto pra um indicador inline, ou
- * [BolaoFullScreenLoading] pra centralizar numa tela inteira.
+ * Standard app spinner (Neon color). Use directly for an inline indicator,
+ * or [BolaoFullScreenLoading] to center it on a full screen.
  */
 @Composable
 fun BolaoLoadingIndicator(modifier: Modifier = Modifier, color: Color = Neon, strokeWidth: androidx.compose.ui.unit.Dp = 3.dp) {

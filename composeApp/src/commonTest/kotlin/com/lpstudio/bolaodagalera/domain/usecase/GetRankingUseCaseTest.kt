@@ -95,9 +95,9 @@ class GetRankingUseCaseTest {
         val bolao = Bolao(id = "b1", name = "Test", participants = listOf("u1"), pointsExactScore = 3, pointsWinnerOrDraw = 1)
         val users = listOf(User(id = "u1", name = "User 1", email = "", phone = ""))
         val matches = listOf(createMatch("m1", 2, 1))
-        // Palpite errado localmente (0 pts pela regra), mas a Cloud Function já
-        // gravou 3 pts - simula uma correção manual do servidor que o cliente
-        // não deve sobrescrever com o próprio cálculo.
+        // Locally the prediction is wrong (0 pts by the rule), but the Cloud Function
+        // already recorded 3 pts - simulates a manual server-side correction that the
+        // client must not overwrite with its own calculation.
         val predictions = listOf(
             Prediction(id = "p1", userId = "u1", matchId = "m1", homeScore = 0, awayScore = 0, points = 3)
         )

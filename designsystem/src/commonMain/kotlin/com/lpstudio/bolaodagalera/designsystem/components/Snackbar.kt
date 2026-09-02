@@ -12,8 +12,8 @@ import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 
 /**
- * Envelopa [SnackbarHostState] pra telas fora do :designsystem não
- * precisarem depender de material3 só pra guardar essa referência.
+ * Wraps [SnackbarHostState] so screens outside :designsystem don't need to
+ * depend on material3 just to hold this reference.
  */
 class BolaoSnackbarHostState internal constructor(internal val delegate: SnackbarHostState) {
     suspend fun showSnackbar(message: String) {

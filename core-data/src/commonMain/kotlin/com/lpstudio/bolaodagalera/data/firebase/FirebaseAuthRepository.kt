@@ -86,7 +86,7 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
                 auth.createUserWithEmailAndPassword(email, password)
             } catch (e: Exception) {
                 val msg = e.message?.lowercase() ?: ""
-                // Verifica múltiplos padrões de erro de e-mail já em uso
+                // Check multiple error patterns for "email already in use"
                 val isEmailInUse =
                     msg.contains("already-in-use") ||
                         msg.contains("already in use") ||
@@ -94,7 +94,7 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
                         msg.contains("collision")
 
                 if (isEmailInUse) {
-                    // Tenta fazer o login. Se a senha estiver errada, o erro será capturado pelo ViewModel
+                    // Attempt sign-in; if the password is wrong, the ViewModel will catch the error
                     auth.signInWithEmailAndPassword(email, password)
                 } else {
                     throw e
@@ -107,7 +107,7 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
         } catch (e: Exception) {
         }
 
-        // Salva ou atualiza o perfil no Firestore
+        // Save or update the profile in Firestore
         usersCollection.document(user.uid).set(
             UserDto(name = name, email = user.email ?: "", phone = phone, nickname = nickname, username = username),
             merge = true
@@ -127,13 +127,13 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
         val uid = firebaseUser.uid
         val email = firebaseUser.email ?: ""
 
-        // 1. Tenta atualizar o nome no Auth (opcional, não bloqueia se falhar)
+        // 1. Try updating the name in Auth (optional, doesn't block on failure)
         try {
             firebaseUser.updateProfile(displayName = name)
         } catch (e: Exception) {
         }
 
-        // 2. Prepara os dados para o Firestore
+        // 2. Prepare the data for Firestore
         val updateMap =
             mutableMapOf<String, Any>(
                 "name" to name,
@@ -142,25 +142,25 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
                 "email" to email
             )
 
-        // 3. Grava no Firestore usando set com merge (mais resiliente que update)
+        // 3. Write to Firestore using set with merge (more resilient than update)
         usersCollection.document(uid).set(updateMap, merge = true)
 
-        // Atualiza o cache local para refletir na UI imediatamente preservando o username atual
+        // Update the local cache so the UI reflects the change immediately, preserving the current username
         val currentUsername = cachedUser?.username ?: ""
         cachedUser = User(uid, name, email, phone, nickname, currentUsername)
     }
 
     override suspend fun isEmailInUse(email: String): Boolean = try {
-        // Tenta usar o método do Auth que não exige permissões de Firestore
+        // Prefer the Auth method, which doesn't require Firestore permissions
         val methods = auth.fetchSignInMethodsForEmail(email)
         methods.isNotEmpty()
     } catch (e: Exception) {
-        // Fallback para Firestore apenas se o Auth falhar ou não estiver disponível
+        // Fall back to Firestore only if Auth fails or is unavailable
         try {
             val snapshot = usersCollection.where { "email" equalTo email }.get()
             !snapshot.documents.isEmpty()
         } catch (e2: Exception) {
-            // Se ambos falharem, relança a exceção original para o ViewModel tratar
+            // If both fail, rethrow the original exception for the ViewModel to handle
             throw e
         }
     }
@@ -171,7 +171,7 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
             val snapshot = usersCollection.where { "phone" equalTo phone }.get()
             !snapshot.documents.isEmpty()
         } catch (e: Exception) {
-            // Se não puder verificar (ex: falta de permissão por estar deslogado), assume falso e deixa o fluxo seguir
+            // If the check can't be performed (e.g. no permission while logged out), assume false and let the flow proceed
             false
         }
     }
@@ -210,9 +210,9 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
         }
     }
 
-    // Busca cada usuário em paralelo em vez de sequencialmente - um bolão com
-    // muitos participantes reexecuta isso a cada snapshot de jogo/palpite, e
-    // uma leitura por vez multiplicava a latência pelo número de pessoas.
+    // Fetch each user in parallel instead of sequentially - a bolão with many
+    // participants re-runs this on every match/prediction snapshot, and reading
+    // one at a time multiplied the latency by the number of people.
     override suspend fun getUsers(userIds: List<String>): List<User> {
         if (userIds.isEmpty()) return emptyList()
         return coroutineScope {

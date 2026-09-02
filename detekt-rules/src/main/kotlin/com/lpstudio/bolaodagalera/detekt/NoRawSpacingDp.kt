@@ -14,9 +14,9 @@ import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 
 /**
- * BolaoDaGalera design-system rule: `.padding(...)` e `Arrangement.spacedBy(...)`
- * não podem receber valores `N.dp` literais - use `BolaoSpacing.xxx` (escala
- * de espaçamento do :designsystem).
+ * BolaoDaGalera design-system rule: `.padding(...)` and `Arrangement.spacedBy(...)`
+ * must not receive literal `N.dp` values - use `BolaoSpacing.xxx` (the
+ * :designsystem spacing scale) instead.
  */
 class NoRawSpacingDp(config: Config = Config.empty) : Rule(config) {
     override val issue =

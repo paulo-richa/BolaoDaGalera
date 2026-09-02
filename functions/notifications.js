@@ -1,9 +1,9 @@
 const { logger } = require("firebase-functions");
 
 /**
- * Grava o registro persistente da notificação (histórico do sininho no app).
- * Sempre criado, mesmo se o usuário não tiver token de push registrado -
- * garante que o app mostra a notificação na próxima vez que abrir.
+ * Writes the persistent notification record (in-app bell/history).
+ * Always created, even if the user has no registered push token -
+ * guarantees the app shows the notification the next time it opens.
  */
 async function createNotification(db, { userId, title, message, type, bolaoId = null, matchId = null }) {
     await db.collection("notifications").add({
@@ -19,11 +19,11 @@ async function createNotification(db, { userId, title, message, type, bolaoId = 
 }
 
 /**
- * Envia push data-only (nunca "notification") pros tokens informados -
- * BolaoFirebaseMessagingService no Android sempre monta a notificação
- * manualmente a partir do payload "data", inclusive com app fechado.
- * Retorna os tokens que a FCM rejeitou como inválidos/expirados, pra quem
- * chamar decidir se quer limpar do perfil do usuário.
+ * Sends a data-only push (never "notification") to the given tokens -
+ * BolaoFirebaseMessagingService on Android always builds the notification
+ * manually from the "data" payload, even with the app closed.
+ * Returns the tokens FCM rejected as invalid/expired, letting the caller
+ * decide whether to clean them from the user's profile.
  */
 async function sendPush(admin, tokens, { title, body, deepLink, type }) {
     if (!tokens || tokens.length === 0) return [];
@@ -50,9 +50,9 @@ async function sendPush(admin, tokens, { title, body, deepLink, type }) {
 }
 
 /**
- * Grava a notificação persistente e, se o usuário tiver algum dispositivo
- * registrado, dispara o push - removendo do perfil qualquer token que a FCM
- * rejeitar como inválido/expirado.
+ * Writes the persistent notification and, if the user has any registered
+ * device, fires the push - removing from the profile any token FCM
+ * rejects as invalid/expired.
  */
 async function notifyUser(db, admin, userId, { title, message, type, bolaoId = null, matchId = null, deepLink = null }) {
     try {
