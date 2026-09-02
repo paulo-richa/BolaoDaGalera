@@ -57,49 +57,48 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import bolaodagalera.composeapp.generated.resources.Res
-import bolaodagalera.composeapp.generated.resources.bolao_common_phase_first_leg
-import bolaodagalera.composeapp.generated.resources.bolao_common_phase_second_leg
-import bolaodagalera.composeapp.generated.resources.bolao_common_today_chip
-import bolaodagalera.composeapp.generated.resources.bolao_detail_add_participant_cd
-import bolaodagalera.composeapp.generated.resources.bolao_detail_close_button
-import bolaodagalera.composeapp.generated.resources.bolao_detail_default_name
-import bolaodagalera.composeapp.generated.resources.bolao_detail_edit_cd
-import bolaodagalera.composeapp.generated.resources.bolao_detail_help_cd
-import bolaodagalera.composeapp.generated.resources.bolao_detail_key_emoji
-import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_confirm_member
-import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_confirm_owner
-import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_message_member
-import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_message_owner
-import bolaodagalera.composeapp.generated.resources.bolao_detail_leave_dialog_title
-import bolaodagalera.composeapp.generated.resources.bolao_detail_menu_cd
-import bolaodagalera.composeapp.generated.resources.bolao_detail_menu_leave
-import bolaodagalera.composeapp.generated.resources.bolao_detail_menu_share
-import bolaodagalera.composeapp.generated.resources.bolao_detail_nav_back_cd
-import bolaodagalera.composeapp.generated.resources.bolao_detail_participants_chip
-import bolaodagalera.composeapp.generated.resources.bolao_detail_participants_count
-import bolaodagalera.composeapp.generated.resources.bolao_detail_participants_emoji
-import bolaodagalera.composeapp.generated.resources.bolao_detail_participants_title
-import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_count_message
-import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_join_label
-import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_leave_label
-import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_requests_title
-import bolaodagalera.composeapp.generated.resources.bolao_detail_pending_view_button
-import bolaodagalera.composeapp.generated.resources.bolao_detail_share_cd
-import bolaodagalera.composeapp.generated.resources.bolao_detail_share_message
-import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_grupos
-import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_jogos
-import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_mata_mata
-import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_pontos_corridos
-import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_ranking
-import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_rodadas
-import bolaodagalera.composeapp.generated.resources.bolao_detail_tab_tabela
-import bolaodagalera.composeapp.generated.resources.bolao_detail_trophy_emoji
-import bolaodagalera.composeapp.generated.resources.bolao_detail_warning_emoji
-import com.lpstudio.bolaodagalera.ADMOB_ANDROID_BANNER_ID
-import com.lpstudio.bolaodagalera.ADMOB_IOS_BANNER_ID
+import bolaodagalera.feature_bolao.generated.resources.Res
+import bolaodagalera.feature_bolao.generated.resources.bolao_common_phase_first_leg
+import bolaodagalera.feature_bolao.generated.resources.bolao_common_phase_second_leg
+import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_add_participant_cd
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_close_button
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_default_name
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_edit_cd
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_help_cd
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_key_emoji
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_leave_dialog_confirm_member
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_leave_dialog_confirm_owner
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_leave_dialog_message_member
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_leave_dialog_message_owner
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_leave_dialog_title
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_menu_cd
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_menu_leave
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_menu_share
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_nav_back_cd
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_participants_chip
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_participants_count
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_participants_emoji
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_participants_title
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_pending_count_message
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_pending_join_label
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_pending_leave_label
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_pending_requests_title
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_pending_view_button
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_share_cd
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_share_message
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_grupos
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_jogos
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_mata_mata
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_pontos_corridos
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_ranking
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_rodadas
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_tabela
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_trophy_emoji
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_warning_emoji
 import com.lpstudio.bolaodagalera.CommonBackHandler
 import com.lpstudio.bolaodagalera.LauncherProvider
+import com.lpstudio.bolaodagalera.ads.AdBannerProvider
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoConfirmDialog
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoDropdownMenu
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoDropdownMenuItem
@@ -110,6 +109,16 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
+import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
+import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
+import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
+import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
+import com.lpstudio.bolaodagalera.designsystem.theme.Gold
+import com.lpstudio.bolaodagalera.designsystem.theme.GradientHero
+import com.lpstudio.bolaodagalera.designsystem.theme.NavyCard
+import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
+import com.lpstudio.bolaodagalera.designsystem.theme.Neon
+import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.model.Championship
@@ -117,19 +126,7 @@ import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
-import com.lpstudio.bolaodagalera.getPlatform
-import com.lpstudio.bolaodagalera.presentation.components.AdBanner
 import com.lpstudio.bolaodagalera.presentation.ranking.RankingScreen
-import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
-import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
-import com.lpstudio.bolaodagalera.presentation.theme.ErrorRed
-import com.lpstudio.bolaodagalera.presentation.theme.GlassBorder
-import com.lpstudio.bolaodagalera.presentation.theme.Gold
-import com.lpstudio.bolaodagalera.presentation.theme.GradientHero
-import com.lpstudio.bolaodagalera.presentation.theme.NavyCard
-import com.lpstudio.bolaodagalera.presentation.theme.NavyElevated
-import com.lpstudio.bolaodagalera.presentation.theme.Neon
-import com.lpstudio.bolaodagalera.presentation.theme.TextMuted
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
 import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.getInitials
@@ -964,8 +961,8 @@ fun BolaoDetailContent(
                     }
                 }
             }
-            val adId = if (getPlatform().name.lowercase().contains("android")) ADMOB_ANDROID_BANNER_ID else ADMOB_IOS_BANNER_ID
-            AdBanner(modifier = Modifier.fillMaxWidth().height(50.dp).background(DeepNavy), adId = adId)
+            val adBannerProvider = koinInject<AdBannerProvider>()
+            adBannerProvider.Banner(modifier = Modifier.fillMaxWidth().height(50.dp).background(DeepNavy))
         }
     }
 }
@@ -1051,7 +1048,7 @@ fun BolaoDetailScreenPreview() {
             participants = mockParticipants,
             isLoading = false
         )
-    AppTheme {
+    BolaoTheme {
         BolaoDetailContent(
             bolaoId = "bolao-1", uiState = uiState, isOwner = true, isAppOwner = true,
             launcherProvider =

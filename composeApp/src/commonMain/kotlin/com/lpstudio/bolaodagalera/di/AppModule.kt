@@ -1,5 +1,6 @@
 package com.lpstudio.bolaodagalera.di
 
+import com.lpstudio.bolaodagalera.ads.AdBannerProvider
 import com.lpstudio.bolaodagalera.ads.InterstitialAdCounter
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseAuthRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseBolaoRepository
@@ -27,6 +28,7 @@ import com.lpstudio.bolaodagalera.observability.createCrashReporter
 import com.lpstudio.bolaodagalera.observability.createPerformanceMonitor
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
+import com.lpstudio.bolaodagalera.presentation.components.BolaoAdBannerProvider
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
 import com.lpstudio.bolaodagalera.presentation.match.PredictionViewModel
 import com.lpstudio.bolaodagalera.presentation.ranking.RankingViewModel
@@ -49,6 +51,7 @@ val appModule =
         single<PerformanceMonitor> { createPerformanceMonitor() }
         single<AnalyticsTracker> { createAnalyticsTracker() }
         single<InterstitialAdCounter> { PredictionAdCounter }
+        single<AdBannerProvider> { BolaoAdBannerProvider() }
 
         // Remote Config
         single { RemoteConfigManager() }

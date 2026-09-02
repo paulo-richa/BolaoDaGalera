@@ -12,10 +12,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import bolaodagalera.composeapp.generated.resources.Res
-import bolaodagalera.composeapp.generated.resources.bolao_common_today_chip
-import bolaodagalera.composeapp.generated.resources.rodada_selector_chip_round
-import bolaodagalera.composeapp.generated.resources.rodada_selector_chip_tomorrow
+import bolaodagalera.feature_bolao.generated.resources.Res
+import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
+import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_round
+import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_tomorrow
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

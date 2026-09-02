@@ -1,6 +1,8 @@
 package com.lpstudio.bolaodagalera.di
 
+import com.lpstudio.bolaodagalera.ads.AdBannerProvider
 import com.lpstudio.bolaodagalera.ads.InterstitialAdCounter
+import com.lpstudio.bolaodagalera.data.fake.FakeAdBannerProvider
 import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
@@ -49,6 +51,7 @@ val fakeAppModule =
         single<PerformanceMonitor> { FakePerformanceMonitor() }
         single<AnalyticsTracker> { FakeAnalyticsTracker() }
         single<InterstitialAdCounter> { FakeInterstitialAdCounter() }
+        single<AdBannerProvider> { FakeAdBannerProvider() }
 
         // UseCases
         single { CalculatePointsUseCase() }
