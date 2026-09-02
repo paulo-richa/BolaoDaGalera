@@ -1,11 +1,8 @@
 package com.lpstudio.bolaodagalera
 
 /**
- * App Configuration and AdMob IDs
+ * IDs do AdMob - Produção
  */
-expect val APP_VERSION: String
-
-// IDs do AdMob - Produção
 const val ADMOB_ANDROID_BANNER_ID = "ca-app-pub-5592102111451720/8513814172"
 const val ADMOB_IOS_BANNER_ID = "ca-app-pub-4933946022878479/9796032223"
 

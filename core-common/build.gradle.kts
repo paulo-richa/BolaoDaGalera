@@ -3,6 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
@@ -22,10 +24,12 @@ kotlin {
         commonMain.dependencies {
             api(libs.kermit)
             implementation(libs.compose.runtime)
+            implementation(libs.compose.ui)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
         }
         androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
             implementation("com.google.firebase:firebase-crashlytics")
             implementation("com.google.firebase:firebase-perf")
             implementation("com.google.firebase:firebase-analytics")
