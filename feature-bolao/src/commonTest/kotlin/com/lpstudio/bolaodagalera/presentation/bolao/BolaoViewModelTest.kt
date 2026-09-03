@@ -1,13 +1,16 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
 import app.cash.turbine.test
+import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
+import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
+import com.lpstudio.bolaodagalera.observability.Telemetry
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -63,7 +66,8 @@ class BolaoViewModelTest {
                 predictionRepository,
                 authRepository,
                 "bolao-1",
-                FakeCrashReporter()
+                FakeCrashReporter(),
+                Telemetry(FakePerformanceMonitor(), FakeAnalyticsTracker())
             )
     }
 

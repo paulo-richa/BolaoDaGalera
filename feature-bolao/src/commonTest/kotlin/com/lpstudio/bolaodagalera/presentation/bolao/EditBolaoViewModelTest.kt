@@ -1,10 +1,12 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
 import com.lpstudio.bolaodagalera.data.fake.FAKE_USER
+import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
+import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -36,7 +38,16 @@ class EditBolaoViewModelTest {
         bolaoRepository = FakeBolaoRepository()
         matchRepository = FakeMatchRepository()
 
-        viewModel = EditBolaoViewModel(bolaoRepository, authRepository, matchRepository, "bolao-1", FakeCrashReporter())
+        viewModel =
+            EditBolaoViewModel(
+                bolaoRepository,
+                authRepository,
+                matchRepository,
+                "bolao-1",
+                FakeCrashReporter(),
+                FakePerformanceMonitor(),
+                FakeAnalyticsTracker()
+            )
     }
 
     @AfterTest

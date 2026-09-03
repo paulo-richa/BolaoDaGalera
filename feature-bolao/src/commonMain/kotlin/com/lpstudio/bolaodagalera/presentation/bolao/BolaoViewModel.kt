@@ -13,8 +13,11 @@ import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.EnrichRankingWithParticipantNamesUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.FilterBolaoMatchesUseCase
+import com.lpstudio.bolaodagalera.observability.AnalyticsEvents
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.ErrorReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceTraces
+import com.lpstudio.bolaodagalera.observability.Telemetry
 import com.lpstudio.bolaodagalera.observability.appLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -58,10 +61,13 @@ class BolaoViewModel(
     private val authRepository: AuthRepository,
     private val bolaoId: String,
     private val crashReporter: CrashReporter,
-    private val filterBolaoMatches: FilterBolaoMatchesUseCase = FilterBolaoMatchesUseCase(),
-    private val enrichRankingWithParticipantNames: EnrichRankingWithParticipantNamesUseCase = EnrichRankingWithParticipantNamesUseCase(),
+    private val telemetry: Telemetry,
     private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
 ) : ViewModel() {
+    private val performanceMonitor get() = telemetry.performanceMonitor
+    private val analyticsTracker get() = telemetry.analyticsTracker
+    private val filterBolaoMatches = FilterBolaoMatchesUseCase()
+    private val enrichRankingWithParticipantNames = EnrichRankingWithParticipantNamesUseCase()
     private val logger = appLogger("BolaoViewModel")
     private val _uiState = MutableStateFlow(BolaoUiState())
     val uiState: StateFlow<BolaoUiState> = _uiState.asStateFlow()
@@ -86,7 +92,7 @@ class BolaoViewModel(
     private fun loadBolao() {
         viewModelScope.launch {
             try {
-                val bolao = bolaoRepository.getBolao(bolaoId)
+                val bolao = performanceMonitor.trace(PerformanceTraces.BOLAO_LOAD_DETAIL) { bolaoRepository.getBolao(bolaoId) }
                 _uiState.update { it.copy(bolao = bolao) }
                 logger.d { "Bolão carregado (${bolao.name})." }
             } catch (e: CancellationException) {
@@ -171,7 +177,10 @@ class BolaoViewModel(
         val championshipId = _uiState.value.bolao?.championshipId ?: return
         viewModelScope.launch {
             try {
-                matchRepository.updateMatchScore(championshipId, matchId, home, away)
+                performanceMonitor.trace(PerformanceTraces.BOLAO_ADMIN_UPDATE_SCORE) {
+                    matchRepository.updateMatchScore(championshipId, matchId, home, away)
+                }
+                analyticsTracker.logEvent(AnalyticsEvents.BOLAO_ADMIN_UPDATE_SCORE, mapOf("bolao_id" to bolaoId, "match_id" to matchId))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -184,7 +193,13 @@ class BolaoViewModel(
     fun approveParticipant(userId: String, approve: Boolean) {
         viewModelScope.launch {
             try {
-                bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
+                performanceMonitor.trace(PerformanceTraces.BOLAO_APPROVE_JOIN) {
+                    bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
+                }
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.BOLAO_APPROVE_JOIN,
+                    mapOf("bolao_id" to bolaoId, "approved" to approve)
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -197,7 +212,13 @@ class BolaoViewModel(
     fun approveLeaveRequest(userId: String, approve: Boolean) {
         viewModelScope.launch {
             try {
-                bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
+                performanceMonitor.trace(PerformanceTraces.BOLAO_APPROVE_LEAVE) {
+                    bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
+                }
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.BOLAO_APPROVE_LEAVE,
+                    mapOf("bolao_id" to bolaoId, "approved" to approve)
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -214,11 +235,14 @@ class BolaoViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val bolao = _uiState.value.bolao
-                if (bolao?.ownerId == currentUserId) {
-                    bolaoRepository.leaveBolao(bolaoId, currentUserId)
-                } else {
-                    bolaoRepository.requestLeaveBolao(bolaoId, currentUserId)
+                performanceMonitor.trace(PerformanceTraces.BOLAO_LEAVE) {
+                    if (bolao?.ownerId == currentUserId) {
+                        bolaoRepository.leaveBolao(bolaoId, currentUserId)
+                    } else {
+                        bolaoRepository.requestLeaveBolao(bolaoId, currentUserId)
+                    }
                 }
+                analyticsTracker.logEvent(AnalyticsEvents.BOLAO_LEAVE, mapOf("bolao_id" to bolaoId))
                 _uiState.update { it.copy(isLeaveSuccess = true, isLoading = false) }
             } catch (e: CancellationException) {
                 throw e

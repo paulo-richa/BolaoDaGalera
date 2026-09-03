@@ -12,10 +12,12 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CheckKnockoutAvailabilityUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.CheckPhaseAvailabilityUseCase
+import com.lpstudio.bolaodagalera.observability.AnalyticsEvents
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.PerformanceTraces
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,7 +84,7 @@ class CreateBolaoViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val bolao =
-                    performanceMonitor.trace("create_bolao") {
+                    performanceMonitor.trace(PerformanceTraces.BOLAO_CREATE) {
                         bolaoRepository.createBolao(
                             name.trim(),
                             description.trim(),
@@ -94,7 +96,10 @@ class CreateBolaoViewModel(
                             pointsWinnerOrDraw = pointsWinner
                         )
                     }
-                analyticsTracker.logEvent("bolao_created", mapOf("championship_id" to championshipId, "scope" to scope.name))
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.BOLAO_CREATE,
+                    mapOf("bolao_id" to bolao.id, "championship_id" to championshipId, "scope" to scope.name)
+                )
                 _uiState.update { it.copy(createdBolao = bolao, isLoading = false) }
             } catch (e: CancellationException) {
                 throw e

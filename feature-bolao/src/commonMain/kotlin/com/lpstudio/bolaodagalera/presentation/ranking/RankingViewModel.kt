@@ -16,6 +16,8 @@ import com.lpstudio.bolaodagalera.domain.usecase.GetParticipantHitsUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.GetRankingUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.ErrorReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.PerformanceTraces
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,12 +48,13 @@ class RankingViewModel(
     private val matchRepository: MatchRepository,
     private val authRepository: AuthRepository,
     private val crashReporter: CrashReporter,
+    private val performanceMonitor: PerformanceMonitor,
     private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase(),
-    private val getRankingUseCase: GetRankingUseCase = GetRankingUseCase(calculatePointsUseCase),
-    private val getParticipantHits: GetParticipantHitsUseCase = GetParticipantHitsUseCase(calculatePointsUseCase),
     private val bolaoId: String
 ) : ViewModel() {
     private val errorReporter = ErrorReporter(crashReporter)
+    private val getRankingUseCase = GetRankingUseCase(calculatePointsUseCase)
+    private val getParticipantHits = GetParticipantHitsUseCase(calculatePointsUseCase)
     private val _uiState = MutableStateFlow(RankingUiState())
     val uiState: StateFlow<RankingUiState> = _uiState.asStateFlow()
 
@@ -67,6 +70,15 @@ class RankingViewModel(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun loadData() {
+        val rankingLoadTrace = performanceMonitor.startScreenTrace(PerformanceTraces.RANKING_LOAD)
+        var rankingLoadTraceStopped = false
+        fun stopRankingLoadTraceOnce() {
+            if (!rankingLoadTraceStopped) {
+                rankingLoadTraceStopped = true
+                rankingLoadTrace.stop()
+            }
+        }
+
         viewModelScope.launch {
             try {
                 // Observes the pool, matches, and predictions simultaneously. The ranking
@@ -87,15 +99,18 @@ class RankingViewModel(
                         getRankingUseCase(bolao, predictions, matches, users)
                     }
                 }.onEach { entries ->
+                    stopRankingLoadTraceOnce()
                     _uiState.update { it.copy(entries = entries, isLoading = false) }
                 }.catch { e ->
                     if (e is CancellationException) throw e
+                    stopRankingLoadTraceOnce()
                     val message = errorReporter.reportAndClassify(e, "Erro ao observar ranking do bolão $bolaoId")
                     _uiState.update { it.copy(error = message, isLoading = false) }
                 }.launchIn(viewModelScope)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                stopRankingLoadTraceOnce()
                 val message = errorReporter.reportAndClassify(e, "Erro ao carregar ranking do bolão $bolaoId")
                 _uiState.update { it.copy(error = message, isLoading = false) }
             }

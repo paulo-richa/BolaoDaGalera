@@ -12,6 +12,14 @@ private class FirebasePerformanceMonitor : PerformanceMonitor {
             trace.stop()
         }
     }
+
+    override fun startScreenTrace(name: String): ScreenTrace {
+        val trace = FirebasePerformance.getInstance().newTrace(name)
+        trace.start()
+        return object : ScreenTrace {
+            override fun stop() = trace.stop()
+        }
+    }
 }
 
 actual fun createPerformanceMonitor(): PerformanceMonitor = FirebasePerformanceMonitor()

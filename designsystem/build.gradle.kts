@@ -10,6 +10,10 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
+composeCompiler {
+    stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("config/compose/stability_config.conf"))
+}
+
 kotlin {
     androidTarget {
         compilerOptions {

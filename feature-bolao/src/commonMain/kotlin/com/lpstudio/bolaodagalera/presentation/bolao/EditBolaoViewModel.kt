@@ -10,8 +10,12 @@ import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
+import com.lpstudio.bolaodagalera.observability.AnalyticsEvents
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.ErrorReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.PerformanceTraces
 import com.lpstudio.bolaodagalera.util.TimeSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
@@ -40,6 +44,8 @@ class EditBolaoViewModel(
     private val matchRepository: MatchRepository,
     private val bolaoId: String,
     private val crashReporter: CrashReporter,
+    private val performanceMonitor: PerformanceMonitor,
+    private val analyticsTracker: AnalyticsTracker,
     private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EditBolaoUiState())
@@ -89,7 +95,10 @@ class EditBolaoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                bolaoRepository.updateBolao(bolaoId, name, description, scope, pointsExact, pointsWinner)
+                performanceMonitor.trace(PerformanceTraces.BOLAO_EDIT) {
+                    bolaoRepository.updateBolao(bolaoId, name, description, scope, pointsExact, pointsWinner)
+                }
+                analyticsTracker.logEvent(AnalyticsEvents.BOLAO_EDIT, mapOf("bolao_id" to bolaoId))
                 val updatedBolao = bolaoRepository.getBolao(bolaoId)
                 _uiState.update { it.copy(bolao = updatedBolao, isLoading = false, showSuccessMessage = true) }
                 delay(SUCCESS_MESSAGE_DURATION_MILLIS)
@@ -107,9 +116,12 @@ class EditBolaoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                withTimeout(DELETE_BOLAO_TIMEOUT_MILLIS) {
-                    bolaoRepository.deleteBolao(bolaoId)
+                performanceMonitor.trace(PerformanceTraces.BOLAO_DELETE) {
+                    withTimeout(DELETE_BOLAO_TIMEOUT_MILLIS) {
+                        bolaoRepository.deleteBolao(bolaoId)
+                    }
                 }
+                analyticsTracker.logEvent(AnalyticsEvents.BOLAO_DELETE, mapOf("bolao_id" to bolaoId))
                 _uiState.update { it.copy(isDeleted = true, isLoading = false) }
             } catch (e: TimeoutCancellationException) {
                 errorReporter.report(e, "Timeout ao excluir bolão $bolaoId")
@@ -126,7 +138,10 @@ class EditBolaoViewModel(
     fun removeParticipant(userId: String) {
         viewModelScope.launch {
             try {
-                bolaoRepository.removeParticipant(bolaoId, userId)
+                performanceMonitor.trace(PerformanceTraces.BOLAO_REMOVE_PARTICIPANT) {
+                    bolaoRepository.removeParticipant(bolaoId, userId)
+                }
+                analyticsTracker.logEvent(AnalyticsEvents.BOLAO_REMOVE_PARTICIPANT, mapOf("bolao_id" to bolaoId))
                 // Refresh data
                 val bolao = bolaoRepository.getBolao(bolaoId)
                 val participants = authRepository.getUsers(bolao.participants)

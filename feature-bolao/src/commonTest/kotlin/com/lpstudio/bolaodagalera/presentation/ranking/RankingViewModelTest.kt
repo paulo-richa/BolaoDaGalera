@@ -5,6 +5,7 @@ import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
+import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
@@ -81,6 +82,7 @@ class RankingViewModelTest {
                 matchRepository = matchRepository,
                 authRepository = authRepository,
                 crashReporter = FakeCrashReporter(),
+                performanceMonitor = FakePerformanceMonitor(),
                 bolaoId = "bolao-1"
             )
     }

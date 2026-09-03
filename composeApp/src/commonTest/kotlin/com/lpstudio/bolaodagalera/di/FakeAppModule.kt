@@ -27,6 +27,7 @@ import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.Telemetry
 import com.lpstudio.bolaodagalera.presentation.auth.AuthViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.AddParticipantsViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
@@ -55,6 +56,7 @@ val fakeAppModule =
         single<CrashReporter> { FakeCrashReporter() }
         single<PerformanceMonitor> { FakePerformanceMonitor() }
         single<AnalyticsTracker> { FakeAnalyticsTracker() }
+        single { Telemetry(get(), get()) }
         single<InterstitialAdCounter> { FakeInterstitialAdCounter() }
         single<AdBannerProvider> { FakeAdBannerProvider() }
 
@@ -63,8 +65,28 @@ val fakeAppModule =
 
         // ViewModels
         viewModel { AuthViewModel(get(), get(), get(), get()) }
-        viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
-        viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId, get()) }
+        viewModel {
+            HomeViewModel(
+                authRepository = get(),
+                bolaoRepository = get(),
+                invitationRepository = get(),
+                notificationRepository = get(),
+                crashReporter = get(),
+                performanceMonitor = get(),
+                analyticsTracker = get()
+            )
+        }
+        viewModel { (bolaoId: String) ->
+            BolaoViewModel(
+                bolaoRepository = get(),
+                matchRepository = get(),
+                predictionRepository = get(),
+                authRepository = get(),
+                bolaoId = bolaoId,
+                crashReporter = get(),
+                telemetry = get()
+            )
+        }
         viewModel { (bolaoId: String, matchId: String) ->
             PredictionViewModel(get(), get(), get(), get(), get(), get(), get(), bolaoId, matchId)
         }
@@ -75,13 +97,42 @@ val fakeAppModule =
                 matchRepository = get(),
                 authRepository = get(),
                 crashReporter = get(),
+                performanceMonitor = get(),
                 calculatePointsUseCase = get(),
                 bolaoId = bolaoId
             )
         }
         viewModel { CreateBolaoViewModel(get(), get(), get(), get(), get(), get()) }
-        viewModel { (bolaoId: String) -> EditBolaoViewModel(get(), get(), get(), bolaoId, get()) }
+        viewModel { (bolaoId: String) ->
+            EditBolaoViewModel(
+                bolaoRepository = get(),
+                authRepository = get(),
+                matchRepository = get(),
+                bolaoId = bolaoId,
+                crashReporter = get(),
+                performanceMonitor = get(),
+                analyticsTracker = get()
+            )
+        }
         viewModel { JoinBolaoViewModel(get(), get(), get(), get(), get()) }
-        viewModel { (bolaoId: String) -> AddParticipantsViewModel(get(), get(), get(), get(), bolaoId) }
-        viewModel { HelpViewModel(get(), get()) }
+        viewModel { (bolaoId: String) ->
+            AddParticipantsViewModel(
+                bolaoRepository = get(),
+                authRepository = get(),
+                invitationRepository = get(),
+                crashReporter = get(),
+                performanceMonitor = get(),
+                analyticsTracker = get(),
+                bolaoId = bolaoId
+            )
+        }
+        viewModel {
+            HelpViewModel(
+                supportRepository = get(),
+                authRepository = get(),
+                crashReporter = get(),
+                performanceMonitor = get(),
+                analyticsTracker = get()
+            )
+        }
     }

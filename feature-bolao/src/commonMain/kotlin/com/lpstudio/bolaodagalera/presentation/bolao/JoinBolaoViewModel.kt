@@ -7,10 +7,12 @@ import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.ErrorCategory
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
+import com.lpstudio.bolaodagalera.observability.AnalyticsEvents
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.PerformanceTraces
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,7 +47,7 @@ class JoinBolaoViewModel(
             try {
                 // Uses requestJoinBolao so the owner must approve the request
                 val bolao =
-                    performanceMonitor.trace("join_bolao") {
+                    performanceMonitor.trace(PerformanceTraces.BOLAO_JOIN_REQUEST) {
                         bolaoRepository.requestJoinBolao(code.trim().uppercase(), userId)
                     }
 
@@ -54,7 +56,7 @@ class JoinBolaoViewModel(
                     _uiState.update { it.copy(alreadyMemberBolaoId = bolao.id, isLoading = false) }
                 } else {
                     // Rule 3: new join request sent
-                    analyticsTracker.logEvent("bolao_join_requested", mapOf("bolao_id" to bolao.id))
+                    analyticsTracker.logEvent(AnalyticsEvents.BOLAO_JOIN_REQUEST, mapOf("bolao_id" to bolao.id))
                     _uiState.update { it.copy(joinedBolao = bolao, requestSent = true, isLoading = false) }
                 }
             } catch (e: CancellationException) {

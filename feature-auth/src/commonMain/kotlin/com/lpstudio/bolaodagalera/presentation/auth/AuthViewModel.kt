@@ -8,10 +8,12 @@ import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.usecase.ClassifyExceptionUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.GenerateAvailableUsernameUseCase
+import com.lpstudio.bolaodagalera.observability.AnalyticsEvents
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.PerformanceTraces
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,8 +56,8 @@ class AuthViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
             try {
-                val user = performanceMonitor.trace("auth_login") { authRepository.signIn(email.trim(), password) }
-                analyticsTracker.logEvent("login")
+                val user = performanceMonitor.trace(PerformanceTraces.AUTH_LOGIN) { authRepository.signIn(email.trim(), password) }
+                analyticsTracker.logEvent(AnalyticsEvents.AUTH_LOGIN)
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: CancellationException) {
                 throw e
@@ -119,7 +121,7 @@ class AuthViewModel(
                 }
 
                 val user =
-                    performanceMonitor.trace("auth_register") {
+                    performanceMonitor.trace(PerformanceTraces.AUTH_SIGN_UP) {
                         authRepository.register(
                             email.trim(),
                             password,
@@ -129,7 +131,7 @@ class AuthViewModel(
                             username.trim().lowercase()
                         )
                     }
-                analyticsTracker.logEvent("sign_up")
+                analyticsTracker.logEvent(AnalyticsEvents.AUTH_SIGN_UP)
                 _uiState.update { it.copy(user = user, isLoading = false) }
             } catch (e: CancellationException) {
                 throw e
@@ -182,7 +184,10 @@ class AuthViewModel(
                     }
                 }
 
-                authRepository.updateProfile(newName, newPhone, newNickname)
+                performanceMonitor.trace(PerformanceTraces.AUTH_UPDATE_PROFILE) {
+                    authRepository.updateProfile(newName, newPhone, newNickname)
+                }
+                analyticsTracker.logEvent(AnalyticsEvents.AUTH_UPDATE_PROFILE)
                 _uiState.update { it.copy(isLoading = false, successMessage = "Perfil atualizado com sucesso!") }
             } catch (e: CancellationException) {
                 throw e
@@ -196,6 +201,7 @@ class AuthViewModel(
     fun signOut() {
         viewModelScope.launch {
             authRepository.signOut()
+            analyticsTracker.logEvent(AnalyticsEvents.AUTH_SIGN_OUT)
         }
     }
 
@@ -208,6 +214,7 @@ class AuthViewModel(
             _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
             try {
                 authRepository.sendPasswordResetEmail(email.trim())
+                analyticsTracker.logEvent(AnalyticsEvents.AUTH_PASSWORD_RESET)
                 _uiState.update { it.copy(isLoading = false, successMessage = "E-mail de recuperação enviado com sucesso!") }
             } catch (e: CancellationException) {
                 throw e
