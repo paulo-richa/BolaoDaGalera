@@ -21,15 +21,26 @@ potential-bugs:
 performance:
   active: false
 
+# Theme/Color/Typography hold the raw values *defining* the design system's own
+# tokens - the rest of the codebase is supposed to reference these instead of
+# repeating raw values, so the raw-value rules don't apply to their own source.
 bolao-design-system:
   active: true
   NoHardcodedStringInDesignSystem:
     active: true
   NoRawFontSize:
     active: true
+    excludes:
+      - '**/theme/Typography.kt'
   NoRawCornerRadius:
     active: true
+    excludes:
+      - '**/theme/Theme.kt'
   NoRawSpacingDp:
     active: true
+    excludes:
+      - '**/theme/Theme.kt'
   NoRawElevation:
     active: true
+    excludes:
+      - '**/theme/Theme.kt'

@@ -1,6 +1,5 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -15,8 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -50,12 +49,20 @@ import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.util.TimeSource
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
 /** Sentinel value of [selectedRound] for the "Tomorrow" tab (0 is already used by "Today"). */
 const val TOMORROW_ROUND = -1
+
+/** Groups the [MatchCard] click callbacks so extracted sub-composables don't need one parameter per callback. */
+private data class GroupStageMatchActions(
+    val onMatchClick: (String) -> Unit,
+    val onShowAllPredictions: (Match) -> Unit,
+    val onOpenAdminScoreDialog: (Match) -> Unit
+)
 
 @Composable
 fun GroupStageTab(
@@ -72,41 +79,20 @@ fun GroupStageTab(
     onShowAllPredictions: (Match) -> Unit,
     onOpenAdminScoreDialog: (Match) -> Unit
 ) {
+    val actions = remember(onMatchClick, onShowAllPredictions, onOpenAdminScoreDialog) {
+        GroupStageMatchActions(onMatchClick, onShowAllPredictions, onOpenAdminScoreDialog)
+    }
     val unlocked = remember(matches) { matches.map { it.groupRound() }.toSet() }
     val tz = TimeZone.currentSystemDefault()
     val now = TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
-    val tomorrowDate = remember(todayDate) { kotlinx.datetime.LocalDate.fromEpochDays(todayDate.toEpochDays() + 1) }
-    val hasMatchToday =
-        remember(
-            matches,
-            todayDate
-        ) { matches.any { Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == todayDate } }
-    val hasMatchTomorrow =
-        remember(
-            matches,
-            tomorrowDate
-        ) { matches.any { Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == tomorrowDate } }
-    val currentRound =
-        remember(matches, now) {
-            val upcoming = matches.filter { !it.isFinished && it.matchDateMillis > now }
-                .minByOrNull { it.matchDateMillis }?.groupRound()
-            upcoming ?: matches.maxByOrNull { it.matchDateMillis }?.groupRound() ?: 0
-        }
+    val tomorrowDate = remember(todayDate) { LocalDate.fromEpochDays(todayDate.toEpochDays() + 1) }
+    val hasMatchToday = remember(matches, todayDate) { matches.any { it.isOnDate(todayDate, tz) } }
+    val hasMatchTomorrow = remember(matches, tomorrowDate) { matches.any { it.isOnDate(tomorrowDate, tz) } }
+    val currentRound = remember(matches, now) { computeCurrentGroupRound(matches, now) }
     val roundMatches =
         remember(matches, selectedRound, todayDate, tomorrowDate, now) {
-            if (selectedRound == 0) {
-                matches.filter {
-                    val mDate = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date
-                    mDate == todayDate || (now in it.matchDateMillis..(it.matchDateMillis + 3 * 3600_000L))
-                }.sortedBy { it.matchDateMillis }
-            } else if (selectedRound == TOMORROW_ROUND) {
-                matches.filter {
-                    Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == tomorrowDate
-                }.sortedBy { it.matchDateMillis }
-            } else {
-                matches.filter { it.groupRound() == selectedRound }.sortedBy { it.matchDateMillis }
-            }
+            computeGroupRoundMatches(matches, selectedRound, todayDate, tomorrowDate, tz, now)
         }
     val byGroup = remember(roundMatches) { roundMatches.groupBy { it.group ?: "" } }
     val showShadow by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
@@ -119,79 +105,31 @@ fun GroupStageTab(
     LaunchedEffect(selectedRound, matches.isNotEmpty(), byGroup) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             if (matches.isEmpty() || byGroup.isEmpty()) return@repeatOnLifecycle
-            val sorted = byGroup.entries.sortedBy { it.key }
             if (!hasHandledScroll) {
-                expandedGroups.clear()
-                if (roundMatches.isNotEmpty() && roundMatches.all { it.isFinished } && selectedRound != 0) {
-                    listState.scrollToItem(0)
-                    hasHandledScroll = true
-                    return@repeatOnLifecycle
-                }
-                val window = 2 * 60 * 60 * 1000L + (30 * 60 * 1000L)
-                val focus =
-                    matches.filter { it.phase == Phase.GROUP_STAGE }.let { all ->
-                        all.find { now in it.matchDateMillis..(it.matchDateMillis + window) }
-                            ?: all.filter {
-                                val matchDate = Instant.fromEpochMilliseconds(it.matchDateMillis)
-                                    .toLocalDateTime(tz).date
-                                matchDate == todayDate && it.matchDateMillis > now
-                            }.minByOrNull {
-                                it.matchDateMillis
-                            } ?: all.filter {
-                            it.matchDateMillis > now
-                        }.minByOrNull { it.matchDateMillis }
-                    }
-                if (focus != null) {
-                    val group = focus.group ?: ""
-                    val round = focus.groupRound()
-                    if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
-                        expandedGroups.addAll(byGroup.keys)
-                        listState.scrollToItem(0)
-                    } else if (selectedRound == round) {
-                        expandedGroups.add(group)
-                        val actG = matches.filter {
-                            val sR = it.groupRound() == selectedRound
-                            val isT = Instant.fromEpochMilliseconds(it.matchDateMillis)
-                                .toLocalDateTime(tz).date == todayDate
-                            val isV = it.matchDateMillis + window >= now
-                            sR && isT && isV && !it.isFinished
-                        }.mapNotNull { it.group }
-                        expandedGroups.addAll(actG)
-                        var targetIdx = 0
-                        for (entry in sorted) {
-                            if (entry.key == group) break
-                            targetIdx += 1 + entry.value.size + 1
-                        }
-                        listState.scrollToItem(targetIdx)
-                    } else {
-                        sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
-                        listState.scrollToItem(0)
-                    }
-                } else {
-                    if (selectedRound == 0 || selectedRound == TOMORROW_ROUND) {
-                        expandedGroups.addAll(byGroup.keys)
-                    } else {
-                        sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
-                    }
-                    listState.scrollToItem(0)
-                }
+                handleGroupStageInitialScroll(
+                    matches = matches,
+                    byGroup = byGroup,
+                    roundMatches = roundMatches,
+                    selectedRound = selectedRound,
+                    todayDate = todayDate,
+                    tz = tz,
+                    now = now,
+                    expandedGroups = expandedGroups,
+                    listState = listState
+                )
                 hasHandledScroll = true
             }
         }
     }
     Column(Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxWidth().background(DeepNavy).padding(vertical = BolaoSpacing.sm)) {
-            RodadaSelector(
-                selected = selectedRound,
-                unlocked = unlocked,
-                showHoje = hasMatchToday,
-                showAmanha = hasMatchTomorrow,
-                currentRound = currentRound,
-                onSelect = {
-                    if (it == 0 || it == TOMORROW_ROUND || it in unlocked) onRoundChange(it)
-                }
-            )
-        }
+        GroupStageRoundSelectorBar(
+            selectedRound = selectedRound,
+            unlocked = unlocked,
+            hasMatchToday = hasMatchToday,
+            hasMatchTomorrow = hasMatchTomorrow,
+            currentRound = currentRound,
+            onRoundChange = onRoundChange
+        )
         Box(Modifier.weight(1f)) {
             LazyColumn(
                 state = listState,
@@ -199,88 +137,17 @@ fun GroupStageTab(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
             ) {
-                if (roundMatches.isEmpty() && (selectedRound == 0 || selectedRound == TOMORROW_ROUND)) {
-                    item {
-                        Box(Modifier.fillMaxWidth().padding(top = BolaoSpacing.huge), contentAlignment = Alignment.Center) {
-                            val msg = if (selectedRound == 0) {
-                                stringResource(Res.string.group_stage_tab_empty_today)
-                            } else {
-                                stringResource(Res.string.group_stage_tab_empty_tomorrow)
-                            }
-                            BolaoText(msg, color = TextMuted, fontSize = BolaoTypography.bodyLarge.fontSize)
-                        }
-                    }
+                val isDayTab = selectedRound == 0 || selectedRound == TOMORROW_ROUND
+                if (roundMatches.isEmpty() && isDayTab) {
+                    groupStageEmptyState(selectedRound)
                 }
-                if ((selectedRound == 0 || selectedRound == TOMORROW_ROUND) && roundMatches.isNotEmpty()) {
-                    items(roundMatches, key = { it.id }) { m ->
-                        Column(modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.sm)) {
-                            MatchCard(
-                                match = m,
-                                prediction = predictions[m.id],
-                                isAdmin = isAdmin,
-                                bolaoCreatedAt = bolaoCreatedAt,
-                                showSocialBadge = true,
-                                allMatches = matches,
-                                isTwoLegged = false,
-                                onClick = {
-                                    onMatchClick(m.id)
-                                },
-                                onShowAllPredictions = { onShowAllPredictions(m) },
-                                onOpenAdminScoreDialog = { onOpenAdminScoreDialog(m) }
-                            )
-                            Spacer(Modifier.height(8.dp))
-                        }
-                    }
+                if (isDayTab && roundMatches.isNotEmpty()) {
+                    dayMatchesList(roundMatches, predictions, isAdmin, bolaoCreatedAt, matches, actions)
                 } else {
-                    byGroup.entries.sortedBy { it.key }.forEach { (g, ms) ->
-                        val isExp = expandedGroups.contains(g)
-                        val isComp = ms.all { it.isFinished || predictions.containsKey(it.id) }
-                        item(key = "header-$g") {
-                            GroupHeader(group = g, isExpanded = isExp, isCompleted = isComp, enabled = true, onToggle = {
-                                if (isExp) expandedGroups.remove(g) else expandedGroups.add(g)
-                            })
-                        }
-                        items(ms, key = { it.id }) { m ->
-                            androidx.compose.animation.AnimatedVisibility(
-                                visible = isExp,
-                                enter = expandVertically(),
-                                exit = shrinkVertically()
-                            ) {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.sm)
-                                ) {
-                                    MatchCard(
-                                        match = m,
-                                        prediction = predictions[m.id],
-                                        isAdmin = isAdmin,
-                                        bolaoCreatedAt = bolaoCreatedAt,
-                                        showSocialBadge = true,
-                                        allMatches = matches,
-                                        isTwoLegged = false, // Group stage is never two-legged for labels here
-                                        onClick = { onMatchClick(m.id) },
-                                        onShowAllPredictions = {
-                                            onShowAllPredictions(m)
-                                        },
-                                        onOpenAdminScoreDialog = {
-                                            onOpenAdminScoreDialog(m)
-                                        }
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                }
-                            }
-                        }
-                        item(key = "spacer-$g") { Spacer(Modifier.height(4.dp)) }
-                    }
+                    groupedMatchesList(byGroup, expandedGroups, predictions, isAdmin, bolaoCreatedAt, matches, actions)
                 }
             }
-            androidx.compose.animation.AnimatedVisibility(visible = showShadow, enter = fadeIn(), exit = fadeOut()) {
-                Box(
-                    modifier =
-                    Modifier.fillMaxWidth().height(
-                        12.dp
-                    ).background(Brush.verticalGradient(colors = listOf(Color.Black.copy(alpha = 0.3f), Color.Transparent)))
-                )
-            }
+            ScrollTopShadow(visible = showShadow)
             if (isLoading) {
                 BolaoLinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
@@ -288,5 +155,243 @@ fun GroupStageTab(
                 )
             }
         }
+    }
+}
+
+/** Whether [this] match falls on [date] in the given [tz]. */
+private fun Match.isOnDate(date: LocalDate, tz: TimeZone): Boolean =
+    Instant.fromEpochMilliseconds(matchDateMillis).toLocalDateTime(tz).date == date
+
+private fun computeCurrentGroupRound(matches: List<Match>, now: Long): Int {
+    val upcoming = matches.filter { !it.isFinished && it.matchDateMillis > now }
+        .minByOrNull { it.matchDateMillis }?.groupRound()
+    return upcoming ?: matches.maxByOrNull { it.matchDateMillis }?.groupRound() ?: 0
+}
+
+private fun computeGroupRoundMatches(
+    matches: List<Match>,
+    selectedRound: Int,
+    todayDate: LocalDate,
+    tomorrowDate: LocalDate,
+    tz: TimeZone,
+    now: Long
+): List<Match> = when (selectedRound) {
+    0 ->
+        matches.filter {
+            it.isOnDate(todayDate, tz) || (now in it.matchDateMillis..(it.matchDateMillis + 3 * 3600_000L))
+        }.sortedBy { it.matchDateMillis }
+    TOMORROW_ROUND ->
+        matches.filter { it.isOnDate(tomorrowDate, tz) }.sortedBy { it.matchDateMillis }
+    else ->
+        matches.filter { it.groupRound() == selectedRound }.sortedBy { it.matchDateMillis }
+}
+
+/**
+ * Auto-focuses the list on first display: scrolls to and expands the group with the live/next
+ * match, or falls back to the first group when there's nothing to focus on.
+ */
+private suspend fun handleGroupStageInitialScroll(
+    matches: List<Match>,
+    byGroup: Map<String, List<Match>>,
+    roundMatches: List<Match>,
+    selectedRound: Int,
+    todayDate: LocalDate,
+    tz: TimeZone,
+    now: Long,
+    expandedGroups: SnapshotStateList<String>,
+    listState: LazyListState
+) {
+    val sorted = byGroup.entries.sortedBy { it.key }
+    expandedGroups.clear()
+    if (roundMatches.isNotEmpty() && roundMatches.all { it.isFinished } && selectedRound != 0) {
+        listState.scrollToItem(0)
+        return
+    }
+    val isDayTab = selectedRound == 0 || selectedRound == TOMORROW_ROUND
+    val window = GROUP_STAGE_FOCUS_WINDOW_MILLIS
+    val focus = findGroupStageFocusMatch(matches, todayDate, tz, now, window)
+    if (focus == null) {
+        if (isDayTab) {
+            expandedGroups.addAll(byGroup.keys)
+        } else {
+            sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
+        }
+        listState.scrollToItem(0)
+        return
+    }
+    val group = focus.group ?: ""
+    val round = focus.groupRound()
+    when {
+        isDayTab -> {
+            expandedGroups.addAll(byGroup.keys)
+            listState.scrollToItem(0)
+        }
+        selectedRound == round -> {
+            expandedGroups.add(group)
+            expandedGroups.addAll(activeGroupStageGroups(matches, selectedRound, todayDate, tz, now, window))
+            listState.scrollToItem(groupStageScrollIndex(sorted, group))
+        }
+        else -> {
+            sorted.firstOrNull()?.key?.let { expandedGroups.add(it) }
+            listState.scrollToItem(0)
+        }
+    }
+}
+
+/** Time window (2h30) after kickoff during which a match is still considered "live" for focus purposes. */
+private const val GROUP_STAGE_FOCUS_WINDOW_MILLIS = 2 * 60 * 60 * 1000L + (30 * 60 * 1000L)
+
+/** Live match right now, else the next unstarted match today, else the next unstarted match overall. */
+private fun findGroupStageFocusMatch(matches: List<Match>, todayDate: LocalDate, tz: TimeZone, now: Long, window: Long): Match? =
+    matches.filter { it.phase == Phase.GROUP_STAGE }.let { all ->
+        all.find { now in it.matchDateMillis..(it.matchDateMillis + window) }
+            ?: all.filter { it.isOnDate(todayDate, tz) && it.matchDateMillis > now }.minByOrNull { it.matchDateMillis }
+            ?: all.filter { it.matchDateMillis > now }.minByOrNull { it.matchDateMillis }
+    }
+
+/** Groups (besides the focus match's own group) that also have a live/imminent match today, so they auto-expand too. */
+private fun activeGroupStageGroups(
+    matches: List<Match>,
+    selectedRound: Int,
+    todayDate: LocalDate,
+    tz: TimeZone,
+    now: Long,
+    window: Long
+): List<String> = matches.filter {
+    it.groupRound() == selectedRound &&
+        it.isOnDate(todayDate, tz) &&
+        it.matchDateMillis + window >= now &&
+        !it.isFinished
+}.mapNotNull { it.group }
+
+/** Item index of [targetGroup]'s header within the flattened (header + matches + spacer) list. */
+private fun groupStageScrollIndex(sorted: List<Map.Entry<String, List<Match>>>, targetGroup: String): Int {
+    var index = 0
+    for (entry in sorted) {
+        if (entry.key == targetGroup) break
+        index += 1 + entry.value.size + 1
+    }
+    return index
+}
+
+@Composable
+private fun GroupStageRoundSelectorBar(
+    selectedRound: Int,
+    unlocked: Set<Int>,
+    hasMatchToday: Boolean,
+    hasMatchTomorrow: Boolean,
+    currentRound: Int,
+    onRoundChange: (Int) -> Unit
+) {
+    Box(modifier = Modifier.fillMaxWidth().background(DeepNavy).padding(vertical = BolaoSpacing.sm)) {
+        RodadaSelector(
+            selected = selectedRound,
+            unlocked = unlocked,
+            showHoje = hasMatchToday,
+            showAmanha = hasMatchTomorrow,
+            currentRound = currentRound,
+            onSelect = {
+                if (it == 0 || it == TOMORROW_ROUND || it in unlocked) onRoundChange(it)
+            }
+        )
+    }
+}
+
+private fun LazyListScope.groupStageEmptyState(selectedRound: Int) {
+    item {
+        Box(Modifier.fillMaxWidth().padding(top = BolaoSpacing.huge), contentAlignment = Alignment.Center) {
+            val message =
+                if (selectedRound == 0) {
+                    Res.string.group_stage_tab_empty_today
+                } else {
+                    Res.string.group_stage_tab_empty_tomorrow
+                }
+            BolaoText(stringResource(message), color = TextMuted, fontSize = BolaoTypography.bodyLarge.fontSize)
+        }
+    }
+}
+
+/** Flat match list used by the "Today"/"Tomorrow" tabs, which don't group matches by [Match.group]. */
+private fun LazyListScope.dayMatchesList(
+    roundMatches: List<Match>,
+    predictions: Map<String, Prediction>,
+    isAdmin: Boolean,
+    bolaoCreatedAt: Long,
+    allMatches: List<Match>,
+    actions: GroupStageMatchActions
+) {
+    items(roundMatches, key = { it.id }) { m ->
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.sm)) {
+            MatchCard(
+                match = m,
+                prediction = predictions[m.id],
+                isAdmin = isAdmin,
+                bolaoCreatedAt = bolaoCreatedAt,
+                showSocialBadge = true,
+                allMatches = allMatches,
+                isTwoLegged = false,
+                onClick = { actions.onMatchClick(m.id) },
+                onShowAllPredictions = { actions.onShowAllPredictions(m) },
+                onOpenAdminScoreDialog = { actions.onOpenAdminScoreDialog(m) }
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+/** Match list grouped by [Match.group] with collapsible group headers, used by the round tabs. */
+private fun LazyListScope.groupedMatchesList(
+    byGroup: Map<String, List<Match>>,
+    expandedGroups: SnapshotStateList<String>,
+    predictions: Map<String, Prediction>,
+    isAdmin: Boolean,
+    bolaoCreatedAt: Long,
+    allMatches: List<Match>,
+    actions: GroupStageMatchActions
+) {
+    byGroup.entries.sortedBy { it.key }.forEach { (g, ms) ->
+        val isExpanded = expandedGroups.contains(g)
+        val isCompleted = ms.all { it.isFinished || predictions.containsKey(it.id) }
+        item(key = "header-$g") {
+            GroupHeader(group = g, isExpanded = isExpanded, isCompleted = isCompleted, enabled = true, onToggle = {
+                if (isExpanded) expandedGroups.remove(g) else expandedGroups.add(g)
+            })
+        }
+        items(ms, key = { it.id }) { m ->
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.sm)) {
+                    MatchCard(
+                        match = m,
+                        prediction = predictions[m.id],
+                        isAdmin = isAdmin,
+                        bolaoCreatedAt = bolaoCreatedAt,
+                        showSocialBadge = true,
+                        allMatches = allMatches,
+                        isTwoLegged = false, // Group stage is never two-legged for labels here
+                        onClick = { actions.onMatchClick(m.id) },
+                        onShowAllPredictions = { actions.onShowAllPredictions(m) },
+                        onOpenAdminScoreDialog = { actions.onOpenAdminScoreDialog(m) }
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+        }
+        item(key = "spacer-$g") { Spacer(Modifier.height(4.dp)) }
+    }
+}
+
+/** Fading shadow shown at the top of a scrollable list once it has been scrolled past its start. */
+@Composable
+internal fun ScrollTopShadow(visible: Boolean) {
+    androidx.compose.animation.AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
+        Box(
+            modifier =
+            Modifier.fillMaxWidth().height(12.dp)
+                .background(Brush.verticalGradient(colors = listOf(Color.Black.copy(alpha = 0.3f), Color.Transparent)))
+        )
     }
 }

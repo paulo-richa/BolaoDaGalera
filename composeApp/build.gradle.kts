@@ -207,6 +207,7 @@ dependencies {
 detekt {
     toolVersion = libs.versions.detekt.get()
     config.setFrom(file("../config/detekt/detekt.yml"))
+    baseline = file("detekt-baseline.xml")
     buildUponDefaultConfig = true
     allRules = false
 }

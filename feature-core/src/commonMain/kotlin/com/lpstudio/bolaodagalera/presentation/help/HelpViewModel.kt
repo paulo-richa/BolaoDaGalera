@@ -31,7 +31,7 @@ class HelpViewModel(private val supportRepository: SupportRepository, private va
                     message = message
                 )
                 _uiState.update { it.copy(isSending = false, showSuccess = true) }
-                delay(3000)
+                delay(SUCCESS_MESSAGE_DURATION_MILLIS)
                 _uiState.update { it.copy(showSuccess = false) }
             } catch (_: Exception) {
                 _uiState.update { it.copy(isSending = false, showError = true) }
@@ -40,4 +40,8 @@ class HelpViewModel(private val supportRepository: SupportRepository, private va
     }
 
     fun dismissError() = _uiState.update { it.copy(showError = false) }
+
+    private companion object {
+        private const val SUCCESS_MESSAGE_DURATION_MILLIS = 3000L
+    }
 }

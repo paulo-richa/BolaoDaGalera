@@ -48,6 +48,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+        checkDependencies = true
+        abortOnError = true
+        ignoreWarnings = false
+        showAll = true
+        explainIssues = true
+    }
 }
 
 dependencies {
@@ -57,6 +66,7 @@ dependencies {
 detekt {
     toolVersion = libs.versions.detekt.get()
     config.setFrom(file("../config/detekt/detekt.yml"))
+    baseline = file("detekt-baseline.xml")
     buildUponDefaultConfig = true
     allRules = false
 }

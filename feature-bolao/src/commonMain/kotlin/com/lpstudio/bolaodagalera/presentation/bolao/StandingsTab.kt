@@ -43,6 +43,7 @@ import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.StandingsCalculator
+import com.lpstudio.bolaodagalera.domain.model.TeamStanding
 import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import org.jetbrains.compose.resources.stringResource
 
@@ -64,137 +65,160 @@ fun StandingsTab(matches: List<Match>) {
             verticalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
         ) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.sm),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BolaoText(
-                        stringResource(Res.string.standings_tab_header_position),
-                        modifier = Modifier.width(24.dp),
-                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                        color = TextMuted,
-                        fontWeight = FontWeight.Bold
-                    )
-                    BolaoText(
-                        stringResource(Res.string.standings_tab_header_team),
-                        modifier = Modifier.weight(1f),
-                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                        color = TextMuted,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Row(modifier = Modifier.width(140.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        listOf(headerPoints, headerPlayed, headerWon, headerGoalDiff).forEach {
-                            BolaoText(
-                                it,
-                                modifier = Modifier.width(35.dp),
-                                fontSize = BolaoTypography.bodyMedium.fontSize,
-                                color = TextMuted,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
+                StandingsHeaderRow(
+                    headerPoints = headerPoints,
+                    headerPlayed = headerPlayed,
+                    headerWon = headerWon,
+                    headerGoalDiff = headerGoalDiff
+                )
             }
             items(standings.size) { index ->
-                val team = standings[index]
-                val (name, flag, crest) =
-                    remember(team.teamName, team.teamFlag, team.teamCrest, matches) {
-                        resolveDisplayName("", team.teamName, team.teamFlag, matches, true)
-                    }
-                val isG4 = index < 4
-                val isG5 = index == 4
-                val isZ4 = index >= standings.size - 4 && standings.size > 5
-                val accentColor =
-                    when {
-                        isG4 -> Neon
-                        isG5 -> Gold
-                        isZ4 -> ErrorRed
-                        else -> null
-                    }
-                BolaoSurface(
-                    color =
-                    when {
-                        isG4 -> Neon.copy(alpha = 0.05f)
-                        isG5 -> Gold.copy(alpha = 0.05f)
-                        isZ4 -> ErrorRed.copy(alpha = 0.05f)
-                        else -> NavyCard
-                    },
-                    shape = BolaoRadiusShape.md,
-                    border =
-                    androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        when {
-                            isG4 -> Neon.copy(alpha = 0.2f)
-                            isG5 -> Gold.copy(alpha = 0.2f)
-                            isZ4 -> ErrorRed.copy(alpha = 0.2f)
-                            else -> GlassBorder
-                        }
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.md),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        BolaoText(
-                            "${index + 1}",
-                            modifier = Modifier.width(24.dp),
-                            fontSize = BolaoTypography.bodyMedium.fontSize,
-                            fontWeight = FontWeight.Bold,
-                            color = accentColor ?: TextMuted
-                        )
-                        TeamIcon(crestUrl = crest ?: team.teamCrest, flag = AnnotatedString(flag), isTbd = false, size = 24.dp)
-                        Spacer(Modifier.width(10.dp))
-                        BolaoText(
-                            name,
-                            modifier = Modifier.weight(1f),
-                            fontSize = BolaoTypography.bodyLarge.fontSize,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White,
-                            maxLines = 1
-                        )
-                        Row(modifier = Modifier.width(140.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            BolaoText(
-                                "${team.points}",
-                                modifier = Modifier.width(35.dp),
-                                fontSize = BolaoTypography.bodyLarge.fontSize,
-                                fontWeight = FontWeight.Black,
-                                color = accentColor ?: Color.White,
-                                textAlign = TextAlign.Center
-                            )
-                            BolaoText(
-                                "${team.played}",
-                                modifier = Modifier.width(35.dp),
-                                fontSize = BolaoTypography.bodyMedium.fontSize,
-                                color = TextMuted,
-                                textAlign = TextAlign.Center
-                            )
-                            BolaoText(
-                                "${team.won}",
-                                modifier = Modifier.width(35.dp),
-                                fontSize = BolaoTypography.bodyMedium.fontSize,
-                                color = TextMuted,
-                                textAlign = TextAlign.Center
-                            )
-                            BolaoText(
-                                "${team.goalDifference}",
-                                modifier = Modifier.width(35.dp),
-                                fontSize = BolaoTypography.bodyMedium.fontSize,
-                                color =
-                                if (team.goalDifference > 0) {
-                                    Neon
-                                } else if (team.goalDifference < 0) {
-                                    ErrorRed
-                                } else {
-                                    TextMuted
-                                },
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
+                StandingsRow(index = index, standings = standings, matches = matches)
             }
         }
+    }
+}
+
+@Composable
+private fun StandingsHeaderRow(headerPoints: String, headerPlayed: String, headerWon: String, headerGoalDiff: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        BolaoText(
+            stringResource(Res.string.standings_tab_header_position),
+            modifier = Modifier.width(24.dp),
+            fontSize = BolaoTypography.bodyMedium.fontSize,
+            color = TextMuted,
+            fontWeight = FontWeight.Bold
+        )
+        BolaoText(
+            stringResource(Res.string.standings_tab_header_team),
+            modifier = Modifier.weight(1f),
+            fontSize = BolaoTypography.bodyMedium.fontSize,
+            color = TextMuted,
+            fontWeight = FontWeight.Bold
+        )
+        Row(modifier = Modifier.width(140.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            listOf(headerPoints, headerPlayed, headerWon, headerGoalDiff).forEach {
+                BolaoText(
+                    it,
+                    modifier = Modifier.width(35.dp),
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    color = TextMuted,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+/** Accent color for a standings position: top group, promotion spot, or relegation zone. */
+private fun standingsAccentColor(isG4: Boolean, isG5: Boolean, isZ4: Boolean): Color? = when {
+    isG4 -> Neon
+    isG5 -> Gold
+    isZ4 -> ErrorRed
+    else -> null
+}
+
+@Composable
+private fun StandingsRow(index: Int, standings: List<TeamStanding>, matches: List<Match>) {
+    val team = standings[index]
+    val (name, flag, crest) =
+        remember(team.teamName, team.teamFlag, team.teamCrest, matches) {
+            resolveDisplayName("", team.teamName, team.teamFlag, matches, true)
+        }
+    val isG4 = index < 4
+    val isG5 = index == 4
+    val isZ4 = index >= standings.size - 4 && standings.size > 5
+    val accentColor = standingsAccentColor(isG4, isG5, isZ4)
+
+    BolaoSurface(
+        color =
+        when {
+            isG4 -> Neon.copy(alpha = 0.05f)
+            isG5 -> Gold.copy(alpha = 0.05f)
+            isZ4 -> ErrorRed.copy(alpha = 0.05f)
+            else -> NavyCard
+        },
+        shape = BolaoRadiusShape.md,
+        border =
+        androidx.compose.foundation.BorderStroke(
+            1.dp,
+            when {
+                isG4 -> Neon.copy(alpha = 0.2f)
+                isG5 -> Gold.copy(alpha = 0.2f)
+                isZ4 -> ErrorRed.copy(alpha = 0.2f)
+                else -> GlassBorder
+            }
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.md),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BolaoText(
+                "${index + 1}",
+                modifier = Modifier.width(24.dp),
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                fontWeight = FontWeight.Bold,
+                color = accentColor ?: TextMuted
+            )
+            TeamIcon(crestUrl = crest ?: team.teamCrest, flag = AnnotatedString(flag), isTbd = false, size = 24.dp)
+            Spacer(Modifier.width(10.dp))
+            BolaoText(
+                name,
+                modifier = Modifier.weight(1f),
+                fontSize = BolaoTypography.bodyLarge.fontSize,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+                maxLines = 1
+            )
+            StandingsRowStats(team = team, accentColor = accentColor)
+        }
+    }
+}
+
+@Composable
+private fun StandingsRowStats(team: TeamStanding, accentColor: Color?) {
+    Row(modifier = Modifier.width(140.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        BolaoText(
+            "${team.points}",
+            modifier = Modifier.width(35.dp),
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            fontWeight = FontWeight.Black,
+            color = accentColor ?: Color.White,
+            textAlign = TextAlign.Center
+        )
+        BolaoText(
+            "${team.played}",
+            modifier = Modifier.width(35.dp),
+            fontSize = BolaoTypography.bodyMedium.fontSize,
+            color = TextMuted,
+            textAlign = TextAlign.Center
+        )
+        BolaoText(
+            "${team.won}",
+            modifier = Modifier.width(35.dp),
+            fontSize = BolaoTypography.bodyMedium.fontSize,
+            color = TextMuted,
+            textAlign = TextAlign.Center
+        )
+        BolaoText(
+            "${team.goalDifference}",
+            modifier = Modifier.width(35.dp),
+            fontSize = BolaoTypography.bodyMedium.fontSize,
+            color =
+            if (team.goalDifference > 0) {
+                Neon
+            } else if (team.goalDifference < 0) {
+                ErrorRed
+            } else {
+                TextMuted
+            },
+            textAlign = TextAlign.Center
+        )
     }
 }

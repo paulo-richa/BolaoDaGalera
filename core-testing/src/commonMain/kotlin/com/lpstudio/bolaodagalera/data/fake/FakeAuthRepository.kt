@@ -61,9 +61,9 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun signIn(email: String, password: String): User {
         signInException?.let { throw it }
         val user = allUsers.find { it.email.equals(email, ignoreCase = true) }
-            ?: throw Exception("user-not-found: nenhuma conta com esse e-mail")
+            ?: error("user-not-found: nenhuma conta com esse e-mail")
         if (password != validPassword) {
-            throw Exception("invalid-credential: senha incorreta")
+            error("invalid-credential: senha incorreta")
         }
         userState.value = user
         return user

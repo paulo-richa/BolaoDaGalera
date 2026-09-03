@@ -55,12 +55,12 @@ class FilterBolaoMatchesUseCase {
             }
         }
         .map { (_, matchGroup) ->
-            matchGroup.maxByOrNull {
+            matchGroup.maxByOrNull { candidate ->
                 when {
-                    it.status == "FINISHED" -> 3
-                    it.homeScore != null -> 2
-                    it.id.contains("-") -> 1
-                    else -> 0
+                    candidate.status == "FINISHED" -> GHOST_PRIORITY_FINISHED
+                    candidate.homeScore != null -> GHOST_PRIORITY_HAS_SCORE
+                    candidate.id.contains("-") -> GHOST_PRIORITY_HAS_STABLE_ID
+                    else -> GHOST_PRIORITY_LOWEST
                 }
             }!!
         }
@@ -81,5 +81,13 @@ class FilterBolaoMatchesUseCase {
 
         val startFromRound = lastMostlyFinishedRound + 1
         return matches.filter { it.groupRound() >= startFromRound }
+    }
+
+    private companion object {
+        /** Ranks candidates when deduping "ghost" duplicates - highest priority wins [maxByOrNull]. */
+        private const val GHOST_PRIORITY_FINISHED = 3
+        private const val GHOST_PRIORITY_HAS_SCORE = 2
+        private const val GHOST_PRIORITY_HAS_STABLE_ID = 1
+        private const val GHOST_PRIORITY_LOWEST = 0
     }
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:ClassifyExceptionUseCase.kt$ClassifyExceptionUseCase$operator fun invoke(e: Exception): ErrorCategory</ID>
+    <ID>LongParameterList:MatchRepository.kt$MatchRepository$( championshipId: String, matchId: String, homeTeam: String, homeTeamCode: String, homeTeamFlag: String, awayTeam: String, awayTeamCode: String, awayTeamFlag: String, dateMillis: Long? = null, status: String? = null, isManual: Boolean = true )</ID>
+    <ID>ReturnCount:Match.kt$Match$fun groupRound(): Int</ID>
+    <ID>TooManyFunctions:AuthRepository.kt$AuthRepository</ID>
+    <ID>TooManyFunctions:BolaoRepository.kt$BolaoRepository</ID>
+  </CurrentIssues>
+</SmellBaseline>

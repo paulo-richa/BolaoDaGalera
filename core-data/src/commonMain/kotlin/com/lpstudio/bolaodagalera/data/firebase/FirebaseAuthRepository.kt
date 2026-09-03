@@ -104,7 +104,8 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
         val user = result.user ?: error("Cadastro falhou")
         try {
             user.updateProfile(displayName = name)
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // Best-effort: the Firestore profile write right below is the source of truth for the display name.
         }
 
         // Save or update the profile in Firestore
@@ -123,14 +124,15 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
     }
 
     override suspend fun updateProfile(name: String, phone: String, nickname: String) {
-        val firebaseUser = auth.currentUser ?: throw Exception("Usuário não autenticado")
+        val firebaseUser = auth.currentUser ?: error("Usuário não autenticado")
         val uid = firebaseUser.uid
         val email = firebaseUser.email ?: ""
 
         // 1. Try updating the name in Auth (optional, doesn't block on failure)
         try {
             firebaseUser.updateProfile(displayName = name)
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // Best-effort: the Firestore write right below is the source of truth for the display name.
         }
 
         // 2. Prepare the data for Firestore

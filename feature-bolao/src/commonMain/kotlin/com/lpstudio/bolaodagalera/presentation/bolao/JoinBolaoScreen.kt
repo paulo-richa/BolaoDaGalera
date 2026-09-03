@@ -4,7 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -92,22 +94,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
     }
 
     if (uiState.requestSent) {
-        BolaoDialog(
-            onDismissRequest = onNavigateBack,
-            containerColor = DeepNavy,
-            title = {
-                BolaoText(stringResource(Res.string.join_bolao_request_sent_title), color = Color.White, fontWeight = FontWeight.Bold)
-            },
-            text = {
-                BolaoText(stringResource(Res.string.join_bolao_request_sent_message), color = TextMuted)
-            },
-            confirmButton = {
-                BolaoButton(
-                    text = stringResource(Res.string.join_bolao_request_sent_confirm),
-                    onClick = onNavigateBack
-                )
-            }
-        )
+        JoinBolaoRequestSentDialog(onNavigateBack)
     }
 
     Box(
@@ -116,19 +103,7 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
             .fillMaxSize()
             .background(GradientBg)
     ) {
-        // Glow
-        Box(
-            modifier =
-            Modifier
-                .size(300.dp)
-                .align(Alignment.Center)
-                .offset(y = (-80).dp)
-                .background(
-                    androidx.compose.ui.graphics.Brush.radialGradient(
-                        listOf(Gold.copy(alpha = 0.08f), Color.Transparent)
-                    )
-                )
-        )
+        JoinBolaoGlow()
 
         BolaoScaffold(
             containerColor = Color.Transparent,
@@ -136,110 +111,188 @@ fun JoinBolaoScreen(initialCode: String = "", onJoined: (String) -> Unit, onNavi
                 BolaoTopBar(title = stringResource(Res.string.join_bolao_top_bar_title), onNavigateBack = onNavigateBack)
             }
         ) { padding ->
-            val scrollState = rememberScrollState()
-            Column(
+            JoinBolaoContent(
+                padding = padding,
+                code = code,
+                onCodeChange = {
+                    if (it.length <= 6) code = it.uppercase()
+                    codeTouched = true
+                },
+                codeError = codeError,
+                serverError = uiState.error,
+                isLoading = uiState.isLoading,
+                onDone = { if (code.length == 6) viewModel.join(code) },
+                onJoinClick = { viewModel.join(code) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun JoinBolaoRequestSentDialog(onNavigateBack: () -> Unit) {
+    BolaoDialog(
+        onDismissRequest = onNavigateBack,
+        containerColor = DeepNavy,
+        title = {
+            BolaoText(stringResource(Res.string.join_bolao_request_sent_title), color = Color.White, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            BolaoText(stringResource(Res.string.join_bolao_request_sent_message), color = TextMuted)
+        },
+        confirmButton = {
+            BolaoButton(
+                text = stringResource(Res.string.join_bolao_request_sent_confirm),
+                onClick = onNavigateBack
+            )
+        }
+    )
+}
+
+@Composable
+private fun BoxScope.JoinBolaoGlow() {
+    Box(
+        modifier =
+        Modifier
+            .size(300.dp)
+            .align(Alignment.Center)
+            .offset(y = (-80).dp)
+            .background(
+                androidx.compose.ui.graphics.Brush.radialGradient(
+                    listOf(Gold.copy(alpha = 0.08f), Color.Transparent)
+                )
+            )
+    )
+}
+
+@Composable
+private fun JoinBolaoContent(
+    padding: PaddingValues,
+    code: String,
+    onCodeChange: (String) -> Unit,
+    codeError: String?,
+    serverError: String?,
+    isLoading: Boolean,
+    onDone: () -> Unit,
+    onJoinClick: () -> Unit
+) {
+    val scrollState = rememberScrollState()
+    Column(
+        modifier =
+        Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .imePadding()
+            .padding(horizontal = BolaoSpacing.xxxl)
+            .verticalScroll(scrollState),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        JoinBolaoHeader()
+
+        Spacer(Modifier.height(36.dp))
+
+        JoinBolaoCodeCard(
+            code = code,
+            onCodeChange = onCodeChange,
+            codeError = codeError,
+            serverError = serverError,
+            onDone = onDone
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        BolaoButton(
+            text = stringResource(Res.string.join_bolao_button_join),
+            isLoading = isLoading,
+            enabled = code.length == 6 && !isLoading,
+            gradient = GradientGold,
+            onClick = onJoinClick
+        )
+
+        if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
+            Spacer(Modifier.height(100.dp))
+        }
+    }
+}
+
+@Composable
+private fun JoinBolaoHeader() {
+    BolaoText(stringResource(Res.string.join_bolao_key_emoji), fontSize = BolaoTypography.displayLarge.fontSize)
+    Spacer(Modifier.height(16.dp))
+    BolaoText(
+        stringResource(Res.string.join_bolao_title),
+        fontSize = BolaoTypography.headlineLarge.fontSize,
+        fontWeight = FontWeight.ExtraBold,
+        color = Color.White,
+        textAlign = TextAlign.Center
+    )
+    Spacer(Modifier.height(6.dp))
+    BolaoText(
+        stringResource(Res.string.join_bolao_subtitle),
+        fontSize = BolaoTypography.bodyLarge.fontSize,
+        color = TextMuted,
+        textAlign = TextAlign.Center,
+        lineHeight = 20.sp
+    )
+}
+
+@Composable
+private fun JoinBolaoCodeCard(code: String, onCodeChange: (String) -> Unit, codeError: String?, serverError: String?, onDone: () -> Unit) {
+    BolaoGlassCard(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
+    ) {
+        BolaoTextField(
+            value = code,
+            onValueChange = onCodeChange,
+            label = stringResource(Res.string.join_bolao_field_code_label),
+            isError = codeError != null,
+            accentColor = Gold,
+            keyboardOptions =
+            KeyboardOptions(
+                capitalization = KeyboardCapitalization.Characters,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions =
+            KeyboardActions(
+                onDone = { onDone() }
+            ),
+            textStyle =
+            TextStyle(
+                fontSize = BolaoTypography.displayMedium.fontSize,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 10.sp,
+                textAlign = TextAlign.Center,
+                color = Gold
+            )
+        )
+
+        codeError?.let { BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize) }
+
+        JoinBolaoCodeDots(code)
+
+        serverError?.let {
+            BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun JoinBolaoCodeDots(code: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        for (i in 0 until 6) {
+            val filled = i < code.length
+            Box(
                 modifier =
                 Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .imePadding()
-                    .padding(horizontal = BolaoSpacing.xxxl)
-                    .verticalScroll(scrollState),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                BolaoText(stringResource(Res.string.join_bolao_key_emoji), fontSize = BolaoTypography.displayLarge.fontSize)
-                Spacer(Modifier.height(16.dp))
-                BolaoText(
-                    stringResource(Res.string.join_bolao_title),
-                    fontSize = BolaoTypography.headlineLarge.fontSize,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.height(6.dp))
-                BolaoText(
-                    stringResource(Res.string.join_bolao_subtitle),
-                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                    color = TextMuted,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 20.sp
-                )
-
-                Spacer(Modifier.height(36.dp))
-
-                // Code input card
-                BolaoGlassCard(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
-                ) {
-                    BolaoTextField(
-                        value = code,
-                        onValueChange = {
-                            if (it.length <= 6) code = it.uppercase()
-                            codeTouched = true
-                        },
-                        label = stringResource(Res.string.join_bolao_field_code_label),
-                        isError = codeError != null,
-                        accentColor = Gold,
-                        keyboardOptions =
-                        KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Characters,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions =
-                        KeyboardActions(
-                            onDone = { if (code.length == 6) viewModel.join(code) }
-                        ),
-                        textStyle =
-                        TextStyle(
-                            fontSize = BolaoTypography.displayMedium.fontSize,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 10.sp,
-                            textAlign = TextAlign.Center,
-                            color = Gold
-                        )
-                    )
-
-                    codeError?.let { BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize) }
-
-                    // Char counter dots
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        for (i in 0 until 6) {
-                            val filled = i < code.length
-                            Box(
-                                modifier =
-                                Modifier
-                                    .size(if (filled) 10.dp else 8.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(if (filled) Gold else NavyElevated)
-                                    .border(1.dp, if (filled) Gold else GlassBorder, RoundedCornerShape(50))
-                            )
-                        }
-                    }
-
-                    uiState.error?.let {
-                        BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize, textAlign = TextAlign.Center)
-                    }
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                BolaoButton(
-                    text = stringResource(Res.string.join_bolao_button_join),
-                    isLoading = uiState.isLoading,
-                    enabled = code.length == 6 && !uiState.isLoading,
-                    gradient = GradientGold,
-                    onClick = { viewModel.join(code) }
-                )
-
-                if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
-                    Spacer(Modifier.height(100.dp))
-                }
-            }
+                    .size(if (filled) 10.dp else 8.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (filled) Gold else NavyElevated)
+                    .border(1.dp, if (filled) Gold else GlassBorder, RoundedCornerShape(50))
+            )
         }
     }
 }

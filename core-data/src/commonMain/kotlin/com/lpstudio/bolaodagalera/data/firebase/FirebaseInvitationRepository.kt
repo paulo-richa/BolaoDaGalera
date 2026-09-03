@@ -2,7 +2,6 @@ package com.lpstudio.bolaodagalera.data.firebase
 
 import com.lpstudio.bolaodagalera.domain.model.Invitation
 import com.lpstudio.bolaodagalera.domain.model.InvitationStatus
-import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
@@ -34,8 +33,7 @@ private fun InvitationDto.toDomain(id: String) = Invitation(
     createdAtMillis = createdAtMillis
 )
 
-class FirebaseInvitationRepository(private val bolaoRepository: BolaoRepository, private val crashReporter: CrashReporter) :
-    InvitationRepository {
+class FirebaseInvitationRepository(private val crashReporter: CrashReporter) : InvitationRepository {
     private val logger = appLogger("FirebaseInvitationRepository")
     private val db = Firebase.firestore
     private val collection = db.collection("invitations")

@@ -96,6 +96,30 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
+private fun filterChipBorderColor(isSelected: Boolean, isUnlocked: Boolean, isPast: Boolean, isCurrent: Boolean): Color = when {
+    isSelected && isUnlocked -> Neon
+    isCurrent -> Gold
+    isPast -> Color.Transparent
+    isUnlocked -> GlassBorder
+    else -> Color.Transparent
+}
+
+private fun filterChipBackgroundColor(isSelected: Boolean, isUnlocked: Boolean, isPast: Boolean, isCurrent: Boolean): Color = when {
+    isSelected && isUnlocked -> Neon.copy(alpha = 0.12f)
+    isCurrent -> Gold.copy(alpha = 0.12f)
+    isPast -> DeepNavy
+    isUnlocked -> NavyElevated
+    else -> NavyCard.copy(alpha = 0.5f)
+}
+
+private fun filterChipTextColor(isSelected: Boolean, isUnlocked: Boolean, isPast: Boolean, isCurrent: Boolean): Color = when {
+    isSelected && isUnlocked -> Neon
+    isCurrent -> Gold
+    isPast -> TextMuted.copy(alpha = 0.55f)
+    isUnlocked -> Color.White
+    else -> TextMuted.copy(alpha = 0.4f)
+}
+
 @Composable
 fun FilterChip(
     label: String,
@@ -107,33 +131,15 @@ fun FilterChip(
     onClick: () -> Unit
 ) {
     val bColor by animateColorAsState(
-        when {
-            isSelected && isUnlocked -> Neon
-            isCurrent -> Gold
-            isPast -> Color.Transparent
-            isUnlocked -> GlassBorder
-            else -> Color.Transparent
-        },
+        filterChipBorderColor(isSelected, isUnlocked, isPast, isCurrent),
         label = "border_$label"
     )
     val cColor by animateColorAsState(
-        when {
-            isSelected && isUnlocked -> Neon.copy(alpha = 0.12f)
-            isCurrent -> Gold.copy(alpha = 0.12f)
-            isPast -> DeepNavy
-            isUnlocked -> NavyElevated
-            else -> NavyCard.copy(alpha = 0.5f)
-        },
+        filterChipBackgroundColor(isSelected, isUnlocked, isPast, isCurrent),
         label = "bg_$label"
     )
     val tColor by animateColorAsState(
-        when {
-            isSelected && isUnlocked -> Neon
-            isCurrent -> Gold
-            isPast -> TextMuted.copy(alpha = 0.55f)
-            isUnlocked -> Color.White
-            else -> TextMuted.copy(alpha = 0.4f)
-        },
+        filterChipTextColor(isSelected, isUnlocked, isPast, isCurrent),
         label = "text_$label"
     )
     Box(
@@ -163,23 +169,77 @@ fun FilterChip(
     }
 }
 
+private fun groupHeaderBorderColor(enabled: Boolean, isExpanded: Boolean): Color = when {
+    !enabled -> Color.Transparent
+    isExpanded -> Neon.copy(alpha = 0.3f)
+    else -> GlassBorder
+}
+
+private fun groupHeaderBackground(enabled: Boolean, isExpanded: Boolean): Brush = when {
+    !enabled -> Brush.linearGradient(listOf(NavyCard.copy(alpha = 0.5f), NavyCard.copy(alpha = 0.5f)))
+    isExpanded -> Brush.linearGradient(listOf(Neon.copy(alpha = 0.08f), Neon.copy(alpha = 0.02f)))
+    else -> Brush.linearGradient(listOf(NavyElevated, NavyCard))
+}
+
+/** ARGB for the amber used to flag a group header as "in progress" (not completed, not disabled). */
+private const val GROUP_IN_PROGRESS_AMBER_ARGB = 0xFFFFC107
+
+private fun groupHeaderBarColor(enabled: Boolean, isCompleted: Boolean): Color = when {
+    !enabled -> TextMuted.copy(alpha = 0.3f)
+    isCompleted -> Neon
+    else -> Color(GROUP_IN_PROGRESS_AMBER_ARGB)
+}
+
+@Composable
+private fun GroupHeaderStatusEmoji(enabled: Boolean, isCompleted: Boolean) {
+    if (enabled) {
+        if (isCompleted) {
+            BolaoText(
+                stringResource(Res.string.bolao_detail_components_group_completed_emoji),
+                fontSize = BolaoTypography.bodyMedium.fontSize
+            )
+        } else {
+            BolaoText(
+                stringResource(Res.string.bolao_detail_components_group_pending_emoji),
+                fontSize = BolaoTypography.bodyMedium.fontSize
+            )
+        }
+    } else {
+        BolaoText(
+            stringResource(Res.string.bolao_detail_components_group_locked_emoji),
+            fontSize = BolaoTypography.bodySmall.fontSize,
+            modifier = Modifier.padding(bottom = BolaoSpacing.xs)
+        )
+    }
+}
+
+@Composable
+private fun GroupHeaderLabel(group: String, isCompleted: Boolean, enabled: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
+        Box(
+            modifier =
+            Modifier.width(3.dp).height(16.dp).clip(BolaoRadiusShape.xs).background(
+                groupHeaderBarColor(enabled, isCompleted)
+            )
+        )
+        BolaoText(
+            stringResource(Res.string.bolao_detail_components_group_label, group),
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = if (enabled) Color.White else TextMuted.copy(alpha = 0.5f)
+        )
+        GroupHeaderStatusEmoji(enabled, isCompleted)
+    }
+}
+
 @Composable
 fun GroupHeader(group: String, isExpanded: Boolean, isCompleted: Boolean, enabled: Boolean = true, onToggle: () -> Unit) {
     val rot by animateFloatAsState(if (isExpanded) 90f else 0f, tween(200), label = "chevron_$group")
     val bColor by animateColorAsState(
-        when {
-            !enabled -> Color.Transparent
-            isExpanded -> Neon.copy(alpha = 0.3f)
-            else -> GlassBorder
-        },
+        groupHeaderBorderColor(enabled, isExpanded),
         label = "header_border_$group"
     )
-    val bg =
-        when {
-            !enabled -> Brush.linearGradient(listOf(NavyCard.copy(alpha = 0.5f), NavyCard.copy(alpha = 0.5f)))
-            isExpanded -> Brush.linearGradient(listOf(Neon.copy(alpha = 0.08f), Neon.copy(alpha = 0.02f)))
-            else -> Brush.linearGradient(listOf(NavyElevated, NavyCard))
-        }
+    val bg = groupHeaderBackground(enabled, isExpanded)
     Column {
         Row(
             modifier =
@@ -193,43 +253,7 @@ fun GroupHeader(group: String, isExpanded: Boolean, isCompleted: Boolean, enable
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
-                Box(
-                    modifier =
-                    Modifier.width(3.dp).height(16.dp).clip(BolaoRadiusShape.xs).background(
-                        when {
-                            !enabled -> TextMuted.copy(alpha = 0.3f)
-                            isCompleted -> Neon
-                            else -> Color(0xFFFFC107)
-                        }
-                    )
-                )
-                BolaoText(
-                    stringResource(Res.string.bolao_detail_components_group_label, group),
-                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                    fontWeight = FontWeight.Bold,
-                    color = if (enabled) Color.White else TextMuted.copy(alpha = 0.5f)
-                )
-                if (enabled) {
-                    if (isCompleted) {
-                        BolaoText(
-                            stringResource(Res.string.bolao_detail_components_group_completed_emoji),
-                            fontSize = BolaoTypography.bodyMedium.fontSize
-                        )
-                    } else {
-                        BolaoText(
-                            stringResource(Res.string.bolao_detail_components_group_pending_emoji),
-                            fontSize = BolaoTypography.bodyMedium.fontSize
-                        )
-                    }
-                } else {
-                    BolaoText(
-                        stringResource(Res.string.bolao_detail_components_group_locked_emoji),
-                        fontSize = BolaoTypography.bodySmall.fontSize,
-                        modifier = Modifier.padding(bottom = BolaoSpacing.xs)
-                    )
-                }
-            }
+            GroupHeaderLabel(group, isCompleted, enabled)
             if (enabled) {
                 BolaoIcon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -339,39 +363,43 @@ fun PendingRequestItem(user: User, label: String, accentColor: Color = Neon, onA
 }
 
 @Composable
+private fun dayOfWeekLabel(dayOfWeek: DayOfWeek): String = stringResource(
+    when (dayOfWeek) {
+        DayOfWeek.MONDAY -> Res.string.bolao_common_day_seg
+        DayOfWeek.TUESDAY -> Res.string.bolao_common_day_ter
+        DayOfWeek.WEDNESDAY -> Res.string.bolao_common_day_qua
+        DayOfWeek.THURSDAY -> Res.string.bolao_common_day_qui
+        DayOfWeek.FRIDAY -> Res.string.bolao_common_day_sex
+        DayOfWeek.SATURDAY -> Res.string.bolao_common_day_sab
+        DayOfWeek.SUNDAY -> Res.string.bolao_common_day_dom
+    }
+)
+
+@Composable
+private fun monthLabel(month: Month): String = stringResource(
+    when (month) {
+        Month.JANUARY -> Res.string.bolao_common_month_jan
+        Month.FEBRUARY -> Res.string.bolao_common_month_fev
+        Month.MARCH -> Res.string.bolao_common_month_mar
+        Month.APRIL -> Res.string.bolao_common_month_abr
+        Month.MAY -> Res.string.bolao_common_month_mai
+        Month.JUNE -> Res.string.bolao_common_month_jun
+        Month.JULY -> Res.string.bolao_common_month_jul
+        Month.AUGUST -> Res.string.bolao_common_month_ago
+        Month.SEPTEMBER -> Res.string.bolao_common_month_set
+        Month.OCTOBER -> Res.string.bolao_common_month_out
+        Month.NOVEMBER -> Res.string.bolao_common_month_nov
+        Month.DECEMBER -> Res.string.bolao_common_month_dez
+    }
+)
+
+@Composable
 fun formatMatchDate(millis: Long): String {
     if (millis == Match.NO_DATE_MILLIS) return stringResource(Res.string.bolao_common_date_tbd)
     val tz = TimeZone.currentSystemDefault()
     val dt = Instant.fromEpochMilliseconds(millis).toLocalDateTime(tz)
-    val dayOfWeek =
-        stringResource(
-            when (dt.dayOfWeek) {
-                DayOfWeek.MONDAY -> Res.string.bolao_common_day_seg
-                DayOfWeek.TUESDAY -> Res.string.bolao_common_day_ter
-                DayOfWeek.WEDNESDAY -> Res.string.bolao_common_day_qua
-                DayOfWeek.THURSDAY -> Res.string.bolao_common_day_qui
-                DayOfWeek.FRIDAY -> Res.string.bolao_common_day_sex
-                DayOfWeek.SATURDAY -> Res.string.bolao_common_day_sab
-                DayOfWeek.SUNDAY -> Res.string.bolao_common_day_dom
-            }
-        )
-    val monthName =
-        stringResource(
-            when (dt.month) {
-                Month.JANUARY -> Res.string.bolao_common_month_jan
-                Month.FEBRUARY -> Res.string.bolao_common_month_fev
-                Month.MARCH -> Res.string.bolao_common_month_mar
-                Month.APRIL -> Res.string.bolao_common_month_abr
-                Month.MAY -> Res.string.bolao_common_month_mai
-                Month.JUNE -> Res.string.bolao_common_month_jun
-                Month.JULY -> Res.string.bolao_common_month_jul
-                Month.AUGUST -> Res.string.bolao_common_month_ago
-                Month.SEPTEMBER -> Res.string.bolao_common_month_set
-                Month.OCTOBER -> Res.string.bolao_common_month_out
-                Month.NOVEMBER -> Res.string.bolao_common_month_nov
-                Month.DECEMBER -> Res.string.bolao_common_month_dez
-            }
-        )
+    val dayOfWeek = dayOfWeekLabel(dt.dayOfWeek)
+    val monthName = monthLabel(dt.month)
     val dayValue = dt.dayOfMonth.toString().padStart(2, '0')
     val hour = dt.hour.toString().padStart(2, '0')
     val minute = dt.minute.toString().padStart(2, '0')

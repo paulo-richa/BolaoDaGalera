@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppBar -->
+    <string name="app_bar_navigate_back">Voltar</string>
+    <!-- Dialog -->
+    <string name="dialog_dismiss_default">Cancelar</string>
+</resources>

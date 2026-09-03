@@ -3,7 +3,6 @@ package com.lpstudio.bolaodagalera.data.firebase
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
-import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
 import dev.gitlive.firebase.Firebase
@@ -44,10 +43,7 @@ private data class RankingDto(
     val totalCorrectResults: Int = 0
 )
 
-class FirebasePredictionRepository(
-    private val crashReporter: CrashReporter,
-    private val calculatePointsUseCase: CalculatePointsUseCase = CalculatePointsUseCase()
-) : PredictionRepository {
+class FirebasePredictionRepository(private val crashReporter: CrashReporter) : PredictionRepository {
     private val logger = appLogger("FirebasePredictionRepository")
     private val db = Firebase.firestore
 
@@ -140,7 +136,8 @@ class FirebasePredictionRepository(
             snapshot.documents.forEach { doc ->
                 collection.document(doc.id).delete()
             }
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // Best-effort cleanup: leftover predictions are harmless once the user has left the bolão.
         }
     }
 

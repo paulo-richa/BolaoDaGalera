@@ -47,8 +47,8 @@ val appModule =
         single<AuthRepository> { FirebaseAuthRepository(get()) }
         single<BolaoRepository> { FirebaseBolaoRepository(get()) }
         single<MatchRepository> { FirebaseMatchRepository(get()) }
-        single<InvitationRepository> { FirebaseInvitationRepository(get(), get()) }
-        single<PredictionRepository> { FirebasePredictionRepository(get(), get()) }
+        single<InvitationRepository> { FirebaseInvitationRepository(get()) }
+        single<PredictionRepository> { FirebasePredictionRepository(get()) }
         single<ChampionshipRepository> { FirebaseChampionshipRepository(get()) }
         single<SupportRepository> { FirebaseSupportRepository() }
         single<NotificationRepository> { FirebaseNotificationRepository(get()) }

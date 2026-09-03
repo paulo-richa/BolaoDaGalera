@@ -14,3 +14,21 @@ plugins {
     alias(libs.plugins.roborazzi) apply false
     id("com.google.firebase.appdistribution") version "5.1.1" apply false
 }
+
+subprojects {
+    plugins.withId("io.gitlab.arturbosch.detekt") {
+        tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+            exclude("**/build/**", "**/generated/**")
+        }
+        // The detekt Gradle plugin doesn't auto-wire the aggregate `detekt` task
+        // to any source set in Kotlin Multiplatform library modules - without
+        // this, `detekt` silently reports NO-SOURCE and skips the module's
+        // commonMain entirely (only composeApp, an androidApplication module,
+        // happened to get this wiring for free). `tasks.matching` degrades to a
+        // no-op where the task doesn't exist (e.g. the plain-JVM detekt-rules
+        // module), so this is safe to apply blanket across all subprojects.
+        tasks.matching { it.name == "detekt" }.configureEach {
+            dependsOn(tasks.matching { it.name == "detektMetadataCommonMain" })
+        }
+    }
+}

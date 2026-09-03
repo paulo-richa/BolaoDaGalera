@@ -11,11 +11,13 @@ expect object AdManager {
 }
 
 object PredictionAdCounter : InterstitialAdCounter {
+    private const val PREDICTIONS_BEFORE_INTERSTITIAL = 3
+
     private var count = 0
 
     override fun incrementAndShowIfNecessary() {
         count++
-        if (count >= 3) {
+        if (count >= PREDICTIONS_BEFORE_INTERSTITIAL) {
             AdManager.showInterstitial()
             count = 0
         }

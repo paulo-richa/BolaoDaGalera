@@ -15,7 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import bolaodagalera.designsystem.generated.resources.Res
+import bolaodagalera.designsystem.generated.resources.app_bar_navigate_back
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Standard app top bar: transparent background, white text/icons, no
@@ -30,7 +33,11 @@ fun BolaoTopBar(title: String, onNavigateBack: (() -> Unit)? = null, actions: @C
         navigationIcon = {
             if (onNavigateBack != null) {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(Res.string.app_bar_navigate_back),
+                        tint = Color.White
+                    )
                 }
             }
         },

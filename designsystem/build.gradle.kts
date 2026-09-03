@@ -1,3 +1,4 @@
+import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -35,6 +36,7 @@ kotlin {
             api(libs.compose.ui)
             api(libs.compose.material.icons.core)
             implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.components.resources)
         }
     }
 }
@@ -50,13 +52,41 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+        checkDependencies = true
+        abortOnError = true
+        ignoreWarnings = false
+        showAll = true
+        explainIssues = true
+    }
+}
+
+dependencies {
+    detektPlugins(project(":detekt-rules"))
 }
 
 detekt {
     toolVersion = libs.versions.detekt.get()
     config.setFrom(file("../config/detekt/detekt.yml"))
+    baseline = file("detekt-baseline.xml")
     buildUponDefaultConfig = true
     allRules = false
+}
+
+// Isolated design-system rule (no hardcoded strings in Bolao* components).
+val detektDesignSystem by tasks.registering(Detekt::class) {
+    description = "Checks for hardcoded strings in Bolao* design-system components."
+    setSource(files("src/commonMain/kotlin"))
+    config.setFrom(file("../config/detekt/detekt-design-system.yml"))
+    buildUponDefaultConfig = false
+    include("**/*.kt")
+    exclude("**/build/**")
+}
+
+tasks.named("check") {
+    dependsOn(detektDesignSystem)
 }
 
 ktlint {

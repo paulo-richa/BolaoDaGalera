@@ -132,21 +132,7 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
     var homeScore by remember { mutableIntStateOf(0) }
     var awayScore by remember { mutableIntStateOf(0) }
 
-    val backCd = stringResource(Res.string.prediction_back_cd)
-    val groupLabelTemplate = stringResource(Res.string.prediction_group_label)
-    val vsLabel = stringResource(Res.string.prediction_vs_label)
-    val scoreQuestion = stringResource(Res.string.prediction_score_question)
-    val scoreSeparator = stringResource(Res.string.prediction_score_separator)
-    val pointExactEmoji = stringResource(Res.string.prediction_point_exact_emoji)
-    val pointExactLabel = stringResource(Res.string.prediction_point_exact_label)
-    val pointCorrectEmoji = stringResource(Res.string.prediction_point_correct_emoji)
-    val pointCorrectLabel = stringResource(Res.string.prediction_point_correct_label)
-    val pointWrongEmoji = stringResource(Res.string.prediction_point_wrong_emoji)
-    val pointWrongLabel = stringResource(Res.string.prediction_point_wrong_label)
-    val ruleEmoji = stringResource(Res.string.prediction_rule_emoji)
-    val ruleText = stringResource(Res.string.prediction_rule_text)
-    val updateButtonText = stringResource(Res.string.prediction_button_update)
-    val saveButtonText = stringResource(Res.string.prediction_button_save)
+    val strings = rememberPredictionStrings()
 
     LaunchedEffect(uiState.existingPrediction) {
         uiState.existingPrediction?.let {
@@ -155,6 +141,35 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
         }
     }
 
+    val score =
+        ScoreState(
+            homeScore = homeScore,
+            awayScore = awayScore,
+            onHomeIncrement = { homeScore++ },
+            onHomeDecrement = { if (homeScore > 0) homeScore-- },
+            onAwayIncrement = { awayScore++ },
+            onAwayDecrement = { if (awayScore > 0) awayScore-- }
+        )
+
+    PredictionScreenBody(
+        uiState = uiState,
+        showSuccess = showSuccess,
+        score = score,
+        onNavigateBack = onNavigateBack,
+        onSave = { viewModel.savePrediction(userId, homeScore, awayScore) },
+        strings = strings
+    )
+}
+
+@Composable
+private fun PredictionScreenBody(
+    uiState: PredictionUiState,
+    showSuccess: Boolean,
+    score: ScoreState,
+    onNavigateBack: () -> Unit,
+    onSave: () -> Unit,
+    strings: PredictionStrings
+) {
     Box(
         modifier =
         Modifier
@@ -171,7 +186,6 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
             uiState.match != null -> {
                 val match = uiState.match!!
                 val allMatches = uiState.allMatches
-                val scrollState = rememberScrollState()
 
                 val (homeDisplayName, homeDisplayFlag, homeResolvedCrest) =
                     remember(match.id, match.homeTeam, match.homeTeamFlag, allMatches) {
@@ -182,220 +196,315 @@ fun PredictionScreen(bolaoId: String, matchId: String, onSaved: () -> Unit, onNa
                         resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
                     }
 
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier =
-                        Modifier
-                            .weight(1f)
-                            .verticalScroll(scrollState),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // ── Stadium header ────────────────────────────────────────
-                        Box(
-                            modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(GradientHero)
-                                .padding(top = BolaoSpacing.lg, bottom = BolaoSpacing.xxl, start = BolaoSpacing.sm, end = BolaoSpacing.xl)
-                        ) {
-                            Column {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    BolaoIconButton(onClick = onNavigateBack, modifier = Modifier.size(44.dp)) {
-                                        BolaoIcon(
-                                            Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = backCd,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                    Spacer(Modifier.weight(1f))
-                                    match.group?.let { group ->
-                                        Box(
-                                            modifier =
-                                            Modifier
-                                                .clip(BolaoRadiusShape.sm)
-                                                .background(NavyElevated)
-                                                .border(1.dp, GlassBorder, BolaoRadiusShape.sm)
-                                                .padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.sm)
-                                        ) {
-                                            BolaoText(
-                                                groupLabelTemplate.replace("%1\$s", group).replace("%2\$s", match.phase.label),
-                                                fontSize = BolaoTypography.bodyMedium.fontSize,
-                                                color = TextMuted,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Spacer(Modifier.height(24.dp))
-
-                                // Teams display
-                                Row(
-                                    modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = BolaoSpacing.lg),
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    TeamHero(
-                                        flag = homeDisplayFlag,
-                                        name = homeDisplayName,
-                                        crestUrl = homeResolvedCrest ?: match.homeTeamCrest
-                                    )
-
-                                    BolaoText(
-                                        vsLabel,
-                                        fontSize = BolaoTypography.titleLarge.fontSize,
-                                        fontWeight = FontWeight.Black,
-                                        color = TextMuted.copy(alpha = 0.4f),
-                                        modifier = Modifier.padding(bottom = BolaoSpacing.huge),
-                                        letterSpacing = 2.sp
-                                    )
-
-                                    TeamHero(
-                                        flag = awayDisplayFlag,
-                                        name = awayDisplayName,
-                                        crestUrl = awayResolvedCrest ?: match.awayTeamCrest
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(32.dp))
-
-                        // ── Score picker ──────────────────────────────────────────
-                        BolaoText(
-                            scoreQuestion,
-                            fontSize = BolaoTypography.headlineSmall.fontSize,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(Modifier.height(24.dp))
-
-                        Row(
-                            modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = BolaoSpacing.huge),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            ScoreStepper(
-                                value = homeScore,
-                                onIncrement = { homeScore++ },
-                                onDecrement = { if (homeScore > 0) homeScore-- },
-                                teamName = homeDisplayName
-                            )
-
-                            BolaoText(
-                                scoreSeparator,
-                                fontSize = BolaoTypography.displayMedium.fontSize,
-                                fontWeight = FontWeight.Bold,
-                                color = TextMuted
-                            )
-
-                            ScoreStepper(
-                                value = awayScore,
-                                onIncrement = { awayScore++ },
-                                onDecrement = { if (awayScore > 0) awayScore-- },
-                                teamName = awayDisplayName
-                            )
-                        }
-
-                        Spacer(Modifier.height(32.dp))
-
-                        // ── Points info ───────────────────────────────────────────
-                        Column(
-                            modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = BolaoSpacing.xl)
-                                .clip(BolaoRadiusShape.lg)
-                                .background(NavyCard)
-                                .border(1.dp, GlassBorder, BolaoRadiusShape.lg)
-                                .padding(BolaoSpacing.lg),
-                            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                PointBadge(
-                                    emoji = pointExactEmoji,
-                                    pts = (uiState.bolao?.pointsExactScore ?: 3).toString(),
-                                    label = pointExactLabel
-                                )
-                                BolaoVerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
-                                PointBadge(
-                                    emoji = pointCorrectEmoji,
-                                    pts = (uiState.bolao?.pointsWinnerOrDraw ?: 1).toString(),
-                                    label = pointCorrectLabel
-                                )
-                                BolaoVerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
-                                PointBadge(
-                                    emoji = pointWrongEmoji,
-                                    pts = "0",
-                                    label = pointWrongLabel
-                                )
-                            }
-
-                            BolaoHorizontalDivider(color = GlassBorder.copy(alpha = 0.5f), thickness = 0.5.dp)
-
-                            Row(
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md),
-                                modifier = Modifier.padding(horizontal = BolaoSpacing.xs)
-                            ) {
-                                BolaoText(ruleEmoji, fontSize = BolaoTypography.bodyLarge.fontSize)
-                                BolaoText(
-                                    ruleText,
-                                    fontSize = BolaoTypography.bodyMedium.fontSize,
-                                    color = TextMuted,
-                                    lineHeight = 15.sp
-                                )
-                            }
-                        }
-
-                        uiState.error?.let {
-                            Spacer(Modifier.height(12.dp))
-                            BolaoText(
-                                it,
-                                color = ErrorRed,
-                                fontSize = BolaoTypography.bodyMedium.fontSize,
-                                modifier = Modifier.padding(horizontal = BolaoSpacing.xl)
-                            )
-                        }
-
-                        Spacer(Modifier.height(24.dp))
-                        Spacer(Modifier.imePadding())
-                    }
-
-                    // ── Save button (Sticky) ──────────────────────────────────
-                    Box(
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = BolaoSpacing.xl)
-                            .padding(bottom = BolaoSpacing.xxl, top = BolaoSpacing.sm)
-                    ) {
-                        GradientSaveButton(
-                            text = if (uiState.existingPrediction != null) updateButtonText else saveButtonText,
-                            isLoading = uiState.isLoading,
-                            onClick = { viewModel.savePrediction(userId, homeScore, awayScore) }
-                        )
-                    }
-                }
+                PredictionMatchContent(
+                    uiState = uiState,
+                    match = match,
+                    home = PredictionTeamDisplay(homeDisplayName, homeDisplayFlag, homeResolvedCrest ?: match.homeTeamCrest),
+                    away = PredictionTeamDisplay(awayDisplayName, awayDisplayFlag, awayResolvedCrest ?: match.awayTeamCrest),
+                    score = score,
+                    onNavigateBack = onNavigateBack,
+                    onSave = onSave,
+                    strings = strings
+                )
             }
         }
 
         if (showSuccess) {
             SuccessOverlay()
+        }
+    }
+}
+
+/** Pre-resolved user-facing strings threaded through the prediction content tree, avoiding repeated stringResource lookups. */
+private data class PredictionStrings(
+    val backCd: String,
+    val groupLabelTemplate: String,
+    val vsLabel: String,
+    val scoreQuestion: String,
+    val scoreSeparator: String,
+    val pointExactEmoji: String,
+    val pointExactLabel: String,
+    val pointCorrectEmoji: String,
+    val pointCorrectLabel: String,
+    val pointWrongEmoji: String,
+    val pointWrongLabel: String,
+    val ruleEmoji: String,
+    val ruleText: String,
+    val updateButtonText: String,
+    val saveButtonText: String
+)
+
+@Composable
+private fun rememberPredictionStrings(): PredictionStrings = PredictionStrings(
+    backCd = stringResource(Res.string.prediction_back_cd),
+    groupLabelTemplate = stringResource(Res.string.prediction_group_label),
+    vsLabel = stringResource(Res.string.prediction_vs_label),
+    scoreQuestion = stringResource(Res.string.prediction_score_question),
+    scoreSeparator = stringResource(Res.string.prediction_score_separator),
+    pointExactEmoji = stringResource(Res.string.prediction_point_exact_emoji),
+    pointExactLabel = stringResource(Res.string.prediction_point_exact_label),
+    pointCorrectEmoji = stringResource(Res.string.prediction_point_correct_emoji),
+    pointCorrectLabel = stringResource(Res.string.prediction_point_correct_label),
+    pointWrongEmoji = stringResource(Res.string.prediction_point_wrong_emoji),
+    pointWrongLabel = stringResource(Res.string.prediction_point_wrong_label),
+    ruleEmoji = stringResource(Res.string.prediction_rule_emoji),
+    ruleText = stringResource(Res.string.prediction_rule_text),
+    updateButtonText = stringResource(Res.string.prediction_button_update),
+    saveButtonText = stringResource(Res.string.prediction_button_save)
+)
+
+/** Resolved display data (name/flag/crest) for one team in the prediction header and score picker. */
+private data class PredictionTeamDisplay(val name: String, val flag: String, val crestUrl: String?)
+
+/** Current score selection plus the stepper callbacks, bundled to keep composable parameter lists short. */
+private data class ScoreState(
+    val homeScore: Int,
+    val awayScore: Int,
+    val onHomeIncrement: () -> Unit,
+    val onHomeDecrement: () -> Unit,
+    val onAwayIncrement: () -> Unit,
+    val onAwayDecrement: () -> Unit
+)
+
+@Composable
+private fun PredictionMatchContent(
+    uiState: PredictionUiState,
+    match: com.lpstudio.bolaodagalera.domain.model.Match,
+    home: PredictionTeamDisplay,
+    away: PredictionTeamDisplay,
+    score: ScoreState,
+    onNavigateBack: () -> Unit,
+    onSave: () -> Unit,
+    strings: PredictionStrings
+) {
+    val scrollState = rememberScrollState()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier =
+            Modifier
+                .weight(1f)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            PredictionStadiumHeader(match = match, home = home, away = away, onNavigateBack = onNavigateBack, strings = strings)
+
+            Spacer(Modifier.height(32.dp))
+
+            PredictionScorePicker(score = score, home = home, away = away, strings = strings)
+
+            Spacer(Modifier.height(32.dp))
+
+            PredictionPointsInfoCard(
+                pointsExactScore = uiState.bolao?.pointsExactScore ?: 3,
+                pointsWinnerOrDraw = uiState.bolao?.pointsWinnerOrDraw ?: 1,
+                strings = strings
+            )
+
+            uiState.error?.let {
+                Spacer(Modifier.height(12.dp))
+                BolaoText(
+                    it,
+                    color = ErrorRed,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    modifier = Modifier.padding(horizontal = BolaoSpacing.xl)
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.imePadding())
+        }
+
+        // ── Save button (Sticky) ──────────────────────────────────
+        Box(
+            modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = BolaoSpacing.xl)
+                .padding(bottom = BolaoSpacing.xxl, top = BolaoSpacing.sm)
+        ) {
+            GradientSaveButton(
+                text = if (uiState.existingPrediction != null) strings.updateButtonText else strings.saveButtonText,
+                isLoading = uiState.isLoading,
+                onClick = onSave
+            )
+        }
+    }
+}
+
+@Composable
+private fun PredictionStadiumHeader(
+    match: com.lpstudio.bolaodagalera.domain.model.Match,
+    home: PredictionTeamDisplay,
+    away: PredictionTeamDisplay,
+    onNavigateBack: () -> Unit,
+    strings: PredictionStrings
+) {
+    Box(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .background(GradientHero)
+            .padding(top = BolaoSpacing.lg, bottom = BolaoSpacing.xxl, start = BolaoSpacing.sm, end = BolaoSpacing.xl)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BolaoIconButton(onClick = onNavigateBack, modifier = Modifier.size(44.dp)) {
+                    BolaoIcon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = strings.backCd,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                match.group?.let { group ->
+                    PredictionGroupBadge(group = group, phaseLabel = match.phase.label, groupLabelTemplate = strings.groupLabelTemplate)
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // Teams display
+            Row(
+                modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = BolaoSpacing.lg),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TeamHero(flag = home.flag, name = home.name, crestUrl = home.crestUrl)
+
+                BolaoText(
+                    strings.vsLabel,
+                    fontSize = BolaoTypography.titleLarge.fontSize,
+                    fontWeight = FontWeight.Black,
+                    color = TextMuted.copy(alpha = 0.4f),
+                    modifier = Modifier.padding(bottom = BolaoSpacing.huge),
+                    letterSpacing = 2.sp
+                )
+
+                TeamHero(flag = away.flag, name = away.name, crestUrl = away.crestUrl)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PredictionGroupBadge(group: String, phaseLabel: String, groupLabelTemplate: String) {
+    Box(
+        modifier =
+        Modifier
+            .clip(BolaoRadiusShape.sm)
+            .background(NavyElevated)
+            .border(1.dp, GlassBorder, BolaoRadiusShape.sm)
+            .padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.sm)
+    ) {
+        BolaoText(
+            groupLabelTemplate.replace("%1\$s", group).replace("%2\$s", phaseLabel),
+            fontSize = BolaoTypography.bodyMedium.fontSize,
+            color = TextMuted,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun PredictionScorePicker(score: ScoreState, home: PredictionTeamDisplay, away: PredictionTeamDisplay, strings: PredictionStrings) {
+    BolaoText(
+        strings.scoreQuestion,
+        fontSize = BolaoTypography.headlineSmall.fontSize,
+        fontWeight = FontWeight.Black,
+        color = Color.White,
+        letterSpacing = 0.5.sp
+    )
+    Spacer(Modifier.height(24.dp))
+
+    Row(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = BolaoSpacing.huge),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ScoreStepper(
+            value = score.homeScore,
+            onIncrement = score.onHomeIncrement,
+            onDecrement = score.onHomeDecrement,
+            teamName = home.name
+        )
+
+        BolaoText(
+            strings.scoreSeparator,
+            fontSize = BolaoTypography.displayMedium.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = TextMuted
+        )
+
+        ScoreStepper(
+            value = score.awayScore,
+            onIncrement = score.onAwayIncrement,
+            onDecrement = score.onAwayDecrement,
+            teamName = away.name
+        )
+    }
+}
+
+@Composable
+private fun PredictionPointsInfoCard(pointsExactScore: Int, pointsWinnerOrDraw: Int, strings: PredictionStrings) {
+    Column(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = BolaoSpacing.xl)
+            .clip(BolaoRadiusShape.lg)
+            .background(NavyCard)
+            .border(1.dp, GlassBorder, BolaoRadiusShape.lg)
+            .padding(BolaoSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            PointBadge(
+                emoji = strings.pointExactEmoji,
+                pts = pointsExactScore.toString(),
+                label = strings.pointExactLabel
+            )
+            BolaoVerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
+            PointBadge(
+                emoji = strings.pointCorrectEmoji,
+                pts = pointsWinnerOrDraw.toString(),
+                label = strings.pointCorrectLabel
+            )
+            BolaoVerticalDivider(color = GlassBorder, modifier = Modifier.height(48.dp))
+            PointBadge(
+                emoji = strings.pointWrongEmoji,
+                pts = "0",
+                label = strings.pointWrongLabel
+            )
+        }
+
+        BolaoHorizontalDivider(color = GlassBorder.copy(alpha = 0.5f), thickness = 0.5.dp)
+
+        Row(
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md),
+            modifier = Modifier.padding(horizontal = BolaoSpacing.xs)
+        ) {
+            BolaoText(strings.ruleEmoji, fontSize = BolaoTypography.bodyLarge.fontSize)
+            BolaoText(
+                strings.ruleText,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                color = TextMuted,
+                lineHeight = 15.sp
+            )
         }
     }
 }
@@ -443,45 +552,50 @@ private fun SuccessOverlay() {
             }
         }
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier =
-                Modifier
-                    .size(120.dp)
-                    .scale(scale)
-                    .drawBehind {
-                        drawCircle(
-                            color = Neon,
-                            style = Stroke(width = 4.dp.toPx())
-                        )
-                    }
-                    .padding(BolaoSpacing.md)
-                    .clip(CircleShape)
-                    .background(Neon.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                BolaoIcon(
-                    Icons.Default.Check,
-                    contentDescription = null,
-                    tint = Neon,
-                    modifier = Modifier.size(72.dp)
-                )
-            }
-            Spacer(Modifier.height(32.dp))
-            BolaoText(
-                stringResource(Res.string.prediction_success_title),
-                color = Color.White,
-                fontSize = BolaoTypography.displayMedium.fontSize,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp
-            )
-            BolaoText(
-                stringResource(Res.string.prediction_success_subtitle),
-                color = TextMuted,
-                fontSize = BolaoTypography.titleLarge.fontSize,
-                fontWeight = FontWeight.Medium
+        SuccessOverlayMessage(scale = scale)
+    }
+}
+
+@Composable
+private fun SuccessOverlayMessage(scale: Float) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier =
+            Modifier
+                .size(120.dp)
+                .scale(scale)
+                .drawBehind {
+                    drawCircle(
+                        color = Neon,
+                        style = Stroke(width = 4.dp.toPx())
+                    )
+                }
+                .padding(BolaoSpacing.md)
+                .clip(CircleShape)
+                .background(Neon.copy(alpha = 0.2f)),
+            contentAlignment = Alignment.Center
+        ) {
+            BolaoIcon(
+                Icons.Default.Check,
+                contentDescription = null,
+                tint = Neon,
+                modifier = Modifier.size(72.dp)
             )
         }
+        Spacer(Modifier.height(32.dp))
+        BolaoText(
+            stringResource(Res.string.prediction_success_title),
+            color = Color.White,
+            fontSize = BolaoTypography.displayMedium.fontSize,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 2.sp
+        )
+        BolaoText(
+            stringResource(Res.string.prediction_success_subtitle),
+            color = TextMuted,
+            fontSize = BolaoTypography.titleLarge.fontSize,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -520,69 +634,35 @@ private fun ConfettiPiece(state: ConfettiState) {
     )
 }
 
+/** Splits a two-option flag label (e.g. "A ou B" for undecided qualifiers) into a de-emphasized separator span. */
 @Composable
-private fun TeamHero(flag: String, name: String, crestUrl: String?) {
-    val annotatedFlag =
-        remember(flag) {
-            if (flag.contains(" ou ")) {
-                buildAnnotatedString {
-                    val parts = flag.split(" ou ")
-                    parts.forEachIndexed { index, part ->
-                        append(part)
-                        if (index < parts.size - 1) {
-                            withStyle(style = SpanStyle(fontSize = BolaoTypography.bodyLarge.fontSize, fontWeight = FontWeight.Normal)) {
-                                append(" ou ")
-                            }
-                        }
+private fun rememberAnnotatedFlag(flag: String): AnnotatedString = remember(flag) {
+    if (flag.contains(" ou ")) {
+        buildAnnotatedString {
+            val parts = flag.split(" ou ")
+            parts.forEachIndexed { index, part ->
+                append(part)
+                if (index < parts.size - 1) {
+                    withStyle(style = SpanStyle(fontSize = BolaoTypography.bodyLarge.fontSize, fontWeight = FontWeight.Normal)) {
+                        append(" ou ")
                     }
                 }
-            } else {
-                AnnotatedString(flag)
             }
         }
+    } else {
+        AnnotatedString(flag)
+    }
+}
+
+@Composable
+private fun TeamHero(flag: String, name: String, crestUrl: String?) {
+    val annotatedFlag = rememberAnnotatedFlag(flag)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(120.dp)
     ) {
-        Box(
-            modifier =
-            Modifier
-                .size(86.dp)
-                .clip(CircleShape)
-                .background(NavyElevated)
-                .border(2.dp, GlassBorder, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            if (!crestUrl.isNullOrBlank()) {
-                SubcomposeAsyncImage(
-                    model =
-                    ImageRequest.Builder(LocalPlatformContext.current)
-                        .data(crestUrl)
-                        .decoderFactory(SvgDecoder.Factory())
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    loading = {
-                        BolaoLoadingIndicator(modifier = Modifier.size(24.dp))
-                    },
-                    error = {
-                        BolaoText(
-                            text = annotatedFlag,
-                            fontSize = BolaoTypography.displaySmall.fontSize,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                )
-            } else {
-                BolaoText(
-                    text = annotatedFlag,
-                    fontSize = BolaoTypography.displaySmall.fontSize,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
+        TeamHeroCrest(crestUrl = crestUrl, annotatedFlag = annotatedFlag)
 
         Spacer(Modifier.height(12.dp))
         BolaoText(
@@ -598,26 +678,57 @@ private fun TeamHero(flag: String, name: String, crestUrl: String?) {
 }
 
 @Composable
-private fun ScoreStepper(value: Int, onIncrement: () -> Unit, onDecrement: () -> Unit, teamName: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // + button
-        Box(
-            modifier =
-            Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(Color.Transparent)
-                .border(1.dp, Neon.copy(alpha = 0.5f), CircleShape)
-                .clickable(onClick = onIncrement),
-            contentAlignment = Alignment.Center
-        ) {
+private fun TeamHeroCrest(crestUrl: String?, annotatedFlag: AnnotatedString) {
+    Box(
+        modifier =
+        Modifier
+            .size(86.dp)
+            .clip(CircleShape)
+            .background(NavyElevated)
+            .border(2.dp, GlassBorder, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        if (!crestUrl.isNullOrBlank()) {
+            SubcomposeAsyncImage(
+                model =
+                ImageRequest.Builder(LocalPlatformContext.current)
+                    .data(crestUrl)
+                    .decoderFactory(SvgDecoder.Factory())
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier.size(56.dp),
+                loading = {
+                    BolaoLoadingIndicator(modifier = Modifier.size(24.dp))
+                },
+                error = {
+                    BolaoText(
+                        text = annotatedFlag,
+                        fontSize = BolaoTypography.displaySmall.fontSize,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            )
+        } else {
             BolaoText(
-                stringResource(Res.string.prediction_stepper_increment),
+                text = annotatedFlag,
                 fontSize = BolaoTypography.displaySmall.fontSize,
-                fontWeight = FontWeight.Medium,
-                color = Neon
+                textAlign = TextAlign.Center
             )
         }
+    }
+}
+
+@Composable
+private fun ScoreStepper(value: Int, onIncrement: () -> Unit, onDecrement: () -> Unit, teamName: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        StepperCircleButton(
+            label = stringResource(Res.string.prediction_stepper_increment),
+            enabled = true,
+            borderColor = Neon.copy(alpha = 0.5f),
+            textColor = Neon,
+            onClick = onIncrement
+        )
 
         Spacer(Modifier.height(12.dp))
 
@@ -641,24 +752,13 @@ private fun ScoreStepper(value: Int, onIncrement: () -> Unit, onDecrement: () ->
 
         Spacer(Modifier.height(12.dp))
 
-        // – button
-        Box(
-            modifier =
-            Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(Color.Transparent)
-                .border(1.dp, if (value > 0) TextMuted.copy(alpha = 0.5f) else GlassBorder, CircleShape)
-                .clickable(enabled = value > 0, onClick = onDecrement),
-            contentAlignment = Alignment.Center
-        ) {
-            BolaoText(
-                stringResource(Res.string.prediction_stepper_decrement),
-                fontSize = BolaoTypography.displaySmall.fontSize,
-                fontWeight = FontWeight.Medium,
-                color = if (value > 0) TextMuted else TextSubtle
-            )
-        }
+        StepperCircleButton(
+            label = stringResource(Res.string.prediction_stepper_decrement),
+            enabled = value > 0,
+            borderColor = if (value > 0) TextMuted.copy(alpha = 0.5f) else GlassBorder,
+            textColor = if (value > 0) TextMuted else TextSubtle,
+            onClick = onDecrement
+        )
 
         Spacer(Modifier.height(10.dp))
 
@@ -668,6 +768,27 @@ private fun ScoreStepper(value: Int, onIncrement: () -> Unit, onDecrement: () ->
             color = TextMuted,
             textAlign = TextAlign.Center,
             maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun StepperCircleButton(label: String, enabled: Boolean, borderColor: Color, textColor: Color, onClick: () -> Unit) {
+    Box(
+        modifier =
+        Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(Color.Transparent)
+            .border(1.dp, borderColor, CircleShape)
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        BolaoText(
+            label,
+            fontSize = BolaoTypography.displaySmall.fontSize,
+            fontWeight = FontWeight.Medium,
+            color = textColor
         )
     }
 }
