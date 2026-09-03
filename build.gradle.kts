@@ -20,6 +20,12 @@ subprojects {
         tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
             exclude("**/build/**", "**/generated/**")
         }
+        // DetektCreateBaselineTask is a separate task type from Detekt - without this,
+        // the baseline-generation task ignores the excludes above and sweeps generated
+        // Compose resource-accessor code into the baseline as noise.
+        tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
+            exclude("**/build/**", "**/generated/**")
+        }
         // The detekt Gradle plugin doesn't auto-wire the aggregate `detekt` task
         // to any source set in Kotlin Multiplatform library modules - without
         // this, `detekt` silently reports NO-SOURCE and skips the module's

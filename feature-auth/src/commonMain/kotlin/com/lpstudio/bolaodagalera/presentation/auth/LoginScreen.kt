@@ -8,6 +8,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -76,6 +77,269 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
+private fun LoginHeader() {
+    Image(
+        painter = painterResource(Res.drawable.logo_oficial),
+        contentDescription = stringResource(Res.string.login_logo_content_description),
+        modifier = Modifier.size(180.dp)
+    )
+    Spacer(Modifier.height(20.dp))
+    BolaoText(
+        stringResource(Res.string.login_title),
+        fontSize = BolaoTypography.displayMedium.fontSize,
+        fontWeight = FontWeight.ExtraBold,
+        color = Color.White,
+        letterSpacing = (-0.5).sp
+    )
+    Spacer(Modifier.height(4.dp))
+    BolaoText(
+        stringResource(Res.string.login_subtitle),
+        fontSize = BolaoTypography.bodyLarge.fontSize,
+        color = Gold,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 1.5.sp,
+        textAlign = TextAlign.Center
+    )
+}
+
+@Composable
+private fun LoginEmailStep(
+    email: String,
+    emailExists: Boolean?,
+    emailError: String?,
+    focusManager: androidx.compose.ui.focus.FocusManager,
+    onEmailChange: (String) -> Unit,
+    onResetEmailCheck: () -> Unit,
+    onCheckEmail: () -> Unit
+) {
+    Column {
+        BolaoTextField(
+            value = email,
+            onValueChange = onEmailChange,
+            label = stringResource(Res.string.login_field_email_label),
+            enabled = emailExists == null,
+            isError = emailError != null,
+            keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.None,
+                imeAction = if (emailExists == true) ImeAction.Next else ImeAction.Done
+            ),
+            keyboardActions =
+            KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) },
+                onDone = {
+                    if (emailExists == null && emailError == null && email.isNotBlank()) {
+                        onCheckEmail()
+                    }
+                }
+            )
+        )
+        emailError?.let {
+            BolaoText(
+                it,
+                color = ErrorRed,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
+            )
+        }
+
+        if (emailExists != null) {
+            BolaoTextButton(
+                onClick = onResetEmailCheck,
+                modifier = Modifier.height(32.dp),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                BolaoText(
+                    stringResource(Res.string.login_button_change_email),
+                    color = Neon,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoginPasswordStep(
+    password: String,
+    passwordError: String?,
+    isFormValid: Boolean,
+    isLoading: Boolean,
+    focusManager: androidx.compose.ui.focus.FocusManager,
+    onPasswordChange: (String) -> Unit,
+    onForgotPassword: () -> Unit,
+    onLogin: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)) {
+        Column {
+            BolaoTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                label = stringResource(Res.string.login_field_password_label),
+                isPassword = true,
+                isError = passwordError != null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                keyboardActions =
+                KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        if (isFormValid) onLogin()
+                    }
+                )
+            )
+            passwordError?.let {
+                BolaoText(
+                    it,
+                    color = ErrorRed,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
+                )
+            }
+
+            BolaoTextButton(
+                onClick = onForgotPassword,
+                modifier = Modifier.align(Alignment.End).height(32.dp),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                BolaoText(
+                    stringResource(Res.string.login_button_forgot_password),
+                    color = Gold,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        BolaoButton(text = stringResource(Res.string.login_button_submit), isLoading = isLoading, enabled = isFormValid && !isLoading) {
+            onLogin()
+        }
+    }
+}
+
+@Composable
+private fun LoginEmailNotFoundStep(onCreateAccount: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
+        BolaoText(
+            stringResource(Res.string.login_email_not_found_message),
+            color = Gold,
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = BolaoSpacing.sm)
+        )
+        BolaoButton(text = stringResource(Res.string.login_button_create_account_now)) {
+            onCreateAccount()
+        }
+    }
+}
+
+@Composable
+private fun AutoScrollOnKeyboardOpen(keyboardHeight: androidx.compose.ui.unit.Dp, scrollState: androidx.compose.foundation.ScrollState) {
+    LaunchedEffect(keyboardHeight) {
+        if (keyboardHeight > 0.dp) {
+            // Small delay to let Compose recompose the Column with the trailing spacer
+            kotlinx.coroutines.delay(100.milliseconds)
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.LoginBackgroundGlow() {
+    Box(
+        modifier =
+        Modifier
+            .size(320.dp)
+            .align(Alignment.TopCenter)
+            .offset(y = (-60).dp)
+            .background(
+                Brush.radialGradient(listOf(Neon.copy(alpha = 0.12f), Color.Transparent)),
+                shape = RoundedCornerShape(50)
+            )
+    )
+}
+
+private class LoginFormFields(
+    val email: String,
+    val password: String,
+    val emailError: String?,
+    val passwordError: String?,
+    val isFormValid: Boolean
+)
+
+private class LoginCardActions(
+    val onEmailChange: (String) -> Unit,
+    val onPasswordChange: (String) -> Unit,
+    val onResetEmailCheck: () -> Unit,
+    val onCheckEmail: () -> Unit,
+    val onForgotPassword: () -> Unit,
+    val onLogin: () -> Unit,
+    val onCreateAccount: () -> Unit
+)
+
+@Composable
+private fun LoginCard(
+    fields: LoginFormFields,
+    uiState: AuthUiState,
+    focusManager: androidx.compose.ui.focus.FocusManager,
+    actions: LoginCardActions
+) {
+    BolaoGlassCard {
+        LoginEmailStep(
+            email = fields.email,
+            emailExists = uiState.emailExists,
+            emailError = fields.emailError,
+            focusManager = focusManager,
+            onEmailChange = actions.onEmailChange,
+            onResetEmailCheck = actions.onResetEmailCheck,
+            onCheckEmail = actions.onCheckEmail
+        )
+
+        AnimatedVisibility(visible = uiState.emailExists == true) {
+            LoginPasswordStep(
+                password = fields.password,
+                passwordError = fields.passwordError,
+                isFormValid = fields.isFormValid,
+                isLoading = uiState.isLoading,
+                focusManager = focusManager,
+                onPasswordChange = actions.onPasswordChange,
+                onForgotPassword = actions.onForgotPassword,
+                onLogin = actions.onLogin
+            )
+        }
+
+        AnimatedVisibility(visible = uiState.emailExists == false) {
+            LoginEmailNotFoundStep(onCreateAccount = actions.onCreateAccount)
+        }
+
+        if (uiState.emailExists == null) {
+            BolaoButton(
+                text = stringResource(Res.string.login_button_continue),
+                isLoading = uiState.isLoading,
+                enabled = fields.email.isNotBlank() && fields.emailError == null && !uiState.isLoading
+            ) {
+                actions.onCheckEmail()
+            }
+        }
+
+        uiState.error?.let {
+            BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize, modifier = Modifier.fillMaxWidth())
+        }
+
+        uiState.successMessage?.let {
+            BolaoText(
+                it,
+                color = Neon,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
 fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> Unit) {
     val viewModel: AuthViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
@@ -90,21 +354,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
     var visible by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    AutoScrollOnKeyboardOpen(keyboardHeight, scrollState)
 
-    LaunchedEffect(keyboardHeight) {
-        if (keyboardHeight > 0.dp) {
-            // Small delay to let Compose recompose the Column with the trailing spacer
-            kotlinx.coroutines.delay(100.milliseconds)
-            scrollState.animateScrollTo(scrollState.maxValue)
-        }
-    }
-
-    // Validation helpers
     val emailError = if (emailTouched) ValidationUtils.validateEmail(email) else null
-
     val passwordErrorText = stringResource(Res.string.login_password_error_min_length)
     val passwordError = if (passwordTouched && (password.length < 6)) passwordErrorText else null
-
     val isFormValid = email.isNotBlank() && password.length >= 6 && emailError == null && passwordError == null
 
     LaunchedEffect(Unit) {
@@ -113,24 +367,47 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
     }
     LaunchedEffect(uiState.user) { if (uiState.user != null) onLoginSuccess() }
 
-    Box(
-        modifier =
-        Modifier
-            .fillMaxSize()
-            .background(GradientBg)
-    ) {
-        // Decorative glow
-        Box(
-            modifier =
-            Modifier
-                .size(320.dp)
-                .align(Alignment.TopCenter)
-                .offset(y = (-60).dp)
-                .background(
-                    Brush.radialGradient(listOf(Neon.copy(alpha = 0.12f), Color.Transparent)),
-                    shape = RoundedCornerShape(50)
-                )
+    val actions =
+        LoginCardActions(
+            onEmailChange = {
+                email = it.lowercase().trim()
+                emailTouched = true
+                if (uiState.emailExists != null) viewModel.resetEmailCheck()
+            },
+            onPasswordChange = {
+                password = it
+                passwordTouched = true
+            },
+            onResetEmailCheck = { viewModel.resetEmailCheck() },
+            onCheckEmail = { viewModel.checkEmail(email) },
+            onForgotPassword = { viewModel.resetPassword(email) },
+            onLogin = { viewModel.login(email, password) },
+            onCreateAccount = { onNavigateToRegister(email) }
         )
+
+    LoginScreenContent(
+        visible = visible,
+        scrollState = scrollState,
+        keyboardHeight = keyboardHeight,
+        fields = LoginFormFields(email, password, emailError, passwordError, isFormValid),
+        uiState = uiState,
+        focusManager = focusManager,
+        actions = actions
+    )
+}
+
+@Composable
+private fun LoginScreenContent(
+    visible: Boolean,
+    scrollState: androidx.compose.foundation.ScrollState,
+    keyboardHeight: androidx.compose.ui.unit.Dp,
+    fields: LoginFormFields,
+    uiState: AuthUiState,
+    focusManager: androidx.compose.ui.focus.FocusManager,
+    actions: LoginCardActions
+) {
+    Box(modifier = Modifier.fillMaxSize().background(GradientBg)) {
+        LoginBackgroundGlow()
 
         AnimatedVisibility(
             visible = visible,
@@ -146,199 +423,10 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: (String?) -> U
                 verticalArrangement = Arrangement.Top
             ) {
                 Spacer(Modifier.height(60.dp))
-                // Logo area
-                Image(
-                    painter = painterResource(Res.drawable.logo_oficial),
-                    contentDescription = stringResource(Res.string.login_logo_content_description),
-                    modifier = Modifier.size(180.dp)
-                )
-
-                Spacer(Modifier.height(20.dp))
-
-                BolaoText(
-                    stringResource(Res.string.login_title),
-                    fontSize = BolaoTypography.displayMedium.fontSize,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    letterSpacing = (-0.5).sp
-                )
-                Spacer(Modifier.height(4.dp))
-                BolaoText(
-                    stringResource(Res.string.login_subtitle),
-                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                    color = Gold,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 1.5.sp,
-                    textAlign = TextAlign.Center
-                )
-
+                LoginHeader()
                 Spacer(Modifier.height(48.dp))
 
-                // Glass card
-                BolaoGlassCard {
-                    // STEP 1: Email
-                    Column {
-                        BolaoTextField(
-                            value = email,
-                            onValueChange = {
-                                email = it.lowercase().trim()
-                                emailTouched = true
-                                if (uiState.emailExists != null) viewModel.resetEmailCheck()
-                            },
-                            label = stringResource(Res.string.login_field_email_label),
-                            enabled = uiState.emailExists == null,
-                            isError = emailError != null,
-                            keyboardOptions =
-                            KeyboardOptions(
-                                keyboardType = KeyboardType.Email,
-                                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.None,
-                                imeAction = if (uiState.emailExists == true) ImeAction.Next else ImeAction.Done
-                            ),
-                            keyboardActions =
-                            KeyboardActions(
-                                onNext = { focusManager.moveFocus(FocusDirection.Down) },
-                                onDone = {
-                                    if (uiState.emailExists == null && emailError == null && email.isNotBlank()) {
-                                        viewModel.checkEmail(email)
-                                    }
-                                }
-                            )
-                        )
-                        emailError?.let {
-                            BolaoText(
-                                it,
-                                color = ErrorRed,
-                                fontSize = BolaoTypography.bodyMedium.fontSize,
-                                modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
-                            )
-                        }
-
-                        if (uiState.emailExists != null) {
-                            BolaoTextButton(
-                                onClick = { viewModel.resetEmailCheck() },
-                                modifier = Modifier.height(32.dp),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                BolaoText(
-                                    stringResource(Res.string.login_button_change_email),
-                                    color = Neon,
-                                    fontSize = BolaoTypography.bodyMedium.fontSize,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-
-                    AnimatedVisibility(visible = uiState.emailExists == true) {
-                        Column(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)) {
-                            Column {
-                                BolaoTextField(
-                                    value = password,
-                                    onValueChange = {
-                                        password = it
-                                        passwordTouched = true
-                                    },
-                                    label = stringResource(Res.string.login_field_password_label),
-                                    isPassword = true,
-                                    isError = passwordError != null,
-                                    keyboardOptions =
-                                    KeyboardOptions(
-                                        keyboardType = KeyboardType.Password,
-                                        imeAction = ImeAction.Done
-                                    ),
-                                    keyboardActions =
-                                    KeyboardActions(
-                                        onDone = {
-                                            focusManager.clearFocus()
-                                            if (isFormValid) {
-                                                viewModel.login(email, password)
-                                            }
-                                        }
-                                    )
-                                )
-                                passwordError?.let {
-                                    BolaoText(
-                                        it,
-                                        color = ErrorRed,
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        modifier = Modifier.padding(start = BolaoSpacing.sm, top = BolaoSpacing.xs)
-                                    )
-                                }
-
-                                BolaoTextButton(
-                                    onClick = { viewModel.resetPassword(email) },
-                                    modifier = Modifier.align(Alignment.End).height(32.dp),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    BolaoText(
-                                        stringResource(Res.string.login_button_forgot_password),
-                                        color = Gold,
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-
-                            BolaoButton(
-                                text = stringResource(Res.string.login_button_submit),
-                                isLoading = uiState.isLoading,
-                                enabled = isFormValid && !uiState.isLoading
-                            ) {
-                                viewModel.login(email, password)
-                            }
-                        }
-                    }
-
-                    AnimatedVisibility(visible = uiState.emailExists == false) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
-                        ) {
-                            BolaoText(
-                                stringResource(Res.string.login_email_not_found_message),
-                                color = Gold,
-                                fontSize = BolaoTypography.bodyLarge.fontSize,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = BolaoSpacing.sm)
-                            )
-
-                            BolaoButton(
-                                text = stringResource(Res.string.login_button_create_account_now)
-                            ) {
-                                onNavigateToRegister(email)
-                            }
-                        }
-                    }
-
-                    if (uiState.emailExists == null) {
-                        BolaoButton(
-                            text = stringResource(Res.string.login_button_continue),
-                            isLoading = uiState.isLoading,
-                            enabled = email.isNotBlank() && emailError == null && !uiState.isLoading
-                        ) {
-                            viewModel.checkEmail(email)
-                        }
-                    }
-
-                    uiState.error?.let {
-                        BolaoText(
-                            it,
-                            color = ErrorRed,
-                            fontSize = BolaoTypography.bodyMedium.fontSize,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    uiState.successMessage?.let {
-                        BolaoText(
-                            it,
-                            color = Neon,
-                            fontSize = BolaoTypography.bodyMedium.fontSize,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
+                LoginCard(fields = fields, uiState = uiState, focusManager = focusManager, actions = actions)
 
                 Spacer(Modifier.height(48.dp))
                 // 300dp cushion to keep clearance between the field and the keyboard

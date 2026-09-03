@@ -49,6 +49,46 @@ import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
+private fun SplashLogo(scale: Float) {
+    Box(
+        modifier =
+        Modifier
+            .size(120.dp)
+            .scale(scale)
+            .drawBehind {
+                drawCircle(
+                    brush = Brush.radialGradient(colors = listOf(Neon.copy(alpha = 0.2f), Color.Transparent)),
+                    radius = size.maxDimension * 0.8f
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier =
+            Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(GradientPrimary)
+                .border(2.dp, Neon.copy(alpha = 0.5f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            BolaoText(stringResource(Res.string.splash_screen_logo_emoji), fontSize = BolaoTypography.displayLarge.fontSize)
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.SplashStudioFooter() {
+    BolaoText(
+        stringResource(Res.string.splash_screen_studio_label),
+        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = BolaoSpacing.xxxl),
+        fontSize = BolaoTypography.bodySmall.fontSize,
+        color = TextSubtle,
+        letterSpacing = 1.sp
+    )
+}
+
+@Composable
 fun SplashScreen(onSplashFinished: () -> Unit) {
     var startAnimation by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -77,35 +117,7 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Centered logo
-            Box(
-                modifier =
-                Modifier
-                    .size(120.dp)
-                    .scale(scale)
-                    .drawBehind {
-                        drawCircle(
-                            brush =
-                            Brush.radialGradient(
-                                colors = listOf(Neon.copy(alpha = 0.2f), Color.Transparent)
-                            ),
-                            radius = size.maxDimension * 0.8f
-                        )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(GradientPrimary)
-                        .border(2.dp, Neon.copy(alpha = 0.5f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    BolaoText(stringResource(Res.string.splash_screen_logo_emoji), fontSize = BolaoTypography.displayLarge.fontSize)
-                }
-            }
+            SplashLogo(scale)
 
             Spacer(Modifier.height(24.dp))
 
@@ -140,15 +152,6 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
             }
         }
 
-        BolaoText(
-            stringResource(Res.string.splash_screen_studio_label),
-            modifier =
-            Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = BolaoSpacing.xxxl),
-            fontSize = BolaoTypography.bodySmall.fontSize,
-            color = TextSubtle,
-            letterSpacing = 1.sp
-        )
+        SplashStudioFooter()
     }
 }

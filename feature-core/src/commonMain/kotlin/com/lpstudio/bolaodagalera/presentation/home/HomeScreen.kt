@@ -144,269 +144,262 @@ fun HomeScreen(
             .fillMaxSize()
             .background(DeepNavy)
     ) {
-        uiState.error?.let {
-            BolaoSurface(
-                modifier = Modifier.align(
-                    Alignment.BottomCenter
-                ).padding(bottom = BolaoSpacing.huge, start = BolaoSpacing.lg, end = BolaoSpacing.lg),
-                color = ErrorRed,
-                shape = BolaoRadiusShape.xs
-            ) {
-                Row(
-                    modifier = Modifier.padding(BolaoSpacing.lg),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BolaoText(it, color = Color.White, modifier = Modifier.weight(1f))
-                    BolaoTextButton(onClick = { viewModel.clearError() }) {
-                        BolaoText(
-                            stringResource(Res.string.home_screen_error_snackbar_dismiss),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
+        uiState.error?.let { HomeErrorBanner(it, onDismiss = { viewModel.clearError() }) }
 
         Column(Modifier.fillMaxSize()) {
-            // ── Premium Hero Header ──────────────────────────────────────────
-            Box(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .background(GradientHero)
-                    .drawBehind {
-                        drawRect(
-                            brush =
-                            Brush.verticalGradient(
-                                colors = listOf(Color.White.copy(alpha = 0.05f), Color.Transparent),
-                                endY = size.height * 0.5f
-                            )
-                        )
-                        drawCircle(
-                            brush =
-                            Brush.radialGradient(
-                                colors = listOf(Neon.copy(alpha = 0.15f), Color.Transparent),
-                                center = Offset(size.width * 0.9f, 0f),
-                                radius = 220.dp.toPx()
-                            ),
-                            radius = 220.dp.toPx(),
-                            center = Offset(size.width * 0.9f, 0f)
-                        )
-                    }
-                    .padding(top = BolaoSpacing.md, bottom = BolaoSpacing.xxl, start = BolaoSpacing.xxl, end = BolaoSpacing.xxl)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        BolaoText(
-                            stringResource(Res.string.home_screen_app_title),
-                            fontSize = BolaoTypography.displaySmall.fontSize,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
-                            letterSpacing = (-0.5).sp
-                        )
+            HomeHeroHeader(
+                uiState = uiState,
+                onBellClick = {
+                    showNotifications = true
+                    viewModel.markAllNotificationsAsRead()
+                },
+                onNavigateToAccount = onNavigateToAccount
+            )
 
-                        Spacer(Modifier.height(4.dp))
-
-                        val user = uiState.user
-                        val displayName =
-                            if (!user?.nickname.isNullOrBlank()) {
-                                user.nickname
-                            } else {
-                                val names = user?.name?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
-                                if (names.size >= 2) "${names[0]} ${names[1]}" else names.firstOrNull() ?: "Craque"
-                            }
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            BolaoText(
-                                stringResource(Res.string.home_screen_greeting_prefix),
-                                fontSize = BolaoTypography.bodyLarge.fontSize,
-                                color = TextMuted,
-                                fontWeight = FontWeight.Medium
-                            )
-                            BolaoText(
-                                displayName,
-                                fontSize = BolaoTypography.bodyLarge.fontSize,
-                                color = Gold,
-                                fontWeight = FontWeight.Bold
-                            )
-                            BolaoText(
-                                stringResource(Res.string.home_screen_greeting_wave_emoji),
-                                fontSize = BolaoTypography.bodyLarge.fontSize
-                            )
-                        }
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
-                    ) {
-                        val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-                        val pulseScale by infiniteTransition.animateFloat(
-                            initialValue = 1f,
-                            targetValue = 1.4f,
-                            animationSpec =
-                            infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "pulseScale"
-                        )
-                        val pulseAlpha by infiniteTransition.animateFloat(
-                            initialValue = 0.6f,
-                            targetValue = 0f,
-                            animationSpec =
-                            infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "pulseAlpha"
-                        )
-
-                        Box(
-                            modifier =
-                            Modifier.size(
-                                44.dp
-                            ).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)).border(1.dp, GlassBorder, CircleShape)
-                                .clickable {
-                                    showNotifications = true
-                                    viewModel.markAllNotificationsAsRead()
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            BolaoIcon(
-                                Icons.Outlined.Notifications,
-                                stringResource(Res.string.home_screen_notifications_cd),
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            if (uiState.hasUnreadNotifications) {
-                                val neonYellow = Color(0xFFFFF176)
-                                Box(
-                                    modifier =
-                                    Modifier.size(12.dp).align(Alignment.TopEnd).offset(x = (-4).dp, y = 4.dp).graphicsLayer {
-                                        scaleX = pulseScale
-                                        scaleY = pulseScale
-                                        alpha = pulseAlpha
-                                    }.clip(CircleShape).background(neonYellow)
-                                )
-                                Box(
-                                    modifier =
-                                    Modifier.size(
-                                        8.dp
-                                    ).align(
-                                        Alignment.TopEnd
-                                    ).offset(
-                                        x = (-4).dp,
-                                        y = 4.dp
-                                    ).clip(CircleShape).background(neonYellow).border(1.dp, DeepNavy, CircleShape)
-                                )
-                            }
-                        }
-
-                        UserAvatar(
-                            initials = uiState.user?.name?.getInitials() ?: "C",
-                            size = 44.dp,
-                            fontSize = BolaoTypography.titleLarge.fontSize,
-                            modifier =
-                            Modifier.clickable {
-                                onNavigateToAccount()
-                            }
-                        )
-                    }
-                }
-            }
-
-            // ── Content ───────────────────────────────────────────────────────
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                AnimatedContent(
-                    targetState = uiState.isLoading,
-                    transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
-                    label = "home_content"
-                ) { loading ->
-                    if (loading) {
-                        Box(
-                            Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) { BolaoLoadingIndicator() }
-                    } else if (uiState.boloes.isEmpty() && uiState.invitations.isEmpty()) {
-                        EmptyState(
-                            modifier = Modifier.fillMaxSize(),
-                            onCreateClick = onNavigateToCreateBolao,
-                            onJoinClick = onNavigateToJoinBolao
-                        )
-                    } else {
-                        val currentUserId = uiState.user?.id
-                        val (adminBoloes, participantBoloes) = uiState.boloes.partition { it.ownerId == currentUserId }
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
-                            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
-                        ) {
-                            if (uiState.invitations.isNotEmpty()) {
-                                item {
-                                    BolaoText(
-                                        stringResource(Res.string.home_screen_section_pending_invitations, uiState.invitations.size),
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Gold,
-                                        letterSpacing = 1.5.sp,
-                                        modifier = Modifier.padding(bottom = BolaoSpacing.xs)
-                                    )
-                                }
-                                items(uiState.invitations, key = { "inv_${it.id}" }) { invitation ->
-                                    InvitationCard(
-                                        invitation = invitation,
-                                        onAccept = {
-                                            viewModel.respondToInvitation(invitation.id, true) {
-                                                onNavigateToBolao(invitation.bolaoId)
-                                            }
-                                        },
-                                        onDecline = { viewModel.respondToInvitation(invitation.id, false) }
-                                    )
-                                }
-                            }
-                            if (adminBoloes.isNotEmpty()) {
-                                item {
-                                    BolaoText(
-                                        stringResource(Res.string.home_screen_section_admin_boloes),
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextMuted,
-                                        letterSpacing = 1.5.sp,
-                                        modifier = Modifier.padding(bottom = BolaoSpacing.xs, top = BolaoSpacing.sm)
-                                    )
-                                }
-                                items(adminBoloes, key = {
-                                    "admin_${it.id}"
-                                }) { bolao -> BolaoCard(bolao = bolao, isAdmin = true, onClick = { onNavigateToBolao(bolao.id) }) }
-                            }
-                            if (participantBoloes.isNotEmpty()) {
-                                item {
-                                    BolaoText(
-                                        stringResource(Res.string.home_screen_section_participant_boloes),
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextMuted,
-                                        letterSpacing = 1.5.sp,
-                                        modifier = Modifier.padding(bottom = BolaoSpacing.xs, top = BolaoSpacing.sm)
-                                    )
-                                }
-                                items(participantBoloes, key = {
-                                    "part_${it.id}"
-                                }) { bolao -> BolaoCard(bolao = bolao, isAdmin = false, onClick = { onNavigateToBolao(bolao.id) }) }
-                            }
-                        }
-                    }
-                }
+                HomeContent(
+                    uiState = uiState,
+                    onNavigateToBolao = onNavigateToBolao,
+                    onNavigateToCreateBolao = onNavigateToCreateBolao,
+                    onNavigateToJoinBolao = onNavigateToJoinBolao,
+                    onRespondToInvitation = { invId, accept, onAccepted -> viewModel.respondToInvitation(invId, accept, onAccepted) }
+                )
             }
 
             // ── Banner Ad ────────────────────────────────────────────────────
             adBannerProvider.Banner(modifier = Modifier.fillMaxWidth().height(50.dp).background(DeepNavy))
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.HomeErrorBanner(message: String, onDismiss: () -> Unit) {
+    BolaoSurface(
+        modifier =
+        Modifier.align(Alignment.BottomCenter).padding(bottom = BolaoSpacing.huge, start = BolaoSpacing.lg, end = BolaoSpacing.lg),
+        color = ErrorRed,
+        shape = BolaoRadiusShape.xs
+    ) {
+        Row(modifier = Modifier.padding(BolaoSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
+            BolaoText(message, color = Color.White, modifier = Modifier.weight(1f))
+            BolaoTextButton(onClick = onDismiss) {
+                BolaoText(stringResource(Res.string.home_screen_error_snackbar_dismiss), color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeGreeting(uiState: HomeUiState) {
+    BolaoText(
+        stringResource(Res.string.home_screen_app_title),
+        fontSize = BolaoTypography.displaySmall.fontSize,
+        fontWeight = FontWeight.ExtraBold,
+        color = Color.White,
+        letterSpacing = (-0.5).sp
+    )
+    Spacer(Modifier.height(4.dp))
+
+    val user = uiState.user
+    val displayName =
+        if (!user?.nickname.isNullOrBlank()) {
+            user.nickname
+        } else {
+            val names = user?.name?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
+            if (names.size >= 2) "${names[0]} ${names[1]}" else names.firstOrNull() ?: "Craque"
+        }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        BolaoText(
+            stringResource(Res.string.home_screen_greeting_prefix),
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            color = TextMuted,
+            fontWeight = FontWeight.Medium
+        )
+        BolaoText(displayName, fontSize = BolaoTypography.bodyLarge.fontSize, color = Gold, fontWeight = FontWeight.Bold)
+        BolaoText(stringResource(Res.string.home_screen_greeting_wave_emoji), fontSize = BolaoTypography.bodyLarge.fontSize)
+    }
+}
+
+@Composable
+private fun NotificationBell(hasUnread: Boolean, onClick: () -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(animation = tween(1000, easing = LinearEasing), repeatMode = RepeatMode.Reverse),
+        label = "pulseScale"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(animation = tween(1000, easing = LinearEasing), repeatMode = RepeatMode.Reverse),
+        label = "pulseAlpha"
+    )
+
+    Box(
+        modifier =
+        Modifier.size(44.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)).border(1.dp, GlassBorder, CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        BolaoIcon(
+            Icons.Outlined.Notifications,
+            stringResource(Res.string.home_screen_notifications_cd),
+            tint = Color.White,
+            modifier = Modifier.size(22.dp)
+        )
+        if (hasUnread) {
+            val neonYellow = Color(0xFFFFF176)
+            Box(
+                modifier =
+                Modifier.size(12.dp).align(Alignment.TopEnd).offset(x = (-4).dp, y = 4.dp).graphicsLayer {
+                    scaleX = pulseScale
+                    scaleY = pulseScale
+                    alpha = pulseAlpha
+                }.clip(CircleShape).background(neonYellow)
+            )
+            Box(
+                modifier =
+                Modifier.size(8.dp).align(Alignment.TopEnd).offset(x = (-4).dp, y = 4.dp).clip(CircleShape).background(neonYellow)
+                    .border(1.dp, DeepNavy, CircleShape)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeHeroHeader(uiState: HomeUiState, onBellClick: () -> Unit, onNavigateToAccount: () -> Unit) {
+    Box(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .background(GradientHero)
+            .drawBehind {
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.05f), Color.Transparent),
+                        endY =
+                        size.height * 0.5f
+                    )
+                )
+                drawCircle(
+                    brush =
+                    Brush.radialGradient(
+                        colors = listOf(Neon.copy(alpha = 0.15f), Color.Transparent),
+                        center = Offset(size.width * 0.9f, 0f),
+                        radius = 220.dp.toPx()
+                    ),
+                    radius = 220.dp.toPx(),
+                    center = Offset(size.width * 0.9f, 0f)
+                )
+            }
+            .padding(top = BolaoSpacing.md, bottom = BolaoSpacing.xxl, start = BolaoSpacing.xxl, end = BolaoSpacing.xxl)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) { HomeGreeting(uiState) }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)) {
+                NotificationBell(hasUnread = uiState.hasUnreadNotifications, onClick = onBellClick)
+                UserAvatar(
+                    initials = uiState.user?.name?.getInitials() ?: "C",
+                    size = 44.dp,
+                    fontSize = BolaoTypography.titleLarge.fontSize,
+                    modifier = Modifier.clickable { onNavigateToAccount() }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeContent(
+    uiState: HomeUiState,
+    onNavigateToBolao: (String) -> Unit,
+    onNavigateToCreateBolao: () -> Unit,
+    onNavigateToJoinBolao: () -> Unit,
+    onRespondToInvitation: (String, Boolean, () -> Unit) -> Unit
+) {
+    AnimatedContent(
+        targetState = uiState.isLoading,
+        transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
+        label = "home_content"
+    ) { loading ->
+        if (loading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BolaoLoadingIndicator() }
+        } else if (uiState.boloes.isEmpty() && uiState.invitations.isEmpty()) {
+            EmptyState(modifier = Modifier.fillMaxSize(), onCreateClick = onNavigateToCreateBolao, onJoinClick = onNavigateToJoinBolao)
+        } else {
+            HomeBoloesList(uiState, onNavigateToBolao, onRespondToInvitation)
+        }
+    }
+}
+
+@Composable
+private fun HomeBoloesList(
+    uiState: HomeUiState,
+    onNavigateToBolao: (String) -> Unit,
+    onRespondToInvitation: (String, Boolean, () -> Unit) -> Unit
+) {
+    val currentUserId = uiState.user?.id
+    val (adminBoloes, participantBoloes) = uiState.boloes.partition { it.ownerId == currentUserId }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
+    ) {
+        if (uiState.invitations.isNotEmpty()) {
+            item {
+                BolaoText(
+                    stringResource(Res.string.home_screen_section_pending_invitations, uiState.invitations.size),
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = Gold,
+                    letterSpacing = 1.5.sp,
+                    modifier = Modifier.padding(bottom = BolaoSpacing.xs)
+                )
+            }
+            items(uiState.invitations, key = { "inv_${it.id}" }) { invitation ->
+                InvitationCard(
+                    invitation = invitation,
+                    onAccept = { onRespondToInvitation(invitation.id, true) { onNavigateToBolao(invitation.bolaoId) } },
+                    onDecline = { onRespondToInvitation(invitation.id, false) {} }
+                )
+            }
+        }
+        if (adminBoloes.isNotEmpty()) {
+            item {
+                BolaoText(
+                    stringResource(Res.string.home_screen_section_admin_boloes),
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = TextMuted,
+                    letterSpacing = 1.5.sp,
+                    modifier = Modifier.padding(bottom = BolaoSpacing.xs, top = BolaoSpacing.sm)
+                )
+            }
+            items(adminBoloes, key = {
+                "admin_${it.id}"
+            }) { bolao -> BolaoCard(bolao = bolao, isAdmin = true, onClick = { onNavigateToBolao(bolao.id) }) }
+        }
+        if (participantBoloes.isNotEmpty()) {
+            item {
+                BolaoText(
+                    stringResource(Res.string.home_screen_section_participant_boloes),
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = TextMuted,
+                    letterSpacing = 1.5.sp,
+                    modifier = Modifier.padding(bottom = BolaoSpacing.xs, top = BolaoSpacing.sm)
+                )
+            }
+            items(participantBoloes, key = { "part_${it.id}" }) { bolao ->
+                BolaoCard(bolao = bolao, isAdmin = false, onClick = { onNavigateToBolao(bolao.id) })
+            }
         }
     }
 }
@@ -513,58 +506,78 @@ private fun InvitationCard(invitation: Invitation, onAccept: () -> Unit, onDecli
 }
 
 @Composable
+private fun BolaoCardTitleRow(name: String, isAdmin: Boolean) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        BolaoText(
+            name,
+            fontSize = BolaoTypography.headlineSmall.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.weight(1f)
+        )
+        if (isAdmin) {
+            BolaoText(
+                stringResource(Res.string.home_screen_admin_badge),
+                fontSize = BolaoTypography.bodySmall.fontSize,
+                fontWeight = FontWeight.Black,
+                color = DeepNavy,
+                modifier =
+                Modifier.padding(top = BolaoSpacing.xs).clip(BolaoRadiusShape.xs).background(Neon)
+                    .padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs)
+            )
+        }
+    }
+}
+
+@Composable
+private fun BolaoCardMetaRow(bolao: Bolao) {
+    Row(horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md), verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)) {
+            BolaoIcon(Icons.Default.Person, null, modifier = Modifier.size(13.dp), tint = Neon)
+            BolaoText(
+                bolao.participants.size.toString(),
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                color = Neon,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        Box(
+            modifier =
+            Modifier.clip(
+                BolaoRadiusShape.sm
+            ).background(Gold.copy(alpha = 0.12f)).padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs)
+        ) {
+            BolaoText(
+                text = Championship.fromId(bolao.championshipId).displayName,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                color = Gold,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
 private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
     Box(
         modifier =
-        Modifier.fillMaxWidth().clip(
-            BolaoRadiusShape.xl
-        ).background(
-            Brush.linearGradient(listOf(NavyElevated, NavyCard))
-        ).border(
-            1.dp,
-            if (isAdmin) Neon.copy(alpha = 0.3f) else GlassBorder,
-            BolaoRadiusShape.xl
-        ).clickable(onClick = onClick).padding(BolaoSpacing.xl)
+        Modifier.fillMaxWidth().clip(BolaoRadiusShape.xl).background(Brush.linearGradient(listOf(NavyElevated, NavyCard)))
+            .border(1.dp, if (isAdmin) Neon.copy(alpha = 0.3f) else GlassBorder, BolaoRadiusShape.xl).clickable(onClick = onClick)
+            .padding(BolaoSpacing.xl)
     ) {
         Box(
             modifier =
-            Modifier.width(
-                3.dp
-            ).height(
-                48.dp
-            ).clip(
-                BolaoRadiusShape.xs
-            ).background(
-                if (isAdmin) GradientPrimary else Brush.verticalGradient(listOf(TextMuted, Color.Transparent))
-            ).align(Alignment.CenterStart)
+            Modifier.width(3.dp).height(48.dp).clip(BolaoRadiusShape.xs)
+                .background(if (isAdmin) GradientPrimary else Brush.verticalGradient(listOf(TextMuted, Color.Transparent)))
+                .align(Alignment.CenterStart)
         )
         Row(modifier = Modifier.fillMaxWidth().padding(start = BolaoSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    BolaoText(
-                        bolao.name,
-                        fontSize = BolaoTypography.headlineSmall.fontSize,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (isAdmin) {
-                        BolaoText(
-                            stringResource(Res.string.home_screen_admin_badge),
-                            fontSize = BolaoTypography.bodySmall.fontSize,
-                            fontWeight = FontWeight.Black,
-                            color = DeepNavy,
-                            modifier =
-                            Modifier.padding(
-                                top = BolaoSpacing.xs
-                            ).clip(BolaoRadiusShape.xs).background(Neon).padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs)
-                        )
-                    }
-                }
+                BolaoCardTitleRow(bolao.name, isAdmin)
                 BolaoText(
                     text = stringResource(Res.string.home_screen_bolao_code_label, bolao.code),
                     fontSize = BolaoTypography.bodySmall.fontSize,
@@ -573,32 +586,64 @@ private fun BolaoCard(bolao: Bolao, isAdmin: Boolean, onClick: () -> Unit) {
                     modifier = Modifier.padding(top = BolaoSpacing.xs)
                 )
                 Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md), verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)) {
-                        BolaoIcon(Icons.Default.Person, null, modifier = Modifier.size(13.dp), tint = Neon)
-                        BolaoText(
-                            bolao.participants.size.toString(),
-                            fontSize = BolaoTypography.bodyMedium.fontSize,
-                            color = Neon,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Box(
-                        modifier =
-                        Modifier.clip(
-                            BolaoRadiusShape.sm
-                        ).background(Gold.copy(alpha = 0.12f)).padding(horizontal = BolaoSpacing.sm, vertical = BolaoSpacing.xs)
-                    ) {
-                        BolaoText(
-                            text = Championship.fromId(bolao.championshipId).displayName,
-                            fontSize = BolaoTypography.bodyMedium.fontSize,
-                            color = Gold,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                BolaoCardMetaRow(bolao)
             }
             BolaoIcon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = TextSubtle, modifier = Modifier.size(22.dp))
+        }
+    }
+}
+
+@Composable
+private fun NotificationItem(
+    notification: Notification,
+    declineText: String,
+    acceptText: String,
+    onAcceptInvitation: (String, String) -> Unit,
+    onDeclineInvitation: (String) -> Unit
+) {
+    val bgColor = if (notification.isRead) NavyCard.copy(alpha = 0.6f) else NavyElevated
+    val borderColor = if (notification.isRead) Color.Transparent else Neon.copy(alpha = 0.2f)
+    Column(
+        modifier =
+        Modifier.fillMaxWidth().clip(BolaoRadiusShape.lg).background(bgColor).border(1.dp, borderColor, BolaoRadiusShape.lg)
+            .padding(BolaoSpacing.lg)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            BolaoText(
+                notification.title,
+                color = if (notification.isRead) TextMuted else Neon,
+                fontWeight = FontWeight.Bold,
+                fontSize = BolaoTypography.bodyLarge.fontSize
+            )
+            if (!notification.isRead) {
+                Spacer(Modifier.width(8.dp))
+                Box(Modifier.size(6.dp).clip(CircleShape).background(Neon))
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        BolaoText(
+            notification.message,
+            color = if (notification.isRead) TextMuted else Color.White,
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            lineHeight = 18.sp
+        )
+        if ((notification.type == NotificationType.INVITATION) && !notification.isRead) {
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)) {
+                BolaoOutlinedButton(
+                    onClick = { onDeclineInvitation(notification.id.removePrefix("invitation_")) },
+                    modifier = Modifier.weight(1f),
+                    shape = BolaoRadiusShape.sm,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+                ) {
+                    BolaoText(declineText, fontSize = BolaoTypography.bodyMedium.fontSize, color = TextMuted)
+                }
+                BolaoButton(
+                    text = acceptText,
+                    onClick = { notification.bolaoId?.let { onAcceptInvitation(notification.id.removePrefix("invitation_"), it) } },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
@@ -639,59 +684,7 @@ private fun NotificationDialog(
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
                     items(notifications) { notification ->
-                        val bgColor = if (notification.isRead) NavyCard.copy(alpha = 0.6f) else NavyElevated
-                        val borderColor = if (notification.isRead) Color.Transparent else Neon.copy(alpha = 0.2f)
-                        Column(
-                            modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .clip(BolaoRadiusShape.lg)
-                                .background(bgColor)
-                                .border(1.dp, borderColor, BolaoRadiusShape.lg)
-                                .padding(BolaoSpacing.lg)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                BolaoText(
-                                    notification.title,
-                                    color = if (notification.isRead) TextMuted else Neon,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = BolaoTypography.bodyLarge.fontSize
-                                )
-                                if (!notification.isRead) {
-                                    Spacer(Modifier.width(8.dp))
-                                    Box(Modifier.size(6.dp).clip(CircleShape).background(Neon))
-                                }
-                            }
-                            Spacer(Modifier.height(4.dp))
-                            BolaoText(
-                                notification.message,
-                                color = if (notification.isRead) TextMuted else Color.White,
-                                fontSize = BolaoTypography.bodyLarge.fontSize,
-                                lineHeight = 18.sp
-                            )
-                            if ((notification.type == NotificationType.INVITATION) && !notification.isRead) {
-                                Spacer(Modifier.height(16.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)) {
-                                    BolaoOutlinedButton(
-                                        onClick = { onDeclineInvitation(notification.id.removePrefix("invitation_")) },
-                                        modifier = Modifier.weight(1f),
-                                        shape = BolaoRadiusShape.sm,
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
-                                    ) {
-                                        BolaoText(declineText, fontSize = BolaoTypography.bodyMedium.fontSize, color = TextMuted)
-                                    }
-                                    BolaoButton(
-                                        text = acceptText,
-                                        onClick = {
-                                            notification.bolaoId?.let {
-                                                onAcceptInvitation(notification.id.removePrefix("invitation_"), it)
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-                        }
+                        NotificationItem(notification, declineText, acceptText, onAcceptInvitation, onDeclineInvitation)
                     }
                 }
             }

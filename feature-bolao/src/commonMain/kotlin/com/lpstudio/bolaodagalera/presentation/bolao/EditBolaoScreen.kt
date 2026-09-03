@@ -119,30 +119,24 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
+private const val DEFAULT_POINTS_EXACT = 3
+private const val DEFAULT_POINTS_WINNER = 1
+
+private class EditBolaoFormState {
+    var name by mutableStateOf("")
+    var description by mutableStateOf("")
+    var selectedScope by mutableStateOf(BolaoScope.FULL)
+    var pointsExact by mutableIntStateOf(DEFAULT_POINTS_EXACT)
+    var pointsWinner by mutableIntStateOf(DEFAULT_POINTS_WINNER)
+}
+
 @Composable
-fun EditBolaoScreen(
-    bolaoId: String,
-    onNavigateToAddParticipants: (String) -> Unit,
-    onBolaoDeleted: () -> Unit,
-    onNavigateBack: () -> Unit
+private fun EditBolaoSideEffects(
+    uiState: EditBolaoUiState,
+    formState: EditBolaoFormState,
+    snackbarHostState: com.lpstudio.bolaodagalera.designsystem.components.BolaoSnackbarHostState,
+    onDeleted: () -> Unit
 ) {
-    val viewModel = koinViewModel<EditBolaoViewModel>(key = bolaoId) { parametersOf(bolaoId) }
-    val uiState by viewModel.uiState.collectAsState()
-    val isKnockoutStarted = uiState.isKnockoutStarted
-    val snackbarHostState = rememberBolaoSnackbarHostState()
-
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedScope by remember { mutableStateOf(BolaoScope.FULL) }
-    var pointsExact by remember { mutableIntStateOf(3) }
-    var pointsWinner by remember { mutableIntStateOf(1) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var participantToRemove by remember { mutableStateOf<User?>(null) }
-
-    val nameErrorText = stringResource(Res.string.edit_bolao_name_error_min_length)
-    val nameError = if (name.isNotBlank() && name.trim().length < 10) nameErrorText else null
-    val isFormValid = name.trim().length in 10..35
-
     val successMessage = stringResource(Res.string.edit_bolao_success_message)
     LaunchedEffect(uiState.showSuccessMessage) {
         if (uiState.showSuccessMessage) {
@@ -158,17 +152,40 @@ fun EditBolaoScreen(
 
     LaunchedEffect(uiState.bolao) {
         uiState.bolao?.let {
-            name = it.name
-            description = it.description
-            selectedScope = it.scope
-            pointsExact = it.pointsExactScore
-            pointsWinner = it.pointsWinnerOrDraw
+            formState.name = it.name
+            formState.description = it.description
+            formState.selectedScope = it.scope
+            formState.pointsExact = it.pointsExactScore
+            formState.pointsWinner = it.pointsWinnerOrDraw
         }
     }
 
     LaunchedEffect(uiState.isDeleted) {
-        if (uiState.isDeleted) onBolaoDeleted()
+        if (uiState.isDeleted) onDeleted()
     }
+}
+
+@Composable
+fun EditBolaoScreen(
+    bolaoId: String,
+    onNavigateToAddParticipants: (String) -> Unit,
+    onBolaoDeleted: () -> Unit,
+    onNavigateBack: () -> Unit
+) {
+    val viewModel = koinViewModel<EditBolaoViewModel>(key = bolaoId) { parametersOf(bolaoId) }
+    val uiState by viewModel.uiState.collectAsState()
+    val isKnockoutStarted = uiState.isKnockoutStarted
+    val snackbarHostState = rememberBolaoSnackbarHostState()
+
+    val form = remember { EditBolaoFormState() }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var participantToRemove by remember { mutableStateOf<User?>(null) }
+
+    val nameErrorText = stringResource(Res.string.edit_bolao_name_error_min_length)
+    val nameError = if (form.name.isNotBlank() && form.name.trim().length < 10) nameErrorText else null
+    val isFormValid = form.name.trim().length in 10..35
+
+    EditBolaoSideEffects(uiState, form, snackbarHostState, onDeleted = onBolaoDeleted)
 
     if (showDeleteDialog) {
         DeleteBolaoDialog(
@@ -191,81 +208,124 @@ fun EditBolaoScreen(
         )
     }
 
+    EditBolaoScreenContent(
+        EditBolaoScreenState(bolaoId, uiState, form, nameError, isFormValid, isKnockoutStarted, snackbarHostState, viewModel.currentUserId),
+        EditBolaoScreenActions(
+            onNavigateBack = onNavigateBack,
+            onNavigateToAddParticipants = onNavigateToAddParticipants,
+            onShowDeleteDialog = { showDeleteDialog = true },
+            onRemoveParticipantRequest = { participantToRemove = it },
+            onSave = { viewModel.update(form.name, form.description, form.selectedScope, form.pointsExact, form.pointsWinner) }
+        )
+    )
+}
+
+private class EditBolaoScreenState(
+    val bolaoId: String,
+    val uiState: EditBolaoUiState,
+    val form: EditBolaoFormState,
+    val nameError: String?,
+    val isFormValid: Boolean,
+    val isKnockoutStarted: Boolean,
+    val snackbarHostState: com.lpstudio.bolaodagalera.designsystem.components.BolaoSnackbarHostState,
+    val currentUserId: String?
+)
+
+private class EditBolaoScreenActions(
+    val onNavigateBack: () -> Unit,
+    val onNavigateToAddParticipants: (String) -> Unit,
+    val onShowDeleteDialog: () -> Unit,
+    val onRemoveParticipantRequest: (User) -> Unit,
+    val onSave: () -> Unit
+)
+
+@Composable
+private fun EditBolaoTopBar(state: EditBolaoScreenState, actions: EditBolaoScreenActions) {
     val deleteIconCd = stringResource(Res.string.edit_bolao_delete_icon_cd)
-    BolaoScaffold(
-        containerColor = DeepNavy,
-        snackbarHost = { BolaoSnackbarHost(snackbarHostState) },
-        topBar = {
-            BolaoTopBar(
-                title = stringResource(Res.string.edit_bolao_top_bar_title),
-                onNavigateBack = onNavigateBack,
-                actions = {
-                    val isOwner = viewModel.currentUserId == uiState.bolao?.ownerId
-                    if (isOwner) {
-                        BolaoIconButton(onClick = { showDeleteDialog = true }) {
-                            BolaoIcon(Icons.Default.Delete, deleteIconCd, tint = ErrorRed)
-                        }
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        if (uiState.isLoading && uiState.bolao == null) {
-            BolaoFullScreenLoading()
-        } else {
-            Column(
-                modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .imePadding()
-                    .padding(horizontal = BolaoSpacing.xl)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(BolaoSpacing.xl)
-            ) {
-                Spacer(Modifier.height(8.dp))
-
-                BasicInfoSection(
-                    name = name,
-                    onNameChange = { name = it },
-                    nameError = nameError,
-                    description = description,
-                    onDescriptionChange = { description = it }
-                )
-
-                uiState.bolao?.let { originalBolao ->
-                    ScopeSection(
-                        originalBolao = originalBolao,
-                        isKnockoutStarted = isKnockoutStarted,
-                        selectedScope = selectedScope,
-                        onSelectedScopeChange = { selectedScope = it }
-                    )
-                }
-
-                EditScoringSection(
-                    pointsExact = pointsExact,
-                    onPointsExactChange = { pointsExact = it },
-                    pointsWinner = pointsWinner,
-                    onPointsWinnerChange = { pointsWinner = it },
-                    isSaveEnabled = isFormValid && !uiState.isLoading,
-                    isSaveLoading = uiState.isLoading,
-                    onSave = { viewModel.update(name, description, selectedScope, pointsExact, pointsWinner) }
-                )
-
-                ParticipantsSection(
-                    bolaoId = bolaoId,
-                    onNavigateToAddParticipants = onNavigateToAddParticipants,
-                    participants = uiState.participants,
-                    ownerId = uiState.bolao?.ownerId,
-                    currentUserId = viewModel.currentUserId,
-                    onRemoveParticipant = { participantToRemove = it }
-                )
-
-                Spacer(Modifier.height(40.dp))
-                if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
-                    Spacer(Modifier.height(100.dp))
+    BolaoTopBar(
+        title = stringResource(Res.string.edit_bolao_top_bar_title),
+        onNavigateBack = actions.onNavigateBack,
+        actions = {
+            val isOwner = state.currentUserId == state.uiState.bolao?.ownerId
+            if (isOwner) {
+                BolaoIconButton(onClick = actions.onShowDeleteDialog) {
+                    BolaoIcon(Icons.Default.Delete, deleteIconCd, tint = ErrorRed)
                 }
             }
+        }
+    )
+}
+
+@Composable
+private fun EditBolaoScreenBody(state: EditBolaoScreenState, actions: EditBolaoScreenActions, padding: PaddingValues) {
+    val form = state.form
+    val uiState = state.uiState
+    Column(
+        modifier =
+        Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .imePadding()
+            .padding(horizontal = BolaoSpacing.xl)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.xl)
+    ) {
+        Spacer(Modifier.height(8.dp))
+
+        BasicInfoSection(
+            name = form.name,
+            onNameChange = { form.name = it },
+            nameError = state.nameError,
+            description = form.description,
+            onDescriptionChange = { form.description = it }
+        )
+
+        uiState.bolao?.let { originalBolao ->
+            ScopeSection(
+                originalBolao = originalBolao,
+                isKnockoutStarted = state.isKnockoutStarted,
+                selectedScope = form.selectedScope,
+                onSelectedScopeChange = { form.selectedScope = it }
+            )
+        }
+
+        EditScoringSection(
+            pointsExact = form.pointsExact,
+            onPointsExactChange = { form.pointsExact = it },
+            pointsWinner = form.pointsWinner,
+            onPointsWinnerChange = { form.pointsWinner = it },
+            isSaveEnabled = state.isFormValid && !uiState.isLoading,
+            isSaveLoading = uiState.isLoading,
+            onSave = actions.onSave
+        )
+
+        ParticipantsSection(
+            bolaoId = state.bolaoId,
+            onNavigateToAddParticipants = actions.onNavigateToAddParticipants,
+            participants = uiState.participants,
+            ownerId = uiState.bolao?.ownerId,
+            currentUserId = state.currentUserId,
+            onRemoveParticipant = actions.onRemoveParticipantRequest
+        )
+
+        Spacer(Modifier.height(40.dp))
+        if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
+            Spacer(Modifier.height(100.dp))
+        }
+    }
+}
+
+@Composable
+private fun EditBolaoScreenContent(state: EditBolaoScreenState, actions: EditBolaoScreenActions) {
+    BolaoScaffold(
+        containerColor = DeepNavy,
+        snackbarHost = { BolaoSnackbarHost(state.snackbarHostState) },
+        topBar = { EditBolaoTopBar(state, actions) }
+    ) { padding ->
+        if (state.uiState.isLoading && state.uiState.bolao == null) {
+            BolaoFullScreenLoading()
+        } else {
+            EditBolaoScreenBody(state, actions, padding)
         }
     }
 }
@@ -478,6 +538,61 @@ private fun ScopeToggleRow(selectedScope: BolaoScope, onSelectedScopeChange: (Bo
 }
 
 @Composable
+private fun ScoreInputsRow(pointsExact: Int, onPointsExactChange: (Int) -> Unit, pointsWinner: Int, onPointsWinnerChange: (Int) -> Unit) {
+    val scoreDecreaseCd = stringResource(Res.string.edit_bolao_score_input_decrease)
+    val scoreIncreaseCd = stringResource(Res.string.edit_bolao_score_input_increase)
+    val pointSingularLabel = stringResource(Res.string.edit_bolao_score_input_point_singular)
+    val pointPluralLabel = stringResource(Res.string.edit_bolao_score_input_point_plural)
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
+        ScoreInput(
+            label = stringResource(Res.string.edit_bolao_score_exact_label),
+            value = pointsExact,
+            onValueChange = onPointsExactChange,
+            decreaseContentDescription = scoreDecreaseCd,
+            increaseContentDescription = scoreIncreaseCd,
+            pointSingularLabel = pointSingularLabel,
+            pointPluralLabel = pointPluralLabel,
+            modifier = Modifier.weight(1f)
+        )
+        ScoreInput(
+            label = stringResource(Res.string.edit_bolao_score_winner_label),
+            value = pointsWinner,
+            onValueChange = onPointsWinnerChange,
+            decreaseContentDescription = scoreDecreaseCd,
+            increaseContentDescription = scoreIncreaseCd,
+            pointSingularLabel = pointSingularLabel,
+            pointPluralLabel = pointPluralLabel,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun OvertimeScoringNote() {
+    // Note on extra time and penalty shootout scoring
+    BolaoSurface(
+        color = Color.White.copy(alpha = 0.05f),
+        shape = BolaoRadiusShape.md,
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder.copy(alpha = 0.5f))
+    ) {
+        Row(
+            modifier = Modifier.padding(BolaoSpacing.md),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
+        ) {
+            BolaoText(stringResource(Res.string.edit_bolao_overtime_emoji), fontSize = BolaoTypography.bodyLarge.fontSize)
+            BolaoText(
+                stringResource(Res.string.edit_bolao_overtime_info),
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                color = TextMuted,
+                lineHeight = 15.sp
+            )
+        }
+    }
+}
+
+@Composable
 private fun EditScoringSection(
     pointsExact: Int,
     onPointsExactChange: (Int) -> Unit,
@@ -496,57 +611,8 @@ private fun EditScoringSection(
             letterSpacing = 1.sp
         )
 
-        val scoreDecreaseCd = stringResource(Res.string.edit_bolao_score_input_decrease)
-        val scoreIncreaseCd = stringResource(Res.string.edit_bolao_score_input_increase)
-        val pointSingularLabel = stringResource(Res.string.edit_bolao_score_input_point_singular)
-        val pointPluralLabel = stringResource(Res.string.edit_bolao_score_input_point_plural)
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
-        ) {
-            ScoreInput(
-                label = stringResource(Res.string.edit_bolao_score_exact_label),
-                value = pointsExact,
-                onValueChange = onPointsExactChange,
-                decreaseContentDescription = scoreDecreaseCd,
-                increaseContentDescription = scoreIncreaseCd,
-                pointSingularLabel = pointSingularLabel,
-                pointPluralLabel = pointPluralLabel,
-                modifier = Modifier.weight(1f)
-            )
-            ScoreInput(
-                label = stringResource(Res.string.edit_bolao_score_winner_label),
-                value = pointsWinner,
-                onValueChange = onPointsWinnerChange,
-                decreaseContentDescription = scoreDecreaseCd,
-                increaseContentDescription = scoreIncreaseCd,
-                pointSingularLabel = pointSingularLabel,
-                pointPluralLabel = pointPluralLabel,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        // Note on extra time and penalty shootout scoring
-        BolaoSurface(
-            color = Color.White.copy(alpha = 0.05f),
-            shape = BolaoRadiusShape.md,
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder.copy(alpha = 0.5f))
-        ) {
-            Row(
-                modifier = Modifier.padding(BolaoSpacing.md),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
-            ) {
-                BolaoText(stringResource(Res.string.edit_bolao_overtime_emoji), fontSize = BolaoTypography.bodyLarge.fontSize)
-                BolaoText(
-                    stringResource(Res.string.edit_bolao_overtime_info),
-                    fontSize = BolaoTypography.bodyMedium.fontSize,
-                    color = TextMuted,
-                    lineHeight = 15.sp
-                )
-            }
-        }
+        ScoreInputsRow(pointsExact, onPointsExactChange, pointsWinner, onPointsWinnerChange)
+        OvertimeScoringNote()
 
         BolaoButton(
             text = stringResource(Res.string.edit_bolao_button_save),

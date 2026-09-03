@@ -131,26 +131,31 @@ data class MatchCardStatus(
 @Immutable
 data class MatchCardActions(val onClick: () -> Unit, val onShowAllPredictions: () -> Unit, val onOpenAdminScoreDialog: () -> Unit)
 
+/** Display/behavior flags bundled together to keep [MatchCard]'s parameter list manageable. */
+@Immutable
+data class MatchCardOptions(
+    val isAdmin: Boolean = false,
+    val bolaoCreatedAt: Long = 0L,
+    val forceLocked: Boolean = false,
+    val showSocialBadge: Boolean = true,
+    val allMatches: List<Match> = emptyList(),
+    val isTwoLegged: Boolean = false
+)
+
 @Composable
 fun MatchCard(
     match: Match,
     prediction: Prediction?,
-    isAdmin: Boolean = false,
-    bolaoCreatedAt: Long = 0L,
-    forceLocked: Boolean = false,
-    showSocialBadge: Boolean = true,
-    allMatches: List<Match> = emptyList(),
-    isTwoLegged: Boolean = false,
+    options: MatchCardOptions = MatchCardOptions(),
     onShowAllPredictions: () -> Unit = {},
     onOpenAdminScoreDialog: () -> Unit = {},
     onClick: () -> Unit
 ) {
-    val hasPrediction = prediction != null
     val isFinished = match.isFinished
     val now = TimeSource.nowMillis()
     val start = match.matchDateMillis
-    val teams = rememberMatchTeamDisplay(match, allMatches)
-    val ida = rememberFirstLegScore(match, allMatches, isTwoLegged)
+    val teams = rememberMatchTeamDisplay(match, options.allMatches)
+    val ida = rememberFirstLegScore(match, options.allMatches, options.isTwoLegged)
     val status =
         computeMatchCardStatus(
             match = match,
@@ -158,8 +163,8 @@ fun MatchCard(
             isFinished = isFinished,
             now = now,
             start = start,
-            bolaoCreatedAt = bolaoCreatedAt,
-            forceLocked = forceLocked,
+            bolaoCreatedAt = options.bolaoCreatedAt,
+            forceLocked = options.forceLocked,
             hFlag = teams.hFlag,
             aFlag = teams.aFlag
         )
@@ -176,9 +181,9 @@ fun MatchCard(
             prediction = prediction,
             ida = ida,
             status = status,
-            isAdmin = isAdmin,
-            forceLocked = forceLocked,
-            showSocialBadge = showSocialBadge,
+            isAdmin = options.isAdmin,
+            forceLocked = options.forceLocked,
+            showSocialBadge = options.showSocialBadge,
             actions = MatchCardActions(onClick, onShowAllPredictions, onOpenAdminScoreDialog)
         )
     }
@@ -337,6 +342,12 @@ fun rememberFirstLegScore(match: Match, allMatches: List<Match>, isTwoLegged: Bo
  * Whether the match is over, and whether it is currently being played live. Grouped together
  * because "live" is only meaningful relative to "finished" (a match can't be both).
  */
+/** A match with a score but no live status update is assumed finished after this long. */
+private const val ASSUMED_FINISHED_AFTER_MILLIS = 3 * 3_600_000L
+
+/** Predictions lock, and the "live" window opens, this long before kickoff. */
+private const val PREDICTION_LOCK_LEAD_MILLIS = 60_000L
+
 fun computeFinishedAndLiveFlags(match: Match, now: Long, start: Long): Pair<Boolean, Boolean> {
     val isFin = match.status == "FINISHED" ||
         match.status == "PENALTIES" ||
@@ -344,13 +355,13 @@ fun computeFinishedAndLiveFlags(match: Match, now: Long, start: Long): Pair<Bool
         (
             match.homeScore != null &&
                 match.awayScore != null &&
-                now > (start + 3 * 3600_000L)
+                now > (start + ASSUMED_FINISHED_AFTER_MILLIS)
             )
     val statusLive = listOf("IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTIES", "LIVE")
     val isLive = !isFin &&
         (
             match.status in statusLive ||
-                (now >= (start - 60_000) && now < (start + 3 * 3600_000L))
+                (now >= (start - PREDICTION_LOCK_LEAD_MILLIS) && now < (start + ASSUMED_FINISHED_AFTER_MILLIS))
             )
     return isFin to isLive
 }
@@ -376,9 +387,9 @@ fun computeMatchCardStatus(
     val (isFin, isLive) = computeFinishedAndLiveFlags(match, now, start)
     val isGhost = start < bolaoCreatedAt
     val isTbd = (match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD") || hFlag.contains("ou") || aFlag.contains("ou")
-    val canPred = !isFinished && now < (match.matchDateMillis - 60_000) && !forceLocked && !isTbd
+    val canPred = !isFinished && now < (match.matchDateMillis - PREDICTION_LOCK_LEAD_MILLIS) && !forceLocked && !isTbd
     val borderColor = computeMatchBorderColor(match, prediction, isFin)
-    val isExp = now >= (match.matchDateMillis - 60_000) || isFinished
+    val isExp = now >= (match.matchDateMillis - PREDICTION_LOCK_LEAD_MILLIS) || isFinished
     val isLock = isExp || forceLocked || isGhost || isTbd
     val cardBackground = if (isLive) Brush.verticalGradient(listOf(NavyElevated, DeepNavy)) else null
     return MatchCardStatus(
@@ -394,22 +405,25 @@ fun computeMatchCardStatus(
     )
 }
 
-/** Points earned by [prediction] against the match's final score: 3 (exact), 1 (correct outcome) or 0. */
+private const val EXACT_SCORE_POINTS = 3
+private const val CORRECT_OUTCOME_POINTS = 1
+
+/** Points earned by [prediction] against the match's final score: exact score, correct outcome, or none. */
 fun calculateMatchPoints(match: Match, prediction: Prediction): Int {
     val hR = match.homeScore ?: 0
     val aR = match.awayScore ?: 0
     val hP = prediction.homeScore
     val aP = prediction.awayScore
     return when {
-        hP == hR && aP == aR -> 3
-        (hP > aP && hR > aR) || (hP < aP && hR < aR) || (hP == aP && hR == aR) -> 1
+        hP == hR && aP == aR -> EXACT_SCORE_POINTS
+        (hP > aP && hR > aR) || (hP < aP && hR < aR) || (hP == aP && hR == aR) -> CORRECT_OUTCOME_POINTS
         else -> 0
     }
 }
 
 fun pointsToColor(points: Int): Color = when (points) {
-    3 -> Neon
-    1 -> Gold
+    EXACT_SCORE_POINTS -> Neon
+    CORRECT_OUTCOME_POINTS -> Gold
     else -> ErrorRed
 }
 
@@ -791,6 +805,26 @@ fun MatchStatusAndScore(match: Match, isFin: Boolean, isLive: Boolean, isAdmin: 
     MatchScoreChip(match, accentColor, isAdmin, onOpenAdminScoreDialog)
 }
 
+private fun sanitizeScoreInput(value: String): String = if (value.length <= 2) value.filter { it.isDigit() } else value
+
+@Composable
+private fun AdminScoreRow(homeScore: String, onHomeScoreChange: (String) -> Unit, awayScore: String, onAwayScoreChange: (String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        BolaoScoreField(value = homeScore, onValueChange = { onHomeScoreChange(sanitizeScoreInput(it)) })
+        BolaoText(
+            stringResource(Res.string.match_card_admin_dialog_versus),
+            modifier = Modifier.padding(horizontal = BolaoSpacing.lg),
+            color = Color.White,
+            fontWeight = FontWeight.Bold
+        )
+        BolaoScoreField(value = awayScore, onValueChange = { onAwayScoreChange(sanitizeScoreInput(it)) })
+    }
+}
+
 @Composable
 fun AdminScoreDialog(match: Match, onDismiss: () -> Unit, onConfirm: (Int?, Int?) -> Unit) {
     var hS by remember { mutableStateOf(match.homeScore?.toString() ?: "0") }
@@ -806,40 +840,7 @@ fun AdminScoreDialog(match: Match, onDismiss: () -> Unit, onConfirm: (Int?, Int?
                     color = TextMuted,
                     modifier = Modifier.padding(bottom = BolaoSpacing.lg)
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BolaoScoreField(
-                        value = hS,
-                        onValueChange = {
-                            if (it.length <= 2) {
-                                hS =
-                                    it.filter { c ->
-                                        c.isDigit()
-                                    }
-                            }
-                        }
-                    )
-                    BolaoText(
-                        stringResource(Res.string.match_card_admin_dialog_versus),
-                        modifier = Modifier.padding(horizontal = BolaoSpacing.lg),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                    BolaoScoreField(
-                        value = aS,
-                        onValueChange = {
-                            if (it.length <= 2) {
-                                aS =
-                                    it.filter { c ->
-                                        c.isDigit()
-                                    }
-                            }
-                        }
-                    )
-                }
+                AdminScoreRow(hS, { hS = it }, aS, { aS = it })
             }
         },
         confirmButton = {

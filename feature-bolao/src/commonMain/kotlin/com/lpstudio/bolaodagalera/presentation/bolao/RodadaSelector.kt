@@ -19,22 +19,24 @@ import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_tomo
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
 import org.jetbrains.compose.resources.stringResource
 
+/** Index of the tab representing [selected] in the scrollable row, or -1 if it isn't visible yet. */
+private fun resolveSelectedTabIndex(selected: Int, sorted: List<Int>, showHoje: Boolean, showAmanha: Boolean): Int {
+    val leadingTabs = (if (showHoje) 1 else 0) + (if (showAmanha) 1 else 0)
+    return when {
+        selected == 0 && showHoje -> 0
+        selected == TOMORROW_ROUND && showAmanha -> if (showHoje) 1 else 0
+        selected > 0 -> sorted.indexOf(selected).takeIf { it != -1 }?.plus(leadingTabs) ?: -1
+        else -> -1
+    }
+}
+
 @Composable
 fun RodadaSelector(selected: Int, unlocked: Set<Int>, showHoje: Boolean, showAmanha: Boolean, currentRound: Int, onSelect: (Int) -> Unit) {
     val sorted = remember(unlocked) { unlocked.sorted() }
-    val leadingTabs = (if (showHoje) 1 else 0) + (if (showAmanha) 1 else 0)
     val listState = rememberLazyListState()
     LaunchedEffect(selected, sorted) {
         if (sorted.isEmpty()) return@LaunchedEffect
-        val target =
-            when {
-                selected == 0 && showHoje -> 0
-                selected == TOMORROW_ROUND && showAmanha -> if (showHoje) 1 else 0
-                selected > 0 -> {
-                    val idx = sorted.indexOf(selected)
-                    if (idx != -1) idx + leadingTabs else -1
-                } else -> -1
-            }
+        val target = resolveSelectedTabIndex(selected, sorted, showHoje, showAmanha)
         if (target != -1) listState.animateScrollToItem(target)
     }
     val todayLabel = stringResource(Res.string.bolao_common_today_chip)

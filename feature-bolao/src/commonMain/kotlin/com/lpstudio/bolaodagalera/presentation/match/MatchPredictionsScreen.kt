@@ -112,6 +112,9 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
+private const val DEFAULT_POINTS_EXACT_SCORE = 3
+private const val DEFAULT_POINTS_WINNER_OR_DRAW = 1
+
 @Composable
 fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () -> Unit) {
     val viewModel: BolaoViewModel = koinViewModel(key = bolaoId) { parametersOf(bolaoId) }
@@ -151,65 +154,97 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
         if (match == null) {
             MatchPredictionsLoadingState()
         } else {
-            val (hName, hFlag, hResolvedCrest) =
-                resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, uiState.matches, true)
-            val (aName, aFlag, aResolvedCrest) =
-                resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, uiState.matches, false)
-
-            val statusLabel = resolveStatusLabel(match.status, timing.isAdminViewingBeforeStart, timing.isActuallyFinished, strings.status)
-            val isLive = !timing.isActuallyFinished && !timing.isAdminViewingBeforeStart && timing.hasStarted
-
-            Column(Modifier.fillMaxSize()) {
-                MatchPredictionsHeader(
-                    home = TeamDisplay(hName, hFlag, hResolvedCrest ?: match.homeTeamCrest),
-                    away = TeamDisplay(aName, aFlag, aResolvedCrest ?: match.awayTeamCrest),
-                    score =
-                    ScoreDisplay(
-                        hReal = timing.hReal,
-                        aReal = timing.aReal,
-                        statusLabel = statusLabel,
-                        isLive = isLive,
-                        isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
-                        scoreSeparator = strings.scoreSeparator
-                    ),
-                    backCd = strings.backCd,
-                    shareCd = strings.shareCd,
-                    title = strings.title,
-                    onNavigateBack = onNavigateBack,
-                    onShare = {
-                        val text =
-                            buildShareText(
-                                ShareTextInput(
-                                    hName = hName,
-                                    hFlag = hFlag,
-                                    aName = aName,
-                                    aFlag = aFlag,
-                                    hReal = timing.hReal,
-                                    aReal = timing.aReal,
-                                    hasStarted = timing.hasStarted,
-                                    isActuallyFinished = timing.isActuallyFinished,
-                                    isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
-                                    currentUserId = currentUserId,
-                                    pointsExactScore = uiState.bolao?.pointsExactScore ?: 3,
-                                    pointsWinnerOrDraw = uiState.bolao?.pointsWinnerOrDraw ?: 1,
-                                    items = itemsList,
-                                    strings = strings.share
-                                )
-                            )
-                        launcherProvider.shareText(text)
-                    }
-                )
-
-                MatchPredictionsList(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    items = itemsList,
-                    isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
+            MatchPredictionsContent(
+                match = match,
+                allMatches = uiState.matches,
+                timing = timing,
+                strings = strings,
+                itemsList = itemsList,
+                shareContext =
+                MatchPredictionsShareContext(
                     currentUserId = currentUserId,
-                    lockedBadge = strings.lockedBadge,
-                    noPredictionLabel = strings.noPrediction
+                    pointsExactScore = uiState.bolao?.pointsExactScore ?: DEFAULT_POINTS_EXACT_SCORE,
+                    pointsWinnerOrDraw = uiState.bolao?.pointsWinnerOrDraw ?: DEFAULT_POINTS_WINNER_OR_DRAW,
+                    launcherProvider = launcherProvider,
+                    onNavigateBack = onNavigateBack
                 )
-            }
+            )
         }
+    }
+}
+
+private data class MatchPredictionsShareContext(
+    val currentUserId: String,
+    val pointsExactScore: Int,
+    val pointsWinnerOrDraw: Int,
+    val launcherProvider: com.lpstudio.bolaodagalera.LauncherProvider,
+    val onNavigateBack: () -> Unit
+)
+
+@Composable
+private fun MatchPredictionsContent(
+    match: Match,
+    allMatches: List<Match>,
+    timing: MatchTimingState,
+    strings: MatchPredictionsStrings,
+    itemsList: List<Triple<RankingEntry, Prediction?, Int>>,
+    shareContext: MatchPredictionsShareContext
+) {
+    val (hName, hFlag, hResolvedCrest) = resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, allMatches, true)
+    val (aName, aFlag, aResolvedCrest) = resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, allMatches, false)
+
+    val statusLabel = resolveStatusLabel(match.status, timing.isAdminViewingBeforeStart, timing.isActuallyFinished, strings.status)
+    val isLive = !timing.isActuallyFinished && !timing.isAdminViewingBeforeStart && timing.hasStarted
+
+    Column(Modifier.fillMaxSize()) {
+        MatchPredictionsHeader(
+            home = TeamDisplay(hName, hFlag, hResolvedCrest ?: match.homeTeamCrest),
+            away = TeamDisplay(aName, aFlag, aResolvedCrest ?: match.awayTeamCrest),
+            score =
+            ScoreDisplay(
+                hReal = timing.hReal,
+                aReal = timing.aReal,
+                statusLabel = statusLabel,
+                isLive = isLive,
+                isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
+                scoreSeparator = strings.scoreSeparator
+            ),
+            backCd = strings.backCd,
+            shareCd = strings.shareCd,
+            title = strings.title,
+            onNavigateBack = shareContext.onNavigateBack,
+            onShare = {
+                val text =
+                    buildShareText(
+                        ShareTextInput(
+                            hName = hName,
+                            hFlag = hFlag,
+                            aName = aName,
+                            aFlag = aFlag,
+                            hReal = timing.hReal,
+                            aReal = timing.aReal,
+                            hasStarted = timing.hasStarted,
+                            isActuallyFinished = timing.isActuallyFinished,
+                            isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
+                            currentUserId = shareContext.currentUserId,
+                            pointsExactScore = shareContext.pointsExactScore,
+                            pointsWinnerOrDraw = shareContext.pointsWinnerOrDraw,
+                            items = itemsList,
+                            strings = strings.share
+                        )
+                    )
+                shareContext.launcherProvider.shareText(text)
+            }
+        )
+
+        MatchPredictionsList(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            items = itemsList,
+            isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
+            currentUserId = shareContext.currentUserId,
+            lockedBadge = strings.lockedBadge,
+            noPredictionLabel = strings.noPrediction
+        )
     }
 }
 
@@ -222,6 +257,9 @@ private data class MatchTimingState(
 )
 
 /** Computes score/timing derived state, forcing "Finished" when the match started more than 3 hours ago and has a score. */
+/** A match with a score but no live status update is assumed finished after this long. */
+private const val ASSUMED_FINISHED_AFTER_MILLIS = 3 * 3_600_000L
+
 private fun computeMatchTimingState(match: Match?, now: Long, isOwner: Boolean): MatchTimingState {
     val hReal = match?.homeScore ?: 0
     val aReal = match?.awayScore ?: 0
@@ -230,7 +268,7 @@ private fun computeMatchTimingState(match: Match?, now: Long, isOwner: Boolean):
         (match?.status == "FINISHED") ||
             (match?.status == "PENALTIES") ||
             (match?.status == "PAUSED_PENALTIES") ||
-            (match?.homeScore != null && match?.awayScore != null && now > (matchDate + 3 * 3600_000L))
+            (match?.homeScore != null && match?.awayScore != null && now > (matchDate + ASSUMED_FINISHED_AFTER_MILLIS))
     val hasStarted = now >= matchDate
     val isAdminViewingBeforeStart = isOwner && !hasStarted
     return MatchTimingState(hReal, aReal, isActuallyFinished, hasStarted, isAdminViewingBeforeStart)
@@ -496,7 +534,23 @@ private fun MatchPredictionsScoreStatus(score: ScoreDisplay) {
     Column(Modifier.padding(horizontal = BolaoSpacing.md), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (score.isLive) {
-                MatchPredictionsLiveDot()
+                val infiniteTransition = rememberInfiniteTransition()
+                val liveDotAlpha by infiniteTransition.animateFloat(
+                    initialValue = 0.3f,
+                    targetValue = 1f,
+                    animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(800, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+                Box(
+                    modifier =
+                    Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(Neon.copy(alpha = liveDotAlpha))
+                )
                 Spacer(Modifier.width(6.dp))
             }
             BolaoText(
@@ -519,27 +573,6 @@ private fun MatchPredictionsScoreStatus(score: ScoreDisplay) {
             )
         }
     }
-}
-
-@Composable
-private fun MatchPredictionsLiveDot() {
-    val infiniteTransition = rememberInfiniteTransition()
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec =
-        infiniteRepeatable(
-            animation = tween(800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-    Box(
-        modifier =
-        Modifier
-            .size(6.dp)
-            .clip(CircleShape)
-            .background(Neon.copy(alpha = alpha))
-    )
 }
 
 @Composable
