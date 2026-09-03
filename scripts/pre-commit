@@ -16,6 +16,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Run design-system rule (no hardcoded strings in Bolao* components)
+./gradlew :composeApp:detektDesignSystem :feature-auth:detektDesignSystem :feature-bolao:detektDesignSystem :feature-core:detektDesignSystem :designsystem:detektDesignSystem
+if [ $? -ne 0 ]; then
+    echo "detektDesignSystem failed. Please fix hardcoded strings / raw material3 usage."
+    exit 1
+fi
+
 # Run Android Lint
 ./gradlew lint
 if [ $? -ne 0 ]; then

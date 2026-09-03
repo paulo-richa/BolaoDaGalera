@@ -36,14 +36,47 @@ style:
       - '0'
       - '1'
       - '2'
+    # UI/layout code is inherently number-heavy in ways that aren't business-logic
+    # smells (alphas, animation durations, offsets, weights) - dp/sp/corner-radius
+    # magic numbers specifically are already caught by the project's own
+    # NoRawSpacingDp/NoRawCornerRadius/NoRawFontSize/NoRawElevation detekt rules.
+    ignoreAnnotated:
+      - 'Composable'
+      - 'Preview'
+    # Color/Theme hold the raw hex/dp/sp literals *defining* the design system's
+    # own tokens - by definition every value there is a "magic number" the rest
+    # of the codebase is supposed to reference instead of repeating.
+    excludes:
+      - '**/theme/Color.kt'
+      - '**/theme/Theme.kt'
+      - '**/theme/TeamColors.kt'
+      # core-testing's Fake* repositories exist purely to produce plausible-looking
+      # sample data (ids, scores, delays) for tests - there is no real domain
+      # constant to name there, unlike production business logic.
+      - '**/core-testing/**'
   UnusedPrivateMember:
     active: true
-    allowedNames: '(_|ignored|expected|serialVersionUID|tag|TAG)'
+    # Private *Preview composables are entry points for Compose tooling, not
+    # for other code in the file - detekt can't see that call site, so it
+    # always flags them as unused.
+    allowedNames: '(_|ignored|expected|serialVersionUID|tag|TAG|.*Preview)'
+  # Early-return guard clauses are the idiomatic style for validation/visitor
+  # functions throughout this codebase (ViewModels, custom detekt rules) -
+  # the stock threshold of 2 rejects that pattern outright.
+  ReturnCount:
+    active: true
+    max: 4
 
 naming:
   active: true
   FunctionNaming:
     active: true
+    # @Composable functions are PascalCase by Compose convention (they act as
+    # emitters, not verbs) - the default lowerCamelCase-first-letter pattern
+    # rejects every single composable in the codebase.
+    ignoreAnnotated:
+      - 'Composable'
+      - 'Preview'
   VariableNaming:
     active: true
 
@@ -51,6 +84,37 @@ potential-bugs:
   active: true
   UnsafeCallOnNullableType:
     active: true
+
+exceptions:
+  active: true
+  # ViewModels/repositories deliberately catch the generic Exception at this
+  # architectural boundary and route it through ClassifyExceptionUseCase -
+  # this is the documented acceptable use case for TooGenericExceptionCaught
+  # (framework/architecture boundary), not a case for typed exceptions.
+  TooGenericExceptionCaught:
+    active: true
+    excludes:
+      - '**/presentation/**/*ViewModel.kt'
+      - '**/data/**/*RepositoryImpl.kt'
+      - '**/data/firebase/**'
+  # The Firebase repositories deliberately fail open on read/cleanup calls (return
+  # a fallback value or silently skip a best-effort side effect) rather than
+  # propagating a network/permission error up into the UI - the same boundary
+  # already exempted from TooGenericExceptionCaught above.
+  SwallowedException:
+    active: true
+    excludes:
+      - '**/data/firebase/**'
+      - '**/data/remote/**'
+
+empty-blocks:
+  active: true
+  # @Preview composables commonly implement a callback interface with no-op
+  # overrides purely to satisfy the constructor - there is no meaningful body
+  # to write for a sample/mock used only by Compose tooling.
+  EmptyFunctionBlock:
+    active: true
+    ignoreOverridden: true
 
 performance:
   active: true

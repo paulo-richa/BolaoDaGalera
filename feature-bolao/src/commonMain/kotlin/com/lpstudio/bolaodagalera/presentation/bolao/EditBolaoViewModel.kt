@@ -86,7 +86,7 @@ class EditBolaoViewModel(
                 bolaoRepository.updateBolao(bolaoId, name, description, scope, pointsExact, pointsWinner)
                 val updatedBolao = bolaoRepository.getBolao(bolaoId)
                 _uiState.update { it.copy(bolao = updatedBolao, isLoading = false, showSuccessMessage = true) }
-                delay(3000)
+                delay(SUCCESS_MESSAGE_DURATION_MILLIS)
                 _uiState.update { it.copy(showSuccessMessage = false) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Erro ao atualizar bolão")
@@ -99,7 +99,7 @@ class EditBolaoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                withTimeout(10000) {
+                withTimeout(DELETE_BOLAO_TIMEOUT_MILLIS) {
                     bolaoRepository.deleteBolao(bolaoId)
                 }
                 _uiState.update { it.copy(isDeleted = true, isLoading = false) }
@@ -123,5 +123,10 @@ class EditBolaoViewModel(
                 _uiState.update { it.copy(error = e.message) }
             }
         }
+    }
+
+    private companion object {
+        private const val SUCCESS_MESSAGE_DURATION_MILLIS = 3000L
+        private const val DELETE_BOLAO_TIMEOUT_MILLIS = 10000L
     }
 }

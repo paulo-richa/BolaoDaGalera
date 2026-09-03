@@ -39,7 +39,8 @@ class NoHardcodedStringInDesignSystem(config: Config = Config.empty) : Rule(conf
             "BolaoConfirmDialog",
             "BolaoTopBar",
             "BolaoChip",
-            "BolaoEmptyState"
+            "BolaoEmptyState",
+            "BolaoIcon"
         )
 
     private val textParamNames =
@@ -71,6 +72,34 @@ class NoHardcodedStringInDesignSystem(config: Config = Config.empty) : Rule(conf
     }
 
     /**
+     * Catches the other place a hardcoded literal can hide: a default parameter
+     * value on a `Bolao*` component's own declaration (e.g. `dismissText: String
+     * = "Cancelar"`). [visitCallExpression] only sees call-site arguments, so a
+     * caller that simply omits the parameter and relies on this default would
+     * otherwise never be flagged.
+     */
+    override fun visitNamedFunction(function: KtNamedFunction) {
+        super.visitNamedFunction(function)
+        val functionName = function.name ?: return
+        if (functionName !in targetFunctionNames) return
+        if (function.annotationEntries.any { it.shortName?.asString() == "Preview" }) return
+
+        function.valueParameters.forEach { parameter ->
+            if (parameter.name !in textParamNames) return@forEach
+            val template = parameter.defaultValue as? KtStringTemplateExpression ?: return@forEach
+            if (hasHardcodedText(template)) {
+                report(
+                    CodeSmell(
+                        issue,
+                        Entity.from(parameter),
+                        "Valor padrão hardcoded em $functionName(${parameter.name}) - extraia pra stringResource()."
+                    )
+                )
+            }
+        }
+    }
+
+    /**
      * @Preview functions intentionally use sample data - it is not real text
      * shown to users in production, so they are exempt from this rule.
      */
@@ -79,8 +108,7 @@ class NoHardcodedStringInDesignSystem(config: Config = Config.empty) : Rule(conf
         return enclosingFunction.annotationEntries.any { it.shortName?.asString() == "Preview" }
     }
 
-    private fun hasHardcodedText(template: KtStringTemplateExpression): Boolean =
-        template.entries.any { entry ->
-            entry is KtLiteralStringTemplateEntry && entry.text.any { it.isLetter() }
-        }
+    private fun hasHardcodedText(template: KtStringTemplateExpression): Boolean = template.entries.any { entry ->
+        entry is KtLiteralStringTemplateEntry && entry.text.any { it.isLetter() }
+    }
 }

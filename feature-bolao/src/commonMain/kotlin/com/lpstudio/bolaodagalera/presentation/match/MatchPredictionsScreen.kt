@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -98,8 +99,10 @@ import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.designsystem.theme.TextSubtle
+import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Prediction
 import com.lpstudio.bolaodagalera.domain.model.RankingEntry
+import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.getInitials
@@ -124,64 +127,20 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
     val participants = uiState.participants
 
     val now = TimeSource.nowMillis()
-    val calculatePointsUseCase = remember { com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase() }
+    val calculatePointsUseCase = remember { CalculatePointsUseCase() }
 
-    val backCd = stringResource(Res.string.match_predictions_back_cd)
-    val shareCd = stringResource(Res.string.match_predictions_share_cd)
-    val shareHeader = stringResource(Res.string.match_predictions_share_header)
-    val shareStatusFinished = stringResource(Res.string.match_predictions_share_status_finished)
-    val shareStatusOngoing = stringResource(Res.string.match_predictions_share_status_ongoing)
-    val shareLocked = stringResource(Res.string.match_predictions_share_locked)
-    val shareExactIcon = stringResource(Res.string.match_predictions_share_exact_icon)
-    val shareCorrectIcon = stringResource(Res.string.match_predictions_share_correct_icon)
-    val shareWrongIcon = stringResource(Res.string.match_predictions_share_wrong_icon)
-    val sharePointsSingular = stringResource(Res.string.match_predictions_share_points_singular)
-    val sharePointsPlural = stringResource(Res.string.match_predictions_share_points_plural)
-    val shareNoPrediction = stringResource(Res.string.match_predictions_share_no_prediction)
-    val statusAdminView = stringResource(Res.string.match_predictions_status_admin_view)
-    val statusFinished = stringResource(Res.string.match_predictions_status_finished)
-    val statusExtraTime = stringResource(Res.string.match_predictions_status_extra_time)
-    val statusPenalties = stringResource(Res.string.match_predictions_status_penalties)
-    val statusGoingExtraTime = stringResource(Res.string.match_predictions_status_going_extra_time)
-    val statusGoingPenalties = stringResource(Res.string.match_predictions_status_going_penalties)
-    val statusHalftime = stringResource(Res.string.match_predictions_status_halftime)
-    val statusInProgress = stringResource(Res.string.match_predictions_status_in_progress)
-    val lockedBadge = stringResource(Res.string.match_predictions_locked_badge)
-    val noPredictionLabel = stringResource(Res.string.match_predictions_no_prediction)
-
-    val hReal = match?.homeScore ?: 0
-    val aReal = match?.awayScore ?: 0
-    val matchDate = match?.matchDateMillis ?: 0L
-    // Force the "Finished" state if the match started more than 3 hours ago and has a score
-    val isActuallyFinished =
-        (match?.status == "FINISHED") ||
-            (match?.status == "PENALTIES") ||
-            (match?.status == "PAUSED_PENALTIES") ||
-            (match?.homeScore != null && match?.awayScore != null && now > (matchDate + 3 * 3600_000L))
-
-    val hasStarted = now >= matchDate
-    val isAdminViewingBeforeStart = isOwner && !hasStarted
+    val strings = loadMatchPredictionsStrings()
+    val timing = computeMatchTimingState(match, now, isOwner)
 
     val itemsList =
-        remember(predictions, participants, hReal, aReal, isAdminViewingBeforeStart) {
-            participants.map { participant ->
-                val pred = predictions.find { it.userId == participant.userId }
-                val pts =
-                    if (pred != null && !isAdminViewingBeforeStart) {
-                        calculatePointsUseCase(pred, hReal, aReal)
-                    } else {
-                        0
-                    }
-                Triple(participant, pred, pts)
-            }.sortedWith(
-                if (isAdminViewingBeforeStart) {
-                    compareBy { it.first.userName.lowercase() }
-                } else {
-                    compareByDescending<Triple<RankingEntry, Prediction?, Int>> { it.third }
-                        .thenBy { it.first.userName.lowercase() }
-                }
-            )
-        }
+        rememberPredictionItems(
+            predictions = predictions,
+            participants = participants,
+            hReal = timing.hReal,
+            aReal = timing.aReal,
+            isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
+            calculatePointsUseCase = calculatePointsUseCase
+        )
 
     Box(
         modifier =
@@ -190,505 +149,620 @@ fun MatchPredictionsScreen(bolaoId: String, matchId: String, onNavigateBack: () 
             .background(DeepNavy)
     ) {
         if (match == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                BolaoLoadingIndicator()
-            }
+            MatchPredictionsLoadingState()
         } else {
+            val (hName, hFlag, hResolvedCrest) =
+                resolveDisplayName(match.id, match.homeTeam, match.homeTeamFlag, uiState.matches, true)
+            val (aName, aFlag, aResolvedCrest) =
+                resolveDisplayName(match.id, match.awayTeam, match.awayTeamFlag, uiState.matches, false)
+
+            val statusLabel = resolveStatusLabel(match.status, timing.isAdminViewingBeforeStart, timing.isActuallyFinished, strings.status)
+            val isLive = !timing.isActuallyFinished && !timing.isAdminViewingBeforeStart && timing.hasStarted
+
             Column(Modifier.fillMaxSize()) {
-                // ── Unified premium header ───────────────────────────────────────────
-                Box(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(GradientHero)
-                        .drawBehind {
-                            drawRect(
-                                brush =
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.White.copy(alpha = 0.05f), Color.Transparent),
-                                    endY = size.height * 0.5f
+                MatchPredictionsHeader(
+                    home = TeamDisplay(hName, hFlag, hResolvedCrest ?: match.homeTeamCrest),
+                    away = TeamDisplay(aName, aFlag, aResolvedCrest ?: match.awayTeamCrest),
+                    score =
+                    ScoreDisplay(
+                        hReal = timing.hReal,
+                        aReal = timing.aReal,
+                        statusLabel = statusLabel,
+                        isLive = isLive,
+                        isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
+                        scoreSeparator = strings.scoreSeparator
+                    ),
+                    backCd = strings.backCd,
+                    shareCd = strings.shareCd,
+                    title = strings.title,
+                    onNavigateBack = onNavigateBack,
+                    onShare = {
+                        val text =
+                            buildShareText(
+                                ShareTextInput(
+                                    hName = hName,
+                                    hFlag = hFlag,
+                                    aName = aName,
+                                    aFlag = aFlag,
+                                    hReal = timing.hReal,
+                                    aReal = timing.aReal,
+                                    hasStarted = timing.hasStarted,
+                                    isActuallyFinished = timing.isActuallyFinished,
+                                    isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
+                                    currentUserId = currentUserId,
+                                    pointsExactScore = uiState.bolao?.pointsExactScore ?: 3,
+                                    pointsWinnerOrDraw = uiState.bolao?.pointsWinnerOrDraw ?: 1,
+                                    items = itemsList,
+                                    strings = strings.share
                                 )
                             )
-                            drawCircle(
-                                brush =
-                                Brush.radialGradient(
-                                    colors = listOf(Neon.copy(alpha = 0.15f), Color.Transparent),
-                                    center = Offset(size.width * 0.9f, 0f),
-                                    radius = 220.dp.toPx()
-                                ),
-                                radius = 220.dp.toPx(),
-                                center = Offset(size.width * 0.9f, 0f)
-                            )
-                        }
-                        .padding(top = BolaoSpacing.md, bottom = BolaoSpacing.xxl)
-                ) {
-                    Column(Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.xl)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
-                        ) {
-                            BolaoIconButton(onClick = onNavigateBack, modifier = Modifier.size(36.dp)) {
-                                BolaoIcon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    backCd,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-
-                            BolaoText(
-                                stringResource(Res.string.match_predictions_title),
-                                fontSize = BolaoTypography.headlineMedium.fontSize,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White,
-                                modifier = Modifier.weight(1f),
-                                letterSpacing = (-0.5).sp
-                            )
-
-                            BolaoIconButton(onClick = {
-                                val (hName, hFlag, _) =
-                                    resolveDisplayName(
-                                        match.id,
-                                        match.homeTeam,
-                                        match.homeTeamFlag,
-                                        uiState.matches,
-                                        true
-                                    )
-                                val (aName, aFlag, _) =
-                                    resolveDisplayName(
-                                        match.id,
-                                        match.awayTeam,
-                                        match.awayTeamFlag,
-                                        uiState.matches,
-                                        false
-                                    )
-
-                                val isOngoing = hasStarted && !isActuallyFinished
-
-                                val header =
-                                    buildString {
-                                        append(shareHeader)
-                                        append("$hFlag $hName ")
-                                        if (hasStarted || isActuallyFinished) {
-                                            append("$hReal x $aReal ")
-                                        } else {
-                                            append("x ")
-                                        }
-                                        append("$aName $aFlag")
-
-                                        if (hasStarted || isActuallyFinished) {
-                                            val label = if (isActuallyFinished) shareStatusFinished else shareStatusOngoing
-                                            append(label)
-                                        }
-                                        append("\n\n")
-                                    }
-
-                                // Alphabetical sort by displayed nickname/name while the match is ongoing
-                                val shareItems =
-                                    if (isOngoing) {
-                                        itemsList.sortedBy { (it.first.userNickname.ifBlank { it.first.userName }).lowercase() }
-                                    } else {
-                                        itemsList
-                                    }
-
-                                val list =
-                                    shareItems.mapIndexed { index, item ->
-                                        val p = item.first
-                                        val pred = item.second
-                                        val pts = item.third
-                                        val name = p.userNickname.ifBlank { p.userName }
-
-                                        if (pred != null) {
-                                            val score =
-                                                if (isAdminViewingBeforeStart && p.userId != currentUserId) {
-                                                    shareLocked
-                                                } else {
-                                                    "${pred.homeScore} x ${pred.awayScore}"
-                                                }
-
-                                            val ptsIcon =
-                                                if (!isAdminViewingBeforeStart && isActuallyFinished) {
-                                                    when (pts) {
-                                                        uiState.bolao?.pointsExactScore ?: 3 -> shareExactIcon
-                                                        uiState.bolao?.pointsWinnerOrDraw ?: 1 -> shareCorrectIcon
-                                                        else -> shareWrongIcon
-                                                    }
-                                                } else {
-                                                    ""
-                                                }
-
-                                            val pointsLabel =
-                                                if (!isAdminViewingBeforeStart && isActuallyFinished) {
-                                                    if (pts == 1) {
-                                                        sharePointsSingular.replace("%1\$d", pts.toString())
-                                                    } else {
-                                                        sharePointsPlural.replace("%1\$d", pts.toString())
-                                                    }
-                                                } else {
-                                                    ""
-                                                }
-                                            "${index + 1}. $name: $score$pointsLabel$ptsIcon"
-                                        } else {
-                                            "${index + 1}. $name: $shareNoPrediction"
-                                        }
-                                    }.joinToString("\n")
-
-                                val footer = ""
-
-                                launcherProvider.shareText(header + list + footer)
-                            }, modifier = Modifier.size(36.dp)) {
-                                BolaoIcon(Icons.Default.Share, shareCd, tint = Color.White, modifier = Modifier.size(20.dp))
-                            }
-                        }
-
-                        Spacer(Modifier.height(24.dp))
-
-                        // Score info (inside the header to get the correct height)
-                        val (hName, hFlag, hResolvedCrest) =
-                            resolveDisplayName(
-                                match.id,
-                                match.homeTeam,
-                                match.homeTeamFlag,
-                                uiState.matches,
-                                true
-                            )
-                        val (aName, aFlag, aResolvedCrest) =
-                            resolveDisplayName(
-                                match.id,
-                                match.awayTeam,
-                                match.awayTeamFlag,
-                                uiState.matches,
-                                false
-                            )
-
-                        val hAnnotatedFlag =
-                            remember(hFlag) {
-                                val parts = hFlag.split(" ou ")
-                                if (parts.size > 1) {
-                                    buildAnnotatedString {
-                                        parts.forEachIndexed { index, part ->
-                                            append(part)
-                                            if (index < parts.size - 1) {
-                                                withStyle(
-                                                    style = SpanStyle(
-                                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                                        fontWeight = FontWeight.Normal
-                                                    )
-                                                ) {
-                                                    append(" ou ")
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    AnnotatedString(hFlag)
-                                }
-                            }
-
-                        val aAnnotatedFlag =
-                            remember(aFlag) {
-                                val parts = aFlag.split(" ou ")
-                                if (parts.size > 1) {
-                                    buildAnnotatedString {
-                                        parts.forEachIndexed { index, part ->
-                                            append(part)
-                                            if (index < parts.size - 1) {
-                                                withStyle(
-                                                    style = SpanStyle(
-                                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                                        fontWeight = FontWeight.Normal
-                                                    )
-                                                ) {
-                                                    append(" ou ")
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    AnnotatedString(aFlag)
-                                }
-                            }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                TeamCrestCircle(
-                                    url = hResolvedCrest ?: match.homeTeamCrest,
-                                    flag = hAnnotatedFlag,
-                                    isTbd = hFlag.contains(" ou "),
-                                    flagSize = 34.sp
-                                )
-                                if (hName.isNotEmpty()) {
-                                    Spacer(Modifier.height(8.dp))
-                                    var fontSize by remember(hName) { mutableIntStateOf(13) }
-                                    var readyToDraw by remember(hName) { mutableStateOf(false) }
-                                    BolaoText(
-                                        hName,
-                                        color = Color.White,
-                                        fontSize = fontSize.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        modifier = Modifier.drawWithContent { if (readyToDraw) drawContent() },
-                                        onTextLayout = { result ->
-                                            if (result.hasVisualOverflow && fontSize > 8) {
-                                                fontSize -= 1
-                                            } else {
-                                                readyToDraw = true
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-
-                            val statusLabel =
-                                when {
-                                    isAdminViewingBeforeStart -> statusAdminView
-                                    isActuallyFinished -> statusFinished
-                                    match.status == "EXTRA_TIME" -> statusExtraTime
-                                    match.status == "PENALTIES" -> statusPenalties
-                                    match.status == "PAUSED_EXTRA_TIME" -> statusGoingExtraTime
-                                    match.status == "PAUSED_PENALTIES" -> statusGoingPenalties
-                                    match.status == "PAUSED" -> statusHalftime
-                                    else -> statusInProgress
-                                }
-
-                            val isLive = !isActuallyFinished && !isAdminViewingBeforeStart && hasStarted
-
-                            Column(Modifier.padding(horizontal = BolaoSpacing.md), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (isLive) {
-                                        val infiniteTransition = rememberInfiniteTransition()
-                                        val alpha by infiniteTransition.animateFloat(
-                                            initialValue = 0.3f,
-                                            targetValue = 1f,
-                                            animationSpec =
-                                            infiniteRepeatable(
-                                                animation = tween(800, easing = LinearEasing),
-                                                repeatMode = RepeatMode.Reverse
-                                            )
-                                        )
-                                        Box(
-                                            modifier =
-                                            Modifier
-                                                .size(6.dp)
-                                                .clip(CircleShape)
-                                                .background(Neon.copy(alpha = alpha))
-                                        )
-                                        Spacer(Modifier.width(6.dp))
-                                    }
-                                    BolaoText(
-                                        statusLabel,
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isAdminViewingBeforeStart) Gold else TextMuted,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                }
-                                Spacer(Modifier.height(8.dp))
-                                if (!isAdminViewingBeforeStart) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
-                                    ) {
-                                        BolaoText(
-                                            hReal.toString(),
-                                            fontSize = BolaoTypography.displayMedium.fontSize,
-                                            fontWeight = FontWeight.Black,
-                                            color = Neon
-                                        )
-                                        BolaoText(
-                                            stringResource(Res.string.match_predictions_score_separator),
-                                            fontSize = BolaoTypography.headlineMedium.fontSize,
-                                            fontWeight = FontWeight.Bold,
-                                            color = TextMuted
-                                        )
-                                        BolaoText(
-                                            aReal.toString(),
-                                            fontSize = BolaoTypography.displayMedium.fontSize,
-                                            fontWeight = FontWeight.Black,
-                                            color = Neon
-                                        )
-                                    }
-                                } else {
-                                    BolaoIcon(
-                                        Icons.Default.Lock,
-                                        null,
-                                        tint = TextMuted.copy(alpha = 0.5f),
-                                        modifier = Modifier.size(28.dp)
-                                    )
-                                }
-                            }
-
-                            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                TeamCrestCircle(
-                                    url = aResolvedCrest ?: match.awayTeamCrest,
-                                    flag = aAnnotatedFlag,
-                                    isTbd = aFlag.contains(" ou "),
-                                    flagSize = 34.sp
-                                )
-                                if (aName.isNotEmpty()) {
-                                    Spacer(Modifier.height(8.dp))
-                                    var fontSize by remember(aName) { mutableIntStateOf(13) }
-                                    var readyToDraw by remember(aName) { mutableStateOf(false) }
-                                    BolaoText(
-                                        aName,
-                                        color = Color.White,
-                                        fontSize = fontSize.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        modifier = Modifier.drawWithContent { if (readyToDraw) drawContent() },
-                                        onTextLayout = { result ->
-                                            if (result.hasVisualOverflow && fontSize > 8) {
-                                                fontSize -= 1
-                                            } else {
-                                                readyToDraw = true
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                        launcherProvider.shareText(text)
                     }
-                }
+                )
 
-                // ── Predictions list ─────────────────────────────────────────────────
-                LazyColumn(
+                MatchPredictionsList(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(top = 16.dp, bottom = 40.dp)
-                ) {
-                    item {
-                        BolaoHorizontalDivider(
-                            color = GlassBorder,
-                            thickness = 1.dp,
-                            modifier = Modifier.padding(start = BolaoSpacing.xxl, end = BolaoSpacing.xxl, bottom = BolaoSpacing.md)
-                        )
-                    }
-
-                    items(itemsList) { item ->
-                        val participant = item.first
-                        val pred = item.second
-                        val pts = item.third
-
-                        BolaoSurface(
-                            color = NavyElevated,
-                            shape = BolaoRadiusShape.lg,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
-                            modifier = Modifier.padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.xs)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.lg),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                UserAvatar(
-                                    initials = participant.userName.getInitials(),
-                                    size = 36.dp,
-                                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                                    borderColor = Neon.copy(alpha = 0.5f)
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    val hasNickname = participant.userNickname.isNotBlank()
-                                    BolaoText(
-                                        text = if (hasNickname) participant.userNickname else participant.userName,
-                                        color = Color.White,
-                                        fontSize = BolaoTypography.titleLarge.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1
-                                    )
-                                    if (hasNickname) {
-                                        BolaoText(
-                                            text = participant.userName,
-                                            color = TextMuted,
-                                            fontSize = BolaoTypography.bodyMedium.fontSize,
-                                            maxLines = 1
-                                        )
-                                    }
-                                }
-                                if (pred != null) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
-                                    ) {
-                                        if (isAdminViewingBeforeStart && participant.userId != currentUserId) {
-                                            BolaoText(
-                                                lockedBadge,
-                                                color = Neon,
-                                                fontSize = BolaoTypography.bodyLarge.fontSize,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        } else {
-                                            Box(
-                                                modifier =
-                                                Modifier.clip(
-                                                    BolaoRadiusShape.sm
-                                                ).background(
-                                                    DeepNavy.copy(alpha = 0.6f)
-                                                ).border(
-                                                    1.dp,
-                                                    GlassBorder,
-                                                    BolaoRadiusShape.sm
-                                                ).padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.sm)
-                                            ) {
-                                                BolaoText(
-                                                    "${pred.homeScore} × ${pred.awayScore}",
-                                                    color = Color.White,
-                                                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
-                                        if (!isAdminViewingBeforeStart) {
-                                            val pointsColor =
-                                                when (pts) {
-                                                    3 -> Neon
-                                                    1 -> Gold
-                                                    else -> TextMuted.copy(alpha = 0.4f)
-                                                }
-                                            Box(
-                                                modifier =
-                                                Modifier.width(
-                                                    44.dp
-                                                ).clip(
-                                                    BolaoRadiusShape.md
-                                                ).background(
-                                                    pointsColor.copy(alpha = 0.12f)
-                                                ).border(
-                                                    1.dp,
-                                                    pointsColor.copy(alpha = 0.2f),
-                                                    BolaoRadiusShape.md
-                                                ).padding(vertical = BolaoSpacing.sm),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                BolaoText(
-                                                    text = if (pts > 0) "+$pts" else "0",
-                                                    color = pointsColor,
-                                                    fontSize = BolaoTypography.titleLarge.fontSize,
-                                                    fontWeight = FontWeight.Black
-                                                )
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    BolaoText(
-                                        noPredictionLabel,
-                                        color = TextSubtle,
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                    items = itemsList,
+                    isAdminViewingBeforeStart = timing.isAdminViewingBeforeStart,
+                    currentUserId = currentUserId,
+                    lockedBadge = strings.lockedBadge,
+                    noPredictionLabel = strings.noPrediction
+                )
             }
         }
+    }
+}
+
+private data class MatchTimingState(
+    val hReal: Int,
+    val aReal: Int,
+    val isActuallyFinished: Boolean,
+    val hasStarted: Boolean,
+    val isAdminViewingBeforeStart: Boolean
+)
+
+/** Computes score/timing derived state, forcing "Finished" when the match started more than 3 hours ago and has a score. */
+private fun computeMatchTimingState(match: Match?, now: Long, isOwner: Boolean): MatchTimingState {
+    val hReal = match?.homeScore ?: 0
+    val aReal = match?.awayScore ?: 0
+    val matchDate = match?.matchDateMillis ?: 0L
+    val isActuallyFinished =
+        (match?.status == "FINISHED") ||
+            (match?.status == "PENALTIES") ||
+            (match?.status == "PAUSED_PENALTIES") ||
+            (match?.homeScore != null && match?.awayScore != null && now > (matchDate + 3 * 3600_000L))
+    val hasStarted = now >= matchDate
+    val isAdminViewingBeforeStart = isOwner && !hasStarted
+    return MatchTimingState(hReal, aReal, isActuallyFinished, hasStarted, isAdminViewingBeforeStart)
+}
+
+private fun resolveStatusLabel(
+    matchStatus: String?,
+    isAdminViewingBeforeStart: Boolean,
+    isActuallyFinished: Boolean,
+    strings: StatusStrings
+): String = when {
+    isAdminViewingBeforeStart -> strings.adminView
+    isActuallyFinished -> strings.finished
+    matchStatus == "EXTRA_TIME" -> strings.extraTime
+    matchStatus == "PENALTIES" -> strings.penalties
+    matchStatus == "PAUSED_EXTRA_TIME" -> strings.goingExtraTime
+    matchStatus == "PAUSED_PENALTIES" -> strings.goingPenalties
+    matchStatus == "PAUSED" -> strings.halftime
+    else -> strings.inProgress
+}
+
+@Composable
+private fun rememberPredictionItems(
+    predictions: List<Prediction>,
+    participants: List<RankingEntry>,
+    hReal: Int,
+    aReal: Int,
+    isAdminViewingBeforeStart: Boolean,
+    calculatePointsUseCase: CalculatePointsUseCase
+): List<Triple<RankingEntry, Prediction?, Int>> = remember(predictions, participants, hReal, aReal, isAdminViewingBeforeStart) {
+    participants.map { participant ->
+        val pred = predictions.find { it.userId == participant.userId }
+        val pts =
+            if (pred != null && !isAdminViewingBeforeStart) {
+                calculatePointsUseCase(pred, hReal, aReal)
+            } else {
+                0
+            }
+        Triple(participant, pred, pts)
+    }.sortedWith(
+        if (isAdminViewingBeforeStart) {
+            compareBy { it.first.userName.lowercase() }
+        } else {
+            compareByDescending<Triple<RankingEntry, Prediction?, Int>> { it.third }
+                .thenBy { it.first.userName.lowercase() }
+        }
+    )
+}
+
+private data class StatusStrings(
+    val adminView: String,
+    val finished: String,
+    val extraTime: String,
+    val penalties: String,
+    val goingExtraTime: String,
+    val goingPenalties: String,
+    val halftime: String,
+    val inProgress: String
+)
+
+private data class MatchPredictionsStrings(
+    val backCd: String,
+    val shareCd: String,
+    val title: String,
+    val scoreSeparator: String,
+    val share: ShareStrings,
+    val status: StatusStrings,
+    val lockedBadge: String,
+    val noPrediction: String
+)
+
+@Composable
+private fun loadMatchPredictionsStrings(): MatchPredictionsStrings = MatchPredictionsStrings(
+    backCd = stringResource(Res.string.match_predictions_back_cd),
+    shareCd = stringResource(Res.string.match_predictions_share_cd),
+    title = stringResource(Res.string.match_predictions_title),
+    scoreSeparator = stringResource(Res.string.match_predictions_score_separator),
+    share =
+    ShareStrings(
+        header = stringResource(Res.string.match_predictions_share_header),
+        statusFinished = stringResource(Res.string.match_predictions_share_status_finished),
+        statusOngoing = stringResource(Res.string.match_predictions_share_status_ongoing),
+        locked = stringResource(Res.string.match_predictions_share_locked),
+        exactIcon = stringResource(Res.string.match_predictions_share_exact_icon),
+        correctIcon = stringResource(Res.string.match_predictions_share_correct_icon),
+        wrongIcon = stringResource(Res.string.match_predictions_share_wrong_icon),
+        pointsSingular = stringResource(Res.string.match_predictions_share_points_singular),
+        pointsPlural = stringResource(Res.string.match_predictions_share_points_plural),
+        noPrediction = stringResource(Res.string.match_predictions_share_no_prediction)
+    ),
+    status =
+    StatusStrings(
+        adminView = stringResource(Res.string.match_predictions_status_admin_view),
+        finished = stringResource(Res.string.match_predictions_status_finished),
+        extraTime = stringResource(Res.string.match_predictions_status_extra_time),
+        penalties = stringResource(Res.string.match_predictions_status_penalties),
+        goingExtraTime = stringResource(Res.string.match_predictions_status_going_extra_time),
+        goingPenalties = stringResource(Res.string.match_predictions_status_going_penalties),
+        halftime = stringResource(Res.string.match_predictions_status_halftime),
+        inProgress = stringResource(Res.string.match_predictions_status_in_progress)
+    ),
+    lockedBadge = stringResource(Res.string.match_predictions_locked_badge),
+    noPrediction = stringResource(Res.string.match_predictions_no_prediction)
+)
+
+@Composable
+private fun MatchPredictionsLoadingState() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        BolaoLoadingIndicator()
+    }
+}
+
+private data class TeamDisplay(val name: String, val flag: String, val crestUrl: String?)
+
+private data class ScoreDisplay(
+    val hReal: Int,
+    val aReal: Int,
+    val statusLabel: String,
+    val isLive: Boolean,
+    val isAdminViewingBeforeStart: Boolean,
+    val scoreSeparator: String
+)
+
+@Composable
+private fun MatchPredictionsHeader(
+    home: TeamDisplay,
+    away: TeamDisplay,
+    score: ScoreDisplay,
+    backCd: String,
+    shareCd: String,
+    title: String,
+    onNavigateBack: () -> Unit,
+    onShare: () -> Unit
+) {
+    Box(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .background(GradientHero)
+            .drawBehind {
+                drawRect(
+                    brush =
+                    Brush.verticalGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.05f), Color.Transparent),
+                        endY = size.height * 0.5f
+                    )
+                )
+                drawCircle(
+                    brush =
+                    Brush.radialGradient(
+                        colors = listOf(Neon.copy(alpha = 0.15f), Color.Transparent),
+                        center = Offset(size.width * 0.9f, 0f),
+                        radius = 220.dp.toPx()
+                    ),
+                    radius = 220.dp.toPx(),
+                    center = Offset(size.width * 0.9f, 0f)
+                )
+            }
+            .padding(top = BolaoSpacing.md, bottom = BolaoSpacing.xxl)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.xl)) {
+            MatchPredictionsTopBar(
+                backCd = backCd,
+                shareCd = shareCd,
+                title = title,
+                onNavigateBack = onNavigateBack,
+                onShare = onShare
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            MatchPredictionsTeamsRow(home = home, away = away, score = score)
+        }
+    }
+}
+
+@Composable
+private fun MatchPredictionsTopBar(backCd: String, shareCd: String, title: String, onNavigateBack: () -> Unit, onShare: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
+    ) {
+        BolaoIconButton(onClick = onNavigateBack, modifier = Modifier.size(36.dp)) {
+            BolaoIcon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                backCd,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        BolaoText(
+            title,
+            fontSize = BolaoTypography.headlineMedium.fontSize,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color.White,
+            modifier = Modifier.weight(1f),
+            letterSpacing = (-0.5).sp
+        )
+
+        BolaoIconButton(onClick = onShare, modifier = Modifier.size(36.dp)) {
+            BolaoIcon(Icons.Default.Share, shareCd, tint = Color.White, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun MatchPredictionsTeamsRow(home: TeamDisplay, away: TeamDisplay, score: ScoreDisplay) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        MatchPredictionsTeamColumn(team = home, modifier = Modifier.weight(1f))
+        MatchPredictionsScoreStatus(score = score)
+        MatchPredictionsTeamColumn(team = away, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun MatchPredictionsTeamColumn(team: TeamDisplay, modifier: Modifier = Modifier) {
+    val annotatedFlag = remember(team.flag) { buildFlagAnnotatedString(team.flag) }
+
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        TeamCrestCircle(
+            url = team.crestUrl,
+            flag = annotatedFlag,
+            isTbd = team.flag.contains(" ou "),
+            flagSize = 34.sp
+        )
+        if (team.name.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            ShrinkToFitTeamName(team.name)
+        }
+    }
+}
+
+@Composable
+private fun ShrinkToFitTeamName(name: String) {
+    var fontSize by remember(name) { mutableIntStateOf(13) }
+    var readyToDraw by remember(name) { mutableStateOf(false) }
+    BolaoText(
+        name,
+        color = Color.White,
+        fontSize = fontSize.sp,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+        maxLines = 1,
+        softWrap = false,
+        modifier = Modifier.drawWithContent { if (readyToDraw) drawContent() },
+        onTextLayout = { result ->
+            if (result.hasVisualOverflow && fontSize > 8) {
+                fontSize -= 1
+            } else {
+                readyToDraw = true
+            }
+        }
+    )
+}
+
+@Composable
+private fun MatchPredictionsScoreStatus(score: ScoreDisplay) {
+    Column(Modifier.padding(horizontal = BolaoSpacing.md), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (score.isLive) {
+                MatchPredictionsLiveDot()
+                Spacer(Modifier.width(6.dp))
+            }
+            BolaoText(
+                score.statusLabel,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                fontWeight = FontWeight.Bold,
+                color = if (score.isAdminViewingBeforeStart) Gold else TextMuted,
+                letterSpacing = 0.5.sp
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        if (!score.isAdminViewingBeforeStart) {
+            MatchPredictionsScoreNumbers(hReal = score.hReal, aReal = score.aReal, scoreSeparator = score.scoreSeparator)
+        } else {
+            BolaoIcon(
+                Icons.Default.Lock,
+                null,
+                tint = TextMuted.copy(alpha = 0.5f),
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MatchPredictionsLiveDot() {
+    val infiniteTransition = rememberInfiniteTransition()
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec =
+        infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    Box(
+        modifier =
+        Modifier
+            .size(6.dp)
+            .clip(CircleShape)
+            .background(Neon.copy(alpha = alpha))
+    )
+}
+
+@Composable
+private fun MatchPredictionsScoreNumbers(hReal: Int, aReal: Int, scoreSeparator: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
+    ) {
+        BolaoText(
+            hReal.toString(),
+            fontSize = BolaoTypography.displayMedium.fontSize,
+            fontWeight = FontWeight.Black,
+            color = Neon
+        )
+        BolaoText(
+            scoreSeparator,
+            fontSize = BolaoTypography.headlineMedium.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = TextMuted
+        )
+        BolaoText(
+            aReal.toString(),
+            fontSize = BolaoTypography.displayMedium.fontSize,
+            fontWeight = FontWeight.Black,
+            color = Neon
+        )
+    }
+}
+
+@Composable
+private fun MatchPredictionsList(
+    modifier: Modifier,
+    items: List<Triple<RankingEntry, Prediction?, Int>>,
+    isAdminViewingBeforeStart: Boolean,
+    currentUserId: String,
+    lockedBadge: String,
+    noPredictionLabel: String
+) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(top = 16.dp, bottom = 40.dp)
+    ) {
+        item {
+            BolaoHorizontalDivider(
+                color = GlassBorder,
+                thickness = 1.dp,
+                modifier = Modifier.padding(start = BolaoSpacing.xxl, end = BolaoSpacing.xxl, bottom = BolaoSpacing.md)
+            )
+        }
+
+        items(items) { item ->
+            MatchPredictionsListItem(
+                participant = item.first,
+                pred = item.second,
+                pts = item.third,
+                isAdminViewingBeforeStart = isAdminViewingBeforeStart,
+                currentUserId = currentUserId,
+                lockedBadge = lockedBadge,
+                noPredictionLabel = noPredictionLabel
+            )
+        }
+    }
+}
+
+@Composable
+private fun MatchPredictionsListItem(
+    participant: RankingEntry,
+    pred: Prediction?,
+    pts: Int,
+    isAdminViewingBeforeStart: Boolean,
+    currentUserId: String,
+    lockedBadge: String,
+    noPredictionLabel: String
+) {
+    BolaoSurface(
+        color = NavyElevated,
+        shape = BolaoRadiusShape.lg,
+        border = BorderStroke(1.dp, GlassBorder),
+        modifier = Modifier.padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.xs)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.lg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UserAvatar(
+                initials = participant.userName.getInitials(),
+                size = 36.dp,
+                fontSize = BolaoTypography.bodyLarge.fontSize,
+                borderColor = Neon.copy(alpha = 0.5f)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                val hasNickname = participant.userNickname.isNotBlank()
+                BolaoText(
+                    text = if (hasNickname) participant.userNickname else participant.userName,
+                    color = Color.White,
+                    fontSize = BolaoTypography.titleLarge.fontSize,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                if (hasNickname) {
+                    BolaoText(
+                        text = participant.userName,
+                        color = TextMuted,
+                        fontSize = BolaoTypography.bodyMedium.fontSize,
+                        maxLines = 1
+                    )
+                }
+            }
+            if (pred != null) {
+                MatchPredictionsListItemPrediction(
+                    pred = pred,
+                    pts = pts,
+                    isAdminViewingBeforeStart = isAdminViewingBeforeStart,
+                    participantUserId = participant.userId,
+                    currentUserId = currentUserId,
+                    lockedBadge = lockedBadge
+                )
+            } else {
+                BolaoText(
+                    noPredictionLabel,
+                    color = TextSubtle,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MatchPredictionsListItemPrediction(
+    pred: Prediction,
+    pts: Int,
+    isAdminViewingBeforeStart: Boolean,
+    participantUserId: String,
+    currentUserId: String,
+    lockedBadge: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
+    ) {
+        MatchPredictionsScoreBadge(
+            pred = pred,
+            isAdminViewingBeforeStart = isAdminViewingBeforeStart,
+            participantUserId = participantUserId,
+            currentUserId = currentUserId,
+            lockedBadge = lockedBadge
+        )
+        if (!isAdminViewingBeforeStart) {
+            MatchPredictionsPointsBadge(pts)
+        }
+    }
+}
+
+@Composable
+private fun MatchPredictionsScoreBadge(
+    pred: Prediction,
+    isAdminViewingBeforeStart: Boolean,
+    participantUserId: String,
+    currentUserId: String,
+    lockedBadge: String
+) {
+    if (isAdminViewingBeforeStart && participantUserId != currentUserId) {
+        BolaoText(
+            lockedBadge,
+            color = Neon,
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            fontWeight = FontWeight.Bold
+        )
+    } else {
+        Box(
+            modifier =
+            Modifier.clip(
+                BolaoRadiusShape.sm
+            ).background(
+                DeepNavy.copy(alpha = 0.6f)
+            ).border(
+                1.dp,
+                GlassBorder,
+                BolaoRadiusShape.sm
+            ).padding(horizontal = BolaoSpacing.md, vertical = BolaoSpacing.sm)
+        ) {
+            BolaoText(
+                "${pred.homeScore} × ${pred.awayScore}",
+                color = Color.White,
+                fontSize = BolaoTypography.bodyLarge.fontSize,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun MatchPredictionsPointsBadge(pts: Int) {
+    val pointsColor =
+        when (pts) {
+            3 -> Neon
+            1 -> Gold
+            else -> TextMuted.copy(alpha = 0.4f)
+        }
+    Box(
+        modifier =
+        Modifier.width(
+            44.dp
+        ).clip(
+            BolaoRadiusShape.md
+        ).background(
+            pointsColor.copy(alpha = 0.12f)
+        ).border(
+            1.dp,
+            pointsColor.copy(alpha = 0.2f),
+            BolaoRadiusShape.md
+        ).padding(vertical = BolaoSpacing.sm),
+        contentAlignment = Alignment.Center
+    ) {
+        BolaoText(
+            text = if (pts > 0) "+$pts" else "0",
+            color = pointsColor,
+            fontSize = BolaoTypography.titleLarge.fontSize,
+            fontWeight = FontWeight.Black
+        )
     }
 }
 
@@ -734,4 +808,132 @@ private fun TeamCrestCircle(url: String?, flag: AnnotatedString, isTbd: Boolean,
             )
         }
     }
+}
+
+/** Splits a "TeamA ou TeamB" placeholder flag into a two-style annotated string; other flags render as-is. */
+private fun buildFlagAnnotatedString(flag: String): AnnotatedString {
+    val parts = flag.split(" ou ")
+    return if (parts.size > 1) {
+        buildAnnotatedString {
+            parts.forEachIndexed { index, part ->
+                append(part)
+                if (index < parts.size - 1) {
+                    withStyle(
+                        style = SpanStyle(
+                            fontSize = BolaoTypography.bodyMedium.fontSize,
+                            fontWeight = FontWeight.Normal
+                        )
+                    ) {
+                        append(" ou ")
+                    }
+                }
+            }
+        }
+    } else {
+        AnnotatedString(flag)
+    }
+}
+
+private data class ShareStrings(
+    val header: String,
+    val statusFinished: String,
+    val statusOngoing: String,
+    val locked: String,
+    val exactIcon: String,
+    val correctIcon: String,
+    val wrongIcon: String,
+    val pointsSingular: String,
+    val pointsPlural: String,
+    val noPrediction: String
+)
+
+private data class ShareTextInput(
+    val hName: String,
+    val hFlag: String,
+    val aName: String,
+    val aFlag: String,
+    val hReal: Int,
+    val aReal: Int,
+    val hasStarted: Boolean,
+    val isActuallyFinished: Boolean,
+    val isAdminViewingBeforeStart: Boolean,
+    val currentUserId: String,
+    val pointsExactScore: Int,
+    val pointsWinnerOrDraw: Int,
+    val items: List<Triple<RankingEntry, Prediction?, Int>>,
+    val strings: ShareStrings
+)
+
+/** Builds the plain-text share message for the match predictions, matching the on-screen ordering and labels. */
+private fun buildShareText(input: ShareTextInput): String {
+    val isOngoing = input.hasStarted && !input.isActuallyFinished
+
+    // Alphabetical sort by displayed nickname/name while the match is ongoing
+    val shareItems =
+        if (isOngoing) {
+            input.items.sortedBy { (it.first.userNickname.ifBlank { it.first.userName }).lowercase() }
+        } else {
+            input.items
+        }
+
+    val list = shareItems.mapIndexed { index, item -> buildShareParticipantLine(item, index, input) }.joinToString("\n")
+
+    return buildShareHeaderText(input) + list
+}
+
+private fun buildShareHeaderText(input: ShareTextInput): String = buildString {
+    append(input.strings.header)
+    append("${input.hFlag} ${input.hName} ")
+    if (input.hasStarted || input.isActuallyFinished) {
+        append("${input.hReal} x ${input.aReal} ")
+    } else {
+        append("x ")
+    }
+    append("${input.aName} ${input.aFlag}")
+
+    if (input.hasStarted || input.isActuallyFinished) {
+        val label = if (input.isActuallyFinished) input.strings.statusFinished else input.strings.statusOngoing
+        append(label)
+    }
+    append("\n\n")
+}
+
+private fun buildShareParticipantLine(item: Triple<RankingEntry, Prediction?, Int>, index: Int, input: ShareTextInput): String {
+    val participant = item.first
+    val pred = item.second
+    val pts = item.third
+    val name = participant.userNickname.ifBlank { participant.userName }
+
+    if (pred == null) return "${index + 1}. $name: ${input.strings.noPrediction}"
+
+    val score =
+        if (input.isAdminViewingBeforeStart && participant.userId != input.currentUserId) {
+            input.strings.locked
+        } else {
+            "${pred.homeScore} x ${pred.awayScore}"
+        }
+
+    val ptsIcon =
+        if (!input.isAdminViewingBeforeStart && input.isActuallyFinished) {
+            when (pts) {
+                input.pointsExactScore -> input.strings.exactIcon
+                input.pointsWinnerOrDraw -> input.strings.correctIcon
+                else -> input.strings.wrongIcon
+            }
+        } else {
+            ""
+        }
+
+    val pointsLabel =
+        if (!input.isAdminViewingBeforeStart && input.isActuallyFinished) {
+            if (pts == 1) {
+                input.strings.pointsSingular.replace("%1\$d", pts.toString())
+            } else {
+                input.strings.pointsPlural.replace("%1\$d", pts.toString())
+            }
+        } else {
+            ""
+        }
+
+    return "${index + 1}. $name: $score$pointsLabel$ptsIcon"
 }

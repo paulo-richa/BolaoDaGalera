@@ -1,0 +1,164 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:LoginScreen.kt$@Composable fun LoginScreen(onLoginSuccess: () -&gt; Unit, onNavigateToRegister: (String?) -&gt; Unit)</ID>
+    <ID>CyclomaticComplexMethod:ProfileScreen.kt$@Composable fun ProfileScreen(onNavigateToHelp: () -&gt; Unit, onNavigateBack: () -&gt; Unit, onSignOut: () -&gt; Unit)</ID>
+    <ID>CyclomaticComplexMethod:RegisterScreen.kt$@Composable fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -&gt; Unit, onNavigateBack: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:Drawable0.commonMain.kt$@InternalResourceApi internal fun _collectCommonMainDrawable0Resources(map: MutableMap&lt;String, DrawableResource&gt;)</ID>
+    <ID>FunctionNaming:String0.commonMain.kt$@InternalResourceApi internal fun _collectCommonMainString0Resources(map: MutableMap&lt;String, StringResource&gt;)</ID>
+    <ID>LongMethod:LoginScreen.kt$@Composable fun LoginScreen(onLoginSuccess: () -&gt; Unit, onNavigateToRegister: (String?) -&gt; Unit)</ID>
+    <ID>LongMethod:ProfileScreen.kt$@Composable fun ProfileScreen(onNavigateToHelp: () -&gt; Unit, onNavigateBack: () -&gt; Unit, onSignOut: () -&gt; Unit)</ID>
+    <ID>LongMethod:RegisterScreen.kt$@Composable fun RegisterScreen(initialEmail: String = "", onRegisterSuccess: () -&gt; Unit, onNavigateBack: () -&gt; Unit)</ID>
+    <ID>MagicNumber:Drawable0.commonMain.kt$102_838_419</ID>
+    <ID>MagicNumber:String0.commonMain.kt$10</ID>
+    <ID>MagicNumber:String0.commonMain.kt$102</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1099</ID>
+    <ID>MagicNumber:String0.commonMain.kt$113</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1164</ID>
+    <ID>MagicNumber:String0.commonMain.kt$119</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1248</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1436</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1514</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1580</ID>
+    <ID>MagicNumber:String0.commonMain.kt$166</ID>
+    <ID>MagicNumber:String0.commonMain.kt$169</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1750</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1842</ID>
+    <ID>MagicNumber:String0.commonMain.kt$186</ID>
+    <ID>MagicNumber:String0.commonMain.kt$187</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1923</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1988</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_020_173_204</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_107_708_667</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_182_397_156</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_278_605_853</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_331_555_495</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_339_499_572</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_351_059_371</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_436_449_545</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_438_907_409</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_453_727_239</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_457_925_992</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_526_606_862</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_548_966_503</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_551_838_770</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_555_889_205</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_617_271_233</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_640_877_335</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_650_301_315</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_710_033_347</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_813_653_306</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_826_190_991</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_844_218_945</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_931_574_850</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_971_282_708</ID>
+    <ID>MagicNumber:String0.commonMain.kt$1_978_106_000</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2070</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2123</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2181</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2242</ID>
+    <ID>MagicNumber:String0.commonMain.kt$227</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2313</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2372</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2438</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2486</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2560</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2600</ID>
+    <ID>MagicNumber:String0.commonMain.kt$263</ID>
+    <ID>MagicNumber:String0.commonMain.kt$268</ID>
+    <ID>MagicNumber:String0.commonMain.kt$280_360_875</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2869</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2917</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2_050_593_496</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2_091_573_591</ID>
+    <ID>MagicNumber:String0.commonMain.kt$2_141_600_609</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3037</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3095</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3141</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3187</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3237</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3284</ID>
+    <ID>MagicNumber:String0.commonMain.kt$329_907_049</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3365</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3431</ID>
+    <ID>MagicNumber:String0.commonMain.kt$346_489_762</ID>
+    <ID>MagicNumber:String0.commonMain.kt$35</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3510</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3564</ID>
+    <ID>MagicNumber:String0.commonMain.kt$361_110_166</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3646</ID>
+    <ID>MagicNumber:String0.commonMain.kt$368_391_784</ID>
+    <ID>MagicNumber:String0.commonMain.kt$371_933_225</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3720</ID>
+    <ID>MagicNumber:String0.commonMain.kt$377</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3803</ID>
+    <ID>MagicNumber:String0.commonMain.kt$382_169_244</ID>
+    <ID>MagicNumber:String0.commonMain.kt$383_214_973</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3875</ID>
+    <ID>MagicNumber:String0.commonMain.kt$39</ID>
+    <ID>MagicNumber:String0.commonMain.kt$391_343_519</ID>
+    <ID>MagicNumber:String0.commonMain.kt$3936</ID>
+    <ID>MagicNumber:String0.commonMain.kt$4016</ID>
+    <ID>MagicNumber:String0.commonMain.kt$4087</ID>
+    <ID>MagicNumber:String0.commonMain.kt$41</ID>
+    <ID>MagicNumber:String0.commonMain.kt$417</ID>
+    <ID>MagicNumber:String0.commonMain.kt$4176</ID>
+    <ID>MagicNumber:String0.commonMain.kt$42</ID>
+    <ID>MagicNumber:String0.commonMain.kt$4223</ID>
+    <ID>MagicNumber:String0.commonMain.kt$43</ID>
+    <ID>MagicNumber:String0.commonMain.kt$445_251_612</ID>
+    <ID>MagicNumber:String0.commonMain.kt$45</ID>
+    <ID>MagicNumber:String0.commonMain.kt$46</ID>
+    <ID>MagicNumber:String0.commonMain.kt$460</ID>
+    <ID>MagicNumber:String0.commonMain.kt$47</ID>
+    <ID>MagicNumber:String0.commonMain.kt$49</ID>
+    <ID>MagicNumber:String0.commonMain.kt$508_174_567</ID>
+    <ID>MagicNumber:String0.commonMain.kt$515_583_929</ID>
+    <ID>MagicNumber:String0.commonMain.kt$52</ID>
+    <ID>MagicNumber:String0.commonMain.kt$526_959_996</ID>
+    <ID>MagicNumber:String0.commonMain.kt$527</ID>
+    <ID>MagicNumber:String0.commonMain.kt$53</ID>
+    <ID>MagicNumber:String0.commonMain.kt$55</ID>
+    <ID>MagicNumber:String0.commonMain.kt$57</ID>
+    <ID>MagicNumber:String0.commonMain.kt$58</ID>
+    <ID>MagicNumber:String0.commonMain.kt$595</ID>
+    <ID>MagicNumber:String0.commonMain.kt$60</ID>
+    <ID>MagicNumber:String0.commonMain.kt$606_413_421</ID>
+    <ID>MagicNumber:String0.commonMain.kt$63</ID>
+    <ID>MagicNumber:String0.commonMain.kt$637_047_715</ID>
+    <ID>MagicNumber:String0.commonMain.kt$64</ID>
+    <ID>MagicNumber:String0.commonMain.kt$65</ID>
+    <ID>MagicNumber:String0.commonMain.kt$66</ID>
+    <ID>MagicNumber:String0.commonMain.kt$67</ID>
+    <ID>MagicNumber:String0.commonMain.kt$686</ID>
+    <ID>MagicNumber:String0.commonMain.kt$688_692_076</ID>
+    <ID>MagicNumber:String0.commonMain.kt$70</ID>
+    <ID>MagicNumber:String0.commonMain.kt$709_586_020</ID>
+    <ID>MagicNumber:String0.commonMain.kt$71</ID>
+    <ID>MagicNumber:String0.commonMain.kt$73</ID>
+    <ID>MagicNumber:String0.commonMain.kt$730</ID>
+    <ID>MagicNumber:String0.commonMain.kt$77</ID>
+    <ID>MagicNumber:String0.commonMain.kt$78</ID>
+    <ID>MagicNumber:String0.commonMain.kt$786</ID>
+    <ID>MagicNumber:String0.commonMain.kt$79</ID>
+    <ID>MagicNumber:String0.commonMain.kt$80</ID>
+    <ID>MagicNumber:String0.commonMain.kt$81</ID>
+    <ID>MagicNumber:String0.commonMain.kt$82</ID>
+    <ID>MagicNumber:String0.commonMain.kt$83</ID>
+    <ID>MagicNumber:String0.commonMain.kt$849_141_338</ID>
+    <ID>MagicNumber:String0.commonMain.kt$851_260_351</ID>
+    <ID>MagicNumber:String0.commonMain.kt$853</ID>
+    <ID>MagicNumber:String0.commonMain.kt$874_125_465</ID>
+    <ID>MagicNumber:String0.commonMain.kt$88</ID>
+    <ID>MagicNumber:String0.commonMain.kt$90</ID>
+    <ID>MagicNumber:String0.commonMain.kt$91</ID>
+    <ID>MagicNumber:String0.commonMain.kt$912</ID>
+    <ID>MagicNumber:String0.commonMain.kt$957_383_799</ID>
+    <ID>MaxLineLength:Res.kt$Res$public suspend</ID>
+    <ID>PackageNaming:Drawable0.commonMain.kt$package bolaodagalera.feature_auth.generated.resources</ID>
+    <ID>PackageNaming:ExpectResourceCollectors.kt$package bolaodagalera.feature_auth.generated.resources</ID>
+    <ID>PackageNaming:Res.kt$package bolaodagalera.feature_auth.generated.resources</ID>
+    <ID>PackageNaming:String0.commonMain.kt$package bolaodagalera.feature_auth.generated.resources</ID>
+  </CurrentIssues>
+</SmellBaseline>

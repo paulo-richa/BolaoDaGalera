@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -100,35 +101,17 @@ fun RankingScreen(bolaoId: String) {
     val uiState by viewModel.uiState.collectAsState()
 
     var showHitsDialog by remember { mutableStateOf(false) }
+    val closeHitsDialog = {
+        showHitsDialog = false
+        viewModel.clearSelectedParticipant()
+    }
+    val openHitsDialogFor: (RankingEntry) -> Unit = {
+        viewModel.selectParticipant(it)
+        showHitsDialog = true
+    }
 
     if (showHitsDialog) {
-        Dialog(
-            onDismissRequest = {
-                showHitsDialog = false
-                viewModel.clearSelectedParticipant()
-            },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            BolaoSurface(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = BolaoSpacing.lg),
-                shape = BolaoRadiusShape.xxl,
-                color = DeepNavy,
-                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
-            ) {
-                ParticipantHitsContent(
-                    name = uiState.selectedParticipantName,
-                    hits = uiState.selectedParticipantHits,
-                    allMatches = uiState.allMatches,
-                    onClose = {
-                        showHitsDialog = false
-                        viewModel.clearSelectedParticipant()
-                    }
-                )
-            }
-        }
+        RankingHitsDialog(uiState = uiState, onDismiss = closeHitsDialog)
     }
 
     when {
@@ -145,184 +128,219 @@ fun RankingScreen(bolaoId: String) {
                 BolaoText(stringResource(Res.string.ranking_empty_message), color = TextMuted)
             }
 
-        else ->
-            Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 60.dp),
-                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
-                ) {
-                    // ── Podium Section ───────────────────────────────────────────────
-                    if (uiState.entries.size >= 3) {
-                        item(key = "podium", contentType = "podium") {
-                            Spacer(Modifier.height(12.dp))
-                            Podium(
-                                first = uiState.entries[0],
-                                second = uiState.entries[1],
-                                third = uiState.entries[2],
-                                currentUserId = uiState.currentUserId,
-                                onEntryClick = {
-                                    viewModel.selectParticipant(it)
-                                    showHitsDialog = true
-                                }
-                            )
-                            Spacer(Modifier.height(20.dp))
-                        }
-                    }
+        else -> RankingList(uiState = uiState, onEntryClick = openHitsDialogFor)
+    }
+}
 
-                    // ── Header Stats ──────────────────────────────────────────────────
-                    item(key = "header-stats", contentType = "header") {
-                        BolaoSurface(
-                            color = NavyCard.copy(alpha = 0.5f),
-                            shape = BolaoRadiusShape.md,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.md),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                BolaoText(
-                                    stringResource(Res.string.ranking_header_position),
-                                    modifier = Modifier.width(30.dp),
-                                    fontSize = BolaoTypography.bodyMedium.fontSize,
-                                    color = TextMuted,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                BolaoText(
-                                    stringResource(Res.string.ranking_header_participant),
-                                    modifier = Modifier.weight(1f),
-                                    fontSize = BolaoTypography.bodyMedium.fontSize,
-                                    color = TextMuted,
-                                    fontWeight = FontWeight.Bold
-                                )
+@Composable
+private fun RankingHitsDialog(uiState: RankingUiState, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        BolaoSurface(
+            modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = BolaoSpacing.lg),
+            shape = BolaoRadiusShape.xxl,
+            color = DeepNavy,
+            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+        ) {
+            ParticipantHitsContent(
+                name = uiState.selectedParticipantName,
+                hits = uiState.selectedParticipantHits,
+                allMatches = uiState.allMatches,
+                onClose = onDismiss
+            )
+        }
+    }
+}
 
-                                Row(
-                                    modifier = Modifier.width(110.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    BolaoText(
-                                        stringResource(Res.string.ranking_header_points),
-                                        modifier = Modifier.width(40.dp),
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        color = TextMuted,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center
-                                    )
-                                    BolaoText(
-                                        stringResource(Res.string.ranking_exact_emoji),
-                                        modifier = Modifier.width(30.dp),
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        textAlign = TextAlign.Center
-                                    )
-                                    BolaoText(
-                                        stringResource(Res.string.ranking_correct_emoji),
-                                        modifier = Modifier.width(30.dp),
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(4.dp))
-                    }
-
-                    // ── List Section ─────────────────────────────────────────────────
-                    itemsIndexed(
-                        items = uiState.entries,
-                        key = { _, entry -> "rank-${entry.userId}" },
-                        contentType = { _, _ -> "ranking-row" }
-                    ) { index, entry ->
-                        RankingRow(
-                            position = index + 1,
-                            entry = entry,
-                            isCurrentUser = entry.userId == uiState.currentUserId,
-                            onClick = {
-                                viewModel.selectParticipant(entry)
-                                showHitsDialog = true
-                            }
-                        )
-                    }
-
-                    // ── Legend Section ───────────────────────────────────────────────
-                    item(key = "legend") {
-                        Spacer(Modifier.height(24.dp))
-                        Column(
-                            modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = BolaoSpacing.xs)
-                                .clip(BolaoRadiusShape.lg)
-                                .background(NavyCard.copy(alpha = 0.4f))
-                                .border(1.dp, GlassBorder, BolaoRadiusShape.lg)
-                                .padding(BolaoSpacing.xl),
-                            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
-                        ) {
-                            BolaoText(
-                                stringResource(Res.string.ranking_legend_title),
-                                fontSize = BolaoTypography.bodyMedium.fontSize,
-                                fontWeight = FontWeight.Black,
-                                color = Color.White.copy(alpha = 0.5f),
-                                letterSpacing = 1.5.sp
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                BolaoText(stringResource(Res.string.ranking_exact_emoji), fontSize = BolaoTypography.bodyLarge.fontSize)
-                                Spacer(Modifier.width(12.dp))
-                                Column {
-                                    BolaoText(
-                                        stringResource(Res.string.ranking_legend_exact_title),
-                                        fontSize = BolaoTypography.bodyLarge.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                    BolaoText(
-                                        stringResource(Res.string.ranking_legend_exact_description),
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        color = TextMuted
-                                    )
-                                }
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                BolaoText(stringResource(Res.string.ranking_correct_emoji), fontSize = BolaoTypography.bodyLarge.fontSize)
-                                Spacer(Modifier.width(12.dp))
-                                Column {
-                                    BolaoText(
-                                        stringResource(Res.string.ranking_legend_correct_title),
-                                        fontSize = BolaoTypography.bodyLarge.fontSize,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                    BolaoText(
-                                        stringResource(Res.string.ranking_legend_correct_description),
-                                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                                        color = TextMuted
-                                    )
-                                }
-                            }
-                        }
-                    }
+@Composable
+private fun RankingList(uiState: RankingUiState, onEntryClick: (RankingEntry) -> Unit) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 60.dp),
+            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
+        ) {
+            // ── Podium Section ───────────────────────────────────────────────
+            if (uiState.entries.size >= 3) {
+                item(key = "podium", contentType = "podium") {
+                    Spacer(Modifier.height(12.dp))
+                    Podium(
+                        first = uiState.entries[0],
+                        second = uiState.entries[1],
+                        third = uiState.entries[2],
+                        currentUserId = uiState.currentUserId,
+                        onEntryClick = onEntryClick
+                    )
+                    Spacer(Modifier.height(20.dp))
                 }
+            }
 
-                // Top shadow/blur
-                Box(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(20.dp)
-                        .background(Brush.verticalGradient(listOf(DeepNavy, Color.Transparent)))
-                        .align(Alignment.TopCenter)
-                )
+            // ── Header Stats ──────────────────────────────────────────────────
+            item(key = "header-stats", contentType = "header") {
+                RankingHeaderStats()
+                Spacer(Modifier.height(4.dp))
+            }
 
-                // Bottom shadow/blur
-                Box(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(40.dp)
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, DeepNavy)))
-                        .align(Alignment.BottomCenter)
+            // ── List Section ─────────────────────────────────────────────────
+            itemsIndexed(
+                items = uiState.entries,
+                key = { _, entry -> "rank-${entry.userId}" },
+                contentType = { _, _ -> "ranking-row" }
+            ) { index, entry ->
+                RankingRow(
+                    position = index + 1,
+                    entry = entry,
+                    isCurrentUser = entry.userId == uiState.currentUserId,
+                    onClick = { onEntryClick(entry) }
                 )
             }
+
+            // ── Legend Section ───────────────────────────────────────────────
+            item(key = "legend") {
+                Spacer(Modifier.height(24.dp))
+                RankingLegendCard()
+            }
+        }
+
+        RankingEdgeShadows()
     }
+}
+
+@Composable
+private fun RankingHeaderStats() {
+    BolaoSurface(
+        color = NavyCard.copy(alpha = 0.5f),
+        shape = BolaoRadiusShape.md,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.md),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BolaoText(
+                stringResource(Res.string.ranking_header_position),
+                modifier = Modifier.width(30.dp),
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                color = TextMuted,
+                fontWeight = FontWeight.Bold
+            )
+            BolaoText(
+                stringResource(Res.string.ranking_header_participant),
+                modifier = Modifier.weight(1f),
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                color = TextMuted,
+                fontWeight = FontWeight.Bold
+            )
+
+            Row(
+                modifier = Modifier.width(110.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                BolaoText(
+                    stringResource(Res.string.ranking_header_points),
+                    modifier = Modifier.width(40.dp),
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    color = TextMuted,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                BolaoText(
+                    stringResource(Res.string.ranking_exact_emoji),
+                    modifier = Modifier.width(30.dp),
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    textAlign = TextAlign.Center
+                )
+                BolaoText(
+                    stringResource(Res.string.ranking_correct_emoji),
+                    modifier = Modifier.width(30.dp),
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RankingLegendCard() {
+    Column(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = BolaoSpacing.xs)
+            .clip(BolaoRadiusShape.lg)
+            .background(NavyCard.copy(alpha = 0.4f))
+            .border(1.dp, GlassBorder, BolaoRadiusShape.lg)
+            .padding(BolaoSpacing.xl),
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
+    ) {
+        BolaoText(
+            stringResource(Res.string.ranking_legend_title),
+            fontSize = BolaoTypography.bodyMedium.fontSize,
+            fontWeight = FontWeight.Black,
+            color = Color.White.copy(alpha = 0.5f),
+            letterSpacing = 1.5.sp
+        )
+        RankingLegendRow(
+            emoji = stringResource(Res.string.ranking_exact_emoji),
+            title = stringResource(Res.string.ranking_legend_exact_title),
+            description = stringResource(Res.string.ranking_legend_exact_description)
+        )
+        RankingLegendRow(
+            emoji = stringResource(Res.string.ranking_correct_emoji),
+            title = stringResource(Res.string.ranking_legend_correct_title),
+            description = stringResource(Res.string.ranking_legend_correct_description)
+        )
+    }
+}
+
+@Composable
+private fun RankingLegendRow(emoji: String, title: String, description: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        BolaoText(emoji, fontSize = BolaoTypography.bodyLarge.fontSize)
+        Spacer(Modifier.width(12.dp))
+        Column {
+            BolaoText(
+                title,
+                fontSize = BolaoTypography.bodyLarge.fontSize,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            BolaoText(
+                description,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                color = TextMuted
+            )
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.RankingEdgeShadows() {
+    // Top shadow/blur
+    Box(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .height(20.dp)
+            .background(Brush.verticalGradient(listOf(DeepNavy, Color.Transparent)))
+            .align(Alignment.TopCenter)
+    )
+
+    // Bottom shadow/blur
+    Box(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .background(Brush.verticalGradient(listOf(Color.Transparent, DeepNavy)))
+            .align(Alignment.BottomCenter)
+    )
 }
 
 @Composable
@@ -396,73 +414,80 @@ private fun PodiumPillar(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
     ) {
-        // Avatar with crown for #1
-        Box(contentAlignment = Alignment.TopCenter) {
-            UserAvatar(
-                initials = entry.userName.getInitials(),
-                size = if (position == 1) 64.dp else 52.dp,
-                fontSize = if (position == 1) 24.sp else 20.sp,
-                borderColor = if (isCurrentUser) Neon else accentColor.copy(alpha = 0.5f)
-            )
-            if (position == 1) {
-                BolaoText(
-                    stringResource(Res.string.ranking_podium_crown_emoji),
-                    modifier = Modifier.offset(y = (-18).dp),
-                    fontSize = BolaoTypography.headlineMedium.fontSize
-                )
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        BolaoText(
-            text = entry.userNickname.ifBlank { entry.userName.split(" ").first() },
-            fontSize = BolaoTypography.bodyMedium.fontSize,
-            fontWeight = FontWeight.Bold,
-            color = if (isCurrentUser) Neon else Color.White,
-            maxLines = 1
-        )
-
+        PodiumAvatar(entry = entry, position = position, isCurrentUser = isCurrentUser, accentColor = accentColor)
         Spacer(Modifier.height(12.dp))
+        PodiumBar(entry = entry, position = position, medal = medal, accentColor = accentColor, height = height)
+    }
+}
 
-        // Pillar
-        BolaoSurface(
-            color = NavyCard,
-            shape = RoundedCornerShape(topStart = BolaoRadius.lg, topEnd = BolaoRadius.lg),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
+@Composable
+private fun PodiumAvatar(entry: RankingEntry, position: Int, isCurrentUser: Boolean, accentColor: Color) {
+    // Avatar with crown for #1
+    Box(contentAlignment = Alignment.TopCenter) {
+        UserAvatar(
+            initials = entry.userName.getInitials(),
+            size = if (position == 1) 64.dp else 52.dp,
+            fontSize = if (position == 1) 24.sp else 20.sp,
+            borderColor = if (isCurrentUser) Neon else accentColor.copy(alpha = 0.5f)
+        )
+        if (position == 1) {
+            BolaoText(
+                stringResource(Res.string.ranking_podium_crown_emoji),
+                modifier = Modifier.offset(y = (-18).dp),
+                fontSize = BolaoTypography.headlineMedium.fontSize
+            )
+        }
+    }
+
+    Spacer(Modifier.height(8.dp))
+
+    BolaoText(
+        text = entry.userNickname.ifBlank { entry.userName.split(" ").first() },
+        fontSize = BolaoTypography.bodyMedium.fontSize,
+        fontWeight = FontWeight.Bold,
+        color = if (isCurrentUser) Neon else Color.White,
+        maxLines = 1
+    )
+}
+
+@Composable
+private fun PodiumBar(entry: RankingEntry, position: Int, medal: String, accentColor: Color, height: androidx.compose.ui.unit.Dp) {
+    BolaoSurface(
+        color = NavyCard,
+        shape = RoundedCornerShape(topStart = BolaoRadius.lg, topEnd = BolaoRadius.lg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .height(height)
+    ) {
+        Box(
             modifier =
             Modifier
-                .fillMaxWidth()
-                .height(height)
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(accentColor.copy(alpha = 0.15f), Color.Transparent)
+                    )
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(accentColor.copy(alpha = 0.15f), Color.Transparent)
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    BolaoText(medal, fontSize = BolaoTypography.titleLarge.fontSize)
-                    Spacer(Modifier.height(4.dp))
-                    BolaoText(
-                        text = entry.points.toString(),
-                        fontSize = if (position == 1) 24.sp else 20.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                    BolaoText(
-                        stringResource(Res.string.ranking_podium_points_label),
-                        fontSize = BolaoTypography.labelSmall.fontSize,
-                        fontWeight = FontWeight.Bold,
-                        color = accentColor,
-                        letterSpacing = 1.sp
-                    )
-                }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                BolaoText(medal, fontSize = BolaoTypography.titleLarge.fontSize)
+                Spacer(Modifier.height(4.dp))
+                BolaoText(
+                    text = entry.points.toString(),
+                    fontSize = if (position == 1) 24.sp else 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+                BolaoText(
+                    stringResource(Res.string.ranking_podium_points_label),
+                    fontSize = BolaoTypography.labelSmall.fontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor,
+                    letterSpacing = 1.sp
+                )
             }
         }
     }
@@ -508,54 +533,62 @@ private fun RankingRow(position: Int, entry: RankingEntry, isCurrentUser: Boolea
 
             Spacer(Modifier.width(12.dp))
 
-            // Name
-            Column(modifier = Modifier.weight(1f)) {
-                val displayName = entry.userNickname.ifBlank { entry.userName }
-                val label =
-                    if (isCurrentUser) {
-                        stringResource(Res.string.ranking_row_you_suffix, displayName)
-                    } else {
-                        displayName
-                    }
-                BolaoText(
-                    text = label,
-                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 1
-                )
-            }
+            RankingRowName(entry = entry, isCurrentUser = isCurrentUser, modifier = Modifier.weight(1f))
 
-            // Stats
-            Row(
-                modifier = Modifier.width(110.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                BolaoText(
-                    text = entry.points.toString(),
-                    modifier = Modifier.width(40.dp),
-                    fontSize = BolaoTypography.titleLarge.fontSize,
-                    fontWeight = FontWeight.Black,
-                    color = if (isCurrentUser) Neon else Color.White,
-                    textAlign = TextAlign.Center
-                )
-                BolaoText(
-                    text = entry.exactScores.toString(),
-                    modifier = Modifier.width(30.dp),
-                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                    color = TextMuted,
-                    textAlign = TextAlign.Center
-                )
-                BolaoText(
-                    text = entry.correctResults.toString(),
-                    modifier = Modifier.width(30.dp),
-                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                    color = TextMuted,
-                    textAlign = TextAlign.Center
-                )
-            }
+            RankingRowStats(entry = entry, isCurrentUser = isCurrentUser)
         }
+    }
+}
+
+@Composable
+private fun RankingRowName(entry: RankingEntry, isCurrentUser: Boolean, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        val displayName = entry.userNickname.ifBlank { entry.userName }
+        val label =
+            if (isCurrentUser) {
+                stringResource(Res.string.ranking_row_you_suffix, displayName)
+            } else {
+                displayName
+            }
+        BolaoText(
+            text = label,
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun RankingRowStats(entry: RankingEntry, isCurrentUser: Boolean) {
+    Row(
+        modifier = Modifier.width(110.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        BolaoText(
+            text = entry.points.toString(),
+            modifier = Modifier.width(40.dp),
+            fontSize = BolaoTypography.titleLarge.fontSize,
+            fontWeight = FontWeight.Black,
+            color = if (isCurrentUser) Neon else Color.White,
+            textAlign = TextAlign.Center
+        )
+        BolaoText(
+            text = entry.exactScores.toString(),
+            modifier = Modifier.width(30.dp),
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            color = TextMuted,
+            textAlign = TextAlign.Center
+        )
+        BolaoText(
+            text = entry.correctResults.toString(),
+            modifier = Modifier.width(30.dp),
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            color = TextMuted,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -657,76 +690,103 @@ private fun HitItem(hit: ParticipantHit, allMatches: List<Match>) {
             modifier = Modifier.padding(BolaoSpacing.lg),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                BolaoText(
-                    text = stringResource(Res.string.ranking_hit_item_match_names, hName, aName),
-                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+            HitItemInfo(
+                hit = hit,
+                hName = hName,
+                aName = aName,
+                date = date,
+                scoreLabel = scoreLabel,
+                roundPrefix = roundPrefix,
+                groupPrefix = groupPrefix,
+                modifier = Modifier.weight(1f)
+            )
+            HitItemPredictionBadge(hit = hit, accentColor = accentColor)
+        }
+    }
+}
 
-                Spacer(Modifier.height(4.dp))
+@Composable
+private fun HitItemInfo(
+    hit: ParticipantHit,
+    hName: String,
+    aName: String,
+    date: String,
+    scoreLabel: String,
+    roundPrefix: String,
+    groupPrefix: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        BolaoText(
+            text = stringResource(Res.string.ranking_hit_item_match_names, hName, aName),
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
 
-                val groupInfo =
-                    hit.match.group?.let { g ->
-                        val clean =
-                            g.replace("Grupo", "", ignoreCase = true)
-                                .replace("Rodada", "", ignoreCase = true)
-                                .trim()
-                        if (clean.toIntOrNull() != null) roundPrefix.replace("%1\$s", clean) else groupPrefix.replace("%1\$s", clean)
-                    } ?: ""
+        Spacer(Modifier.height(4.dp))
 
-                val separator = if (groupInfo.isNotEmpty()) " • " else ""
+        val groupInfo =
+            hit.match.group?.let { g ->
+                val clean =
+                    g.replace("Grupo", "", ignoreCase = true)
+                        .replace("Rodada", "", ignoreCase = true)
+                        .trim()
+                if (clean.toIntOrNull() != null) roundPrefix.replace("%1\$s", clean) else groupPrefix.replace("%1\$s", clean)
+            } ?: ""
 
-                BolaoText(
-                    text = "$groupInfo$separator$date • $scoreLabel",
-                    fontSize = BolaoTypography.bodyMedium.fontSize,
-                    color = TextMuted
-                )
-            }
+        val separator = if (groupInfo.isNotEmpty()) " • " else ""
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Prediction
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    BolaoText(
-                        text = stringResource(Res.string.ranking_hit_item_prediction_label),
-                        fontSize = BolaoTypography.labelSmall.fontSize,
-                        fontWeight = FontWeight.Black,
-                        color = TextMuted,
-                        letterSpacing = 0.5.sp
-                    )
-                    BolaoText(
-                        text =
-                        stringResource(
-                            Res.string.ranking_hit_item_prediction_score,
-                            hit.prediction.homeScore.toString(),
-                            hit.prediction.awayScore.toString()
-                        ),
-                        fontSize = BolaoTypography.titleLarge.fontSize,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                }
+        BolaoText(
+            text = "$groupInfo$separator$date • $scoreLabel",
+            fontSize = BolaoTypography.bodyMedium.fontSize,
+            color = TextMuted
+        )
+    }
+}
 
-                Spacer(Modifier.width(16.dp))
+@Composable
+private fun HitItemPredictionBadge(hit: ParticipantHit, accentColor: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Prediction
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            BolaoText(
+                text = stringResource(Res.string.ranking_hit_item_prediction_label),
+                fontSize = BolaoTypography.labelSmall.fontSize,
+                fontWeight = FontWeight.Black,
+                color = TextMuted,
+                letterSpacing = 0.5.sp
+            )
+            BolaoText(
+                text =
+                stringResource(
+                    Res.string.ranking_hit_item_prediction_score,
+                    hit.prediction.homeScore.toString(),
+                    hit.prediction.awayScore.toString()
+                ),
+                fontSize = BolaoTypography.titleLarge.fontSize,
+                fontWeight = FontWeight.Black,
+                color = Color.White
+            )
+        }
 
-                // Points
-                Box(
-                    modifier =
-                    Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(accentColor),
-                    contentAlignment = Alignment.Center
-                ) {
-                    BolaoText(
-                        text = "+${hit.points}",
-                        fontSize = BolaoTypography.bodyLarge.fontSize,
-                        fontWeight = FontWeight.Black,
-                        color = DeepNavy
-                    )
-                }
-            }
+        Spacer(Modifier.width(16.dp))
+
+        // Points
+        Box(
+            modifier =
+            Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(accentColor),
+            contentAlignment = Alignment.Center
+        ) {
+            BolaoText(
+                text = "+${hit.points}",
+                fontSize = BolaoTypography.bodyLarge.fontSize,
+                fontWeight = FontWeight.Black,
+                color = DeepNavy
+            )
         }
     }
 }

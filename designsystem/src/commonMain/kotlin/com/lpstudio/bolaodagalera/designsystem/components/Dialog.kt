@@ -10,10 +10,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import bolaodagalera.designsystem.generated.resources.Res
+import bolaodagalera.designsystem.generated.resources.dialog_dismiss_default
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoElevation
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Standard confirmation dialog (title + message + confirm/cancel), for the
@@ -27,7 +30,7 @@ fun BolaoConfirmDialog(
     confirmText: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    dismissText: String = "Cancelar",
+    dismissText: String = stringResource(Res.string.dialog_dismiss_default),
     isDestructive: Boolean = false,
     tonalElevation: Dp = BolaoElevation.level3
 ) {

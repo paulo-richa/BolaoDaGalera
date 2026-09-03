@@ -149,7 +149,7 @@ class AuthViewModel(
                             _uiState.update { it.copy(isLoading = false, error = "Este telefone já está em uso.") }
                             return@launch
                         }
-                    } catch (e: Exception) {
+                    } catch (ignored: Exception) {
                         // Ignore timeout on the check and proceed
                     }
                 }
@@ -160,7 +160,7 @@ class AuthViewModel(
                             _uiState.update { it.copy(isLoading = false, error = "Este apelido já está em uso.") }
                             return@launch
                         }
-                    } catch (e: Exception) {
+                    } catch (ignored: Exception) {
                         // Ignore timeout on the check and proceed
                     }
                 }

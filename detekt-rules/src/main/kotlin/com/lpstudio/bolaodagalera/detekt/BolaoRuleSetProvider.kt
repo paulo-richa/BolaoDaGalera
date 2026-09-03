@@ -7,15 +7,14 @@ import io.gitlab.arturbosch.detekt.api.RuleSetProvider
 class BolaoRuleSetProvider : RuleSetProvider {
     override val ruleSetId: String = "bolao-design-system"
 
-    override fun instance(config: Config): RuleSet =
-        RuleSet(
-            ruleSetId,
-            listOf(
-                NoHardcodedStringInDesignSystem(config),
-                NoRawFontSize(config),
-                NoRawCornerRadius(config),
-                NoRawSpacingDp(config),
-                NoRawElevation(config)
-            )
+    override fun instance(config: Config): RuleSet = RuleSet(
+        ruleSetId,
+        listOf(
+            NoHardcodedStringInDesignSystem(config),
+            NoRawFontSize(config),
+            NoRawCornerRadius(config),
+            NoRawSpacingDp(config),
+            NoRawElevation(config)
         )
+    )
 }

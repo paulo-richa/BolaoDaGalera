@@ -76,8 +76,20 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
         if (a.phase == Phase.GROUP_STAGE && b.phase == Phase.GROUP_STAGE) {
             a.matchDateMillis.compareTo(b.matchDateMillis)
         } else if (a.phase != Phase.GROUP_STAGE && b.phase != Phase.GROUP_STAGE && a.phase == b.phase) {
-            val orderA = if (a.matchOrder > 0) a.matchOrder else a.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
-            val orderB = if (b.matchOrder > 0) b.matchOrder else b.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: 99
+            val orderA = if (a.matchOrder >
+                0
+            ) {
+                a.matchOrder
+            } else {
+                a.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: UNKNOWN_MATCH_ORDER_FALLBACK
+            }
+            val orderB = if (b.matchOrder >
+                0
+            ) {
+                b.matchOrder
+            } else {
+                b.id.split("-").lastOrNull()?.filter { it.isDigit() }?.toIntOrNull() ?: UNKNOWN_MATCH_ORDER_FALLBACK
+            }
 
             if (orderA != orderB) {
                 orderA.compareTo(orderB)
@@ -172,7 +184,7 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
     // championships - this reduces reads and the size of the open listener.
     override fun getAllMatches(): Flow<List<Match>> {
         val now = TimeSource.nowMillis()
-        val window = 3 * 24 * 3600_000L
+        val window = TODAY_WINDOW_DAYS * HOURS_PER_DAY * MILLIS_PER_HOUR
         return db.collectionGroup("matches")
             .where { "matchDateMillis" greaterThanOrEqualTo (now - window) }
             .where { "matchDateMillis" lessThanOrEqualTo (now + window) }
@@ -183,5 +195,14 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
                 logger.e(e) { "Erro no getAllMatches" }
                 emit(emptyList())
             }
+    }
+
+    private companion object {
+        private const val TODAY_WINDOW_DAYS = 3L
+        private const val HOURS_PER_DAY = 24L
+        private const val MILLIS_PER_HOUR = 3_600_000L
+
+        /** Used when a match id has no parseable order suffix, so it sorts after known-ordered matches. */
+        private const val UNKNOWN_MATCH_ORDER_FALLBACK = 99
     }
 }

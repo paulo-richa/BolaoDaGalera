@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>TooGenericExceptionCaught:RemoteConfigManager.kt$RemoteConfigManager$e: Exception</ID>
+    <ID>TooManyFunctions:FirebaseAuthRepository.kt$FirebaseAuthRepository : AuthRepository</ID>
+    <ID>TooManyFunctions:FirebaseBolaoRepository.kt$FirebaseBolaoRepository : BolaoRepository</ID>
+  </CurrentIssues>
+</SmellBaseline>

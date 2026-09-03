@@ -109,138 +109,178 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
             // ── Header ─────────────────────────────────────────────────────────
             BolaoTopBar(title = stringResource(Res.string.add_participants_top_bar_title), onNavigateBack = onNavigateBack)
 
-            Column(
-                modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = BolaoSpacing.xxl)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Spacer(Modifier.height(20.dp))
-
-                BolaoText(
-                    stringResource(Res.string.add_participants_section_title),
-                    fontSize = BolaoTypography.bodyMedium.fontSize,
-                    fontWeight = FontWeight.Bold,
-                    color = TextMuted,
-                    letterSpacing = 1.5.sp
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                // Single input field that adapts keyboard/validation to the detected type
-                BolaoTextField(
-                    value = identifier,
-                    onValueChange = { identifier = it },
-                    label = stringResource(Res.string.add_participants_field_identifier_label),
-                    keyboardOptions =
-                    KeyboardOptions(
-                        keyboardType =
-                        when (detectedType) {
-                            ParticipantInputType.EMAIL -> KeyboardType.Email
-                            ParticipantInputType.PHONE -> KeyboardType.Phone
-                            else -> KeyboardType.Text
-                        }
-                    )
-                )
-
-                Spacer(Modifier.height(24.dp))
-
-                if (uiState.showSuccessMessage) {
-                    Box(
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(BolaoRadiusShape.md)
-                            .background(SuccessGreen.copy(alpha = 0.1f))
-                            .border(1.dp, SuccessGreen.copy(alpha = 0.3f), BolaoRadiusShape.md)
-                            .padding(BolaoSpacing.lg),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        BolaoText(
-                            stringResource(Res.string.add_participants_success_message),
-                            color = SuccessGreen,
-                            fontSize = BolaoTypography.bodyLarge.fontSize,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    Spacer(Modifier.height(24.dp))
-                }
-
-                error?.let {
-                    BolaoText(
-                        it,
-                        color = ErrorRed,
-                        fontSize = BolaoTypography.bodyMedium.fontSize,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.lg),
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                // Single action: send invitation
-                BolaoButton(
-                    text = stringResource(Res.string.add_participants_button_send_invite),
-                    isLoading = uiState.isLoading,
-                    enabled = identifier.isNotBlank() && !uiState.isLoading,
-                    onClick = { viewModel.sendInvite(identifier) }
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                BolaoOutlinedButton(
-                    onClick = {
-                        launcherProvider.shareText(shareMessage)
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = BolaoRadiusShape.lg,
-                    border = BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
-                    contentColor = Neon
-                ) {
-                    BolaoIcon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    BolaoText(
-                        stringResource(Res.string.add_participants_button_share_link),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = BolaoTypography.titleLarge.fontSize
-                    )
-                }
-
-                Spacer(Modifier.height(32.dp))
-
-                // Info section
-                Column(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(BolaoRadiusShape.lg)
-                        .background(NavyElevated)
-                        .padding(BolaoSpacing.xl),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    BolaoText(stringResource(Res.string.add_participants_info_emoji), fontSize = BolaoTypography.displayMedium.fontSize)
-                    Spacer(Modifier.height(12.dp))
-                    BolaoText(
-                        stringResource(Res.string.add_participants_info_title),
-                        fontSize = BolaoTypography.titleLarge.fontSize,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    BolaoText(
-                        stringResource(Res.string.add_participants_info_message),
-                        fontSize = BolaoTypography.bodyLarge.fontSize,
-                        color = TextMuted,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 20.sp
-                    )
-                }
-
-                if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
-                    val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-                    Spacer(Modifier.height(keyboardHeight + 100.dp))
-                }
-            }
+            AddParticipantsBody(
+                identifier = identifier,
+                onIdentifierChange = { identifier = it },
+                detectedType = detectedType,
+                showSuccessMessage = uiState.showSuccessMessage,
+                error = error,
+                isLoading = uiState.isLoading,
+                onSendInvite = { viewModel.sendInvite(identifier) },
+                onShareClick = { launcherProvider.shareText(shareMessage) }
+            )
         }
+    }
+}
+
+@Composable
+private fun AddParticipantsBody(
+    identifier: String,
+    onIdentifierChange: (String) -> Unit,
+    detectedType: ParticipantInputType,
+    showSuccessMessage: Boolean,
+    error: String?,
+    isLoading: Boolean,
+    onSendInvite: () -> Unit,
+    onShareClick: () -> Unit
+) {
+    Column(
+        modifier =
+        Modifier
+            .fillMaxSize()
+            .padding(horizontal = BolaoSpacing.xxl)
+            .verticalScroll(rememberScrollState())
+    ) {
+        Spacer(Modifier.height(20.dp))
+
+        BolaoText(
+            stringResource(Res.string.add_participants_section_title),
+            fontSize = BolaoTypography.bodyMedium.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = TextMuted,
+            letterSpacing = 1.5.sp
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Single input field that adapts keyboard/validation to the detected type
+        BolaoTextField(
+            value = identifier,
+            onValueChange = onIdentifierChange,
+            label = stringResource(Res.string.add_participants_field_identifier_label),
+            keyboardOptions =
+            KeyboardOptions(
+                keyboardType =
+                when (detectedType) {
+                    ParticipantInputType.EMAIL -> KeyboardType.Email
+                    ParticipantInputType.PHONE -> KeyboardType.Phone
+                    else -> KeyboardType.Text
+                }
+            )
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        if (showSuccessMessage) {
+            AddParticipantsSuccessBanner()
+            Spacer(Modifier.height(24.dp))
+        }
+
+        error?.let {
+            BolaoText(
+                it,
+                color = ErrorRed,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.lg),
+                textAlign = TextAlign.Center
+            )
+        }
+
+        AddParticipantsActions(
+            isLoading = isLoading,
+            canSend = identifier.isNotBlank() && !isLoading,
+            onSendInvite = onSendInvite,
+            onShareClick = onShareClick
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        AddParticipantsInfoSection()
+
+        if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
+            val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+            Spacer(Modifier.height(keyboardHeight + 100.dp))
+        }
+    }
+}
+
+@Composable
+private fun AddParticipantsSuccessBanner() {
+    Box(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .clip(BolaoRadiusShape.md)
+            .background(SuccessGreen.copy(alpha = 0.1f))
+            .border(1.dp, SuccessGreen.copy(alpha = 0.3f), BolaoRadiusShape.md)
+            .padding(BolaoSpacing.lg),
+        contentAlignment = Alignment.Center
+    ) {
+        BolaoText(
+            stringResource(Res.string.add_participants_success_message),
+            color = SuccessGreen,
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun AddParticipantsActions(isLoading: Boolean, canSend: Boolean, onSendInvite: () -> Unit, onShareClick: () -> Unit) {
+    // Single action: send invitation
+    BolaoButton(
+        text = stringResource(Res.string.add_participants_button_send_invite),
+        isLoading = isLoading,
+        enabled = canSend,
+        onClick = onSendInvite
+    )
+
+    Spacer(Modifier.height(16.dp))
+
+    BolaoOutlinedButton(
+        onClick = onShareClick,
+        modifier = Modifier.fillMaxWidth().height(52.dp),
+        shape = BolaoRadiusShape.lg,
+        border = BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
+        contentColor = Neon
+    ) {
+        BolaoIcon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        BolaoText(
+            stringResource(Res.string.add_participants_button_share_link),
+            fontWeight = FontWeight.SemiBold,
+            fontSize = BolaoTypography.titleLarge.fontSize
+        )
+    }
+}
+
+@Composable
+private fun AddParticipantsInfoSection() {
+    Column(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .clip(BolaoRadiusShape.lg)
+            .background(NavyElevated)
+            .padding(BolaoSpacing.xl),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        BolaoText(stringResource(Res.string.add_participants_info_emoji), fontSize = BolaoTypography.displayMedium.fontSize)
+        Spacer(Modifier.height(12.dp))
+        BolaoText(
+            stringResource(Res.string.add_participants_info_title),
+            fontSize = BolaoTypography.titleLarge.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Spacer(Modifier.height(8.dp))
+        BolaoText(
+            stringResource(Res.string.add_participants_info_message),
+            fontSize = BolaoTypography.bodyLarge.fontSize,
+            color = TextMuted,
+            textAlign = TextAlign.Center,
+            lineHeight = 20.sp
+        )
     }
 }

@@ -30,7 +30,7 @@ data class Match(
      * A match is considered "stuck" if it isn't finished but its date is more than 48h in the past.
      * This usually indicates an API error or a postponed match that wasn't updated.
      */
-    fun isStuck(now: Long): Boolean = !isFinished && now > (matchDateMillis + 48 * 3600_000L)
+    fun isStuck(now: Long): Boolean = !isFinished && now > (matchDateMillis + STUCK_THRESHOLD_MILLIS)
 
     /** The API / automatic bracket advancement hasn't set a date for this match yet. */
     val hasNoConfirmedDate: Boolean get() = matchDateMillis == NO_DATE_MILLIS
@@ -48,15 +48,11 @@ data class Match(
             return group.substringAfter("Rodada ").toIntOrNull() ?: 0
         }
 
-        // Legacy (GS-A-1, GS-B-3, etc)
-        // Each group has 6 matches (3 rounds of 2 matches each)
+        // Legacy (GS-A-1, GS-B-3, etc) - each group has 3 rounds of MATCHES_PER_ROUND
+        // matches each, so match number n falls in round ceil(n / MATCHES_PER_ROUND).
         val n = id.substringAfterLast("-").toIntOrNull() ?: return 0
-        return when (n) {
-            1, 2 -> 1
-            3, 4 -> 2
-            5, 6 -> 3
-            else -> 0
-        }
+        if (n !in 1..LEGACY_GROUP_MATCH_COUNT) return 0
+        return (n + MATCHES_PER_ROUND - 1) / MATCHES_PER_ROUND
     }
 
     companion object {
@@ -70,5 +66,12 @@ data class Match(
          * date, without overflowing sums like matchDateMillis + 48h.
          */
         const val NO_DATE_MILLIS = 9_999_999_999_999L
+
+        private const val HOURS_TO_MILLIS = 3_600_000L
+        private const val STUCK_THRESHOLD_HOURS = 48L
+        const val STUCK_THRESHOLD_MILLIS = STUCK_THRESHOLD_HOURS * HOURS_TO_MILLIS
+
+        private const val MATCHES_PER_ROUND = 2
+        private const val LEGACY_GROUP_MATCH_COUNT = 6
     }
 }

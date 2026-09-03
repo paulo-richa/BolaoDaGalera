@@ -168,13 +168,14 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                     mapOf(
                         "name" to "Novo Usuário",
                         "email" to "",
-                        "username" to "user_${userId.take(5)}",
+                        "username" to "user_${userId.take(PLACEHOLDER_USERNAME_ID_LENGTH)}",
                         "createdAt" to TimeSource.nowMillis()
                     ),
                     merge = true
                 )
             }
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // Best-effort: a missing user document only affects display data, not the join itself.
         }
 
         // 3. Add directly to the participants
@@ -307,7 +308,8 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                     db.collection("invitations").document(inviteDoc.id).delete()
                 }
             }
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // Best-effort: an orphaned invitation document is harmless clutter, not a correctness issue.
         }
     }
 
@@ -347,6 +349,11 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
 
     private fun generateCode(): String {
         val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        return (1..6).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+        return (1..BOLAO_CODE_LENGTH).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+    }
+
+    private companion object {
+        private const val PLACEHOLDER_USERNAME_ID_LENGTH = 5
+        private const val BOLAO_CODE_LENGTH = 6
     }
 }

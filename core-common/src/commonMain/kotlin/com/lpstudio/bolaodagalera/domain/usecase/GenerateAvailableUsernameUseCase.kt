@@ -29,7 +29,7 @@ class GenerateAvailableUsernameUseCase(private val authRepository: AuthRepositor
             candidates.add(firstName.take(1) + secondName)
         }
         candidates.add(firstName)
-        if (parts.size >= 3) {
+        if (parts.size >= MIN_PARTS_FOR_INITIALS_CANDIDATE) {
             candidates.add(firstName.take(1) + secondName.take(1) + lastPart)
         }
 
@@ -37,7 +37,7 @@ class GenerateAvailableUsernameUseCase(private val authRepository: AuthRepositor
         for (candidate in candidates) {
             try {
                 if (!authRepository.isUsernameInUse(candidate)) return candidate
-            } catch (e: Exception) {
+            } catch (ignored: Exception) {
                 // Permission error while signed out: fall back to the first candidate as a suggestion
                 return candidates.firstOrNull() ?: firstName
             }
@@ -48,12 +48,19 @@ class GenerateAvailableUsernameUseCase(private val authRepository: AuthRepositor
             var finalCandidate: String
             var attempts = 0
             do {
-                finalCandidate = firstName + kotlin.random.Random.nextInt(100, 999).toString()
+                finalCandidate = firstName + kotlin.random.Random.nextInt(SUFFIX_RANGE_START, SUFFIX_RANGE_END).toString()
                 attempts++
-            } while (attempts < 5 && authRepository.isUsernameInUse(finalCandidate))
+            } while (attempts < MAX_RANDOM_SUFFIX_ATTEMPTS && authRepository.isUsernameInUse(finalCandidate))
             finalCandidate
-        } catch (e: Exception) {
-            firstName + kotlin.random.Random.nextInt(100, 999).toString()
+        } catch (ignored: Exception) {
+            firstName + kotlin.random.Random.nextInt(SUFFIX_RANGE_START, SUFFIX_RANGE_END).toString()
         }
+    }
+
+    private companion object {
+        private const val MIN_PARTS_FOR_INITIALS_CANDIDATE = 3
+        private const val SUFFIX_RANGE_START = 100
+        private const val SUFFIX_RANGE_END = 999
+        private const val MAX_RANDOM_SUFFIX_ATTEMPTS = 5
     }
 }

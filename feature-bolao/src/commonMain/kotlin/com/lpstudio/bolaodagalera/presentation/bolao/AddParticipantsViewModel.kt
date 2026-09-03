@@ -61,7 +61,7 @@ class AddParticipantsViewModel(
         val trimmed = identifier.trim()
         return when {
             trimmed.contains("@") && trimmed.contains(".") -> ParticipantInputType.EMAIL
-            trimmed.filter { it.isDigit() }.length >= 8 -> ParticipantInputType.PHONE
+            trimmed.filter { it.isDigit() }.length >= MIN_PHONE_DIGITS -> ParticipantInputType.PHONE
             else -> ParticipantInputType.USER
         }
     }
@@ -96,7 +96,7 @@ class AddParticipantsViewModel(
                     }
 
                 try {
-                    withTimeout(3000) {
+                    withTimeout(INVITATION_SEND_TIMEOUT_MILLIS) {
                         invitationRepository.sendInvitation(
                             bolaoId = bolaoId,
                             bolaoName = _uiState.value.bolaoName,
@@ -109,12 +109,18 @@ class AddParticipantsViewModel(
                 }
 
                 _uiState.update { it.copy(isLoading = false, showSuccessMessage = true) }
-                delay(3000)
+                delay(SUCCESS_MESSAGE_DURATION_MILLIS)
                 _uiState.update { it.copy(showSuccessMessage = false) }
             } catch (e: Exception) {
                 crashReporter.recordException(e, "Failed to send invitation")
                 _uiState.update { it.copy(isLoading = false, error = AddParticipantsError.SEND_FAILED) }
             }
         }
+    }
+
+    private companion object {
+        private const val MIN_PHONE_DIGITS = 8
+        private const val INVITATION_SEND_TIMEOUT_MILLIS = 3000L
+        private const val SUCCESS_MESSAGE_DURATION_MILLIS = 3000L
     }
 }
