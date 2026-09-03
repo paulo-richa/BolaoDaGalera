@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.firebasePerf)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.kover)
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.androidxBaselineProfile)
     id("com.google.firebase.appdistribution")
@@ -139,6 +140,21 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    // Populated from GitHub Actions secrets in CI (ANDROID_KEYSTORE_PATH points at the
+    // keystore decoded from a base64 secret). Left unset for local builds, which stay
+    // unsigned/debug-signed as before - no local.properties or checked-in keystore needed.
+    val releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+    val firebaseServiceAccountPath = System.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
+    signingConfigs {
+        if (releaseKeystorePath != null) {
+            create("release") {
+                storeFile = file(releaseKeystorePath)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
@@ -147,11 +163,17 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (releaseKeystorePath != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             firebaseAppDistribution {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com"
                 releaseNotes = "v3.2.3 (Build 27): AdMob Android de produção e melhorias de validação."
+                if (firebaseServiceAccountPath != null) {
+                    serviceCredentialsFile = firebaseServiceAccountPath
+                }
             }
         }
         getByName("debug") {
@@ -160,6 +182,9 @@ android {
                 artifactType = "APK"
                 testers = "paulo.richa@hotmail.com"
                 releaseNotes = "v3.2.3 (Build 27): AdMob Android de produção e melhorias de validação."
+                if (firebaseServiceAccountPath != null) {
+                    serviceCredentialsFile = firebaseServiceAccountPath
+                }
             }
         }
     }
