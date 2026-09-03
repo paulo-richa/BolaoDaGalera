@@ -4,6 +4,7 @@ package com.lpstudio.bolaodagalera.domain.model
 enum class ErrorCategory {
     INVALID_CREDENTIALS,
     USER_NOT_FOUND,
+    NOT_FOUND,
     ALREADY_IN_USE,
     NETWORK,
     RATE_LIMITED,

@@ -4,11 +4,14 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.model.Bolao
+import com.lpstudio.bolaodagalera.domain.model.ErrorCategory
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,7 +32,8 @@ class JoinBolaoViewModel(
     private val authRepository: AuthRepository,
     private val crashReporter: CrashReporter,
     private val performanceMonitor: PerformanceMonitor,
-    private val analyticsTracker: AnalyticsTracker
+    private val analyticsTracker: AnalyticsTracker,
+    private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(JoinBolaoUiState())
     val uiState: StateFlow<JoinBolaoUiState> = _uiState.asStateFlow()
@@ -53,9 +57,14 @@ class JoinBolaoViewModel(
                     analyticsTracker.logEvent("bolao_join_requested", mapOf("bolao_id" to bolao.id))
                     _uiState.update { it.copy(joinedBolao = bolao, requestSent = true, isLoading = false) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao entrar no bolão")
-                _uiState.update { it.copy(error = e.message ?: "Código inválido.", isLoading = false) }
+                val message =
+                    errorReporter.reportAndClassify(e, "Erro ao entrar no bolão") { category ->
+                        if (category == ErrorCategory.NOT_FOUND) "Código inválido." else null
+                    }
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }

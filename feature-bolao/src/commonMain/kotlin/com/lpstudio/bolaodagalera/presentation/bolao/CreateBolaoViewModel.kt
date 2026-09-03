@@ -14,10 +14,13 @@ import com.lpstudio.bolaodagalera.domain.usecase.CheckKnockoutAvailabilityUseCas
 import com.lpstudio.bolaodagalera.domain.usecase.CheckPhaseAvailabilityUseCase
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -37,7 +40,8 @@ class CreateBolaoViewModel(
     private val performanceMonitor: PerformanceMonitor,
     private val analyticsTracker: AnalyticsTracker,
     private val checkPhaseAvailability: CheckPhaseAvailabilityUseCase = CheckPhaseAvailabilityUseCase(),
-    private val checkKnockoutAvailability: CheckKnockoutAvailabilityUseCase = CheckKnockoutAvailabilityUseCase()
+    private val checkKnockoutAvailability: CheckKnockoutAvailabilityUseCase = CheckKnockoutAvailabilityUseCase(),
+    private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CreateBolaoUiState())
     val uiState: StateFlow<CreateBolaoUiState> = _uiState.asStateFlow()
@@ -48,9 +52,14 @@ class CreateBolaoViewModel(
 
     private fun loadMatchesData() {
         viewModelScope.launch {
-            matchRepository.getAllMatches().collect { matches ->
-                _uiState.update { it.copy(allMatches = matches) }
-            }
+            matchRepository.getAllMatches()
+                .catch { e ->
+                    if (e is CancellationException) throw e
+                    errorReporter.report(e, "Erro ao carregar partidas para novo bolão")
+                }
+                .collect { matches ->
+                    _uiState.update { it.copy(allMatches = matches) }
+                }
         }
     }
 
@@ -87,9 +96,11 @@ class CreateBolaoViewModel(
                     }
                 analyticsTracker.logEvent("bolao_created", mapOf("championship_id" to championshipId, "scope" to scope.name))
                 _uiState.update { it.copy(createdBolao = bolao, isLoading = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao criar bolão")
-                _uiState.update { it.copy(error = e.message ?: "Erro ao criar bolão", isLoading = false) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao criar bolão")
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }

@@ -30,6 +30,7 @@ import com.lpstudio.bolaodagalera.presentation.navigation.NavGraph
 import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
 import com.lpstudio.bolaodagalera.util.AdManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
@@ -74,8 +75,10 @@ private fun AppSideEffects(
                 championshipRepository.refreshCache()
                 championshipRepository.getChampionships().collect { }
             }
-        } catch (_: Exception) {
-            // Silent failure
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            crashReporter.recordException(e, "Erro ao carregar Remote Config/campeonatos no App startup")
         }
     }
 }

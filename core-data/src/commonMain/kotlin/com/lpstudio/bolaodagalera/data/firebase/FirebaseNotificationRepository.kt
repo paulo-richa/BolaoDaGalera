@@ -5,13 +5,14 @@ import com.lpstudio.bolaodagalera.domain.model.NotificationType
 import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
+import com.lpstudio.bolaodagalera.observability.reportAndRethrow
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.Direction
 import dev.gitlive.firebase.firestore.FieldValue
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
@@ -58,15 +59,13 @@ class FirebaseNotificationRepository(private val crashReporter: CrashReporter) :
             .map { snapshot ->
                 snapshot.documents.map { doc -> doc.data<NotificationDto>().toDomain(doc.id) }
             }
-            .catch { e ->
-                crashReporter.recordException(e, "Erro ao observar notificações")
-                logger.e(e) { "Erro ao observar notificações" }
-                emit(emptyList())
-            }
+            .reportAndRethrow(crashReporter, "Erro ao observar notificações")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar notificações")
         logger.e(e) { "Erro crítico ao observar notificações" }
-        flowOf(emptyList())
+        flow { throw e }
     }
 
     override suspend fun markAsRead(notificationId: String) {

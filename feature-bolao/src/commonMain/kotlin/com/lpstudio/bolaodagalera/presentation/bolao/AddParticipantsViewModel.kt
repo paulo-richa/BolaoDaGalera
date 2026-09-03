@@ -7,7 +7,9 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
-import com.lpstudio.bolaodagalera.observability.appLogger
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,14 +31,13 @@ data class AddParticipantsUiState(
     val error: AddParticipantsError? = null
 )
 
-private val logger = appLogger("AddParticipantsViewModel")
-
 class AddParticipantsViewModel(
     private val bolaoRepository: BolaoRepository,
     private val authRepository: AuthRepository,
     private val invitationRepository: InvitationRepository,
     private val crashReporter: CrashReporter,
-    private val bolaoId: String
+    private val bolaoId: String,
+    private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AddParticipantsUiState())
     val uiState: StateFlow<AddParticipantsUiState> = _uiState.asStateFlow()
@@ -50,8 +51,10 @@ class AddParticipantsViewModel(
             try {
                 val bolao = bolaoRepository.getBolao(bolaoId)
                 _uiState.update { it.copy(bolaoName = bolao.name, bolaoCode = bolao.code) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Failed to load pool data for invitation")
+                errorReporter.report(e, "Falha ao carregar dados do bolão $bolaoId para convite")
             }
         }
     }
@@ -104,15 +107,24 @@ class AddParticipantsViewModel(
                             inviteeIdentifier = inviteeIdentifier
                         )
                     }
+                } catch (e: TimeoutCancellationException) {
+                    // Best-effort: shown as success below regardless, since a Cloud Function
+                    // retry path exists - but still tracked in Crashlytics so a systematic
+                    // failure here (not just a slow one-off) is visible.
+                    errorReporter.report(e, "Envio de convite in-app expirou (queued for later delivery)")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    logger.w(e) { "In-app invitation queued for later delivery (slow network)" }
+                    errorReporter.report(e, "Falha ao enviar convite in-app (queued for later delivery)")
                 }
 
                 _uiState.update { it.copy(isLoading = false, showSuccessMessage = true) }
                 delay(SUCCESS_MESSAGE_DURATION_MILLIS)
                 _uiState.update { it.copy(showSuccessMessage = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Failed to send invitation")
+                errorReporter.report(e, "Falha ao enviar convite")
                 _uiState.update { it.copy(isLoading = false, error = AddParticipantsError.SEND_FAILED) }
             }
         }

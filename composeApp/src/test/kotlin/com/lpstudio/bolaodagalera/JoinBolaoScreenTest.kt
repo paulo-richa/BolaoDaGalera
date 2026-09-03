@@ -104,7 +104,7 @@ class JoinBolaoScreenTest {
         composeTestRule.onNodeWithText("Entrar no Bolão").performScrollTo().performClick()
         composeTestRule.waitForIdle()
 
-        composeTestRule.onNodeWithText("Bolão não encontrado com o código ZZZZZZ").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Código inválido.").performScrollTo().assertIsDisplayed()
     }
 
     @Test

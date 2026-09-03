@@ -10,8 +10,9 @@ import com.lpstudio.bolaodagalera.domain.usecase.ClassifyExceptionUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.GenerateAvailableUsernameUseCase
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
-import com.lpstudio.bolaodagalera.observability.appLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,9 +38,9 @@ class AuthViewModel(
     private val performanceMonitor: PerformanceMonitor,
     private val analyticsTracker: AnalyticsTracker,
     private val generateAvailableUsernameUseCase: GenerateAvailableUsernameUseCase = GenerateAvailableUsernameUseCase(authRepository),
-    private val classifyException: ClassifyExceptionUseCase = ClassifyExceptionUseCase()
+    private val classifyException: ClassifyExceptionUseCase = ClassifyExceptionUseCase(),
+    private val errorReporter: ErrorReporter = ErrorReporter(crashReporter, classifyException)
 ) : ViewModel() {
-    private val logger = appLogger("AuthViewModel")
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
@@ -56,9 +57,11 @@ class AuthViewModel(
                 val user = performanceMonitor.trace("auth_login") { authRepository.signIn(email.trim(), password) }
                 analyticsTracker.logEvent("login")
                 _uiState.update { it.copy(user = user, isLoading = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao fazer login")
-                _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao fazer login", ::authMessageOverride)
+                _uiState.update { it.copy(isLoading = false, error = message) }
             }
         }
     }
@@ -73,8 +76,10 @@ class AuthViewModel(
             try {
                 val exists = authRepository.isEmailInUse(email.trim())
                 _uiState.update { it.copy(isLoading = false, emailExists = exists, checkedEmail = email.trim()) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao checar e-mail")
+                errorReporter.report(e, "Erro ao checar e-mail")
                 // Verification failure (e.g. network issue or enumeration protection) is
                 // inconclusive, so reset the state and surface a generic user-facing error.
                 _uiState.update {
@@ -126,14 +131,26 @@ class AuthViewModel(
                     }
                 analyticsTracker.logEvent("sign_up")
                 _uiState.update { it.copy(user = user, isLoading = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao registrar usuário")
-                _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao registrar usuário", ::authMessageOverride)
+                _uiState.update { it.copy(isLoading = false, error = message) }
             }
         }
     }
 
     fun updateProfile(name: String, phone: String, nickname: String) {
+        // Runs a duplicate-check call; an inconclusive check (e.g. timeout) is reported but must not block the caller.
+        suspend fun checkDuplicateSafely(context: String, check: suspend () -> Boolean): Boolean = try {
+            check()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            errorReporter.report(e, context)
+            false
+        }
+
         viewModelScope.launch {
             val currentUser = _uiState.value.user
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -142,34 +159,36 @@ class AuthViewModel(
                 val newNickname = nickname.trim()
                 val newName = name.trim()
 
-                // Quick duplicate checks
+                // Quick duplicate checks - an inconclusive check (e.g. timeout) must not block the update
                 if (newPhone.isNotBlank() && newPhone != currentUser?.phone) {
-                    try {
-                        if (authRepository.isPhoneInUse(newPhone)) {
-                            _uiState.update { it.copy(isLoading = false, error = "Este telefone já está em uso.") }
-                            return@launch
+                    val inUse =
+                        checkDuplicateSafely("Falha ao checar telefone duplicado (não bloqueia a atualização)") {
+                            authRepository.isPhoneInUse(newPhone)
                         }
-                    } catch (ignored: Exception) {
-                        // Ignore timeout on the check and proceed
+                    if (inUse) {
+                        _uiState.update { it.copy(isLoading = false, error = "Este telefone já está em uso.") }
+                        return@launch
                     }
                 }
 
                 if (newNickname.isNotBlank() && newNickname != currentUser?.nickname) {
-                    try {
-                        if (authRepository.isNicknameInUse(newNickname)) {
-                            _uiState.update { it.copy(isLoading = false, error = "Este apelido já está em uso.") }
-                            return@launch
+                    val inUse =
+                        checkDuplicateSafely("Falha ao checar apelido duplicado (não bloqueia a atualização)") {
+                            authRepository.isNicknameInUse(newNickname)
                         }
-                    } catch (ignored: Exception) {
-                        // Ignore timeout on the check and proceed
+                    if (inUse) {
+                        _uiState.update { it.copy(isLoading = false, error = "Este apelido já está em uso.") }
+                        return@launch
                     }
                 }
 
                 authRepository.updateProfile(newName, newPhone, newNickname)
                 _uiState.update { it.copy(isLoading = false, successMessage = "Perfil atualizado com sucesso!") }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao atualizar perfil")
-                _uiState.update { it.copy(isLoading = false, error = friendlyError(e)) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao atualizar perfil", ::authMessageOverride)
+                _uiState.update { it.copy(isLoading = false, error = message) }
             }
         }
     }
@@ -190,8 +209,10 @@ class AuthViewModel(
             try {
                 authRepository.sendPasswordResetEmail(email.trim())
                 _uiState.update { it.copy(isLoading = false, successMessage = "E-mail de recuperação enviado com sucesso!") }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao enviar e-mail de recuperação")
+                errorReporter.report(e, "Erro ao enviar e-mail de recuperação")
                 _uiState.update { it.copy(isLoading = false, error = "Erro ao enviar e-mail. Verifique se o e-mail está correto.") }
             }
         }
@@ -201,18 +222,11 @@ class AuthViewModel(
 
     suspend fun generateAvailableUsername(fullName: String): String = generateAvailableUsernameUseCase(fullName)
 
-    private fun friendlyError(e: Exception): String {
-        logger.e(e) { "Auth Error Debug" } // Internal debug log
-        return when (classifyException(e)) {
-            ErrorCategory.INVALID_CREDENTIALS -> "E-mail ou senha incorretos. Verifique os dados e tente novamente."
-            ErrorCategory.USER_NOT_FOUND -> "Usuário não encontrado. Crie uma conta para acessar."
-            ErrorCategory.ALREADY_IN_USE -> "Este e-mail já está sendo usado em outra conta."
-            ErrorCategory.NETWORK -> "Erro de conexão. Verifique sua internet e tente novamente."
-            ErrorCategory.RATE_LIMITED -> "Muitas tentativas falhas. Sua conta foi temporariamente bloqueada por segurança."
-            ErrorCategory.WEAK_PASSWORD -> "A senha é muito fraca. Use pelo menos 6 caracteres."
-            ErrorCategory.INVALID_EMAIL -> "O formato do e-mail é inválido."
-            ErrorCategory.PERMISSION -> "Aguardando autenticação para acessar dados. Tente novamente em instantes."
-            ErrorCategory.UNKNOWN -> "Ocorreu um erro inesperado. Por favor, tente novamente."
-        }
+    /** Auth-specific wording for categories where the shared [ErrorReporter] default doesn't fit this screen. */
+    private fun authMessageOverride(category: ErrorCategory): String? = when (category) {
+        ErrorCategory.ALREADY_IN_USE -> "Este e-mail já está sendo usado em outra conta."
+        ErrorCategory.RATE_LIMITED -> "Muitas tentativas falhas. Sua conta foi temporariamente bloqueada por segurança."
+        ErrorCategory.PERMISSION -> "Aguardando autenticação para acessar dados. Tente novamente em instantes."
+        else -> null
     }
 }

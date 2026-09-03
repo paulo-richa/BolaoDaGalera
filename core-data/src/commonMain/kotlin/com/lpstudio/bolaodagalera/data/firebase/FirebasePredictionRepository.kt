@@ -5,11 +5,11 @@ import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
+import com.lpstudio.bolaodagalera.observability.reportAndRethrow
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
@@ -63,15 +63,13 @@ class FirebasePredictionRepository(private val crashReporter: CrashReporter) : P
             .map { snapshot ->
                 snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
             }
-            .catch { e ->
-                crashReporter.recordException(e, "Erro no getUserPredictions")
-                logger.e(e) { "Erro no getUserPredictions" }
-                emit(emptyList())
-            }
+            .reportAndRethrow(crashReporter, "Erro no getUserPredictions")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico no getUserPredictions")
         logger.e(e) { "Erro crítico no getUserPredictions" }
-        kotlinx.coroutines.flow.flowOf(emptyList())
+        kotlinx.coroutines.flow.flow { throw e }
     }
 
     override fun getBolaoAllPredictions(bolaoId: String): Flow<List<Prediction>> = try {
@@ -80,15 +78,13 @@ class FirebasePredictionRepository(private val crashReporter: CrashReporter) : P
             .map { snapshot ->
                 snapshot.documents.map { doc -> doc.data<PredictionDto>().toDomain(doc.id) }
             }
-            .catch { e ->
-                crashReporter.recordException(e, "Erro ao observar todos os palpites do bolão $bolaoId")
-                logger.e(e) { "Erro ao observar todos os palpites do bolão $bolaoId" }
-                emit(emptyList())
-            }
+            .reportAndRethrow(crashReporter, "Erro ao observar todos os palpites do bolão $bolaoId")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar todos os palpites do bolão $bolaoId")
         logger.e(e) { "Erro crítico ao observar todos os palpites do bolão $bolaoId" }
-        kotlinx.coroutines.flow.flowOf(emptyList())
+        kotlinx.coroutines.flow.flow { throw e }
     }
 
     // Intentionally no try/catch here: savePrediction() uses this result to decide
@@ -136,8 +132,11 @@ class FirebasePredictionRepository(private val crashReporter: CrashReporter) : P
             snapshot.documents.forEach { doc ->
                 collection.document(doc.id).delete()
             }
-        } catch (ignored: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             // Best-effort cleanup: leftover predictions are harmless once the user has left the bolão.
+            logger.w(e) { "Falha ao limpar palpites de $userId no bolão $bolaoId (não bloqueia o leave)" }
         }
     }
 
@@ -184,14 +183,12 @@ class FirebasePredictionRepository(private val crashReporter: CrashReporter) : P
                         .thenBy { it.userName.lowercase() }
                 )
             }
-            .catch { e ->
-                crashReporter.recordException(e, "Erro ao ler ranking remoto do bolão $bolaoId")
-                logger.e(e) { "Erro ao ler ranking remoto do bolão $bolaoId" }
-                emit(emptyList())
-            }
+            .reportAndRethrow(crashReporter, "Erro ao ler ranking remoto do bolão $bolaoId")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao ler ranking remoto do bolão $bolaoId")
         logger.e(e) { "Erro crítico ao ler ranking remoto do bolão $bolaoId" }
-        kotlinx.coroutines.flow.flowOf(emptyList())
+        kotlinx.coroutines.flow.flow { throw e }
     }
 }

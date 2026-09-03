@@ -125,6 +125,12 @@ exceptions:
       - '**/data/**/*RepositoryImpl.kt'
       - '**/data/firebase/**'
       - '**/data/remote/**'
+      # Same architecture-boundary reasoning as above, for the handful of non-ViewModel call
+      # sites that also catch generic exceptions from an untyped Firebase/repository call and
+      # report+degrade gracefully rather than propagate.
+      - '**/domain/usecase/GenerateAvailableUsernameUseCase.kt'
+      - '**/presentation/auth/RegisterScreen.kt'
+      - '**/App.kt'
   # The Firebase repositories deliberately fail open on read/cleanup calls (return
   # a fallback value or silently skip a best-effort side effect) rather than
   # propagating a network/permission error up into the UI - the same boundary

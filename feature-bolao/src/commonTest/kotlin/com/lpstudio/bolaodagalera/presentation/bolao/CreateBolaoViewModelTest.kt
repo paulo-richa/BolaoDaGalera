@@ -171,7 +171,7 @@ class CreateBolaoViewModelTest {
 
         val state = viewModel.uiState.value
         assertNull(state.createdBolao)
-        assertEquals("Falha ao salvar", state.error)
+        assertEquals("Ocorreu um erro inesperado. Por favor, tente novamente.", state.error)
         assertFalse(state.isLoading)
     }
 }

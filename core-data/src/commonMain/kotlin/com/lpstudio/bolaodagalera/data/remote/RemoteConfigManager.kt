@@ -1,13 +1,17 @@
 package com.lpstudio.bolaodagalera.data.remote
 
+import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.appLogger
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.remoteconfig.remoteConfig
 import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class RemoteConfigManager {
+class RemoteConfigManager(private val crashReporter: CrashReporter) {
+    private val logger = appLogger("RemoteConfigManager")
     private val remoteConfig = Firebase.remoteConfig
 
     private val _isMaintenanceMode = MutableStateFlow(false)
@@ -28,8 +32,12 @@ class RemoteConfigManager {
             remoteConfig.fetchAndActivate()
             _isMaintenanceMode.value = remoteConfig.getValue("maintenance_mode").asBoolean()
             _showAds.value = remoteConfig.getValue("show_ads").asBoolean()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // On failure, keep the defaults
+            crashReporter.recordException(e, "Erro ao buscar Remote Config")
+            logger.w(e) { "Erro ao buscar Remote Config, mantendo defaults" }
         }
     }
 }

@@ -5,11 +5,12 @@ import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
+import com.lpstudio.bolaodagalera.observability.reportAndRethrow
 import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
@@ -109,15 +110,14 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
     override fun getMatches(championshipId: String): Flow<List<Match>> = getMatchesCollection(championshipId).snapshots.map { snap ->
         try {
             snap.documents.map { it.data<MatchDto>().toDomain(it.id) }.sortedForUi()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             crashReporter.recordException(e, "Erro ao mapear matches")
+            logger.e(e) { "Erro ao mapear matches de $championshipId" }
             emptyList()
         }
-    }.catch { e ->
-        crashReporter.recordException(e, "Erro ao observar matches de $championshipId")
-        logger.e(e) { "Erro ao observar matches de $championshipId" }
-        emit(emptyList())
-    }
+    }.reportAndRethrow(crashReporter, "Erro ao observar matches de $championshipId")
 
     override suspend fun getMatch(championshipId: String, matchId: String): Match {
         val doc = getMatchesCollection(championshipId).document(matchId).get()
@@ -174,8 +174,14 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
                 if (existing.isManual) return
             }
             collection.document(match.id).set(match.toDto(), merge = true)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            collection.document(match.id).set(match.toDto(), merge = true)
+            // Couldn't check isManual before writing (e.g. transient read failure) - log it
+            // instead of blindly overwriting, since that could silently discard a manual
+            // admin edit that the read would have otherwise protected.
+            crashReporter.recordException(e, "Erro ao checar isManual antes do upsert de ${match.id}")
+            logger.e(e) { "Erro ao checar isManual antes do upsert de ${match.id}, upsert pulado nesta rodada" }
         }
     }
 
@@ -190,11 +196,7 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
             .where { "matchDateMillis" lessThanOrEqualTo (now + window) }
             .snapshots.map { snap ->
                 snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
-            }.catch { e ->
-                crashReporter.recordException(e, "Erro no getAllMatches")
-                logger.e(e) { "Erro no getAllMatches" }
-                emit(emptyList())
-            }
+            }.reportAndRethrow(crashReporter, "Erro no getAllMatches")
     }
 
     private companion object {

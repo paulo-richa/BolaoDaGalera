@@ -14,7 +14,9 @@ import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.usecase.EnrichRankingWithParticipantNamesUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.FilterBolaoMatchesUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,7 +59,8 @@ class BolaoViewModel(
     private val bolaoId: String,
     private val crashReporter: CrashReporter,
     private val filterBolaoMatches: FilterBolaoMatchesUseCase = FilterBolaoMatchesUseCase(),
-    private val enrichRankingWithParticipantNames: EnrichRankingWithParticipantNamesUseCase = EnrichRankingWithParticipantNamesUseCase()
+    private val enrichRankingWithParticipantNames: EnrichRankingWithParticipantNamesUseCase = EnrichRankingWithParticipantNamesUseCase(),
+    private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
 ) : ViewModel() {
     private val logger = appLogger("BolaoViewModel")
     private val _uiState = MutableStateFlow(BolaoUiState())
@@ -86,9 +89,11 @@ class BolaoViewModel(
                 val bolao = bolaoRepository.getBolao(bolaoId)
                 _uiState.update { it.copy(bolao = bolao) }
                 logger.d { "Bolão carregado (${bolao.name})." }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao carregar bolão")
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao carregar bolão $bolaoId")
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }
@@ -146,8 +151,9 @@ class BolaoViewModel(
                         }
                     }
                     .catch { e ->
-                        logger.e(e) { "Erro no observeMatchesPredictionsAndRanking" }
-                        _uiState.update { it.copy(error = "Erro ao carregar dados do bolão.", isLoading = false) }
+                        if (e is CancellationException) throw e
+                        val message = errorReporter.reportAndClassify(e, "Erro ao observar dados do bolão $bolaoId")
+                        _uiState.update { it.copy(error = message, isLoading = false) }
                     }
                     .collect { }
             }
@@ -166,9 +172,10 @@ class BolaoViewModel(
         viewModelScope.launch {
             try {
                 matchRepository.updateMatchScore(championshipId, matchId, home, away)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao atualizar placar")
-                logger.e(e) { "Erro ao atualizar placar manual" }
+                errorReporter.report(e, "Erro ao atualizar placar manual")
                 _uiState.update { it.copy(error = "Você não tem permissão para alterar placares oficiais.") }
             }
         }
@@ -178,9 +185,11 @@ class BolaoViewModel(
         viewModelScope.launch {
             try {
                 bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao aprovar participante")
-                _uiState.update { it.copy(error = e.message) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao aprovar participante")
+                _uiState.update { it.copy(error = message) }
             }
         }
     }
@@ -189,9 +198,11 @@ class BolaoViewModel(
         viewModelScope.launch {
             try {
                 bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao aprovar saída")
-                _uiState.update { it.copy(error = e.message) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao aprovar saída")
+                _uiState.update { it.copy(error = message) }
             }
         }
     }
@@ -209,9 +220,11 @@ class BolaoViewModel(
                     bolaoRepository.requestLeaveBolao(bolaoId, currentUserId)
                 }
                 _uiState.update { it.copy(isLeaveSuccess = true, isLoading = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao sair do bolão")
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao sair do bolão")
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }

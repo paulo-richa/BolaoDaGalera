@@ -12,6 +12,7 @@ class ClassifyExceptionUseCase {
     private val keywordsByCategory: List<Pair<ErrorCategory, List<String>>> = listOf(
         ErrorCategory.INVALID_CREDENTIALS to listOf("incorrect", "invalid-credential", "password", "wrong"),
         ErrorCategory.USER_NOT_FOUND to listOf("user-not-found", "no user"),
+        ErrorCategory.NOT_FOUND to listOf("não encontrado", "not found", "not-found"),
         ErrorCategory.ALREADY_IN_USE to listOf("email-already", "email já", "collision", "already-in-use"),
         ErrorCategory.NETWORK to listOf("network", "connection", "timeout"),
         ErrorCategory.RATE_LIMITED to listOf("too many requests", "blocked"),

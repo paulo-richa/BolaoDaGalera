@@ -15,7 +15,9 @@ import com.lpstudio.bolaodagalera.domain.usecase.ClassifyExceptionUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.DedupeInvitationsByBolaoUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.RespondToInvitationUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,7 +46,8 @@ class HomeViewModel(
     private val crashReporter: CrashReporter,
     private val dedupeInvitationsByBolao: DedupeInvitationsByBolaoUseCase = DedupeInvitationsByBolaoUseCase(),
     private val respondToInvitationUseCase: RespondToInvitationUseCase = RespondToInvitationUseCase(bolaoRepository, invitationRepository),
-    private val classifyException: ClassifyExceptionUseCase = ClassifyExceptionUseCase()
+    private val classifyException: ClassifyExceptionUseCase = ClassifyExceptionUseCase(),
+    private val errorReporter: ErrorReporter = ErrorReporter(crashReporter, classifyException)
 ) : ViewModel() {
     private val logger = appLogger("HomeViewModel")
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -66,7 +69,8 @@ class HomeViewModel(
                 loadUserData(user)
             }
         }.catch { e ->
-            logger.e(e) { "Erro no authStateFlow" }
+            if (e is CancellationException) throw e
+            errorReporter.report(e, "Erro no authStateFlow")
         }.launchIn(viewModelScope)
     }
 
@@ -81,7 +85,11 @@ class HomeViewModel(
                 val all = (list1 + list2 + list3 + list4).filter { it.id.isNotBlank() }
                 allInvitationsCache = all
                 dedupeInvitationsByBolao(all)
-            }.catch { emit(emptyList()) }
+            }.catch { e ->
+                if (e is CancellationException) throw e
+                errorReporter.report(e, "Erro ao observar convites do usuário ${user.id}")
+                emit(emptyList())
+            }
 
         // All notification types (invitation, join/leave request, daily digest) are
         // already persisted by the Cloud Functions under notifications/{id}. The bell
@@ -105,8 +113,9 @@ class HomeViewModel(
                     )
                 }
             }.catch { e ->
-                logger.e(e) { "Erro no dataCollectionJob" }
-                _uiState.update { it.copy(isLoading = false, error = "Erro ao carregar dados.") }
+                if (e is CancellationException) throw e
+                val message = errorReporter.reportAndClassify(e, "Erro no dataCollectionJob de ${user.id}")
+                _uiState.update { it.copy(isLoading = false, error = message) }
             }.launchIn(viewModelScope)
     }
 
@@ -115,9 +124,11 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 notificationRepository.markAllAsRead(userId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao marcar notificações como lidas")
-                logger.e(e) { "Erro ao marcar notificações como lidas" }
+                val message = errorReporter.reportAndClassify(e, "Erro ao marcar notificações como lidas")
+                _uiState.update { it.copy(error = message) }
             }
         }
     }
@@ -156,14 +167,17 @@ class HomeViewModel(
                     logger.d { "[HomeVM] Chamando callback de sucesso para navegação." }
                     onSuccess()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao processar convite")
                 logger.e(e) { "[HomeVM] ERRO ao processar convite" }
-
                 val friendly =
-                    when (classifyException(e)) {
-                        ErrorCategory.PERMISSION -> "Erro de permissão ao aceitar convite. Verifique se você já está no bolão."
-                        else -> "Não foi possível processar o convite. Tente novamente."
+                    errorReporter.reportAndClassify(e, "Erro ao processar convite $invitationId") { category ->
+                        if (category == ErrorCategory.PERMISSION) {
+                            "Erro de permissão ao aceitar convite. Verifique se você já está no bolão."
+                        } else {
+                            "Não foi possível processar o convite. Tente novamente."
+                        }
                     }
 
                 _uiState.update { it.copy(error = friendly, isLoading = false) }
@@ -175,9 +189,11 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao responder pedido de entrada")
-                _uiState.update { it.copy(error = e.message) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao responder pedido de entrada de $userId no bolão $bolaoId")
+                _uiState.update { it.copy(error = message) }
             }
         }
     }
@@ -186,9 +202,11 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao responder pedido de saída")
-                _uiState.update { it.copy(error = e.message) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao responder pedido de saída de $userId no bolão $bolaoId")
+                _uiState.update { it.copy(error = message) }
             }
         }
     }

@@ -1,6 +1,8 @@
 package com.lpstudio.bolaodagalera.domain.usecase
 
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.observability.appLogger
+import kotlinx.coroutines.CancellationException
 
 /**
  * Derives a username suggestion from a full name during registration, trying a
@@ -9,6 +11,8 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
  * [AuthRepository] as it goes.
  */
 class GenerateAvailableUsernameUseCase(private val authRepository: AuthRepository) {
+    private val logger = appLogger("GenerateAvailableUsernameUseCase")
+
     suspend operator fun invoke(fullName: String): String {
         val parts =
             fullName.trim().lowercase()
@@ -37,8 +41,11 @@ class GenerateAvailableUsernameUseCase(private val authRepository: AuthRepositor
         for (candidate in candidates) {
             try {
                 if (!authRepository.isUsernameInUse(candidate)) return candidate
-            } catch (ignored: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
                 // Permission error while signed out: fall back to the first candidate as a suggestion
+                logger.w(e) { "Falha ao checar disponibilidade de '$candidate', usando fallback" }
                 return candidates.firstOrNull() ?: firstName
             }
         }
@@ -52,7 +59,10 @@ class GenerateAvailableUsernameUseCase(private val authRepository: AuthRepositor
                 attempts++
             } while (attempts < MAX_RANDOM_SUFFIX_ATTEMPTS && authRepository.isUsernameInUse(finalCandidate))
             finalCandidate
-        } catch (ignored: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logger.w(e) { "Falha ao checar disponibilidade de sufixo aleatório, usando fallback não verificado" }
             firstName + kotlin.random.Random.nextInt(SUFFIX_RANGE_START, SUFFIX_RANGE_END).toString()
         }
     }
