@@ -118,70 +118,111 @@ import com.lpstudio.bolaodagalera.rememberLauncherProvider
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
+private const val DEFAULT_POINTS_EXACT = 3
+private const val DEFAULT_POINTS_WINNER = 1
+
+private class CreateBolaoFormState {
+    var name by mutableStateOf("")
+    var description by mutableStateOf("")
+    var selectedChampionshipId by mutableStateOf("UNKNOWN")
+    var selectedScope by mutableStateOf(BolaoScope.FULL)
+    var selectedMatchId by mutableStateOf<String?>(null)
+    var pointsExact by mutableIntStateOf(DEFAULT_POINTS_EXACT)
+    var pointsWinner by mutableIntStateOf(DEFAULT_POINTS_WINNER)
+    var nameTouched by mutableStateOf(false)
+    var showSuccessDialog by mutableStateOf(false)
+}
+
+@Composable
+private fun rememberCreateBolaoFormState() = remember { CreateBolaoFormState() }
+
+private class PhaseAvailability(val isGroupStageAvailable: Boolean, val isKnockoutAvailable: Boolean)
+
+/** Recomputed reactively as the loaded matches/selected championship change. */
+@Composable
+private fun rememberPhaseAvailability(
+    viewModel: CreateBolaoViewModel,
+    allMatches: List<com.lpstudio.bolaodagalera.domain.model.Match>,
+    championshipId: String
+): PhaseAvailability {
+    val isGroupStageAvailable =
+        remember(allMatches, championshipId) { viewModel.isPhaseAvailable(championshipId, Phase.GROUP_STAGE) }
+    val isKnockoutAvailable = remember(allMatches, championshipId) { viewModel.isKnockoutAvailable(championshipId) }
+    return PhaseAvailability(isGroupStageAvailable, isKnockoutAvailable)
+}
+
 @Composable
 fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: (String) -> Unit, onNavigateBack: () -> Unit) {
     val viewModel = koinViewModel<CreateBolaoViewModel>()
     val uiState by viewModel.uiState.collectAsState()
-    val allMatches = uiState.allMatches
-
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedChampionshipId by remember { mutableStateOf("UNKNOWN") }
-
-    // Recompute availability reactively as matches/championship change
-    val isGroupStageAvailable =
-        remember(allMatches, selectedChampionshipId) {
-            viewModel.isPhaseAvailable(selectedChampionshipId, Phase.GROUP_STAGE)
-        }
-    val isKnockoutAvailable =
-        remember(allMatches, selectedChampionshipId) {
-            viewModel.isKnockoutAvailable(selectedChampionshipId)
-        }
-    var selectedScope by remember { mutableStateOf(BolaoScope.FULL) }
-    var selectedMatchId by remember { mutableStateOf<String?>(null) }
-    var pointsExact by remember { mutableIntStateOf(3) }
-    var pointsWinner by remember { mutableIntStateOf(1) }
-    var nameTouched by remember { mutableStateOf(false) }
-    var showSuccessDialog by remember { mutableStateOf(false) }
-
+    val form = rememberCreateBolaoFormState()
+    val availability = rememberPhaseAvailability(viewModel, uiState.allMatches, form.selectedChampionshipId)
     val focusManager = LocalFocusManager.current
     val launcherProvider = rememberLauncherProvider()
 
     CreateBolaoScopeEffects(
-        selectedChampionshipId = selectedChampionshipId,
-        isGroupStageAvailable = isGroupStageAvailable,
-        isKnockoutAvailable = isKnockoutAvailable,
-        selectedScope = selectedScope,
+        selectedChampionshipId = form.selectedChampionshipId,
+        isGroupStageAvailable = availability.isGroupStageAvailable,
+        isKnockoutAvailable = availability.isKnockoutAvailable,
+        selectedScope = form.selectedScope,
         createdBolao = uiState.createdBolao,
-        onInitialChampionshipSelected = { selectedChampionshipId = it },
-        onScopeChange = { selectedScope = it },
-        onMatchIdChange = { selectedMatchId = it },
-        onShowSuccessDialogChange = { showSuccessDialog = it }
+        onInitialChampionshipSelected = { form.selectedChampionshipId = it },
+        onScopeChange = { form.selectedScope = it },
+        onMatchIdChange = { form.selectedMatchId = it },
+        onShowSuccessDialogChange = { form.showSuccessDialog = it }
     )
 
-    // Validation helpers
-    val nameErrorText = stringResource(Res.string.create_bolao_name_error_too_short)
-    val nameError = if (nameTouched && name.trim().length < 10) nameErrorText else null
-    val isFormValid = name.trim().length in 10..35
-
-    if (showSuccessDialog && uiState.createdBolao != null) {
+    if (form.showSuccessDialog && uiState.createdBolao != null) {
         CreateBolaoSuccessDialog(
             bolao = uiState.createdBolao!!,
             launcherProvider = launcherProvider,
             onDismissRequest = { bolao ->
-                showSuccessDialog = false
+                form.showSuccessDialog = false
                 onCreated(bolao.id)
             },
             onAddParticipants = { bolao ->
-                showSuccessDialog = false
+                form.showSuccessDialog = false
                 onNavigateToAddParticipants(bolao.id)
             },
             onGoToBolao = { bolao ->
-                showSuccessDialog = false
+                form.showSuccessDialog = false
                 onCreated(bolao.id)
             }
         )
     }
+
+    CreateBolaoScreenScaffold(
+        uiState = uiState,
+        form = form,
+        availability = availability,
+        focusManager = focusManager,
+        onNavigateBack = onNavigateBack,
+        onCreateClick = {
+            viewModel.create(
+                form.name,
+                form.description,
+                form.selectedChampionshipId,
+                form.selectedScope,
+                form.selectedMatchId,
+                form.pointsExact,
+                form.pointsWinner
+            )
+        }
+    )
+}
+
+@Composable
+private fun CreateBolaoScreenScaffold(
+    uiState: CreateBolaoUiState,
+    form: CreateBolaoFormState,
+    availability: PhaseAvailability,
+    focusManager: FocusManager,
+    onNavigateBack: () -> Unit,
+    onCreateClick: () -> Unit
+) {
+    val nameErrorText = stringResource(Res.string.create_bolao_name_error_too_short)
+    val nameError = if (form.nameTouched && form.name.trim().length < 10) nameErrorText else null
+    val isFormValid = form.name.trim().length in 10..35
 
     Box(
         modifier =
@@ -200,39 +241,11 @@ fun CreateBolaoScreen(onCreated: (String) -> Unit, onNavigateToAddParticipants: 
                 error = uiState.error,
                 isLoading = uiState.isLoading,
                 isFormValid = isFormValid,
-                selectedChampionshipId = selectedChampionshipId,
-                onChampionshipSelected = { selectedChampionshipId = it },
-                isGroupStageAvailable = isGroupStageAvailable,
-                isKnockoutAvailable = isKnockoutAvailable,
-                selectedScope = selectedScope,
-                onScopeSelected = { scope ->
-                    selectedScope = scope
-                    selectedMatchId = null
-                },
-                name = name,
-                onNameChange = {
-                    name = it
-                    nameTouched = true
-                },
                 nameError = nameError,
-                description = description,
-                onDescriptionChange = { description = it },
+                form = form,
+                availability = availability,
                 focusManager = focusManager,
-                pointsExact = pointsExact,
-                onPointsExactChange = { pointsExact = it },
-                pointsWinner = pointsWinner,
-                onPointsWinnerChange = { pointsWinner = it },
-                onCreateClick = {
-                    viewModel.create(
-                        name,
-                        description,
-                        selectedChampionshipId,
-                        selectedScope,
-                        selectedMatchId,
-                        pointsExact,
-                        pointsWinner
-                    )
-                }
+                onCreateClick = onCreateClick
             )
         }
     }
@@ -287,29 +300,16 @@ private fun CreateBolaoScopeEffects(
  * Scrollable form body of the create-bolao screen: hero copy, championship/scope
  * picker, name/description fields, scoring rules and the submit button.
  */
-@Suppress("LongParameterList")
 @Composable
 private fun CreateBolaoFormContent(
     padding: PaddingValues,
     error: String?,
     isLoading: Boolean,
     isFormValid: Boolean,
-    selectedChampionshipId: String,
-    onChampionshipSelected: (String) -> Unit,
-    isGroupStageAvailable: Boolean,
-    isKnockoutAvailable: Boolean,
-    selectedScope: BolaoScope,
-    onScopeSelected: (BolaoScope) -> Unit,
-    name: String,
-    onNameChange: (String) -> Unit,
     nameError: String?,
-    description: String,
-    onDescriptionChange: (String) -> Unit,
+    form: CreateBolaoFormState,
+    availability: PhaseAvailability,
     focusManager: FocusManager,
-    pointsExact: Int,
-    onPointsExactChange: (Int) -> Unit,
-    pointsWinner: Int,
-    onPointsWinnerChange: (Int) -> Unit,
     onCreateClick: () -> Unit
 ) {
     Column(
@@ -326,52 +326,7 @@ private fun CreateBolaoFormContent(
 
         Spacer(Modifier.height(20.dp))
 
-        // Form card
-        Column(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(BolaoRadiusShape.xl)
-                .background(GlassWhite)
-                .border(1.dp, GlassBorder, BolaoRadiusShape.xl)
-                .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.xl),
-            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
-        ) {
-            ChampionshipSelectionSection(
-                selectedChampionshipId = selectedChampionshipId,
-                onChampionshipSelected = onChampionshipSelected,
-                isGroupStageAvailable = isGroupStageAvailable,
-                isKnockoutAvailable = isKnockoutAvailable,
-                selectedScope = selectedScope,
-                onScopeSelected = onScopeSelected
-            )
-
-            BolaoNameField(
-                name = name,
-                onNameChange = onNameChange,
-                nameError = nameError,
-                focusManager = focusManager
-            )
-
-            BolaoDescriptionField(
-                description = description,
-                onDescriptionChange = onDescriptionChange,
-                focusManager = focusManager
-            )
-
-            ScoringSection(
-                pointsExact = pointsExact,
-                onPointsExactChange = onPointsExactChange,
-                pointsWinner = pointsWinner,
-                onPointsWinnerChange = onPointsWinnerChange
-            )
-
-            error?.let {
-                BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize)
-            }
-
-            CreateBolaoInfoChip()
-        }
+        CreateBolaoFormCard(error = error, nameError = nameError, form = form, availability = availability, focusManager = focusManager)
 
         Spacer(Modifier.height(16.dp))
 
@@ -386,6 +341,67 @@ private fun CreateBolaoFormContent(
         if (WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp) {
             Spacer(Modifier.height(100.dp))
         }
+    }
+}
+
+@Composable
+private fun CreateBolaoFormCard(
+    error: String?,
+    nameError: String?,
+    form: CreateBolaoFormState,
+    availability: PhaseAvailability,
+    focusManager: FocusManager
+) {
+    Column(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .clip(BolaoRadiusShape.xl)
+            .background(GlassWhite)
+            .border(1.dp, GlassBorder, BolaoRadiusShape.xl)
+            .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.xl),
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
+    ) {
+        ChampionshipSelectionSection(
+            selectedChampionshipId = form.selectedChampionshipId,
+            onChampionshipSelected = { form.selectedChampionshipId = it },
+            isGroupStageAvailable = availability.isGroupStageAvailable,
+            isKnockoutAvailable = availability.isKnockoutAvailable,
+            selectedScope = form.selectedScope,
+            onScopeSelected = { scope ->
+                form.selectedScope = scope
+                form.selectedMatchId = null
+            }
+        )
+
+        BolaoNameField(
+            name = form.name,
+            onNameChange = {
+                form.name = it
+                form.nameTouched = true
+            },
+            nameError = nameError,
+            focusManager = focusManager
+        )
+
+        BolaoDescriptionField(
+            description = form.description,
+            onDescriptionChange = { form.description = it },
+            focusManager = focusManager
+        )
+
+        ScoringSection(
+            pointsExact = form.pointsExact,
+            onPointsExactChange = { form.pointsExact = it },
+            pointsWinner = form.pointsWinner,
+            onPointsWinnerChange = { form.pointsWinner = it }
+        )
+
+        error?.let {
+            BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize)
+        }
+
+        CreateBolaoInfoChip()
     }
 }
 

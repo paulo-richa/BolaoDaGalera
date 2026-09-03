@@ -40,15 +40,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,13 +50,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import bolaodagalera.feature_bolao.generated.resources.Res
-import bolaodagalera.feature_bolao.generated.resources.bolao_common_phase_first_leg
-import bolaodagalera.feature_bolao.generated.resources.bolao_common_phase_second_leg
-import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_add_participant_cd
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_close_button
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_default_name
@@ -89,16 +79,8 @@ import bolaodagalera.feature_bolao.generated.resources.bolao_detail_pending_requ
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_pending_view_button
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_share_cd
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_share_message
-import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_grupos
-import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_jogos
-import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_mata_mata
-import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_pontos_corridos
-import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_ranking
-import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_rodadas
-import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_tabela
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_trophy_emoji
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_warning_emoji
-import com.lpstudio.bolaodagalera.CommonBackHandler
 import com.lpstudio.bolaodagalera.LauncherProvider
 import com.lpstudio.bolaodagalera.ads.AdBannerProvider
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoConfirmDialog
@@ -113,7 +95,6 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
-import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTheme
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
@@ -125,19 +106,12 @@ import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.domain.model.Bolao
-import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
-import com.lpstudio.bolaodagalera.domain.model.Prediction
-import com.lpstudio.bolaodagalera.domain.model.RankingEntry
 import com.lpstudio.bolaodagalera.presentation.ranking.RankingScreen
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
-import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.getInitials
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -167,167 +141,94 @@ fun BolaoDetailScreen(
     LaunchedEffect(uiState.isLeaveSuccess) { if (uiState.isLeaveSuccess) onNavigateBack() }
 
     BolaoDetailContent(
-        bolaoId = bolaoId, uiState = uiState, isOwner = uiState.bolao?.ownerId == userId,
-        isAppOwner = isAppOwner, launcherProvider = launcherProvider, onLeaveBolao = { viewModel.leaveBolao() },
-        onApproveJoin = { u, a -> viewModel.approveParticipant(u, a) }, onApproveLeave = { u, a -> viewModel.approveLeaveRequest(u, a) },
-        onNavigateToPrediction = onNavigateToPrediction, onNavigateToAllPredictions = onNavigateToAllPredictions,
-        onNavigateToEdit = onNavigateToEdit, onNavigateToAddParticipants = onNavigateToAddParticipants,
-        onNavigateToHelp = onNavigateToHelp,
-        onSaveAdminScore = { m, h, a -> viewModel.updateMatchScore(m, h, a) }, onNavigateBack = onNavigateBack
+        bolaoId = bolaoId,
+        uiState = uiState,
+        isOwner = uiState.bolao?.ownerId == userId,
+        isAppOwner = isAppOwner,
+        launcherProvider = launcherProvider,
+        callbacks =
+        BolaoDetailCallbacks(
+            onLeaveBolao = { viewModel.leaveBolao() },
+            onApproveJoin = { u, a -> viewModel.approveParticipant(u, a) },
+            onApproveLeave = { u, a -> viewModel.approveLeaveRequest(u, a) },
+            onNavigateToPrediction = onNavigateToPrediction,
+            onNavigateToAllPredictions = onNavigateToAllPredictions,
+            onNavigateToEdit = onNavigateToEdit,
+            onNavigateToAddParticipants = onNavigateToAddParticipants,
+            onNavigateToHelp = onNavigateToHelp,
+            onSaveAdminScore = { m, h, a -> viewModel.updateMatchScore(m, h, a) },
+            onNavigateBack = onNavigateBack
+        )
+    )
+}
+
+/** Callbacks bundled together to keep [BolaoDetailContent]'s parameter list manageable. */
+internal data class BolaoDetailCallbacks(
+    val onLeaveBolao: () -> Unit,
+    val onApproveJoin: (String, Boolean) -> Unit,
+    val onApproveLeave: (String, Boolean) -> Unit,
+    val onNavigateToPrediction: (String) -> Unit,
+    val onNavigateToAllPredictions: (String) -> Unit,
+    val onNavigateToEdit: (String) -> Unit,
+    val onNavigateToAddParticipants: (String) -> Unit,
+    val onNavigateToHelp: () -> Unit,
+    val onSaveAdminScore: (String, Int?, Int?) -> Unit,
+    val onNavigateBack: () -> Unit
+)
+
+@Composable
+private fun BolaoDetailDialogs(
+    uiState: BolaoUiState,
+    isOwner: Boolean,
+    runtime: BolaoDetailRuntimeState,
+    onLeaveBolao: () -> Unit,
+    onApproveJoin: (String, Boolean) -> Unit,
+    onApproveLeave: (String, Boolean) -> Unit
+) {
+    LeaveBolaoDialog(
+        show = runtime.dialogs.showLeaveDialog.value,
+        isOwner = isOwner,
+        onConfirm = {
+            runtime.dialogs.showLeaveDialog.value = false
+            onLeaveBolao()
+        },
+        onDismiss = { runtime.dialogs.showLeaveDialog.value = false }
+    )
+
+    ParticipantsSheetDialog(
+        show = runtime.dialogs.showParticipantsSheet.value,
+        uiState = uiState,
+        isOwner = isOwner,
+        onDismiss = { runtime.dialogs.showParticipantsSheet.value = false },
+        onApproveJoin = onApproveJoin,
+        onApproveLeave = onApproveLeave
     )
 }
 
 @Composable
-fun BolaoDetailContent(
+internal fun BolaoDetailContent(
     bolaoId: String,
     uiState: BolaoUiState,
     isOwner: Boolean,
     isAppOwner: Boolean,
     launcherProvider: LauncherProvider,
-    onLeaveBolao: () -> Unit,
-    onApproveJoin: (String, Boolean) -> Unit,
-    onApproveLeave: (String, Boolean) -> Unit,
-    onNavigateToPrediction: (String) -> Unit,
-    onNavigateToAllPredictions: (String) -> Unit,
-    onNavigateToEdit: (String) -> Unit,
-    onNavigateToAddParticipants: (String) -> Unit,
-    onNavigateToHelp: () -> Unit,
-    onSaveAdminScore: (String, Int?, Int?) -> Unit,
-    onNavigateBack: () -> Unit
+    callbacks: BolaoDetailCallbacks
 ) {
-    var showLeaveDialog by remember { mutableStateOf(false) }
-    var showParticipantsSheet by remember { mutableStateOf(false) }
-    var showMenu by remember { mutableStateOf(false) }
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    val championship = Championship.fromId(uiState.bolao?.championshipId)
-
-    val labels =
-        TabLabels(
-            grupos = stringResource(Res.string.bolao_detail_tab_grupos),
-            ranking = stringResource(Res.string.bolao_detail_tab_ranking),
-            mataMata = stringResource(Res.string.bolao_detail_tab_mata_mata),
-            pontosCorridos = stringResource(Res.string.bolao_detail_tab_pontos_corridos),
-            tabela = stringResource(Res.string.bolao_detail_tab_tabela),
-            jogos = stringResource(Res.string.bolao_detail_tab_jogos),
-            rodadas = stringResource(Res.string.bolao_detail_tab_rodadas)
-        )
-    val todayLabel = stringResource(Res.string.bolao_common_today_chip)
-    val firstLegFormat = stringResource(Res.string.bolao_common_phase_first_leg, "%1\$s")
-    val secondLegFormat = stringResource(Res.string.bolao_common_phase_second_leg, "%1\$s")
-
-    val tabs =
-        remember(uiState.bolao?.scope, uiState.bolao?.championshipId, championship, labels) {
-            computeTabs(uiState.bolao?.scope, championship, labels)
-        }
-
-    var selectedRound by rememberSaveable { mutableIntStateOf(0) }
-    var selectedPhase by rememberSaveable { mutableStateOf<Phase?>(Phase.FRIENDLIES) }
-    var selectedLabel by rememberSaveable(bolaoId) { mutableStateOf<String?>(null) }
-    // rememberSaveable (not just remember) so the scroll position survives
-    // navigating to the prediction screen and back without recomputing or
-    // forcing a manual scroll — the screen returns exactly as the user left it.
-    val groupsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-    val knockoutListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-    val expandedGroups =
-        rememberSaveable(
-            bolaoId,
-            saver = listSaver(save = { it.toList() }, restore = { it.toMutableStateList() })
-        ) { mutableStateListOf<String>() }
-    var matchToUpdate by remember { mutableStateOf<Match?>(null) }
+    val derived = rememberBolaoDetailDerivedState(uiState)
+    val runtime = rememberBolaoDetailRuntimeState(bolaoId)
 
     AdminScoreDialogHost(
-        match = matchToUpdate,
-        onDismiss = { matchToUpdate = null },
+        match = runtime.dialogs.matchToUpdate.value,
+        onDismiss = { runtime.dialogs.matchToUpdate.value = null },
         onConfirm = { match, h, a ->
-            onSaveAdminScore(match.id, h, a)
-            matchToUpdate = null
+            callbacks.onSaveAdminScore(match.id, h, a)
+            runtime.dialogs.matchToUpdate.value = null
         }
     )
 
-    val knockoutDefaults =
-        remember(uiState.matches, championship.isTwoLegged, firstLegFormat, secondLegFormat, todayLabel) {
-            computeKnockoutDefaults(uiState.matches, championship.isTwoLegged, firstLegFormat, secondLegFormat, todayLabel)
-        }
-    val defaultPhase = knockoutDefaults.first
-    val defaultLabel = knockoutDefaults.second
+    BolaoDetailTabEffects(uiState, derived, runtime)
 
-    val isFirstTab = selectedTab == 0
-    val defaultRound = remember(uiState.matches) { computeDefaultRound(uiState.matches) }
-
-    val isInDefaultState =
-        remember(selectedTab, selectedRound, defaultRound, selectedPhase, defaultPhase, selectedLabel, defaultLabel, tabs) {
-            isTabInDefaultState(
-                tabs.getOrNull(selectedTab),
-                labels,
-                selectedRound,
-                defaultRound,
-                selectedPhase,
-                defaultPhase,
-                selectedLabel,
-                defaultLabel
-            )
-        }
-
-    CommonBackHandler(enabled = !isFirstTab || !isInDefaultState) {
-        if (!isFirstTab) {
-            selectedTab = 0
-        } else {
-            resetTabToDefault(
-                currentTabLabel = tabs.getOrNull(selectedTab),
-                labels = labels,
-                onResetRound = { selectedRound = defaultRound },
-                onResetPhase = {
-                    selectedPhase = defaultPhase
-                    selectedLabel = defaultLabel
-                }
-            )
-        }
-    }
-
-    var hasAutoSelectedTab by rememberSaveable(bolaoId) { mutableStateOf(false) }
-    LaunchedEffect(uiState.matches, defaultPhase, defaultLabel) {
-        applyAutoTabSelection(
-            inputs =
-            AutoSelectionInputs(
-                matches = uiState.matches,
-                hasAutoSelected = hasAutoSelectedTab,
-                tabs = tabs,
-                tabRanking = labels.ranking,
-                selectedPhase = selectedPhase,
-                defaultPhase = defaultPhase,
-                defaultLabel = defaultLabel,
-                selectedRound = selectedRound,
-                defaultRound = defaultRound
-            ),
-            actions =
-            AutoSelectionActions(
-                onSelectTab = { selectedTab = it },
-                onMarkAutoSelected = { hasAutoSelectedTab = true },
-                onSelectPhase = { selectedPhase = it },
-                onSelectLabel = { selectedLabel = it },
-                onSelectRound = { selectedRound = it }
-            )
-        )
-    }
-
-    LeaveBolaoDialog(
-        show = showLeaveDialog,
-        isOwner = isOwner,
-        onConfirm = {
-            showLeaveDialog = false
-            onLeaveBolao()
-        },
-        onDismiss = { showLeaveDialog = false }
-    )
-
-    ParticipantsSheetDialog(
-        show = showParticipantsSheet,
-        uiState = uiState,
-        isOwner = isOwner,
-        onDismiss = { showParticipantsSheet = false },
-        onApproveJoin = onApproveJoin,
-        onApproveLeave = onApproveLeave
-    )
+    BolaoDetailDialogs(uiState, isOwner, runtime, callbacks.onLeaveBolao, callbacks.onApproveJoin, callbacks.onApproveLeave)
 
     val shareMessage = uiState.bolao?.let { b ->
         val web = "https://bolaodagalera-bb002.web.app/invite?code=${b.code}"
@@ -335,66 +236,38 @@ fun BolaoDetailContent(
         stringResource(Res.string.bolao_detail_share_message, b.name, web, app, b.code)
     }
 
+    BolaoDetailScreenBody(bolaoId, uiState, isOwner, isAppOwner, derived, runtime, shareMessage, launcherProvider, callbacks)
+}
+
+@Composable
+private fun BolaoDetailScreenBody(
+    bolaoId: String,
+    uiState: BolaoUiState,
+    isOwner: Boolean,
+    isAppOwner: Boolean,
+    derived: BolaoDetailDerivedState,
+    runtime: BolaoDetailRuntimeState,
+    shareMessage: String?,
+    launcherProvider: LauncherProvider,
+    callbacks: BolaoDetailCallbacks
+) {
     Box(modifier = Modifier.fillMaxSize().background(DeepNavy)) {
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f)) {
                 if (uiState.isLoading && uiState.matches.isEmpty()) {
                     BolaoFullScreenLoading()
                 } else {
-                    Column(Modifier.fillMaxSize()) {
-                        BolaoDetailHeaderSection(
-                            bolao = uiState.bolao,
-                            isOwner = isOwner,
-                            championship = championship,
-                            showMenu = showMenu,
-                            onShowMenuChange = { showMenu = it },
-                            tabBarState =
-                            HeaderTabBarState(tabs = tabs, selectedTab = selectedTab, onTabSelected = { selectedTab = it }),
-                            topBarActions =
-                            TopBarActions(
-                                onNavigateBack = onNavigateBack,
-                                onNavigateToHelp = onNavigateToHelp,
-                                onShare = { shareMessage?.let { launcherProvider.shareText(it) } },
-                                onAddParticipants = { onNavigateToAddParticipants(bolaoId) },
-                                onEdit = { onNavigateToEdit(bolaoId) },
-                                onLeaveClick = { showLeaveDialog = true }
-                            ),
-                            onShowParticipants = { showParticipantsSheet = true }
-                        )
-                        val filtered = remember(uiState.matches) {
-                            uiState.matches.filter { it.phase != Phase.FRIENDLIES }
-                        }
-                        val groups = remember(filtered) {
-                            filtered.filter { it.phase == Phase.GROUP_STAGE }
-                        }
-                        BolaoDetailTabContent(
-                            modifier = Modifier.weight(1f),
-                            selection = TabSelection(tabs = tabs, selectedTab = selectedTab, labels = labels),
-                            groups = groups,
-                            filtered = filtered,
-                            uiState = uiState,
-                            isAppOwner = isAppOwner,
-                            bolaoId = bolaoId,
-                            state =
-                            GroupKnockoutState(
-                                selectedRound = selectedRound,
-                                onRoundChange = { selectedRound = it },
-                                selectedPhase = selectedPhase,
-                                onPhaseChange = { selectedPhase = it },
-                                selectedLabel = selectedLabel,
-                                onLabelChange = { selectedLabel = it },
-                                groupsListState = groupsListState,
-                                knockoutListState = knockoutListState,
-                                expandedGroups = expandedGroups
-                            ),
-                            callbacks =
-                            TabNavigationCallbacks(
-                                onNavigateToPrediction = onNavigateToPrediction,
-                                onNavigateToAllPredictions = onNavigateToAllPredictions,
-                                onOpenAdminScoreDialog = { matchToUpdate = it }
-                            )
-                        )
-                    }
+                    BolaoDetailMainColumn(
+                        bolaoId,
+                        uiState,
+                        isOwner,
+                        isAppOwner,
+                        derived,
+                        runtime,
+                        shareMessage,
+                        launcherProvider,
+                        callbacks
+                    )
                 }
             }
             val adBannerProvider = koinInject<AdBannerProvider>()
@@ -403,15 +276,91 @@ fun BolaoDetailContent(
     }
 }
 
-private data class TabLabels(
-    val grupos: String,
-    val ranking: String,
-    val mataMata: String,
-    val pontosCorridos: String,
-    val tabela: String,
-    val jogos: String,
-    val rodadas: String
-)
+@Composable
+private fun BolaoDetailMainHeader(
+    bolaoId: String,
+    uiState: BolaoUiState,
+    isOwner: Boolean,
+    derived: BolaoDetailDerivedState,
+    runtime: BolaoDetailRuntimeState,
+    shareMessage: String?,
+    launcherProvider: LauncherProvider,
+    callbacks: BolaoDetailCallbacks
+) {
+    BolaoDetailHeaderSection(
+        bolao = uiState.bolao,
+        isOwner = isOwner,
+        championship = derived.championship,
+        showMenu = runtime.dialogs.showMenu.value,
+        onShowMenuChange = { runtime.dialogs.showMenu.value = it },
+        tabBarState =
+        HeaderTabBarState(
+            tabs = derived.tabs,
+            selectedTab = runtime.tab.selectedTab.value,
+            onTabSelected = { runtime.tab.selectedTab.value = it }
+        ),
+        topBarActions =
+        TopBarActions(
+            onNavigateBack = callbacks.onNavigateBack,
+            onNavigateToHelp = callbacks.onNavigateToHelp,
+            onShare = { shareMessage?.let { launcherProvider.shareText(it) } },
+            onAddParticipants = { callbacks.onNavigateToAddParticipants(bolaoId) },
+            onEdit = { callbacks.onNavigateToEdit(bolaoId) },
+            onLeaveClick = { runtime.dialogs.showLeaveDialog.value = true }
+        ),
+        onShowParticipants = { runtime.dialogs.showParticipantsSheet.value = true }
+    )
+}
+
+@Composable
+private fun BolaoDetailMainColumn(
+    bolaoId: String,
+    uiState: BolaoUiState,
+    isOwner: Boolean,
+    isAppOwner: Boolean,
+    derived: BolaoDetailDerivedState,
+    runtime: BolaoDetailRuntimeState,
+    shareMessage: String?,
+    launcherProvider: LauncherProvider,
+    callbacks: BolaoDetailCallbacks
+) {
+    Column(Modifier.fillMaxSize()) {
+        BolaoDetailMainHeader(bolaoId, uiState, isOwner, derived, runtime, shareMessage, launcherProvider, callbacks)
+        val filtered = remember(uiState.matches) {
+            uiState.matches.filter { it.phase != Phase.FRIENDLIES }
+        }
+        val groups = remember(filtered) {
+            filtered.filter { it.phase == Phase.GROUP_STAGE }
+        }
+        BolaoDetailTabContent(
+            modifier = Modifier.weight(1f),
+            selection = TabSelection(tabs = derived.tabs, selectedTab = runtime.tab.selectedTab.value, labels = derived.labels),
+            groups = groups,
+            filtered = filtered,
+            uiState = uiState,
+            isAppOwner = isAppOwner,
+            bolaoId = bolaoId,
+            state =
+            GroupKnockoutState(
+                selectedRound = runtime.tab.selectedRound.value,
+                onRoundChange = { runtime.tab.selectedRound.value = it },
+                selectedPhase = runtime.tab.selectedPhase.value,
+                onPhaseChange = { runtime.tab.selectedPhase.value = it },
+                selectedLabel = runtime.tab.selectedLabel.value,
+                onLabelChange = { runtime.tab.selectedLabel.value = it },
+                groupsListState = runtime.tab.groupsListState,
+                knockoutListState = runtime.tab.knockoutListState,
+                expandedGroups = runtime.tab.expandedGroups
+            ),
+            callbacks =
+            TabNavigationCallbacks(
+                onNavigateToPrediction = callbacks.onNavigateToPrediction,
+                onNavigateToAllPredictions = callbacks.onNavigateToAllPredictions,
+                onOpenAdminScoreDialog = { runtime.dialogs.matchToUpdate.value = it }
+            )
+        )
+    }
+}
 
 private data class HeaderTabBarState(val tabs: List<String>, val selectedTab: Int, val onTabSelected: (Int) -> Unit)
 
@@ -443,175 +392,6 @@ private data class TabNavigationCallbacks(
     val onNavigateToAllPredictions: (String) -> Unit,
     val onOpenAdminScoreDialog: (Match) -> Unit
 )
-
-private data class AutoSelectionInputs(
-    val matches: List<Match>,
-    val hasAutoSelected: Boolean,
-    val tabs: List<String>,
-    val tabRanking: String,
-    val selectedPhase: Phase?,
-    val defaultPhase: Phase?,
-    val defaultLabel: String?,
-    val selectedRound: Int,
-    val defaultRound: Int
-)
-
-private data class AutoSelectionActions(
-    val onSelectTab: (Int) -> Unit,
-    val onMarkAutoSelected: () -> Unit,
-    val onSelectPhase: (Phase?) -> Unit,
-    val onSelectLabel: (String?) -> Unit,
-    val onSelectRound: (Int) -> Unit
-)
-
-private fun computeTabs(scope: BolaoScope?, championship: Championship, labels: TabLabels): List<String> = when (scope) {
-    BolaoScope.ONLY_GROUPS -> listOf(labels.grupos, labels.ranking)
-    BolaoScope.ONLY_KNOCKOUT -> listOf(labels.mataMata, labels.ranking)
-    BolaoScope.PONTOS_CORRIDOS -> {
-        val list = mutableListOf(labels.pontosCorridos, labels.ranking)
-        if (championship.hasStandings) list.add(labels.tabela)
-        list
-    }
-    else -> {
-        if (championship.isPointsBased) {
-            val list = mutableListOf(labels.pontosCorridos, labels.ranking)
-            if (championship.hasStandings) list.add(labels.tabela)
-            list
-        } else if (championship.isGroupsAndKnockout) {
-            listOf(labels.grupos, labels.mataMata, labels.ranking)
-        } else {
-            listOf(labels.mataMata, labels.ranking)
-        }
-    }
-}
-
-private fun computeKnockoutDefaults(
-    matches: List<Match>,
-    isTwoLegged: Boolean,
-    firstLegFormat: String,
-    secondLegFormat: String,
-    todayLabel: String
-): Pair<Phase?, String> {
-    val phases = listOf(
-        Phase.ROUND_OF_32,
-        Phase.ROUND_OF_16,
-        Phase.QUARTERFINALS,
-        Phase.SEMIFINALS,
-        Phase.THIRD_PLACE,
-        Phase.FINAL
-    )
-    val phaseOrder = phases.filter { p -> matches.any { it.phase == p } }
-    val phaseLabels =
-        if (isTwoLegged) {
-            phaseOrder.flatMap { p ->
-                if (p == Phase.FINAL || p == Phase.THIRD_PLACE) {
-                    listOf(p.label)
-                } else {
-                    listOf(
-                        firstLegFormat.replace("%1\$s", p.label),
-                        secondLegFormat.replace("%1\$s", p.label)
-                    )
-                }
-            }
-        } else {
-            phaseOrder.map { it.label }
-        }
-
-    val tz = TimeZone.currentSystemDefault()
-    val now = TimeSource.nowMillis()
-    val today = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
-
-    val hasTodayKo = matches.filter { it.phase != Phase.GROUP_STAGE }.any {
-        val mTime = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz)
-        val mDate = mTime.date
-        val isRecentlyFinished = now in it.matchDateMillis..(it.matchDateMillis + 3 * 3600_000L)
-        mDate == today || (mDate.toEpochDays() == today.toEpochDays() + 1 && mTime.hour < 4) || isRecentlyFinished
-    }
-
-    return if (hasTodayKo) {
-        Phase.FRIENDLIES to todayLabel
-    } else {
-        val next = phaseLabels.find { l ->
-            val base = l.substringBefore(" - ")
-            val isV = l.contains("Volta")
-            matches.any { m ->
-                m.phase.label == base && (if (isV) m.id.contains("-L2") else !m.id.contains("-L2")) && !m.isFinished
-            }
-        } ?: phaseLabels.lastOrNull()
-
-        if (next != null) {
-            val p = Phase.entries.find { it.label == next.substringBefore(" - ") }
-            p to next
-        } else {
-            Phase.FRIENDLIES to todayLabel
-        }
-    }
-}
-
-private fun computeDefaultRound(matches: List<Match>): Int {
-    val matchesGroupStage = matches.filter { it.phase == Phase.GROUP_STAGE }
-    if (matchesGroupStage.isEmpty()) return 0
-    val tz = TimeZone.currentSystemDefault()
-    val now = TimeSource.nowMillis()
-    val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
-    val hasMatchToday = matchesGroupStage.any {
-        Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == todayDate
-    }
-    return if (hasMatchToday) {
-        0
-    } else {
-        val upcoming = matchesGroupStage
-            .filter { !it.isFinished && it.matchDateMillis > now }
-            .minByOrNull { it.matchDateMillis }
-            ?.groupRound()
-        val lastR = matchesGroupStage.maxByOrNull { it.matchDateMillis }?.groupRound() ?: 1
-        upcoming ?: lastR
-    }
-}
-
-private fun isTabInDefaultState(
-    currentTabLabel: String?,
-    labels: TabLabels,
-    selectedRound: Int,
-    defaultRound: Int,
-    selectedPhase: Phase?,
-    defaultPhase: Phase?,
-    selectedLabel: String?,
-    defaultLabel: String?
-): Boolean = when (currentTabLabel) {
-    labels.grupos, labels.jogos, labels.rodadas, labels.pontosCorridos -> selectedRound == defaultRound
-    labels.mataMata -> selectedPhase == defaultPhase && (selectedLabel == defaultLabel || selectedLabel == null)
-    else -> false
-}
-
-private fun resetTabToDefault(currentTabLabel: String?, labels: TabLabels, onResetRound: () -> Unit, onResetPhase: () -> Unit) {
-    when (currentTabLabel) {
-        labels.grupos, labels.jogos, labels.rodadas, labels.pontosCorridos -> onResetRound()
-        labels.mataMata -> onResetPhase()
-    }
-}
-
-private fun applyAutoTabSelection(inputs: AutoSelectionInputs, actions: AutoSelectionActions) {
-    if (inputs.matches.isEmpty()) return
-    if (!inputs.hasAutoSelected) {
-        if (inputs.matches.all { it.isFinished }) {
-            inputs.tabs.indexOf(inputs.tabRanking).takeIf { it != -1 }?.let {
-                actions.onSelectTab(it)
-                actions.onMarkAutoSelected()
-                return
-            }
-        }
-
-        // Knockout auto-selection on first load
-        if (inputs.selectedPhase == Phase.FRIENDLIES && inputs.defaultPhase != Phase.FRIENDLIES && inputs.defaultPhase != null) {
-            actions.onSelectPhase(inputs.defaultPhase)
-            actions.onSelectLabel(inputs.defaultLabel)
-        }
-
-        actions.onMarkAutoSelected()
-    }
-    if (inputs.selectedRound == 0 && inputs.defaultRound != 0) actions.onSelectRound(inputs.defaultRound)
-}
 
 @Composable
 private fun AdminScoreDialogHost(match: Match?, onDismiss: () -> Unit, onConfirm: (Match, Int?, Int?) -> Unit) {
@@ -999,50 +779,46 @@ private fun BolaoDetailDescriptionAndPending(bolao: Bolao, isOwner: Boolean, onS
     }
     if (isOwner && (bolao.pendingParticipants.isNotEmpty() || bolao.pendingExits.isNotEmpty())) {
         Spacer(Modifier.height(12.dp))
-        val pCount = bolao.pendingParticipants.size + bolao.pendingExits.size
-        BolaoSurface(
-            color =
-            Gold.copy(
-                alpha = 0.1f
-            ),
-            shape =
-            BolaoRadiusShape.md,
-            border =
-            BorderStroke(
-                1.dp,
-                Gold.copy(alpha = 0.3f)
-            ),
-            modifier =
-            Modifier.fillMaxWidth().clickable {
-                onShowParticipants()
-            }
-        ) {
-            Row(
-                modifier = Modifier.padding(BolaoSpacing.md),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
-            ) {
-                BolaoText(
-                    stringResource(Res.string.bolao_detail_warning_emoji),
-                    fontSize = BolaoTypography.titleLarge.fontSize
-                )
-                BolaoText(
-                    stringResource(Res.string.bolao_detail_pending_count_message, pCount),
-                    color = Gold,
-                    fontSize = BolaoTypography.bodyMedium.fontSize,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                BolaoText(
-                    stringResource(Res.string.bolao_detail_pending_view_button),
-                    color = Gold,
-                    fontSize = BolaoTypography.bodyMedium.fontSize,
-                    fontWeight = FontWeight.Black
-                )
-            }
-        }
+        BolaoDetailPendingBanner(
+            pCount = bolao.pendingParticipants.size + bolao.pendingExits.size,
+            onShowParticipants = onShowParticipants
+        )
     }
     Spacer(Modifier.height(12.dp))
+}
+
+@Composable
+private fun BolaoDetailPendingBanner(pCount: Int, onShowParticipants: () -> Unit) {
+    BolaoSurface(
+        color = Gold.copy(alpha = 0.1f),
+        shape = BolaoRadiusShape.md,
+        border = BorderStroke(1.dp, Gold.copy(alpha = 0.3f)),
+        modifier = Modifier.fillMaxWidth().clickable { onShowParticipants() }
+    ) {
+        Row(
+            modifier = Modifier.padding(BolaoSpacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
+        ) {
+            BolaoText(
+                stringResource(Res.string.bolao_detail_warning_emoji),
+                fontSize = BolaoTypography.titleLarge.fontSize
+            )
+            BolaoText(
+                stringResource(Res.string.bolao_detail_pending_count_message, pCount),
+                color = Gold,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            BolaoText(
+                stringResource(Res.string.bolao_detail_pending_view_button),
+                color = Gold,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                fontWeight = FontWeight.Black
+            )
+        }
+    }
 }
 
 @Composable
@@ -1170,34 +946,46 @@ private fun BolaoDetailTabContent(
         when (selection.tabs.getOrNull(selection.selectedTab) ?: selection.labels.grupos) {
             selection.labels.grupos, selection.labels.jogos, selection.labels.rodadas, selection.labels.pontosCorridos ->
                 GroupStageTab(
-                    matches = groups.ifEmpty { filtered },
-                    predictions = uiState.userPredictions,
-                    isLoading = uiState.isLoading,
-                    isAdmin = isAppOwner,
-                    bolaoCreatedAt = uiState.bolao?.createdAtMillis ?: 0L,
+                    data =
+                    MatchTabData(
+                        matches = groups.ifEmpty { filtered },
+                        predictions = uiState.userPredictions,
+                        isLoading = uiState.isLoading,
+                        isAdmin = isAppOwner,
+                        bolaoCreatedAt = uiState.bolao?.createdAtMillis ?: 0L
+                    ),
                     selectedRound = state.selectedRound,
                     onRoundChange = state.onRoundChange,
                     listState = state.groupsListState,
                     expandedGroups = state.expandedGroups,
-                    onMatchClick = callbacks.onNavigateToPrediction,
-                    onShowAllPredictions = { callbacks.onNavigateToAllPredictions(it.id) },
-                    onOpenAdminScoreDialog = callbacks.onOpenAdminScoreDialog
+                    actions =
+                    MatchTabActions(
+                        onMatchClick = callbacks.onNavigateToPrediction,
+                        onShowAllPredictions = { callbacks.onNavigateToAllPredictions(it.id) },
+                        onOpenAdminScoreDialog = callbacks.onOpenAdminScoreDialog
+                    )
                 )
             selection.labels.mataMata ->
                 KnockoutTab(
-                    matches = filtered,
-                    predictions = uiState.userPredictions,
-                    isLoading = uiState.isLoading,
-                    isAdmin = isAppOwner,
-                    bolaoCreatedAt = uiState.bolao?.createdAtMillis ?: 0L,
+                    data =
+                    MatchTabData(
+                        matches = filtered,
+                        predictions = uiState.userPredictions,
+                        isLoading = uiState.isLoading,
+                        isAdmin = isAppOwner,
+                        bolaoCreatedAt = uiState.bolao?.createdAtMillis ?: 0L
+                    ),
                     selectedPhase = state.selectedPhase,
                     onPhaseChange = state.onPhaseChange,
                     selectedLabel = state.selectedLabel,
                     onLabelChange = state.onLabelChange,
                     listState = state.knockoutListState,
-                    onMatchClick = callbacks.onNavigateToPrediction,
-                    onShowAllPredictions = { callbacks.onNavigateToAllPredictions(it.id) },
-                    onOpenAdminScoreDialog = callbacks.onOpenAdminScoreDialog,
+                    actions =
+                    MatchTabActions(
+                        onMatchClick = callbacks.onNavigateToPrediction,
+                        onShowAllPredictions = { callbacks.onNavigateToAllPredictions(it.id) },
+                        onOpenAdminScoreDialog = callbacks.onOpenAdminScoreDialog
+                    ),
                     championship = championship
                 )
             selection.labels.ranking -> RankingScreen(bolaoId = bolaoId)
@@ -1206,117 +994,5 @@ private fun BolaoDetailTabContent(
                 StandingsTab(matches = uiState.allMatches.filter { it.championshipId == champId })
             }
         }
-    }
-}
-
-@Preview
-@Composable
-fun BolaoDetailScreenPreview() {
-    val myUserId = "pauloricha"
-    val mockBolao =
-        Bolao(
-            id = "bolao-1",
-            name = "Bolão da Libertadores",
-            description = "Participe do maior bolão de futebol!",
-            code = "LIB26",
-            ownerId = myUserId,
-            participants = listOf(myUserId, "user-2"),
-            createdAtMillis = 1781136000000L
-        )
-    val mockParticipants =
-        listOf(
-            RankingEntry(myUserId, "Paulo George Moreira Richa", "Paulão", 10, 2, 4),
-            RankingEntry("user-2", "Maria Silva", "Maria", 8, 1, 5)
-        )
-    val now = TimeSource.nowMillis()
-    val mockMatches =
-        listOf(
-            Match(
-                id = "GS-A-1",
-                homeTeam = "River Plate",
-                awayTeam = "Nacional",
-                homeTeamCode = "RIV",
-                awayTeamCode = "NAC",
-                homeTeamFlag = "🇦🇷",
-                awayTeamFlag = "🇺🇾",
-                matchDateMillis = now - (2 * 60 * 60 * 1000),
-                phase = Phase.GROUP_STAGE,
-                group = "A",
-                homeScore = 1,
-                awayScore = 0
-            ),
-            Match(
-                id = "GS-A-2",
-                homeTeam = "Palmeiras",
-                awayTeam = "River Plate",
-                homeTeamCode = "PAL",
-                awayTeamCode = "RIV",
-                homeTeamFlag = "🐷",
-                awayTeamFlag = "⚪️",
-                matchDateMillis = now + (30 * 60 * 1000),
-                phase = Phase.GROUP_STAGE,
-                group = "A"
-            ),
-            Match(
-                id = "GS-B-1",
-                homeTeam = "Flamengo",
-                awayTeam = "Peñarol",
-                homeTeamCode = "FLA",
-                awayTeamCode = "PEN",
-                homeTeamFlag = "🔴",
-                awayTeamFlag = "🟡",
-                matchDateMillis = now + (24 * 60 * 60 * 1000),
-                phase = Phase.GROUP_STAGE,
-                group = "B"
-            ),
-            Match(
-                id = "KO-1",
-                homeTeam = "Atlético-MG",
-                awayTeam = "Boca Juniors",
-                homeTeamCode = "CAM",
-                awayTeamCode = "BOC",
-                homeTeamFlag = "🐔",
-                awayTeamFlag = "🟦",
-                matchDateMillis = now + (25 * 60 * 60 * 1000),
-                phase = Phase.ROUND_OF_16
-            )
-        )
-    val mockPredictions = mapOf("GS-A-1" to Prediction(userId = myUserId, matchId = "GS-A-1", homeScore = 1, awayScore = 0))
-    val uiState =
-        BolaoUiState(
-            bolao = mockBolao,
-            matches = mockMatches,
-            userPredictions = mockPredictions,
-            participants = mockParticipants,
-            isLoading = false
-        )
-    BolaoTheme {
-        BolaoDetailContent(
-            bolaoId = "bolao-1", uiState = uiState, isOwner = true, isAppOwner = true,
-            launcherProvider =
-            object : LauncherProvider {
-                override fun shareText(text: String) {}
-
-                override fun sendEmail(address: String, subject: String, body: String) {}
-
-                override fun sendWhatsApp(phone: String, text: String) {}
-            },
-            onLeaveBolao = {}, onApproveJoin = {
-                    _,
-                    _
-                ->
-            }, onApproveLeave = {
-                    _,
-                    _
-                ->
-            }, onNavigateToPrediction = {
-            },
-            onNavigateToAllPredictions = {},
-            onNavigateToEdit = {},
-            onNavigateToAddParticipants = {},
-            onNavigateToHelp = {},
-            onSaveAdminScore = { _, _, _ -> },
-            onNavigateBack = {}
-        )
     }
 }

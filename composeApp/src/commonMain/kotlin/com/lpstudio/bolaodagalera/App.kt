@@ -20,6 +20,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
 import com.lpstudio.bolaodagalera.di.appModule
+import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
@@ -33,7 +34,51 @@ import kotlinx.coroutines.launch
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
 
-// ── Data configuration ─────────────────────
+private val EXEMPT_MAINTENANCE_EMAILS = setOf("paulo.richa@hotmail.com", "pedro-richa@hotmail.com")
+
+private fun computeShouldShowMaintenance(currentUserEmail: String?, isMaintenanceMode: Boolean): Boolean =
+    currentUserEmail != null && isMaintenanceMode && currentUserEmail !in EXEMPT_MAINTENANCE_EMAILS
+
+@Composable
+private fun AppSideEffects(
+    showAds: Boolean,
+    currentUser: User?,
+    remoteConfigManager: RemoteConfigManager,
+    championshipRepository: ChampionshipRepository,
+    crashReporter: CrashReporter,
+    analyticsTracker: AnalyticsTracker
+) {
+    // Update the global ads state for AdManager (interstitials)
+    LaunchedEffect(showAds) {
+        AdManager.setEnabled(showAds)
+    }
+
+    // Preload interstitial ads if enabled
+    LaunchedEffect(Unit) {
+        AdManager.prepare()
+    }
+
+    LaunchedEffect(currentUser) {
+        crashReporter.setUserId(currentUser?.id)
+        analyticsTracker.setUserId(currentUser?.id)
+    }
+
+    LaunchedEffect(currentUser) {
+        try {
+            // Remote Config can be fetched without login
+            remoteConfigManager.fetchAndActivate()
+
+            // Firestore operations MUST wait for login to avoid PERMISSION_DENIED
+            if (currentUser != null) {
+                // Start loading championships and keep the cache up to date
+                championshipRepository.refreshCache()
+                championshipRepository.getChampionships().collect { }
+            }
+        } catch (_: Exception) {
+            // Silent failure
+        }
+    }
+}
 
 @Composable
 fun App() {
@@ -45,50 +90,19 @@ fun App() {
         val analyticsTracker = koinInject<AnalyticsTracker>()
 
         val showAds by remoteConfigManager.showAds.collectAsState()
-
-        // Update the global ads state for AdManager (interstitials)
-        LaunchedEffect(showAds) {
-            AdManager.setEnabled(showAds)
-        }
-
-        // Preload interstitial ads if enabled
-        LaunchedEffect(Unit) {
-            AdManager.prepare()
-        }
-
         val scope = rememberCoroutineScope()
-
         val isMaintenanceMode by remoteConfigManager.isMaintenanceMode.collectAsState()
         val currentUser by authRepository.authStateFlow.collectAsState(initial = authRepository.currentUser)
+        val shouldShowMaintenance = computeShouldShowMaintenance(currentUser?.email, isMaintenanceMode)
 
-        val shouldShowMaintenance =
-            currentUser != null &&
-                (
-                    isMaintenanceMode &&
-                        currentUser?.email != "paulo.richa@hotmail.com" &&
-                        currentUser?.email != "pedro-richa@hotmail.com"
-                    )
-
-        LaunchedEffect(currentUser) {
-            crashReporter.setUserId(currentUser?.id)
-            analyticsTracker.setUserId(currentUser?.id)
-        }
-
-        LaunchedEffect(currentUser) {
-            try {
-                // Remote Config can be fetched without login
-                remoteConfigManager.fetchAndActivate()
-
-                // Firestore operations MUST wait for login to avoid PERMISSION_DENIED
-                if (currentUser != null) {
-                    // Start loading championships and keep the cache up to date
-                    championshipRepository.refreshCache()
-                    championshipRepository.getChampionships().collect { }
-                }
-            } catch (_: Exception) {
-                // Silent failure
-            }
-        }
+        AppSideEffects(
+            showAds = showAds,
+            currentUser = currentUser,
+            remoteConfigManager = remoteConfigManager,
+            championshipRepository = championshipRepository,
+            crashReporter = crashReporter,
+            analyticsTracker = analyticsTracker
+        )
 
         AppTheme {
             CompositionLocalProvider(localAdsEnabled provides showAds) {

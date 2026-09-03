@@ -100,6 +100,119 @@ import com.lpstudio.bolaodagalera.util.getInitials
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
+private class ProfileDialogState {
+    var showSignOut by mutableStateOf(false)
+    var showDeleteAccountWarning by mutableStateOf(false)
+    var showDeleteAccountFinal by mutableStateOf(false)
+    var showChangePassword by mutableStateOf(false)
+    var showMenu by mutableStateOf(false)
+}
+
+@Composable
+private fun ProfileAccountDialogs(dialogs: ProfileDialogState, onSignOut: () -> Unit) {
+    if (dialogs.showSignOut) {
+        BolaoConfirmDialog(
+            title = stringResource(Res.string.profile_sign_out_dialog_title),
+            message = stringResource(Res.string.profile_sign_out_dialog_message),
+            confirmText = stringResource(Res.string.profile_sign_out_dialog_confirm),
+            isDestructive = true,
+            onConfirm = {
+                dialogs.showSignOut = false
+                onSignOut()
+            },
+            onDismiss = { dialogs.showSignOut = false }
+        )
+    }
+
+    // Deleting the account is destructive and irreversible, so it requires two
+    // sequential confirmations instead of the usual single dialog.
+    if (dialogs.showDeleteAccountWarning) {
+        BolaoConfirmDialog(
+            title = stringResource(Res.string.profile_delete_account_warning_dialog_title),
+            message = stringResource(Res.string.profile_delete_account_warning_dialog_message),
+            confirmText = stringResource(Res.string.profile_delete_account_warning_dialog_confirm),
+            isDestructive = true,
+            onConfirm = {
+                dialogs.showDeleteAccountWarning = false
+                dialogs.showDeleteAccountFinal = true
+            },
+            onDismiss = { dialogs.showDeleteAccountWarning = false }
+        )
+    }
+
+    if (dialogs.showDeleteAccountFinal) {
+        BolaoConfirmDialog(
+            title = stringResource(Res.string.profile_delete_account_final_dialog_title),
+            message = stringResource(Res.string.profile_delete_account_final_dialog_message),
+            confirmText = stringResource(Res.string.profile_delete_account_final_dialog_confirm),
+            isDestructive = true,
+            onConfirm = {
+                dialogs.showDeleteAccountFinal = false
+                // viewModel.deleteAccount() // Not yet implemented
+            },
+            onDismiss = { dialogs.showDeleteAccountFinal = false }
+        )
+    }
+}
+
+@Composable
+private fun ProfileChangePasswordDialog(dialogs: ProfileDialogState, userEmail: String?, onResetPassword: (String) -> Unit) {
+    if (!dialogs.showChangePassword) return
+    BolaoDialog(
+        onDismissRequest = { dialogs.showChangePassword = false },
+        containerColor = NavyCard,
+        title = {
+            BolaoText(stringResource(Res.string.profile_change_password_dialog_title), color = Color.White, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            BolaoText(stringResource(Res.string.profile_change_password_dialog_message, userEmail ?: ""), color = TextMuted)
+        },
+        confirmButton = {
+            BolaoButton(
+                text = stringResource(Res.string.profile_change_password_dialog_confirm),
+                onClick = {
+                    dialogs.showChangePassword = false
+                    userEmail?.let(onResetPassword)
+                }
+            )
+        },
+        dismissButton = {
+            BolaoTextButton(onClick = { dialogs.showChangePassword = false }) {
+                BolaoText(stringResource(Res.string.profile_change_password_dialog_dismiss), color = TextMuted)
+            }
+        }
+    )
+}
+
+@Composable
+private fun ProfileDialogs(dialogs: ProfileDialogState, userEmail: String?, onSignOut: () -> Unit, onResetPassword: (String) -> Unit) {
+    ProfileAccountDialogs(dialogs, onSignOut)
+    ProfileChangePasswordDialog(dialogs, userEmail, onResetPassword)
+}
+
+@Composable
+private fun ProfileTopBarMenu(showMenu: Boolean, onShowMenuChange: (Boolean) -> Unit, onDeleteAccountClick: () -> Unit) {
+    Box {
+        BolaoIconButton(onClick = { onShowMenuChange(true) }) {
+            BolaoIcon(Icons.Default.MoreVert, stringResource(Res.string.profile_menu_content_description), tint = Color.White)
+        }
+        BolaoDropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { onShowMenuChange(false) },
+            modifier = Modifier.background(NavyCard).border(1.dp, GlassBorder, BolaoRadiusShape.sm)
+        ) {
+            BolaoDropdownMenuItem(
+                text = { BolaoText(stringResource(Res.string.profile_option_delete_account), color = ErrorRed) },
+                leadingIcon = { BolaoIcon(Icons.Default.DeleteForever, null, tint = ErrorRed, modifier = Modifier.size(18.dp)) },
+                onClick = {
+                    onShowMenuChange(false)
+                    onDeleteAccountClick()
+                }
+            )
+        }
+    }
+}
+
 @Composable
 fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSignOut: () -> Unit) {
     val viewModel: AuthViewModel = koinViewModel()
@@ -109,18 +222,10 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
     val scrollState = rememberScrollState()
     val keyboardHeight = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
 
-    LaunchedEffect(keyboardHeight) {
-        // Auto-scroll-to-end intentionally disabled for long forms
-    }
-
     var name by remember { mutableStateOf(value = "") }
     var nickname by remember { mutableStateOf(value = "") }
     var phone by remember { mutableStateOf(value = "") }
-    var showSignOutDialog by remember { mutableStateOf(value = false) }
-    var showDeleteAccountWarningDialog by remember { mutableStateOf(value = false) }
-    var showDeleteAccountFinalDialog by remember { mutableStateOf(value = false) }
-    var showChangePasswordDialog by remember { mutableStateOf(value = false) }
-    var showMenu by remember { mutableStateOf(value = false) }
+    val dialogs = remember { ProfileDialogState() }
 
     val isNameValid = ValidationUtils.isValidFullName(name)
     val shareInviteMessage = stringResource(Res.string.profile_share_invite_message)
@@ -144,127 +249,58 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
         }
     }
 
-    if (showSignOutDialog) {
-        BolaoConfirmDialog(
-            title = stringResource(Res.string.profile_sign_out_dialog_title),
-            message = stringResource(Res.string.profile_sign_out_dialog_message),
-            confirmText = stringResource(Res.string.profile_sign_out_dialog_confirm),
-            isDestructive = true,
-            onConfirm = {
-                showSignOutDialog = false
-                viewModel.signOut()
-            },
-            onDismiss = { showSignOutDialog = false }
-        )
-    }
+    ProfileDialogs(
+        dialogs = dialogs,
+        userEmail = uiState.user?.email,
+        onSignOut = { viewModel.signOut() },
+        onResetPassword = { viewModel.resetPassword(it) }
+    )
 
-    // Deleting the account is destructive and irreversible, so it requires two
-    // sequential confirmations instead of the usual single dialog.
-    if (showDeleteAccountWarningDialog) {
-        BolaoConfirmDialog(
-            title = stringResource(Res.string.profile_delete_account_warning_dialog_title),
-            message = stringResource(Res.string.profile_delete_account_warning_dialog_message),
-            confirmText = stringResource(Res.string.profile_delete_account_warning_dialog_confirm),
-            isDestructive = true,
-            onConfirm = {
-                showDeleteAccountWarningDialog = false
-                showDeleteAccountFinalDialog = true
-            },
-            onDismiss = { showDeleteAccountWarningDialog = false }
+    ProfileScreenContent(
+        userDisplay = uiState.user?.name?.getInitials() to (uiState.user?.email ?: ""),
+        snackbarHostState = snackbarHostState,
+        scrollState = scrollState,
+        keyboardHeight = keyboardHeight,
+        formFields = ProfileFormFields(uiState.user?.username ?: "", name, isNameValid, nickname, phone, uiState.error, uiState.isLoading),
+        formActions =
+        ProfileFormActions({ name = it }, { nickname = it }, { phone = it }, { viewModel.updateProfile(name, phone, nickname) }),
+        dialogs = dialogs,
+        navActions =
+        ProfileNavActions(
+            onNavigateBack = onNavigateBack,
+            onInviteFriends = { launcherProvider.shareText(shareInviteMessage) },
+            onHelp = onNavigateToHelp
         )
-    }
+    )
+}
 
-    if (showDeleteAccountFinalDialog) {
-        BolaoConfirmDialog(
-            title = stringResource(Res.string.profile_delete_account_final_dialog_title),
-            message = stringResource(Res.string.profile_delete_account_final_dialog_message),
-            confirmText = stringResource(Res.string.profile_delete_account_final_dialog_confirm),
-            isDestructive = true,
-            onConfirm = {
-                showDeleteAccountFinalDialog = false
-                // viewModel.deleteAccount() // Not yet implemented
-            },
-            onDismiss = { showDeleteAccountFinalDialog = false }
-        )
-    }
-
-    if (showChangePasswordDialog) {
-        BolaoDialog(
-            onDismissRequest = { showChangePasswordDialog = false },
-            containerColor = NavyCard,
-            title = {
-                BolaoText(
-                    stringResource(Res.string.profile_change_password_dialog_title),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                BolaoText(
-                    stringResource(Res.string.profile_change_password_dialog_message, uiState.user?.email ?: ""),
-                    color = TextMuted
-                )
-            },
-            confirmButton = {
-                BolaoButton(
-                    text = stringResource(Res.string.profile_change_password_dialog_confirm),
-                    onClick = {
-                        showChangePasswordDialog = false
-                        uiState.user?.email?.let { viewModel.resetPassword(it) }
-                    }
-                )
-            },
-            dismissButton = {
-                BolaoTextButton(onClick = { showChangePasswordDialog = false }) {
-                    BolaoText(stringResource(Res.string.profile_change_password_dialog_dismiss), color = TextMuted)
-                }
-            }
-        )
-    }
-
-    Box(
-        modifier =
-        Modifier
-            .fillMaxSize()
-            .background(DeepNavy)
-    ) {
+@Composable
+private fun ProfileScreenContent(
+    userDisplay: Pair<String?, String>,
+    snackbarHostState: com.lpstudio.bolaodagalera.designsystem.components.BolaoSnackbarHostState,
+    scrollState: androidx.compose.foundation.ScrollState,
+    keyboardHeight: androidx.compose.ui.unit.Dp,
+    formFields: ProfileFormFields,
+    formActions: ProfileFormActions,
+    dialogs: ProfileDialogState,
+    navActions: ProfileNavActions
+) {
+    val (onNavigateBack, onInviteFriends, onHelp) = navActions
+    val (initials, email) = userDisplay
+    Box(modifier = Modifier.fillMaxSize().background(DeepNavy)) {
         BolaoScaffold(
             containerColor = Color.Transparent,
-            snackbarHost = {
-                BolaoSnackbarHost(snackbarHostState)
-            },
+            snackbarHost = { BolaoSnackbarHost(snackbarHostState) },
             topBar = {
                 BolaoTopBar(
                     title = stringResource(Res.string.profile_top_bar_title),
                     onNavigateBack = onNavigateBack,
                     actions = {
-                        Box {
-                            BolaoIconButton(onClick = { showMenu = true }) {
-                                BolaoIcon(
-                                    Icons.Default.MoreVert,
-                                    stringResource(Res.string.profile_menu_content_description),
-                                    tint = Color.White
-                                )
-                            }
-                            BolaoDropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false },
-                                modifier = Modifier.background(NavyCard).border(1.dp, GlassBorder, BolaoRadiusShape.sm)
-                            ) {
-                                BolaoDropdownMenuItem(
-                                    text = {
-                                        BolaoText(stringResource(Res.string.profile_option_delete_account), color = ErrorRed)
-                                    },
-                                    leadingIcon = {
-                                        BolaoIcon(Icons.Default.DeleteForever, null, tint = ErrorRed, modifier = Modifier.size(18.dp))
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        showDeleteAccountWarningDialog = true
-                                    }
-                                )
-                            }
-                        }
+                        ProfileTopBarMenu(
+                            showMenu = dialogs.showMenu,
+                            onShowMenuChange = { dialogs.showMenu = it },
+                            onDeleteAccountClick = { dialogs.showDeleteAccountWarning = true }
+                        )
                     }
                 )
             }
@@ -279,119 +315,21 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(Modifier.height(24.dp))
-                // Spacer(Modifier.height(10.dp)) // Removed to pull the header up as high as possible
 
-                // Avatar large
-                UserAvatar(
-                    initials = uiState.user?.name?.getInitials() ?: "?",
-                    size = 100.dp,
-                    fontSize = BolaoTypography.displayLarge.fontSize,
-                    borderColor = Neon
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                BolaoText(
-                    uiState.user?.email ?: "",
-                    fontSize = BolaoTypography.bodyLarge.fontSize,
-                    color = TextMuted
-                )
+                ProfileHeader(initials = initials ?: "?", email = email)
 
                 Spacer(Modifier.height(32.dp))
 
-                // Form card
-                Column(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(BolaoRadiusShape.xl)
-                        .background(NavyCard)
-                        .border(1.dp, GlassBorder, BolaoRadiusShape.xl)
-                        .padding(BolaoSpacing.xxl),
-                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
-                ) {
-                    // ID field (read-only)
-                    BolaoTextField(
-                        value = uiState.user?.username ?: "",
-                        onValueChange = { },
-                        label = stringResource(Res.string.profile_field_username_label),
-                        enabled = false
-                    )
-
-                    BolaoTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = stringResource(Res.string.profile_field_name_label),
-                        isError = name.isNotBlank() && !isNameValid
-                    )
-                    if (name.isNotBlank() && !isNameValid) {
-                        BolaoText(
-                            stringResource(Res.string.profile_name_error_invalid),
-                            color = ErrorRed,
-                            fontSize = BolaoTypography.bodyMedium.fontSize,
-                            modifier = Modifier.padding(start = BolaoSpacing.sm)
-                        )
-                    }
-
-                    BolaoTextField(
-                        value = nickname,
-                        onValueChange = { nickname = it },
-                        label = stringResource(Res.string.profile_field_nickname_label)
-                    )
-
-                    BolaoTextField(
-                        value = phone,
-                        onValueChange = { phone = it },
-                        label = stringResource(Res.string.profile_field_phone_label)
-                    )
-
-                    uiState.error?.let {
-                        BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize, modifier = Modifier.fillMaxWidth())
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    BolaoButton(
-                        text = stringResource(Res.string.profile_button_save),
-                        isLoading = uiState.isLoading,
-                        enabled = isNameValid && !uiState.isLoading,
-                        onClick = { viewModel.updateProfile(name, phone, nickname) }
-                    )
-                }
+                ProfileFormCard(fields = formFields, actions = formActions)
 
                 Spacer(Modifier.height(32.dp))
 
-                // Extra Options
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
-                ) {
-                    ProfileOptionItem(
-                        icon = Icons.Default.Share,
-                        title = stringResource(Res.string.profile_option_invite_friends)
-                    ) {
-                        launcherProvider.shareText(shareInviteMessage)
-                    }
-                    ProfileOptionItem(
-                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                        title = stringResource(Res.string.profile_option_help)
-                    ) {
-                        onNavigateToHelp()
-                    }
-                    ProfileOptionItem(
-                        icon = Icons.Default.Person,
-                        title = stringResource(Res.string.profile_option_change_password)
-                    ) {
-                        showChangePasswordDialog = true
-                    }
-                    ProfileOptionItem(
-                        icon = Icons.AutoMirrored.Filled.ExitToApp,
-                        title = stringResource(Res.string.profile_option_sign_out),
-                        textColor = ErrorRed
-                    ) {
-                        showSignOutDialog = true
-                    }
-                }
+                ProfileOptionsSection(
+                    onInviteFriends = onInviteFriends,
+                    onHelp = onHelp,
+                    onChangePassword = { dialogs.showChangePassword = true },
+                    onSignOut = { dialogs.showSignOut = true }
+                )
 
                 Spacer(Modifier.height(40.dp))
 
@@ -409,6 +347,121 @@ fun ProfileScreen(onNavigateToHelp: () -> Unit, onNavigateBack: () -> Unit, onSi
                 Spacer(Modifier.height(100.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun ProfileHeader(initials: String, email: String) {
+    UserAvatar(initials = initials, size = 100.dp, fontSize = BolaoTypography.displayLarge.fontSize, borderColor = Neon)
+    Spacer(Modifier.height(16.dp))
+    BolaoText(email, fontSize = BolaoTypography.bodyLarge.fontSize, color = TextMuted)
+}
+
+private data class ProfileNavActions(val onNavigateBack: () -> Unit, val onInviteFriends: () -> Unit, val onHelp: () -> Unit)
+
+private class ProfileFormFields(
+    val username: String,
+    val name: String,
+    val isNameValid: Boolean,
+    val nickname: String,
+    val phone: String,
+    val error: String?,
+    val isLoading: Boolean
+)
+
+private class ProfileFormActions(
+    val onNameChange: (String) -> Unit,
+    val onNicknameChange: (String) -> Unit,
+    val onPhoneChange: (String) -> Unit,
+    val onSave: () -> Unit
+)
+
+@Composable
+private fun ProfileFormCard(fields: ProfileFormFields, actions: ProfileFormActions) {
+    Column(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .clip(BolaoRadiusShape.xl)
+            .background(NavyCard)
+            .border(1.dp, GlassBorder, BolaoRadiusShape.xl)
+            .padding(BolaoSpacing.xxl),
+        verticalArrangement = Arrangement.spacedBy(BolaoSpacing.lg)
+    ) {
+        // ID field (read-only)
+        BolaoTextField(
+            value = fields.username,
+            onValueChange = { },
+            label = stringResource(Res.string.profile_field_username_label),
+            enabled = false
+        )
+
+        BolaoTextField(
+            value = fields.name,
+            onValueChange = actions.onNameChange,
+            label = stringResource(Res.string.profile_field_name_label),
+            isError = fields.name.isNotBlank() && !fields.isNameValid
+        )
+        if (fields.name.isNotBlank() && !fields.isNameValid) {
+            BolaoText(
+                stringResource(Res.string.profile_name_error_invalid),
+                color = ErrorRed,
+                fontSize = BolaoTypography.bodyMedium.fontSize,
+                modifier = Modifier.padding(start = BolaoSpacing.sm)
+            )
+        }
+
+        BolaoTextField(
+            value = fields.nickname,
+            onValueChange = actions.onNicknameChange,
+            label = stringResource(Res.string.profile_field_nickname_label)
+        )
+
+        BolaoTextField(
+            value = fields.phone,
+            onValueChange = actions.onPhoneChange,
+            label = stringResource(Res.string.profile_field_phone_label)
+        )
+
+        fields.error?.let {
+            BolaoText(it, color = ErrorRed, fontSize = BolaoTypography.bodyMedium.fontSize, modifier = Modifier.fillMaxWidth())
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        BolaoButton(
+            text = stringResource(Res.string.profile_button_save),
+            isLoading = fields.isLoading,
+            enabled = fields.isNameValid && !fields.isLoading,
+            onClick = actions.onSave
+        )
+    }
+}
+
+@Composable
+private fun ProfileOptionsSection(onInviteFriends: () -> Unit, onHelp: () -> Unit, onChangePassword: () -> Unit, onSignOut: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)) {
+        ProfileOptionItem(
+            icon = Icons.Default.Share,
+            title = stringResource(Res.string.profile_option_invite_friends),
+            onClick = onInviteFriends
+        )
+        ProfileOptionItem(
+            icon = Icons.AutoMirrored.Outlined.HelpOutline,
+            title = stringResource(Res.string.profile_option_help),
+            onClick = onHelp
+        )
+        ProfileOptionItem(
+            icon = Icons.Default.Person,
+            title = stringResource(Res.string.profile_option_change_password),
+            onClick = onChangePassword
+        )
+        ProfileOptionItem(
+            icon = Icons.AutoMirrored.Filled.ExitToApp,
+            title = stringResource(Res.string.profile_option_sign_out),
+            textColor = ErrorRed,
+            onClick = onSignOut
+        )
     }
 }
 

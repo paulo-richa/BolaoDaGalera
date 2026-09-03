@@ -129,6 +129,45 @@ fun MainScreen(
 }
 
 @Composable
+private fun MainFabSubItems(onToggleMenu: () -> Unit, onCreateBolao: () -> Unit, onJoinBolao: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)) {
+        FabSubItem(
+            icon = Icons.Default.Search,
+            label = stringResource(Res.string.main_screen_fab_join_with_code),
+            onClick = {
+                onToggleMenu()
+                onJoinBolao()
+            }
+        )
+        FabSubItem(
+            icon = Icons.Default.Add,
+            label = stringResource(Res.string.main_screen_fab_create_bolao),
+            onClick = {
+                onToggleMenu()
+                onCreateBolao()
+            }
+        )
+        Spacer(Modifier.height(8.dp)) // Reduced internal spacing
+    }
+}
+
+@Composable
+private fun MainFabButton(showMenu: Boolean, onToggleMenu: () -> Unit) {
+    val rotation by animateFloatAsState(
+        targetValue = if (showMenu) 45f else 0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "fab_rotation"
+    )
+
+    Box(
+        modifier = Modifier.size(64.dp).clip(CircleShape).background(GradientPrimary).clickable(onClick = onToggleMenu),
+        contentAlignment = Alignment.Center
+    ) {
+        BolaoIcon(Icons.Default.Add, contentDescription = null, tint = DeepNavy, modifier = Modifier.size(32.dp).rotate(rotation))
+    }
+}
+
+@Composable
 private fun MainFabMenu(showMenu: Boolean, onToggleMenu: () -> Unit, onCreateBolao: () -> Unit, onJoinBolao: () -> Unit) {
     Column(
         modifier = Modifier.offset(y = 52.dp),
@@ -140,56 +179,9 @@ private fun MainFabMenu(showMenu: Boolean, onToggleMenu: () -> Unit, onCreateBol
             enter = fadeIn() + slideInVertically { it / 2 },
             exit = fadeOut() + slideOutVertically { it / 2 }
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
-            ) {
-                FabSubItem(
-                    icon = Icons.Default.Search,
-                    label = stringResource(Res.string.main_screen_fab_join_with_code),
-                    onClick = {
-                        onToggleMenu()
-                        onJoinBolao()
-                    }
-                )
-                FabSubItem(
-                    icon = Icons.Default.Add,
-                    label = stringResource(Res.string.main_screen_fab_create_bolao),
-                    onClick = {
-                        onToggleMenu()
-                        onCreateBolao()
-                    }
-                )
-                Spacer(Modifier.height(8.dp)) // Reduced internal spacing
-            }
+            MainFabSubItems(onToggleMenu, onCreateBolao, onJoinBolao)
         }
-
-        // Main FAB
-        val rotation by animateFloatAsState(
-            targetValue = if (showMenu) 45f else 0f,
-            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-            label = "fab_rotation"
-        )
-
-        Box(
-            modifier =
-            Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(GradientPrimary)
-                .clickable(onClick = onToggleMenu),
-            contentAlignment = Alignment.Center
-        ) {
-            BolaoIcon(
-                Icons.Default.Add,
-                contentDescription = null,
-                tint = DeepNavy,
-                modifier =
-                Modifier
-                    .size(32.dp)
-                    .rotate(rotation)
-            )
-        }
+        MainFabButton(showMenu, onToggleMenu)
     }
 }
 

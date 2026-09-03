@@ -46,112 +46,91 @@ import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun MaintenanceScreen(onLogout: () -> Unit) {
+private fun BouncingBall() {
     val infiniteTransition = rememberInfiniteTransition()
 
     // Rotation animation (spinning ball)
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec =
-        infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        )
+        animationSpec = infiniteRepeatable(animation = tween(2000, easing = LinearEasing), repeatMode = RepeatMode.Restart)
     )
 
     // Bounce animation (ball hop)
     val bounceTranslation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = -100f,
-        animationSpec =
-        infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        )
+        animationSpec = infiniteRepeatable(animation = tween(600, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse)
     )
 
     // Shadow animation (grows/shrinks in sync with the bounce)
     val shadowScale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0.5f,
-        animationSpec =
-        infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        )
+        animationSpec = infiniteRepeatable(animation = tween(600, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse)
     )
 
     val shadowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.4f,
         targetValue = 0.1f,
-        animationSpec =
-        infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        )
+        animationSpec = infiniteRepeatable(animation = tween(600, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse)
     )
 
+    Box(modifier = Modifier.height(200.dp), contentAlignment = Alignment.BottomCenter) {
+        // Neon shadow on the ground
+        Box(
+            modifier =
+            Modifier
+                .size(width = 80.dp, height = 20.dp)
+                .graphicsLayer(scaleX = shadowScale, scaleY = shadowScale, alpha = shadowAlpha)
+                .background(Neon.copy(alpha = 0.6f), CircleShape)
+                .blur(10.dp)
+        )
+
+        // Soccer ball
+        BolaoIcon(
+            imageVector = Icons.Default.SportsSoccer,
+            contentDescription = stringResource(Res.string.maintenance_screen_icon_cd),
+            modifier = Modifier.size(80.dp).offset(y = bounceTranslation.dp).graphicsLayer(rotationZ = rotation),
+            tint = Neon
+        )
+    }
+}
+
+@Composable
+private fun MaintenanceMessage() {
+    BolaoText(
+        text = stringResource(Res.string.maintenance_screen_title),
+        color = Color.White,
+        fontSize = BolaoTypography.displaySmall.fontSize,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    BolaoText(
+        text = stringResource(Res.string.maintenance_screen_message),
+        color = Color.White.copy(alpha = 0.7f),
+        fontSize = BolaoTypography.titleLarge.fontSize,
+        textAlign = TextAlign.Center,
+        lineHeight = 24.sp,
+        modifier = Modifier.padding(horizontal = BolaoSpacing.lg)
+    )
+}
+
+@Composable
+fun MaintenanceScreen(onLogout: () -> Unit) {
     Column(
-        modifier =
-        Modifier
-            .fillMaxSize()
-            .background(DeepNavy)
-            .padding(BolaoSpacing.xxl),
+        modifier = Modifier.fillMaxSize().background(DeepNavy).padding(BolaoSpacing.xxl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(
-            modifier = Modifier.height(200.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            // Neon shadow on the ground
-            Box(
-                modifier =
-                Modifier
-                    .size(width = 80.dp, height = 20.dp)
-                    .graphicsLayer(
-                        scaleX = shadowScale,
-                        scaleY = shadowScale,
-                        alpha = shadowAlpha
-                    )
-                    .background(Neon.copy(alpha = 0.6f), CircleShape)
-                    .blur(10.dp)
-            )
-
-            // Soccer ball
-            BolaoIcon(
-                imageVector = Icons.Default.SportsSoccer,
-                contentDescription = stringResource(Res.string.maintenance_screen_icon_cd),
-                modifier =
-                Modifier
-                    .size(80.dp)
-                    .offset(y = bounceTranslation.dp)
-                    .graphicsLayer(rotationZ = rotation),
-                tint = Neon
-            )
-        }
+        BouncingBall()
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        BolaoText(
-            text = stringResource(Res.string.maintenance_screen_title),
-            color = Color.White,
-            fontSize = BolaoTypography.displaySmall.fontSize,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        BolaoText(
-            text = stringResource(Res.string.maintenance_screen_message),
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = BolaoTypography.titleLarge.fontSize,
-            textAlign = TextAlign.Center,
-            lineHeight = 24.sp,
-            modifier = Modifier.padding(horizontal = BolaoSpacing.lg)
-        )
+        MaintenanceMessage()
 
         Spacer(modifier = Modifier.height(48.dp))
 

@@ -15,6 +15,7 @@ import com.lpstudio.bolaodagalera.domain.usecase.EnrichRankingWithParticipantNam
 import com.lpstudio.bolaodagalera.domain.usecase.FilterBolaoMatchesUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -92,6 +93,25 @@ class BolaoViewModel(
         }
     }
 
+    /** Participant ids for [bolaoFlow], refreshing pending-join/exit user details as a side effect. */
+    private fun participantIdsFlow(bolaoFlow: Flow<Bolao>): Flow<List<String>> = bolaoFlow
+        .onEach { bolao ->
+            val pendingJoin = authRepository.getUsers(bolao.pendingParticipants)
+            val pendingExit = authRepository.getUsers(bolao.pendingExits)
+            _uiState.update { it.copy(pendingJoinUsers = pendingJoin, pendingExitUsers = pendingExit) }
+        }
+        .map { it.participants }
+        .distinctUntilChanged()
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private fun rankingFlow(bolaoId: String, championshipId: String, participantsFlow: Flow<List<String>>) =
+        participantsFlow.flatMapLatest { participants ->
+            combine(
+                predictionRepository.getRanking(bolaoId, championshipId, participants),
+                flow { emit(authRepository.getUsers(participants)) }
+            ) { ranking, users -> enrichRankingWithParticipantNames(ranking, users) }
+        }
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observeMatchesPredictionsAndRanking() {
         dataCollectionJob =
@@ -99,48 +119,24 @@ class BolaoViewModel(
                 val bolaoFlow =
                     bolaoRepository.getBolaoFlow(bolaoId)
                         .onEach { bolao -> _uiState.update { it.copy(bolao = bolao) } }
-
-                val participantsFlow =
-                    bolaoFlow
-                        .onEach { bolao ->
-                            val pendingJoin = authRepository.getUsers(bolao.pendingParticipants)
-                            val pendingExit = authRepository.getUsers(bolao.pendingExits)
-                            _uiState.update {
-                                it.copy(
-                                    pendingJoinUsers = pendingJoin,
-                                    pendingExitUsers = pendingExit
-                                )
-                            }
-                        }
-                        .map { it.participants }
-                        .distinctUntilChanged()
+                val participantsFlow = participantIdsFlow(bolaoFlow)
 
                 userId.filter { it.isNotBlank() }
                     .flatMapLatest { currentUserId ->
                         bolaoFlow.flatMapLatest { bolao ->
                             val championshipId = bolao.championshipId
-
                             combine(
                                 flowOf(bolao),
                                 matchRepository.getMatches(championshipId),
                                 predictionRepository.getUserPredictions(currentUserId, bolaoId),
                                 predictionRepository.getBolaoAllPredictions(bolaoId),
-                                participantsFlow.flatMapLatest { participants ->
-                                    combine(
-                                        predictionRepository.getRanking(bolaoId, championshipId, participants),
-                                        flow { emit(authRepository.getUsers(participants)) }
-                                    ) { ranking, users ->
-                                        enrichRankingWithParticipantNames(ranking, users)
-                                    }
-                                }
+                                rankingFlow(bolaoId, championshipId, participantsFlow)
                             ) { b, matches, predictions, allPredictions, ranking ->
-                                val filteredMatches = filterBolaoMatches(b, matches)
-                                val predictionMap = predictions.associateBy { it.matchId }
                                 _uiState.update {
                                     it.copy(
-                                        matches = filteredMatches,
+                                        matches = filterBolaoMatches(b, matches),
                                         allMatches = matches,
-                                        userPredictions = predictionMap,
+                                        userPredictions = predictions.associateBy { p -> p.matchId },
                                         allPredictions = allPredictions,
                                         participants = ranking,
                                         isLoading = false

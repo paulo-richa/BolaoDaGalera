@@ -35,25 +35,27 @@ data class Match(
     /** The API / automatic bracket advancement hasn't set a date for this match yet. */
     val hasNoConfirmedDate: Boolean get() = matchDateMillis == NO_DATE_MILLIS
 
-    fun groupRound(): Int {
-        // Priority 1: Brasileirão ID (more reliable than the 'group' field coming from the API)
-        if (id.contains("-R")) {
-            val part = id.substringAfter("-R").substringBefore("-")
-            val r = part.toIntOrNull()
-            if (r != null) return r
-        }
+    /** Round number from the Brasileirão ID (e.g. "...-R12-..."), if present. */
+    private fun roundFromBrasileiraoId(): Int? = id.takeIf { it.contains("-R") }
+        ?.substringAfter("-R")?.substringBefore("-")
+        ?.toIntOrNull()
 
-        // Priority 2: Group field (legacy or fallback)
-        if (group?.startsWith("Rodada ") == true) {
-            return group.substringAfter("Rodada ").toIntOrNull() ?: 0
-        }
+    /** Round number from the legacy 'group' field (e.g. "Rodada 12"), if present. */
+    private fun roundFromGroupField(): Int? = group?.takeIf { it.startsWith("Rodada ") }
+        ?.substringAfter("Rodada ")?.toIntOrNull()
 
-        // Legacy (GS-A-1, GS-B-3, etc) - each group has 3 rounds of MATCHES_PER_ROUND
-        // matches each, so match number n falls in round ceil(n / MATCHES_PER_ROUND).
-        val n = id.substringAfterLast("-").toIntOrNull() ?: return 0
-        if (n !in 1..LEGACY_GROUP_MATCH_COUNT) return 0
+    /**
+     * Round number from the legacy match id scheme (GS-A-1, GS-B-3, etc) - each group has
+     * 3 rounds of MATCHES_PER_ROUND matches each, so match number n falls in round
+     * ceil(n / MATCHES_PER_ROUND).
+     */
+    private fun roundFromLegacyMatchNumber(): Int? {
+        val n = id.substringAfterLast("-").toIntOrNull() ?: return null
+        if (n !in 1..LEGACY_GROUP_MATCH_COUNT) return null
         return (n + MATCHES_PER_ROUND - 1) / MATCHES_PER_ROUND
     }
+
+    fun groupRound(): Int = roundFromBrasileiraoId() ?: roundFromGroupField() ?: roundFromLegacyMatchNumber() ?: 0
 
     companion object {
         /**

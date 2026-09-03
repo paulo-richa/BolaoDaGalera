@@ -9,20 +9,22 @@ import com.lpstudio.bolaodagalera.domain.model.ErrorCategory
  * itself is shared so every screen groups the same underlying causes the same way.
  */
 class ClassifyExceptionUseCase {
+    private val keywordsByCategory: List<Pair<ErrorCategory, List<String>>> = listOf(
+        ErrorCategory.INVALID_CREDENTIALS to listOf("incorrect", "invalid-credential", "password", "wrong"),
+        ErrorCategory.USER_NOT_FOUND to listOf("user-not-found", "no user"),
+        ErrorCategory.ALREADY_IN_USE to listOf("email-already", "email já", "collision", "already-in-use"),
+        ErrorCategory.NETWORK to listOf("network", "connection", "timeout"),
+        ErrorCategory.RATE_LIMITED to listOf("too many requests", "blocked"),
+        ErrorCategory.WEAK_PASSWORD to listOf("weak-password"),
+        ErrorCategory.INVALID_EMAIL to listOf("invalid-email"),
+        ErrorCategory.PERMISSION to listOf("permission", "permissão")
+    )
+
     operator fun invoke(e: Exception): ErrorCategory {
         val msg = e.message?.lowercase() ?: ""
-        return when {
-            msg.contains("incorrect") || msg.contains("invalid-credential") || msg.contains("password") || msg.contains("wrong") ->
-                ErrorCategory.INVALID_CREDENTIALS
-            msg.contains("user-not-found") || msg.contains("no user") -> ErrorCategory.USER_NOT_FOUND
-            msg.contains("email-already") || msg.contains("email já") || msg.contains("collision") || msg.contains("already-in-use") ->
-                ErrorCategory.ALREADY_IN_USE
-            msg.contains("network") || msg.contains("connection") || msg.contains("timeout") -> ErrorCategory.NETWORK
-            msg.contains("too many requests") || msg.contains("blocked") -> ErrorCategory.RATE_LIMITED
-            msg.contains("weak-password") -> ErrorCategory.WEAK_PASSWORD
-            msg.contains("invalid-email") -> ErrorCategory.INVALID_EMAIL
-            msg.contains("permission") || msg.contains("permissão") -> ErrorCategory.PERMISSION
-            else -> ErrorCategory.UNKNOWN
-        }
+        return keywordsByCategory
+            .firstOrNull { (_, keywords) -> keywords.any { msg.contains(it) } }
+            ?.first
+            ?: ErrorCategory.UNKNOWN
     }
 }

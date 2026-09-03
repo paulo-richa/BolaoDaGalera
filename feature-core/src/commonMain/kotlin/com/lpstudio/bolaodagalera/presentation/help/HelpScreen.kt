@@ -100,6 +100,77 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
+private fun HelpDialogs(
+    showConfirmDialog: Boolean,
+    onDismissConfirm: () -> Unit,
+    onConfirmSend: () -> Unit,
+    showErrorDialog: Boolean,
+    onDismissError: () -> Unit
+) {
+    if (showConfirmDialog) {
+        BolaoConfirmDialog(
+            title = stringResource(Res.string.help_screen_confirm_dialog_title),
+            message = stringResource(Res.string.help_screen_confirm_dialog_message),
+            confirmText = stringResource(Res.string.help_screen_confirm_dialog_confirm),
+            dismissText = stringResource(Res.string.help_screen_confirm_dialog_dismiss),
+            onConfirm = onConfirmSend,
+            onDismiss = onDismissConfirm
+        )
+    }
+
+    if (showErrorDialog) {
+        BolaoConfirmDialog(
+            title = stringResource(Res.string.help_screen_error_dialog_title),
+            message = stringResource(Res.string.help_screen_error_dialog_message),
+            confirmText = stringResource(Res.string.help_screen_error_dialog_confirm),
+            isDestructive = true,
+            onConfirm = onDismissError,
+            onDismiss = onDismissError
+        )
+    }
+}
+
+@Composable
+private fun HelpTabRow(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+    Row(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.lg)
+            .clip(BolaoRadiusShape.md)
+            .background(NavyCard)
+            .padding(BolaoSpacing.xs)
+    ) {
+        val tabLabels =
+            listOf(
+                stringResource(Res.string.help_screen_tab_rules),
+                stringResource(Res.string.help_screen_tab_faq),
+                stringResource(Res.string.help_screen_tab_support)
+            )
+        tabLabels.forEachIndexed { index, label ->
+            val selected = selectedTab == index
+            Box(
+                modifier =
+                Modifier
+                    .weight(1f)
+                    .clip(BolaoRadiusShape.sm)
+                    .background(if (selected) Neon else Color.Transparent)
+                    .clickable { onTabSelected(index) }
+                    .padding(vertical = BolaoSpacing.md),
+                contentAlignment = Alignment.Center
+            ) {
+                BolaoText(
+                    text = label,
+                    color = if (selected) DeepNavy else TextMuted,
+                    fontSize = BolaoTypography.bodyLarge.fontSize,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun HelpScreen(onNavigateBack: () -> Unit) {
     val viewModel = koinViewModel<HelpViewModel>()
     val uiState by viewModel.uiState.collectAsState()
@@ -115,32 +186,16 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
         }
     }
 
-    // Confirmation dialog
-    if (showConfirmDialog) {
-        BolaoConfirmDialog(
-            title = stringResource(Res.string.help_screen_confirm_dialog_title),
-            message = stringResource(Res.string.help_screen_confirm_dialog_message),
-            confirmText = stringResource(Res.string.help_screen_confirm_dialog_confirm),
-            dismissText = stringResource(Res.string.help_screen_confirm_dialog_dismiss),
-            onConfirm = {
-                showConfirmDialog = false
-                viewModel.sendSupportMessage(message)
-            },
-            onDismiss = { showConfirmDialog = false }
-        )
-    }
-
-    // Error dialog
-    if (uiState.showError) {
-        BolaoConfirmDialog(
-            title = stringResource(Res.string.help_screen_error_dialog_title),
-            message = stringResource(Res.string.help_screen_error_dialog_message),
-            confirmText = stringResource(Res.string.help_screen_error_dialog_confirm),
-            isDestructive = true,
-            onConfirm = viewModel::dismissError,
-            onDismiss = viewModel::dismissError
-        )
-    }
+    HelpDialogs(
+        showConfirmDialog = showConfirmDialog,
+        onDismissConfirm = { showConfirmDialog = false },
+        onConfirmSend = {
+            showConfirmDialog = false
+            viewModel.sendSupportMessage(message)
+        },
+        showErrorDialog = uiState.showError,
+        onDismissError = viewModel::dismissError
+    )
 
     BolaoScaffold(
         topBar = {
@@ -152,43 +207,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
         containerColor = DeepNavy
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Custom tabs
-            Row(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.lg)
-                    .clip(BolaoRadiusShape.md)
-                    .background(NavyCard)
-                    .padding(BolaoSpacing.xs)
-            ) {
-                val tabLabels =
-                    listOf(
-                        stringResource(Res.string.help_screen_tab_rules),
-                        stringResource(Res.string.help_screen_tab_faq),
-                        stringResource(Res.string.help_screen_tab_support)
-                    )
-                tabLabels.forEachIndexed { index, label ->
-                    val selected = selectedTab == index
-                    Box(
-                        modifier =
-                        Modifier
-                            .weight(1f)
-                            .clip(BolaoRadiusShape.sm)
-                            .background(if (selected) Neon else Color.Transparent)
-                            .clickable { selectedTab = index }
-                            .padding(vertical = BolaoSpacing.md),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        BolaoText(
-                            text = label,
-                            color = if (selected) DeepNavy else TextMuted,
-                            fontSize = BolaoTypography.bodyLarge.fontSize,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                        )
-                    }
-                }
-            }
+            HelpTabRow(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
 
             Box(modifier = Modifier.weight(1f)) {
                 when (selectedTab) {
@@ -307,6 +326,69 @@ private fun FaqSection() {
 }
 
 @Composable
+private fun SupportSuccessState() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            BolaoIcon(Icons.Default.CheckCircle, null, tint = Neon, modifier = Modifier.size(64.dp))
+            Spacer(Modifier.height(16.dp))
+            BolaoText(stringResource(Res.string.help_screen_support_success_title), color = Color.White, fontWeight = FontWeight.Bold)
+            BolaoText(
+                stringResource(Res.string.help_screen_support_success_subtitle),
+                color = TextMuted,
+                fontSize = BolaoTypography.bodyLarge.fontSize
+            )
+        }
+    }
+}
+
+@Composable
+private fun SupportForm(message: String, onMessageChange: (String) -> Unit, isSending: Boolean, onSend: () -> Unit) {
+    Box(
+        modifier = Modifier.size(64.dp).clip(BolaoRadiusShape.xl).background(Neon.copy(alpha = 0.1f)),
+        contentAlignment = Alignment.Center
+    ) {
+        BolaoIcon(Icons.Default.MailOutline, contentDescription = null, tint = Neon, modifier = Modifier.size(32.dp))
+    }
+
+    Spacer(Modifier.height(20.dp))
+
+    BolaoText(
+        stringResource(Res.string.help_screen_support_title),
+        color = Color.White,
+        fontSize = BolaoTypography.headlineSmall.fontSize,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center
+    )
+
+    BolaoText(
+        stringResource(Res.string.help_screen_support_subtitle),
+        color = TextMuted,
+        fontSize = BolaoTypography.bodyLarge.fontSize,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(top = BolaoSpacing.sm, bottom = BolaoSpacing.xxl),
+        lineHeight = 20.sp
+    )
+
+    BolaoTextField(
+        value = message,
+        onValueChange = onMessageChange,
+        label = stringResource(Res.string.help_screen_support_field_placeholder),
+        enabled = !isSending,
+        modifier = Modifier.height(160.dp),
+        singleLine = false,
+        minLines = 4
+    )
+
+    Spacer(Modifier.height(24.dp))
+
+    if (isSending) {
+        BolaoLoadingIndicator()
+    } else {
+        BolaoButton(text = stringResource(Res.string.help_screen_button_send_request), onClick = onSend)
+    }
+}
+
+@Composable
 private fun SupportSection(
     message: String,
     onMessageChange: (String) -> Unit,
@@ -314,81 +396,11 @@ private fun SupportSection(
     showSuccess: Boolean,
     onSend: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(BolaoSpacing.xl),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Column(modifier = Modifier.fillMaxSize().padding(BolaoSpacing.xl), horizontalAlignment = Alignment.CenterHorizontally) {
         if (showSuccess) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    BolaoIcon(Icons.Default.CheckCircle, null, tint = Neon, modifier = Modifier.size(64.dp))
-                    Spacer(Modifier.height(16.dp))
-                    BolaoText(
-                        stringResource(Res.string.help_screen_support_success_title),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                    BolaoText(
-                        stringResource(Res.string.help_screen_support_success_subtitle),
-                        color = TextMuted,
-                        fontSize = BolaoTypography.bodyLarge.fontSize
-                    )
-                }
-            }
+            SupportSuccessState()
         } else {
-            Box(
-                modifier =
-                Modifier
-                    .size(64.dp)
-                    .clip(BolaoRadiusShape.xl)
-                    .background(Neon.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                BolaoIcon(Icons.Default.MailOutline, contentDescription = null, tint = Neon, modifier = Modifier.size(32.dp))
-            }
-
-            Spacer(Modifier.height(20.dp))
-
-            BolaoText(
-                stringResource(Res.string.help_screen_support_title),
-                color = Color.White,
-                fontSize = BolaoTypography.headlineSmall.fontSize,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-
-            BolaoText(
-                stringResource(Res.string.help_screen_support_subtitle),
-                color = TextMuted,
-                fontSize = BolaoTypography.bodyLarge.fontSize,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = BolaoSpacing.sm, bottom = BolaoSpacing.xxl),
-                lineHeight = 20.sp
-            )
-
-            BolaoTextField(
-                value = message,
-                onValueChange = onMessageChange,
-                label = stringResource(Res.string.help_screen_support_field_placeholder),
-                enabled = !isSending,
-                modifier = Modifier.height(160.dp),
-                singleLine = false,
-                minLines = 4
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            if (isSending) {
-                BolaoLoadingIndicator()
-            } else {
-                BolaoButton(
-                    text = stringResource(Res.string.help_screen_button_send_request),
-                    onClick = onSend
-                )
-            }
+            SupportForm(message, onMessageChange, isSending, onSend)
         }
     }
 }

@@ -50,46 +50,35 @@ import org.jetbrains.compose.resources.stringResource
 private const val TODAY_LABEL = "⚽️ HOJE"
 private const val LIVE_WINDOW_MILLIS = 3 * 3600_000L
 
-/** Groups the [MatchCard] click callbacks so extracted sub-composables don't need one parameter per callback. */
-private data class KnockoutMatchActions(
-    val onMatchClick: (String) -> Unit,
-    val onShowAllPredictions: (Match) -> Unit,
-    val onOpenAdminScoreDialog: (Match) -> Unit
+private class KnockoutComputedState(
+    val phaseOrder: List<Phase>,
+    val tz: TimeZone,
+    val now: Long,
+    val todayDate: LocalDate,
+    val hasMatchToday: Boolean,
+    val labels: List<String>
 )
 
 @Composable
-fun KnockoutTab(
-    matches: List<Match>,
-    predictions: Map<String, Prediction>,
-    isLoading: Boolean,
-    isAdmin: Boolean,
-    bolaoCreatedAt: Long,
-    selectedPhase: Phase?,
-    onPhaseChange: (Phase?) -> Unit,
-    selectedLabel: String?,
-    onLabelChange: (String?) -> Unit,
-    listState: LazyListState,
-    onMatchClick: (String) -> Unit,
-    onShowAllPredictions: (Match) -> Unit,
-    onOpenAdminScoreDialog: (Match) -> Unit,
-    championship: Championship = Championship.DEFAULT
-) {
-    if (isLoading && matches.isEmpty()) {
-        BolaoFullScreenLoading()
-        return
-    }
-    val actions = remember(onMatchClick, onShowAllPredictions, onOpenAdminScoreDialog) {
-        KnockoutMatchActions(onMatchClick, onShowAllPredictions, onOpenAdminScoreDialog)
-    }
+private fun rememberKnockoutComputedState(matches: List<Match>, isTwoLegged: Boolean): KnockoutComputedState {
     val phaseOrder = remember(matches) { computeKnockoutPhaseOrder(matches) }
     val tz = TimeZone.currentSystemDefault()
     val now = TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
-    val hasMatchToday =
-        remember(matches, todayDate) { hasKnockoutMatchToday(matches, todayDate, tz, now) }
-    val labels = remember(phaseOrder, championship.isTwoLegged) { computeKnockoutLabels(phaseOrder, championship.isTwoLegged) }
-    val showShadow by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
+    val hasMatchToday = remember(matches, todayDate) { hasKnockoutMatchToday(matches, todayDate, tz, now) }
+    val labels = remember(phaseOrder, isTwoLegged) { computeKnockoutLabels(phaseOrder, isTwoLegged) }
+    return KnockoutComputedState(phaseOrder, tz, now, todayDate, hasMatchToday, labels)
+}
 
+@Composable
+private fun KnockoutAutoSelectionEffect(
+    matches: List<Match>,
+    computed: KnockoutComputedState,
+    selectedPhase: Phase?,
+    selectedLabel: String?,
+    onLabelChange: (String?) -> Unit,
+    onPhaseChange: (Phase?) -> Unit
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
     // Runs only while this screen is in the foreground (RESUMED), so it doesn't race
     // with navigation to the prediction screen. selectedPhase/selectedLabel/listState
@@ -100,59 +89,122 @@ fun KnockoutTab(
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             handleKnockoutAutoSelection(
                 matches = matches,
-                labels = labels,
+                labels = computed.labels,
                 selectedPhase = selectedPhase,
                 selectedLabel = selectedLabel,
-                hasMatchToday = hasMatchToday,
+                hasMatchToday = computed.hasMatchToday,
                 onLabelChange = onLabelChange,
                 onPhaseChange = onPhaseChange
             )
         }
     }
+}
+
+@Composable
+fun KnockoutTab(
+    data: MatchTabData,
+    selectedPhase: Phase?,
+    onPhaseChange: (Phase?) -> Unit,
+    selectedLabel: String?,
+    onLabelChange: (String?) -> Unit,
+    listState: LazyListState,
+    actions: MatchTabActions,
+    championship: Championship = Championship.DEFAULT
+) {
+    val matches = data.matches
+    if (data.isLoading && matches.isEmpty()) {
+        BolaoFullScreenLoading()
+        return
+    }
+    val computed = rememberKnockoutComputedState(matches, championship.isTwoLegged)
+    val showShadow by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
+
+    KnockoutAutoSelectionEffect(matches, computed, selectedPhase, selectedLabel, onLabelChange, onPhaseChange)
     Column(Modifier.fillMaxSize()) {
-        if (labels.isNotEmpty()) {
+        if (computed.labels.isNotEmpty()) {
             KnockoutPhaseSelectorBar(
-                labels = labels,
+                labels = computed.labels,
                 selectedLabel = selectedLabel,
-                hasMatchToday = hasMatchToday,
+                hasMatchToday = computed.hasMatchToday,
                 onLabelChange = onLabelChange,
                 onPhaseChange = onPhaseChange
             )
         }
 
-        Box(Modifier.weight(1f)) {
-            val phaseMatches = remember(
+        KnockoutMatchesBox(
+            data = data,
+            matches = matches,
+            computed = computed,
+            selectedPhase = selectedPhase,
+            selectedLabel = selectedLabel,
+            listState = listState,
+            showShadow = showShadow,
+            actions = actions,
+            championship = championship
+        )
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.KnockoutMatchesBox(
+    data: MatchTabData,
+    matches: List<Match>,
+    computed: KnockoutComputedState,
+    selectedPhase: Phase?,
+    selectedLabel: String?,
+    listState: LazyListState,
+    showShadow: Boolean,
+    actions: MatchTabActions,
+    championship: Championship
+) {
+    Box(Modifier.weight(1f)) {
+        val phaseMatches = remember(
+            matches,
+            selectedPhase,
+            selectedLabel,
+            championship.isTwoLegged,
+            computed.todayDate,
+            computed.now
+        ) {
+            computeKnockoutPhaseMatches(
                 matches,
                 selectedPhase,
                 selectedLabel,
                 championship.isTwoLegged,
-                todayDate,
-                now
-            ) {
-                computeKnockoutPhaseMatches(matches, selectedPhase, selectedLabel, championship.isTwoLegged, todayDate, tz, now)
+                computed.todayDate,
+                computed.tz,
+                computed.now
+            )
+        }
+
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
+        ) {
+            if (phaseMatches.isEmpty() && selectedPhase == Phase.FRIENDLIES) {
+                knockoutEmptyState()
             }
+            knockoutMatchesList(
+                phaseMatches,
+                data.predictions,
+                data.isAdmin,
+                data.bolaoCreatedAt,
+                matches,
+                championship.isTwoLegged,
+                actions
+            )
+        }
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(BolaoSpacing.md)
-            ) {
-                if (phaseMatches.isEmpty() && selectedPhase == Phase.FRIENDLIES) {
-                    knockoutEmptyState()
-                }
-                knockoutMatchesList(phaseMatches, predictions, isAdmin, bolaoCreatedAt, matches, championship.isTwoLegged, actions)
-            }
+        ScrollTopShadow(visible = showShadow)
 
-            ScrollTopShadow(visible = showShadow)
-
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                    BolaoLinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        trackColor = Color.Transparent
-                    )
-                }
+        if (data.isLoading) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                BolaoLinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    trackColor = Color.Transparent
+                )
             }
         }
     }
@@ -170,12 +222,15 @@ private fun computeKnockoutPhaseOrder(matches: List<Match>): List<Phase> {
     return allPhases.filter { phase -> matches.any { it.phase == phase } }
 }
 
+/** Matches after midnight before this hour still count as "today" (late-night kickoffs). */
+private const val EARLY_MORNING_CUTOFF_HOUR = 4
+
 private fun hasKnockoutMatchToday(matches: List<Match>, todayDate: LocalDate, tz: TimeZone, now: Long): Boolean =
     matches.filter { it.phase != Phase.GROUP_STAGE }.any {
         val mTime = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz)
         val mDate = mTime.date
         mDate == todayDate ||
-            (mDate.toEpochDays() == todayDate.toEpochDays() + 1 && mTime.hour < 4) ||
+            (mDate.toEpochDays() == todayDate.toEpochDays() + 1 && mTime.hour < EARLY_MORNING_CUTOFF_HOUR) ||
             (now in it.matchDateMillis..(it.matchDateMillis + LIVE_WINDOW_MILLIS))
     }
 
@@ -247,7 +302,7 @@ private fun computeTodayKnockoutMatches(matches: List<Match>, todayDate: LocalDa
     matches.filter { it.phase != Phase.GROUP_STAGE }.filter { m ->
         val mTime = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz)
         val mDate = mTime.date
-        val isTomorrowEarly = mDate.toEpochDays() == todayDate.toEpochDays() + 1 && mTime.hour < 4
+        val isTomorrowEarly = mDate.toEpochDays() == todayDate.toEpochDays() + 1 && mTime.hour < EARLY_MORNING_CUTOFF_HOUR
         val isRecentlyFinished = now in m.matchDateMillis..(m.matchDateMillis + LIVE_WINDOW_MILLIS)
         mDate == todayDate || isTomorrowEarly || isRecentlyFinished
     }.sortedWith(
@@ -256,14 +311,18 @@ private fun computeTodayKnockoutMatches(matches: List<Match>, todayDate: LocalDa
 
 private val LIVE_STATUSES = listOf("IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTIES", "LIVE")
 
+private const val PREDICTION_LOCK_LEAD_MILLIS = 60_000L
+private const val URGENCY_LIVE_OR_LOCKED = 2
+private const val URGENCY_UNFINISHED = 1
+
 /** Sort priority for the "today" list: live/locked-unfinished matches first, then unfinished, then finished. */
 private fun matchUrgency(match: Match, now: Long): Int {
     val isLive = match.status in LIVE_STATUSES
-    val isLocked = now >= (match.matchDateMillis - 60_000)
+    val isLocked = now >= (match.matchDateMillis - PREDICTION_LOCK_LEAD_MILLIS)
     val isNotFinished = match.status != "FINISHED"
     return when {
-        isLive || (isLocked && isNotFinished) -> 2
-        isNotFinished -> 1
+        isLive || (isLocked && isNotFinished) -> URGENCY_LIVE_OR_LOCKED
+        isNotFinished -> URGENCY_UNFINISHED
         else -> 0
     }
 }
@@ -272,13 +331,19 @@ private fun matchUrgency(match: Match, now: Long): Int {
 private fun hasKnownTeams(homeCode: String, awayCode: String): Boolean =
     homeCode != "TBD" && awayCode != "TBD" && homeCode.isNotBlank() && awayCode.isNotBlank()
 
+private const val TIE_PRIORITY_FINISHED = 3
+private const val TIE_PRIORITY_SCORED = 2
+private const val TIE_PRIORITY_CURRENT_SEASON = 1
+
 /** Priority used to pick the representative match for a two-legged tie: finished > scored > current-season > other. */
 private fun twoLeggedRepresentativePriority(match: Match): Int = when {
-    match.status == "FINISHED" -> 3
-    match.homeScore != null -> 2
-    match.id.startsWith("CLI-2026") -> 1
+    match.status == "FINISHED" -> TIE_PRIORITY_FINISHED
+    match.homeScore != null -> TIE_PRIORITY_SCORED
+    match.id.startsWith("CLI-2026") -> TIE_PRIORITY_CURRENT_SEASON
     else -> 0
 }
+
+private const val NO_EXPLICIT_ORDER_SENTINEL = 99
 
 private fun computeTwoLeggedPhaseMatches(matches: List<Match>, selectedLabel: String): List<Match> {
     val base = selectedLabel.substringBefore(" - ")
@@ -295,7 +360,7 @@ private fun computeTwoLeggedPhaseMatches(matches: List<Match>, selectedLabel: St
     }.values.mapNotNull { pair ->
         val leg = if (isVolta) pair.filter { it.id.contains("-L2") } else pair.filter { !it.id.contains("-L2") }
         leg.maxByOrNull(::twoLeggedRepresentativePriority)
-    }.sortedBy { it.matchOrder.takeIf { o -> o > 0 } ?: 99 }
+    }.sortedBy { it.matchOrder.takeIf { o -> o > 0 } ?: NO_EXPLICIT_ORDER_SENTINEL }
 }
 
 @Composable
@@ -347,18 +412,19 @@ private fun LazyListScope.knockoutMatchesList(
     bolaoCreatedAt: Long,
     allMatches: List<Match>,
     isTwoLegged: Boolean,
-    actions: KnockoutMatchActions
+    actions: MatchTabActions
 ) {
     items(phaseMatches, key = { it.id }) { m ->
         MatchCard(
             match = m,
             prediction = predictions[m.id],
-            isAdmin = isAdmin,
-            bolaoCreatedAt = bolaoCreatedAt,
-            forceLocked = false,
-            showSocialBadge = true,
-            allMatches = allMatches,
-            isTwoLegged = isTwoLegged,
+            options =
+            MatchCardOptions(
+                isAdmin = isAdmin,
+                bolaoCreatedAt = bolaoCreatedAt,
+                allMatches = allMatches,
+                isTwoLegged = isTwoLegged
+            ),
             onClick = { actions.onMatchClick(m.id) },
             onShowAllPredictions = { actions.onShowAllPredictions(m) },
             onOpenAdminScoreDialog = { actions.onOpenAdminScoreDialog(m) }
