@@ -23,6 +23,7 @@ coil = "3.0.4"
 play-services-ads = "25.4.0"
 detekt = "1.23.8"
 ktlint = "14.2.0"
+kover = "0.9.1"
 robolectric = "4.16.1"
 roborazzi = "1.73.0"
 turbine = "1.2.1"
@@ -108,3 +109,4 @@ firebasePerf = { id = "com.google.firebase.firebase-perf", version.ref = "fireba
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

@@ -15,7 +15,21 @@ plugins {
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.roborazzi) apply false
     alias(libs.plugins.androidxBaselineProfile) apply false
+    alias(libs.plugins.kover)
     id("com.google.firebase.appdistribution") version "5.1.1" apply false
+}
+
+// Each module (all applying the Kover plugin themselves) produces its own coverage
+// report under its build/reports/kover/ - CI runs `koverXmlReportDebug`/
+// `koverHtmlReportDebug` unqualified so Gradle triggers the task in every project that
+// declares it, and uploads all of them together instead of trying to merge into one.
+dependencies {
+    kover(project(":composeApp"))
+    kover(project(":core-common"))
+    kover(project(":core-data"))
+    kover(project(":feature-auth"))
+    kover(project(":feature-bolao"))
+    kover(project(":feature-core"))
 }
 
 subprojects {
