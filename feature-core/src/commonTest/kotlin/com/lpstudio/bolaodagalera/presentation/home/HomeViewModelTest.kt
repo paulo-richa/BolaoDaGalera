@@ -1,11 +1,13 @@
 package com.lpstudio.bolaodagalera.presentation.home
 
 import app.cash.turbine.test
+import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeNotificationRepository
+import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.domain.model.Notification
 import com.lpstudio.bolaodagalera.domain.model.NotificationType
 import com.lpstudio.bolaodagalera.domain.model.User
@@ -52,7 +54,9 @@ class HomeViewModelTest {
                 bolaoRepository = bolaoRepository,
                 invitationRepository = invitationRepository,
                 notificationRepository = notificationRepository,
-                crashReporter = FakeCrashReporter()
+                crashReporter = FakeCrashReporter(),
+                performanceMonitor = FakePerformanceMonitor(),
+                analyticsTracker = FakeAnalyticsTracker()
             )
     }
 

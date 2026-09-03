@@ -14,8 +14,12 @@ import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.domain.usecase.ClassifyExceptionUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.DedupeInvitationsByBolaoUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.RespondToInvitationUseCase
+import com.lpstudio.bolaodagalera.observability.AnalyticsEvents
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.ErrorReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.PerformanceTraces
 import com.lpstudio.bolaodagalera.observability.appLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,11 +48,13 @@ class HomeViewModel(
     private val invitationRepository: InvitationRepository,
     private val notificationRepository: NotificationRepository,
     private val crashReporter: CrashReporter,
-    private val dedupeInvitationsByBolao: DedupeInvitationsByBolaoUseCase = DedupeInvitationsByBolaoUseCase(),
-    private val respondToInvitationUseCase: RespondToInvitationUseCase = RespondToInvitationUseCase(bolaoRepository, invitationRepository),
-    private val classifyException: ClassifyExceptionUseCase = ClassifyExceptionUseCase(),
-    private val errorReporter: ErrorReporter = ErrorReporter(crashReporter, classifyException)
+    private val performanceMonitor: PerformanceMonitor,
+    private val analyticsTracker: AnalyticsTracker
 ) : ViewModel() {
+    private val dedupeInvitationsByBolao = DedupeInvitationsByBolaoUseCase()
+    private val respondToInvitationUseCase = RespondToInvitationUseCase(bolaoRepository, invitationRepository)
+    private val classifyException = ClassifyExceptionUseCase()
+    private val errorReporter = ErrorReporter(crashReporter, classifyException)
     private val logger = appLogger("HomeViewModel")
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -75,6 +81,8 @@ class HomeViewModel(
     }
 
     private fun loadUserData(user: User) {
+        val homeLoadTrace = performanceMonitor.startScreenTrace(PerformanceTraces.HOME_LOAD)
+        var homeLoadTraceStopped = false
         val invitationsFlow =
             combine(
                 invitationRepository.getInvitationsForUser(user.email.trim().lowercase()),
@@ -103,6 +111,11 @@ class HomeViewModel(
                 val sortedNotifications = notifications.sortedByDescending { it.timestamp }
                 val hasUnread = sortedNotifications.any { !it.isRead }
 
+                if (!homeLoadTraceStopped) {
+                    homeLoadTraceStopped = true
+                    homeLoadTrace.stop()
+                }
+
                 _uiState.update {
                     it.copy(
                         boloes = boloes,
@@ -114,6 +127,10 @@ class HomeViewModel(
                 }
             }.catch { e ->
                 if (e is CancellationException) throw e
+                if (!homeLoadTraceStopped) {
+                    homeLoadTraceStopped = true
+                    homeLoadTrace.stop()
+                }
                 val message = errorReporter.reportAndClassify(e, "Erro no dataCollectionJob de ${user.id}")
                 _uiState.update { it.copy(isLoading = false, error = message) }
             }.launchIn(viewModelScope)
@@ -146,7 +163,13 @@ class HomeViewModel(
             try {
                 // 1-2. Add the participant (on accept) and resolve every pending
                 // invitation this user has for this bolão
-                respondToInvitationUseCase(user.id, targetInvitation, allInvitationsCache, accept)
+                performanceMonitor.trace(PerformanceTraces.INVITATION_RESPOND) {
+                    respondToInvitationUseCase(user.id, targetInvitation, allInvitationsCache, accept)
+                }
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.INVITATION_RESPOND,
+                    mapOf("bolao_id" to bolaoId, "accepted" to accept)
+                )
                 logger.d { "[HomeVM] Convites resolvidos." }
 
                 // 3. Immediate local cleanup
@@ -188,7 +211,13 @@ class HomeViewModel(
     fun respondToJoinRequest(bolaoId: String, userId: String, approve: Boolean) {
         viewModelScope.launch {
             try {
-                bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
+                performanceMonitor.trace(PerformanceTraces.BOLAO_APPROVE_JOIN) {
+                    bolaoRepository.approveJoinRequest(bolaoId, userId, approve)
+                }
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.BOLAO_APPROVE_JOIN,
+                    mapOf("bolao_id" to bolaoId, "approved" to approve)
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -201,7 +230,13 @@ class HomeViewModel(
     fun respondToExitRequest(bolaoId: String, userId: String, approve: Boolean) {
         viewModelScope.launch {
             try {
-                bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
+                performanceMonitor.trace(PerformanceTraces.BOLAO_APPROVE_LEAVE) {
+                    bolaoRepository.approveLeaveRequest(bolaoId, userId, approve)
+                }
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.BOLAO_APPROVE_LEAVE,
+                    mapOf("bolao_id" to bolaoId, "approved" to approve)
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

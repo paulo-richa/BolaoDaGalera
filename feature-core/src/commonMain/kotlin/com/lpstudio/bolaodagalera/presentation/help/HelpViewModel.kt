@@ -5,6 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
+import com.lpstudio.bolaodagalera.observability.AnalyticsEvents
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
+import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.PerformanceTraces
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +22,14 @@ import kotlinx.coroutines.launch
 @Immutable
 data class HelpUiState(val isSending: Boolean = false, val showSuccess: Boolean = false, val showError: Boolean = false)
 
-class HelpViewModel(private val supportRepository: SupportRepository, private val authRepository: AuthRepository) : ViewModel() {
+class HelpViewModel(
+    private val supportRepository: SupportRepository,
+    private val authRepository: AuthRepository,
+    private val crashReporter: CrashReporter,
+    private val performanceMonitor: PerformanceMonitor,
+    private val analyticsTracker: AnalyticsTracker,
+    private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
+) : ViewModel() {
     private val _uiState = MutableStateFlow(HelpUiState())
     val uiState: StateFlow<HelpUiState> = _uiState.asStateFlow()
 
@@ -25,15 +39,21 @@ class HelpViewModel(private val supportRepository: SupportRepository, private va
             _uiState.update { it.copy(isSending = true, showError = false) }
             try {
                 val user = authRepository.currentUser
-                supportRepository.sendSupportTicket(
-                    userId = user?.id ?: "anonymous",
-                    userEmail = user?.email ?: "no-email",
-                    message = message
-                )
+                performanceMonitor.trace(PerformanceTraces.SUPPORT_SEND) {
+                    supportRepository.sendSupportTicket(
+                        userId = user?.id ?: "anonymous",
+                        userEmail = user?.email ?: "no-email",
+                        message = message
+                    )
+                }
+                analyticsTracker.logEvent(AnalyticsEvents.SUPPORT_SEND)
                 _uiState.update { it.copy(isSending = false, showSuccess = true) }
                 delay(SUCCESS_MESSAGE_DURATION_MILLIS)
                 _uiState.update { it.copy(showSuccess = false) }
-            } catch (_: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                errorReporter.report(e, "Falha ao enviar mensagem de suporte")
                 _uiState.update { it.copy(isSending = false, showError = true) }
             }
         }

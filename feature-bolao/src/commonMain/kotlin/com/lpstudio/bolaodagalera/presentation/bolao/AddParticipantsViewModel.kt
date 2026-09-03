@@ -6,8 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
+import com.lpstudio.bolaodagalera.observability.AnalyticsEvents
+import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.ErrorReporter
+import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import com.lpstudio.bolaodagalera.observability.PerformanceTraces
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -36,6 +40,8 @@ class AddParticipantsViewModel(
     private val authRepository: AuthRepository,
     private val invitationRepository: InvitationRepository,
     private val crashReporter: CrashReporter,
+    private val performanceMonitor: PerformanceMonitor,
+    private val analyticsTracker: AnalyticsTracker,
     private val bolaoId: String,
     private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
 ) : ViewModel() {
@@ -99,14 +105,17 @@ class AddParticipantsViewModel(
                     }
 
                 try {
-                    withTimeout(INVITATION_SEND_TIMEOUT_MILLIS) {
-                        invitationRepository.sendInvitation(
-                            bolaoId = bolaoId,
-                            bolaoName = _uiState.value.bolaoName,
-                            inviterName = inviterName,
-                            inviteeIdentifier = inviteeIdentifier
-                        )
+                    performanceMonitor.trace(PerformanceTraces.INVITATION_SEND) {
+                        withTimeout(INVITATION_SEND_TIMEOUT_MILLIS) {
+                            invitationRepository.sendInvitation(
+                                bolaoId = bolaoId,
+                                bolaoName = _uiState.value.bolaoName,
+                                inviterName = inviterName,
+                                inviteeIdentifier = inviteeIdentifier
+                            )
+                        }
                     }
+                    analyticsTracker.logEvent(AnalyticsEvents.INVITATION_SEND, mapOf("bolao_id" to bolaoId))
                 } catch (e: TimeoutCancellationException) {
                     // Best-effort: shown as success below regardless, since a Cloud Function
                     // retry path exists - but still tracked in Crashlytics so a systematic

@@ -65,6 +65,7 @@ private fun AutoNavigateHomeAfterBackground(navController: androidx.navigation.N
 
 private fun androidx.navigation.NavGraphBuilder.authRoutes(navController: androidx.navigation.NavHostController) {
     composable<Login> {
+        ScreenPerformanceTrace("screen_login")
         LoginScreen(
             onLoginSuccess = { navController.navigate(Home) { popUpTo(Login) { inclusive = true } } },
             onNavigateToRegister = { email -> navController.navigate(Register(email)) }
@@ -72,6 +73,7 @@ private fun androidx.navigation.NavGraphBuilder.authRoutes(navController: androi
     }
 
     composable<Register> { backStackEntry ->
+        ScreenPerformanceTrace("screen_register")
         val route = backStackEntry.toRoute<Register>()
         RegisterScreen(
             initialEmail = route.email ?: "",
@@ -81,6 +83,7 @@ private fun androidx.navigation.NavGraphBuilder.authRoutes(navController: androi
     }
 
     composable<Profile> {
+        ScreenPerformanceTrace("screen_profile")
         ProfileScreen(
             onNavigateToHelp = { navController.navigate(Help) },
             onNavigateBack = { navController.popBackStack() },
@@ -91,6 +94,7 @@ private fun androidx.navigation.NavGraphBuilder.authRoutes(navController: androi
 
 private fun androidx.navigation.NavGraphBuilder.bolaoManagementRoutes(navController: androidx.navigation.NavHostController) {
     composable<Home> {
+        ScreenPerformanceTrace("screen_home")
         MainScreen(
             onNavigateToBolao = { bolaoId -> navController.navigate(BolaoDetail(bolaoId)) },
             onNavigateToCreateBolao = { navController.navigate(CreateBolao) },
@@ -101,6 +105,7 @@ private fun androidx.navigation.NavGraphBuilder.bolaoManagementRoutes(navControl
     }
 
     composable<CreateBolao> {
+        ScreenPerformanceTrace("screen_create_bolao")
         CreateBolaoScreen(
             onCreated = { bolaoId -> navController.navigate(BolaoDetail(bolaoId)) { popUpTo(Home) } },
             onNavigateToAddParticipants = { bolaoId -> navController.navigate(AddParticipants(bolaoId)) },
@@ -119,6 +124,7 @@ private fun androidx.navigation.NavGraphBuilder.bolaoManagementRoutes(navControl
             navDeepLink { uriPattern = "bolaodagalera://invite?code={code}" }
         )
     ) { backStackEntry ->
+        ScreenPerformanceTrace("screen_join_bolao")
         val route = backStackEntry.toRoute<JoinBolao>()
         JoinBolaoScreen(
             initialCode = route.code ?: "",
@@ -128,11 +134,13 @@ private fun androidx.navigation.NavGraphBuilder.bolaoManagementRoutes(navControl
     }
 
     composable<AddParticipants> { backStackEntry ->
+        ScreenPerformanceTrace("screen_add_participants")
         val route = backStackEntry.toRoute<AddParticipants>()
         AddParticipantsScreen(bolaoId = route.bolaoId, onNavigateBack = { navController.popBackStack() })
     }
 
     composable<EditBolao> { backStackEntry ->
+        ScreenPerformanceTrace("screen_edit_bolao")
         val route = backStackEntry.toRoute<EditBolao>()
         EditBolaoScreen(
             bolaoId = route.bolaoId,
@@ -147,6 +155,7 @@ private fun androidx.navigation.NavGraphBuilder.bolaoDetailAndMatchRoutes(navCon
     composable<BolaoDetail>(
         deepLinks = listOf(navDeepLink { uriPattern = "bolaodagalera://bolao?bolaoId={bolaoId}" })
     ) { backStackEntry ->
+        ScreenPerformanceTrace("screen_bolao_detail")
         val route = backStackEntry.toRoute<BolaoDetail>()
         BolaoDetailScreen(
             bolaoId = route.bolaoId,
@@ -164,6 +173,7 @@ private fun androidx.navigation.NavGraphBuilder.bolaoDetailAndMatchRoutes(navCon
     composable<Prediction>(
         deepLinks = listOf(navDeepLink { uriPattern = "bolaodagalera://predict?bolaoId={bolaoId}&matchId={matchId}" })
     ) { backStackEntry ->
+        ScreenPerformanceTrace("screen_prediction")
         val route = backStackEntry.toRoute<Prediction>()
         PredictionScreen(
             bolaoId = route.bolaoId,
@@ -174,6 +184,7 @@ private fun androidx.navigation.NavGraphBuilder.bolaoDetailAndMatchRoutes(navCon
     }
 
     composable<MatchPredictions> { backStackEntry ->
+        ScreenPerformanceTrace("screen_match_predictions")
         val route = backStackEntry.toRoute<MatchPredictions>()
         com.lpstudio.bolaodagalera.presentation.match.MatchPredictionsScreen(
             bolaoId = route.bolaoId,
@@ -182,7 +193,10 @@ private fun androidx.navigation.NavGraphBuilder.bolaoDetailAndMatchRoutes(navCon
         )
     }
 
-    composable<Help> { HelpScreen(onNavigateBack = { navController.popBackStack() }) }
+    composable<Help> {
+        ScreenPerformanceTrace("screen_help")
+        HelpScreen(onNavigateBack = { navController.popBackStack() })
+    }
 }
 
 @Composable

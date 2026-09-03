@@ -3,16 +3,19 @@ package com.lpstudio.bolaodagalera
 import android.app.Application
 import com.lpstudio.bolaodagalera.ads.AdBannerProvider
 import com.lpstudio.bolaodagalera.data.fake.FakeAdBannerProvider
+import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
+import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.Telemetry
 import com.lpstudio.bolaodagalera.presentation.bolao.BolaoViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -34,8 +37,9 @@ class TestApp : Application() {
                     single<PredictionRepository> { FakePredictionRepository(matchRepo) }
                     single<CrashReporter> { FakeCrashReporter() }
                     single<AdBannerProvider> { FakeAdBannerProvider() }
+                    single { Telemetry(FakePerformanceMonitor(), FakeAnalyticsTracker()) }
 
-                    viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId, get()) }
+                    viewModel { (bolaoId: String) -> BolaoViewModel(get(), get(), get(), get(), bolaoId, get(), get()) }
                 }
             )
         }

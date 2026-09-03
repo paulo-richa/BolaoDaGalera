@@ -13,8 +13,18 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.androidxBaselineProfile)
     id("com.google.firebase.appdistribution")
     kotlin("native.cocoapods")
+}
+
+composeCompiler {
+    stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("config/compose/stability_config.conf"))
+    // Official way to find out what's actually unstable before adding anything to the
+    // stability config above, instead of guessing - see reports at
+    // composeApp/build/compose_metrics after any build.
+    metricsDestination.set(layout.buildDirectory.dir("compose_metrics"))
+    reportsDestination.set(layout.buildDirectory.dir("compose_metrics"))
 }
 
 kotlin {
@@ -60,6 +70,7 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.play.services.ads)
             implementation("com.google.firebase:firebase-messaging")
+            implementation(libs.androidx.profileinstaller)
 
             // UI Testing
             // Note: In KMP, some people use commonTest, but for Compose Android is easiest
@@ -172,6 +183,15 @@ android {
             isIncludeAndroidResources = true
         }
     }
+}
+
+baselineProfile {
+    // Generation only needs one representative variant, not the full build matrix.
+    automaticGenerationDuringBuild = false
+}
+
+dependencies {
+    baselineProfile(project(":baselineprofile"))
 }
 
 dependencies {
