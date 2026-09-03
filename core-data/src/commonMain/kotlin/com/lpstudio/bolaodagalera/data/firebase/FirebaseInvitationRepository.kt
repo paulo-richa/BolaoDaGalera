@@ -5,11 +5,12 @@ import com.lpstudio.bolaodagalera.domain.model.InvitationStatus
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
+import com.lpstudio.bolaodagalera.observability.reportAndRethrow
 import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
@@ -48,15 +49,13 @@ class FirebaseInvitationRepository(private val crashReporter: CrashReporter) : I
                     doc.data<InvitationDto>().toDomain(doc.id)
                 }
             }
-            .catch { e ->
-                crashReporter.recordException(e, "Erro ao observar convites")
-                logger.e(e) { "Erro ao observar convites" }
-                emit(emptyList())
-            }
+            .reportAndRethrow(crashReporter, "Erro ao observar convites")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar convites")
         logger.e(e) { "Erro crítico ao observar convites" }
-        kotlinx.coroutines.flow.flowOf(emptyList())
+        kotlinx.coroutines.flow.flow { throw e }
     }
 
     override suspend fun sendInvitation(bolaoId: String, bolaoName: String, inviterName: String, inviteeIdentifier: String) {

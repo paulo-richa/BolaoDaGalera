@@ -62,8 +62,10 @@ import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientBg
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
+import com.lpstudio.bolaodagalera.observability.appLogger
 import com.lpstudio.bolaodagalera.util.ValidationUtils
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -233,7 +235,10 @@ private fun AutoGenerateUsername(
                 if (generated.isNotBlank()) {
                     onUsernameGenerated(generated)
                 }
-            } catch (_: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                appLogger("RegisterScreen").w(e) { "Falha ao auto-gerar username sugerido" }
             }
             onGeneratingChange(false)
         }

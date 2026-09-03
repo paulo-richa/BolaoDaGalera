@@ -79,7 +79,7 @@ class JoinBolaoViewModelTest {
         val state = viewModel.uiState.value
         assertNull(state.joinedBolao)
         assertNull(state.alreadyMemberBolaoId)
-        assertTrue(state.error?.contains("não encontrado") == true)
+        assertEquals("Código inválido.", state.error)
     }
 
     @Test

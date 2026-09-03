@@ -4,10 +4,11 @@ import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
+import com.lpstudio.bolaodagalera.observability.reportAndRethrow
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 
@@ -27,15 +28,13 @@ class FirebaseChampionshipRepository(private val crashReporter: CrashReporter) :
             .onEach { list ->
                 Championship.setCache(list)
             }
-            .catch { e ->
-                crashReporter.recordException(e, "Erro ao observar campeonatos")
-                logger.e(e) { "Erro ao observar campeonatos" }
-                emit(emptyList<Championship>())
-            }
+            .reportAndRethrow(crashReporter, "Erro ao observar campeonatos")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar campeonatos")
         logger.e(e) { "Erro crítico ao observar campeonatos" }
-        kotlinx.coroutines.flow.flowOf(emptyList<Championship>())
+        kotlinx.coroutines.flow.flow { throw e }
     }
 
     override suspend fun refreshCache() {
@@ -46,6 +45,8 @@ class FirebaseChampionshipRepository(private val crashReporter: CrashReporter) :
                     doc.data<Championship>().copy(id = doc.id)
                 }
             Championship.setCache(list)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             crashReporter.recordException(e, "Erro ao carregar campeonatos")
             logger.e(e) { "Erro ao carregar campeonatos" }

@@ -7,6 +7,7 @@ import com.lpstudio.bolaodagalera.observability.appLogger
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -56,10 +57,13 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
                         cachedUser = user
                         user as User?
                     }.catch { e ->
+                        if (e is CancellationException) throw e
                         crashReporter.recordException(e, "Erro no snapshots de user")
                         logger.e(e) { "Erro no snapshots de user" }
                         emit(null)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     crashReporter.recordException(e, "Erro crítico ao iniciar snapshots de user")
                     logger.e(e) { "Erro crítico ao iniciar snapshots de user" }
@@ -67,6 +71,7 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
                 }
             }
         }.catch { e ->
+            if (e is CancellationException) throw e
             crashReporter.recordException(e, "Erro no authStateFlow")
             logger.e(e) { "Erro no authStateFlow" }
             emit(null)
@@ -104,8 +109,11 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
         val user = result.user ?: error("Cadastro falhou")
         try {
             user.updateProfile(displayName = name)
-        } catch (ignored: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             // Best-effort: the Firestore profile write right below is the source of truth for the display name.
+            logger.w(e) { "Falha ao atualizar displayName no Auth (não bloqueia o cadastro)" }
         }
 
         // Save or update the profile in Firestore
@@ -131,8 +139,11 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
         // 1. Try updating the name in Auth (optional, doesn't block on failure)
         try {
             firebaseUser.updateProfile(displayName = name)
-        } catch (ignored: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             // Best-effort: the Firestore write right below is the source of truth for the display name.
+            logger.w(e) { "Falha ao atualizar displayName no Auth (não bloqueia a atualização de perfil)" }
         }
 
         // 2. Prepare the data for Firestore
@@ -156,46 +167,38 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
         // Prefer the Auth method, which doesn't require Firestore permissions
         val methods = auth.fetchSignInMethodsForEmail(email)
         methods.isNotEmpty()
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         // Fall back to Firestore only if Auth fails or is unavailable
         try {
             val snapshot = usersCollection.where { "email" equalTo email }.get()
             !snapshot.documents.isEmpty()
+        } catch (e2: CancellationException) {
+            throw e2
         } catch (e2: Exception) {
-            // If both fail, rethrow the original exception for the ViewModel to handle
+            // If both fail, rethrow the original exception for the caller to handle -
+            // a network/permission failure here must never be reported as "not in use".
             throw e
         }
     }
 
     override suspend fun isPhoneInUse(phone: String): Boolean {
         if (phone.isBlank()) return false
-        return try {
-            val snapshot = usersCollection.where { "phone" equalTo phone }.get()
-            !snapshot.documents.isEmpty()
-        } catch (e: Exception) {
-            // If the check can't be performed (e.g. no permission while logged out), assume false and let the flow proceed
-            false
-        }
+        val snapshot = usersCollection.where { "phone" equalTo phone }.get()
+        return !snapshot.documents.isEmpty()
     }
 
     override suspend fun isNicknameInUse(nickname: String): Boolean {
         if (nickname.isBlank()) return false
-        return try {
-            val snapshot = usersCollection.where { "nickname" equalTo nickname }.get()
-            !snapshot.documents.isEmpty()
-        } catch (e: Exception) {
-            false
-        }
+        val snapshot = usersCollection.where { "nickname" equalTo nickname }.get()
+        return !snapshot.documents.isEmpty()
     }
 
     override suspend fun isUsernameInUse(username: String): Boolean {
         if (username.isBlank()) return false
-        return try {
-            val snapshot = usersCollection.where { "username" equalTo username.lowercase() }.get()
-            !snapshot.documents.isEmpty()
-        } catch (e: Exception) {
-            false
-        }
+        val snapshot = usersCollection.where { "username" equalTo username.lowercase() }.get()
+        return !snapshot.documents.isEmpty()
     }
 
     override suspend fun sendPasswordResetEmail(email: String) {

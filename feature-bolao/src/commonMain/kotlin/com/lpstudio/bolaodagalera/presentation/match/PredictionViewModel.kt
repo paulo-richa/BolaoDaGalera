@@ -11,7 +11,9 @@ import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,6 +42,7 @@ class PredictionViewModel(
     private val bolaoId: String,
     private val matchId: String
 ) : ViewModel() {
+    private val errorReporter = ErrorReporter(crashReporter)
     private val _uiState = MutableStateFlow(PredictionUiState())
     val uiState: StateFlow<PredictionUiState> = _uiState.asStateFlow()
 
@@ -53,7 +56,10 @@ class PredictionViewModel(
                 val allMatches =
                     try {
                         matchRepository.getMatches(championshipId).first()
-                    } catch (_: Exception) {
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        errorReporter.report(e, "Erro ao carregar allMatches para comparação de data")
                         emptyList()
                     }
                 val prediction = predictionRepository.getUserPredictionForMatch(userId, bolaoId, matchId)
@@ -67,9 +73,11 @@ class PredictionViewModel(
                         isLoading = false
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao carregar palpite")
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao carregar palpite $matchId")
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }
@@ -93,9 +101,11 @@ class PredictionViewModel(
                 )
                 interstitialAdCounter.incrementAndShowIfNecessary()
                 _uiState.update { it.copy(isSaved = true, isLoading = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao salvar palpite")
-                _uiState.update { it.copy(error = e.message ?: "Erro ao salvar palpite", isLoading = false) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao salvar palpite $matchId")
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }

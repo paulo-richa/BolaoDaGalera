@@ -22,6 +22,7 @@ import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.observability.createAnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.createCrashReporter
@@ -53,13 +54,14 @@ val appModule =
         single<SupportRepository> { FirebaseSupportRepository() }
         single<NotificationRepository> { FirebaseNotificationRepository(get()) }
         single<CrashReporter> { createCrashReporter() }
+        single { ErrorReporter(get()) }
         single<PerformanceMonitor> { createPerformanceMonitor() }
         single<AnalyticsTracker> { createAnalyticsTracker() }
         single<InterstitialAdCounter> { PredictionAdCounter }
         single<AdBannerProvider> { BolaoAdBannerProvider() }
 
         // Remote Config
-        single { RemoteConfigManager() }
+        single { RemoteConfigManager(get()) }
 
         // UseCases
         single { CalculatePointsUseCase() }

@@ -15,6 +15,8 @@ import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.GetParticipantHitsUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.GetRankingUseCase
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,6 +51,7 @@ class RankingViewModel(
     private val getParticipantHits: GetParticipantHitsUseCase = GetParticipantHitsUseCase(calculatePointsUseCase),
     private val bolaoId: String
 ) : ViewModel() {
+    private val errorReporter = ErrorReporter(crashReporter)
     private val _uiState = MutableStateFlow(RankingUiState())
     val uiState: StateFlow<RankingUiState> = _uiState.asStateFlow()
 
@@ -86,12 +89,15 @@ class RankingViewModel(
                 }.onEach { entries ->
                     _uiState.update { it.copy(entries = entries, isLoading = false) }
                 }.catch { e ->
-                    crashReporter.recordException(e, "Erro ao observar ranking")
-                    _uiState.update { it.copy(error = e.message, isLoading = false) }
+                    if (e is CancellationException) throw e
+                    val message = errorReporter.reportAndClassify(e, "Erro ao observar ranking do bolão $bolaoId")
+                    _uiState.update { it.copy(error = message, isLoading = false) }
                 }.launchIn(viewModelScope)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao carregar ranking")
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao carregar ranking do bolão $bolaoId")
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }

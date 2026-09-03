@@ -5,13 +5,14 @@ import com.lpstudio.bolaodagalera.domain.model.BolaoScope
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
+import com.lpstudio.bolaodagalera.observability.reportAndRethrow
 import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.FieldValue
 import dev.gitlive.firebase.firestore.firestore
 import kotlin.random.Random
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 
@@ -70,15 +71,13 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                     .map { doc -> doc.data<BolaoDto>().toDomain(doc.id) }
                     .filter { it.deletedAtMillis == null } // Hide bolões marked for deletion
             }
-            .catch { e ->
-                crashReporter.recordException(e, "Erro ao observar bolões")
-                logger.e(e) { "Erro ao observar bolões" }
-                emit(emptyList())
-            }
+            .reportAndRethrow(crashReporter, "Erro ao observar bolões")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar bolões")
         logger.e(e) { "Erro crítico ao observar bolões" }
-        kotlinx.coroutines.flow.flowOf(emptyList())
+        kotlinx.coroutines.flow.flow { throw e }
     }
 
     override fun getBolaoFlow(bolaoId: String): Flow<Bolao> = try {
@@ -88,15 +87,13 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
             } else {
                 Bolao() // Return an empty object instead of crashing if deleted
             }
-        }.catch { e ->
-            crashReporter.recordException(e, "Erro ao observar bolão $bolaoId")
-            logger.e(e) { "Erro ao observar bolão $bolaoId" }
-            emit(Bolao())
-        }
+        }.reportAndRethrow(crashReporter, "Erro ao observar bolão $bolaoId")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         crashReporter.recordException(e, "Erro crítico ao observar bolão $bolaoId")
         logger.e(e) { "Erro crítico ao observar bolão $bolaoId" }
-        kotlinx.coroutines.flow.flowOf(Bolao())
+        kotlinx.coroutines.flow.flow { throw e }
     }
 
     override suspend fun getBolao(bolaoId: String): Bolao {
@@ -174,8 +171,11 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                     merge = true
                 )
             }
-        } catch (ignored: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             // Best-effort: a missing user document only affects display data, not the join itself.
+            logger.w(e) { "Falha ao garantir doc de users/$userId no join (não bloqueia o join)" }
         }
 
         // 3. Add directly to the participants
@@ -239,6 +239,8 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                 merge = true
             )
             logger.d { "[BolaoRepo] lastActiveAt atualizado com sucesso." }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             logger.e(e) { "[BolaoRepo] Erro (ignorado) ao atualizar users/$userId" }
         }
@@ -280,6 +282,8 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                 merge = true
             )
             logger.d { "[BolaoRepo] Ranking inicial criado para $userId no bolão $bolaoId" }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             crashReporter.recordException(e, "Erro ao criar ranking inicial")
             logger.e(e) { "[BolaoRepo] Erro ao criar ranking inicial" }
@@ -308,8 +312,11 @@ class FirebaseBolaoRepository(private val crashReporter: CrashReporter) : BolaoR
                     db.collection("invitations").document(inviteDoc.id).delete()
                 }
             }
-        } catch (ignored: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             // Best-effort: an orphaned invitation document is harmless clutter, not a correctness issue.
+            logger.w(e) { "Falha ao limpar convites pendentes de $userId no bolão $bolaoId (não bloqueia o leave)" }
         }
     }
 

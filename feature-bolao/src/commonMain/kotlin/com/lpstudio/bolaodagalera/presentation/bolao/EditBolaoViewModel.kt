@@ -11,7 +11,10 @@ import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
+import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.util.TimeSource
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +39,8 @@ class EditBolaoViewModel(
     private val authRepository: AuthRepository,
     private val matchRepository: MatchRepository,
     private val bolaoId: String,
-    private val crashReporter: CrashReporter
+    private val crashReporter: CrashReporter,
+    private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EditBolaoUiState())
     val uiState: StateFlow<EditBolaoUiState> = _uiState.asStateFlow()
@@ -72,9 +76,11 @@ class EditBolaoViewModel(
                         }
                     _uiState.update { it.copy(isKnockoutStarted = knockoutStarted) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao carregar dados do bolão")
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao carregar dados do bolão $bolaoId")
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }
@@ -88,9 +94,11 @@ class EditBolaoViewModel(
                 _uiState.update { it.copy(bolao = updatedBolao, isLoading = false, showSuccessMessage = true) }
                 delay(SUCCESS_MESSAGE_DURATION_MILLIS)
                 _uiState.update { it.copy(showSuccessMessage = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao atualizar bolão")
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao atualizar bolão $bolaoId")
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }
@@ -103,9 +111,14 @@ class EditBolaoViewModel(
                     bolaoRepository.deleteBolao(bolaoId)
                 }
                 _uiState.update { it.copy(isDeleted = true, isLoading = false) }
+            } catch (e: TimeoutCancellationException) {
+                errorReporter.report(e, "Timeout ao excluir bolão $bolaoId")
+                _uiState.update { it.copy(error = "A exclusão demorou demais. Tente novamente.", isLoading = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao excluir bolão")
-                _uiState.update { it.copy(error = e.message ?: "Erro desconhecido ao excluir", isLoading = false) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao excluir bolão $bolaoId")
+                _uiState.update { it.copy(error = message, isLoading = false) }
             }
         }
     }
@@ -118,9 +131,11 @@ class EditBolaoViewModel(
                 val bolao = bolaoRepository.getBolao(bolaoId)
                 val participants = authRepository.getUsers(bolao.participants)
                 _uiState.update { it.copy(bolao = bolao, participants = participants) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                crashReporter.recordException(e, "Erro ao remover participante")
-                _uiState.update { it.copy(error = e.message) }
+                val message = errorReporter.reportAndClassify(e, "Erro ao remover participante $userId do bolão $bolaoId")
+                _uiState.update { it.copy(error = message) }
             }
         }
     }
