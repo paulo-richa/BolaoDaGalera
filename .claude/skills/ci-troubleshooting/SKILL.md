@@ -1,74 +1,80 @@
 ---
 name: ci-troubleshooting
-description: Use whenever debugging a failing or flaky GitHub Actions run in BolaoDaGalera (release.yml, develop.yml, dependency-review.yml), or when checking on a run's status. Captures known failure patterns and the efficient way to fetch logs without flooding the conversation.
+description: Use sempre que for depurar uma execução do GitHub Actions falhando ou instável no BolaoDaGalera (release.yml, develop.yml, dependency-review.yml), ou pra checar o status de uma execução. Reúne padrões de falha conhecidos e a forma econômica de puxar logs sem lotar a conversa.
 ---
 
-# BolaoDaGalera CI Troubleshooting
+# Troubleshooting de CI do BolaoDaGalera
 
-## Checking run status without wasting context
+## Checando status de execução sem gastar contexto à toa
 
-`gh run watch` sometimes exits 0 mid-run after a transient network error
-(e.g. "read: connection reset by peer" while fetching annotations) — this
-looks like completion but isn't. Always confirm the real state before
-reporting anything to the user:
+`gh run watch` às vezes sai com código 0 no meio da execução depois de um
+erro de rede transitório (ex: "read: connection reset by peer" ao buscar
+annotations) — parece que terminou, mas não terminou. Sempre confirme o
+estado real antes de reportar qualquer coisa ao usuário:
 
 ```bash
 gh run view <run-id> --repo paulo-richa/BolaoDaGalera --json status,conclusion,jobs \
   -q '.status, .conclusion, (.jobs[] | "\(.name): \(.status) \(.conclusion)")'
 ```
 
-To pull just the failure reason from a job's log instead of the full
-(often 100KB+) output:
+Pra puxar só o motivo da falha do log de um job em vez do log completo
+(muitas vezes 100KB+):
 
 ```bash
 gh run view <run-id> --repo paulo-richa/BolaoDaGalera --log --job=<job-id> \
   | grep -iE "error|failure|exception|BUILD FAILED" | grep -v "linkOnly"
 ```
 
-Prefer this over reading the full log — the full log is mostly Gradle/AGP
-configuration noise (deprecation warnings, `linkOnly` framework notices).
+Prefira isso a ler o log completo — o log completo é majoritariamente
+ruído de configuração do Gradle/AGP (avisos de depreciação, notas de
+`linkOnly` de framework).
 
-## Known failure patterns
+## Padrões de falha conhecidos
 
-- **`assembleRelease` fails with `KeytoolException: No key with alias`** —
-  the `ANDROID_KEY_ALIAS` secret doesn't match an alias actually in the
-  keystore. Verify with `keytool -list -v -keystore <path>` locally
-  (whoever holds the keystore password runs this), then reset the secret
-  with `printf '%s' 'alias' | gh secret set ANDROID_KEY_ALIAS` — `printf`
-  avoids trailing-newline/whitespace corruption that an interactive
-  `gh secret set` prompt can introduce.
-- **`appDistributionUploadRelease` fails with "Could not find an APK file
-  for this variant"** — each GitHub Actions job runs on its own VM; the
-  `deploy-firebase` job doesn't inherit the APK that `build-release` built.
-  It must `actions/download-artifact` the `app-release` artifact first.
-- **CodeQL fails with "no source code seen during build" /
-  "could not process any of it"** — Gradle marked the compile tasks
-  `UP-TO-DATE` from cache (via `gradle/actions/setup-gradle`'s restored
-  cache), so CodeQL's tracer never observed a real compilation. The build
-  step in the CodeQL job needs `--rerun-tasks` to force actual compilation.
-- **Kover (`koverXmlReport`/`koverHtmlReport`, no variant suffix) fails
-  with dependency resolution errors, or silently runs the wrong variant's
-  tests** — this project only exercises the `debug` Android variant with
-  unit tests (`release` has never been run and isn't set up for it). Use
-  the variant-suffixed tasks: `koverXmlReportDebug`, `koverHtmlReportDebug`.
-- **A brand-new Kover/coverage plugin only applied at the root project
-  fails to resolve module dependencies (`Could not resolve project :x`)**
-  — the plugin needs to be applied in every module being aggregated, not
-  just the root; the root only declares the `kover(project(":x"))`
-  dependencies and (optionally) report config.
+- **`assembleRelease` falha com `KeytoolException: No key with alias`** —
+  o secret `ANDROID_KEY_ALIAS` não bate com nenhum alias que exista de
+  verdade no keystore. Confirme com `keytool -list -v -keystore <path>`
+  localmente (quem tiver a senha do keystore roda isso), depois atualize
+  o secret com
+  `printf '%s' 'alias' | gh secret set ANDROID_KEY_ALIAS` — `printf`
+  evita corrupção por espaço/quebra de linha no final, que um prompt
+  interativo do `gh secret set` pode introduzir.
+- **`appDistributionUploadRelease` falha com "Could not find an APK file
+  for this variant"** — cada job do GitHub Actions roda na sua própria
+  VM; o job `deploy-firebase` não herda o APK que o `build-release`
+  gerou. Precisa fazer `actions/download-artifact` do artifact
+  `app-release` primeiro.
+- **CodeQL falha com "no source code seen during build" / "could not
+  process any of it"** — o Gradle marcou as tasks de compilação como
+  `UP-TO-DATE` a partir do cache (via cache restaurado pelo
+  `gradle/actions/setup-gradle`), então o tracer do CodeQL nunca observou
+  uma compilação de verdade. O passo de build no job do CodeQL precisa de
+  `--rerun-tasks` pra forçar a compilação de verdade.
+- **Kover (`koverXmlReport`/`koverHtmlReport`, sem sufixo de variante)
+  falha com erro de resolução de dependência, ou roda silenciosamente os
+  testes da variante errada** — este projeto só exercita a variante
+  Android `debug` com testes unitários (a `release` nunca rodou e não
+  está preparada pra isso). Use as tasks com sufixo de variante:
+  `koverXmlReportDebug`, `koverHtmlReportDebug`.
+- **Um plugin de Kover/cobertura recém-aplicado só no projeto raiz falha
+  ao resolver dependências de módulo (`Could not resolve project :x`)** —
+  o plugin precisa ser aplicado em cada módulo sendo agregado, não só na
+  raiz; a raiz só declara as dependências `kover(project(":x"))` e
+  (opcionalmente) a config do relatório.
 
-## Editing workflow files
+## Editando arquivos de workflow
 
-After any `.github/workflows/*.yml` change, validate the YAML actually
-runs before telling the user it's done — either wait for the next natural
-trigger (a push) or explicitly trigger one:
+Depois de qualquer mudança em `.github/workflows/*.yml`, valide que o
+YAML realmente roda antes de dizer ao usuário que terminou — ou espere o
+próximo gatilho natural (um push) ou dispare um explicitamente:
 
 ```bash
-gh run rerun <run-id> --repo paulo-richa/BolaoDaGalera --failed   # retry only failed jobs
-gh run rerun <run-id> --repo paulo-richa/BolaoDaGalera            # retry the whole run
+gh run rerun <run-id> --repo paulo-richa/BolaoDaGalera --failed   # tenta de novo só os jobs que falharam
+gh run rerun <run-id> --repo paulo-richa/BolaoDaGalera            # tenta de novo a execução inteira
 ```
 
-Since `main` is protected (see the `git-workflow` skill), release.yml's
-`push: [main]` trigger only fires after a real PR merge — day-to-day
-workflow edits get validated via develop.yml on push to `develop`, or via
-the `pull_request` trigger when a `develop → main` PR is open.
+Como a `main` é protegida (ver o skill `git-workflow`), o gatilho
+`push: [main]` do release.yml só dispara depois de um merge de PR de
+verdade — validação de mudanças no dia a dia acontece via develop.yml no
+push pra `develop`, ou via o gatilho `pull_request` quando um PR
+`develop → main` está aberto.
