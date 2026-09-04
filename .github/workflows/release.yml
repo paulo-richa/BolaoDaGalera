@@ -1,19 +1,35 @@
-name: CI
+name: Release
 
-# Runs on every push to main. Dependency Review (PR-only by nature) lives in a
-# separate workflow (dependency-review.yml) since it can't trigger on push.
+# main only moves via a develop -> main pull request (enforced by branch
+# protection + the require-develop-source job below), so this workflow covers
+# both sides of that: full validation while the PR is open (pull_request),
+# and the release-only steps (signed build + deploy) once it's merged (push).
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
+  require-develop-source:
+    name: Require PR from develop
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source branch
+        run: |
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "::error::main only accepts pull requests from develop (got '${{ github.head_ref }}')."
+            exit 1
+          fi
+
   static-analysis:
     name: ktlint + detekt + Android Lint
     runs-on: ubuntu-latest
@@ -207,6 +223,8 @@ jobs:
 
   deploy-firebase:
     name: Deploy to Firebase App Distribution
+    # Only after a real merge to main - never while a PR is just being validated.
+    if: github.event_name == 'push'
     needs: [build-release, instrumented-tests, codeql, gitleaks]
     runs-on: ubuntu-latest
     steps:
