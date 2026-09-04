@@ -25,3 +25,4 @@ serviceAccountKey.json
 credentials.json
 .artifacts/
 firebase-debug.log
+*.log
