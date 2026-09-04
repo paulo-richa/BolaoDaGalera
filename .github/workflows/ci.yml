@@ -187,7 +187,10 @@ jobs:
           languages: java-kotlin
 
       - name: Build for analysis
-        run: ./gradlew :composeApp:assembleDebug
+        # --rerun-tasks forces javac/kotlinc to actually run instead of reporting
+        # UP-TO-DATE from Gradle's build cache - CodeQL's tracer only sees code that
+        # gets compiled during this step, otherwise it fails with "no source code seen".
+        run: ./gradlew :composeApp:assembleDebug --rerun-tasks
 
       - uses: github/codeql-action/analyze@v3
 
