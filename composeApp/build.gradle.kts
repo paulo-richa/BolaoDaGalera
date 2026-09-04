@@ -145,6 +145,13 @@ android {
     // unsigned/debug-signed as before - no local.properties or checked-in keystore needed.
     val releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
     val firebaseServiceAccountPath = System.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
+    // Falls back to a local Gradle property (set in ~/.gradle/gradle.properties, never
+    // committed) so developers can still distribute test builds locally without an
+    // email hardcoded in this public repo.
+    val appDistributionTesters =
+        System.getenv("FIREBASE_APP_DISTRIBUTION_TESTERS")
+            ?: (project.findProperty("firebaseAppDistributionTesters") as String?)
+            ?: ""
     signingConfigs {
         if (releaseKeystorePath != null) {
             create("release") {
@@ -169,7 +176,7 @@ android {
             firebaseAppDistribution {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
-                testers = "paulo.richa@hotmail.com"
+                testers = appDistributionTesters
                 releaseNotes = "v3.2.3 (Build 27): AdMob Android de produção e melhorias de validação."
                 if (firebaseServiceAccountPath != null) {
                     serviceCredentialsFile = firebaseServiceAccountPath
@@ -180,7 +187,7 @@ android {
             firebaseAppDistribution {
                 appId = "1:254672592094:android:432e51c0bcc8e75a92f64f"
                 artifactType = "APK"
-                testers = "paulo.richa@hotmail.com"
+                testers = appDistributionTesters
                 releaseNotes = "v3.2.3 (Build 27): AdMob Android de produção e melhorias de validação."
                 if (firebaseServiceAccountPath != null) {
                     serviceCredentialsFile = firebaseServiceAccountPath

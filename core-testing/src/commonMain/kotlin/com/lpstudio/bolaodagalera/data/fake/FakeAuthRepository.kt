@@ -10,7 +10,7 @@ val FAKE_USER =
     User(
         id = "pauloricha",
         name = "Paulo Teste Silva",
-        email = "paulo.richa@hotmail.com",
+        email = "pauloteste@email.com",
         phone = "11911112222",
         nickname = "Paulão",
         username = "pauloricha"

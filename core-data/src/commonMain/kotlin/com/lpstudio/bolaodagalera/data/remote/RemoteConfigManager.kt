@@ -20,6 +20,9 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
     private val _showAds = MutableStateFlow(true)
     val showAds: StateFlow<Boolean> = _showAds.asStateFlow()
 
+    private val _maintenanceExemptEmails = MutableStateFlow(emptySet<String>())
+    val maintenanceExemptEmails: StateFlow<Set<String>> = _maintenanceExemptEmails.asStateFlow()
+
     suspend fun fetchAndActivate() {
         try {
             remoteConfig.settings {
@@ -27,11 +30,20 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
             }
             remoteConfig.setDefaults(
                 "maintenance_mode" to false,
-                "show_ads" to true
+                "show_ads" to true,
+                "maintenance_exempt_emails" to ""
             )
             remoteConfig.fetchAndActivate()
             _isMaintenanceMode.value = remoteConfig.getValue("maintenance_mode").asBoolean()
             _showAds.value = remoteConfig.getValue("show_ads").asBoolean()
+            _maintenanceExemptEmails.value =
+                remoteConfig
+                    .getValue("maintenance_exempt_emails")
+                    .asString()
+                    .split(",")
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .toSet()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

@@ -35,10 +35,8 @@ import kotlinx.coroutines.launch
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
 
-private val EXEMPT_MAINTENANCE_EMAILS = setOf("paulo.richa@hotmail.com", "redacted@example.com")
-
-private fun computeShouldShowMaintenance(currentUserEmail: String?, isMaintenanceMode: Boolean): Boolean =
-    currentUserEmail != null && isMaintenanceMode && currentUserEmail !in EXEMPT_MAINTENANCE_EMAILS
+private fun computeShouldShowMaintenance(currentUserEmail: String?, isMaintenanceMode: Boolean, exemptEmails: Set<String>): Boolean =
+    currentUserEmail != null && isMaintenanceMode && currentUserEmail !in exemptEmails
 
 @Composable
 private fun AppSideEffects(
@@ -95,8 +93,10 @@ fun App() {
         val showAds by remoteConfigManager.showAds.collectAsState()
         val scope = rememberCoroutineScope()
         val isMaintenanceMode by remoteConfigManager.isMaintenanceMode.collectAsState()
+        val maintenanceExemptEmails by remoteConfigManager.maintenanceExemptEmails.collectAsState()
         val currentUser by authRepository.authStateFlow.collectAsState(initial = authRepository.currentUser)
-        val shouldShowMaintenance = computeShouldShowMaintenance(currentUser?.email, isMaintenanceMode)
+        val shouldShowMaintenance =
+            computeShouldShowMaintenance(currentUser?.email, isMaintenanceMode, maintenanceExemptEmails)
 
         AppSideEffects(
             showAds = showAds,
