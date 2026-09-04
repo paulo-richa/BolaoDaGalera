@@ -1,0 +1,28 @@
+name: Sync main to develop
+
+# Keeps develop caught up after anything lands on main (a release merge via
+# promote-main.yml, or any other update) - main is protected but develop
+# isn't, so this can push directly.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Merge main into develop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Merge main into develop
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git merge origin/main --no-edit
+          git push origin develop

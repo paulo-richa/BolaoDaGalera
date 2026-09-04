@@ -1,0 +1,39 @@
+name: Promote release to main
+
+# Manually triggered from a release/x.y.z branch (pick it as the "Use
+# workflow from" branch when dispatching), once you've validated the
+# Firebase App Distribution build and run promote-play-store.yml. Opens (or
+# reuses) the release -> main PR and enables auto-merge - it lands as soon
+# as release.yml's required checks pass. The branch is deleted automatically
+# on merge (repo setting), and sync-main-to-develop.yml takes it from there
+# to keep develop caught up.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  open-pr:
+    name: Open PR to main and enable auto-merge
+    if: startsWith(github.ref_name, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create or reuse PR, enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          existing=$(gh pr list --base main --head "$GITHUB_REF_NAME" --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            pr_number="$existing"
+          else
+            pr_url=$(gh pr create --base main --head "$GITHUB_REF_NAME" \
+              --title "Release ${GITHUB_REF_NAME#release/}" \
+              --body "Automated promotion of ${GITHUB_REF_NAME} to main.")
+            pr_number="${pr_url##*/}"
+          fi
+          gh pr merge "$pr_number" --merge --auto
