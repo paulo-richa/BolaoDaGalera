@@ -97,8 +97,14 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
+      - name: Extract version name from branch
+        id: version
+        run: echo "name=${GITHUB_REF_NAME#release/}" >> "$GITHUB_OUTPUT"
+
       - name: Assemble release
-        run: ./gradlew :composeApp:assembleRelease
+        # -rc suffix distinguishes this Firebase App Distribution test build from the
+        # clean version number that eventually goes to the Play Store (promote-play-store.yml).
+        run: ./gradlew :composeApp:assembleRelease -PversionNameOverride=${{ steps.version.outputs.name }}-rc
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
