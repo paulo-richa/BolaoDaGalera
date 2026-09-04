@@ -80,7 +80,7 @@ private fun buildBolaoDetailPreviewUiState(): BolaoUiState {
         )
     val mockParticipants =
         listOf(
-            RankingEntry(PREVIEW_USER_ID, "Paulo George Moreira Richa", "Paulão", 10, 2, 4),
+            RankingEntry(PREVIEW_USER_ID, "Paulo Teste Silva", "Paulão", 10, 2, 4),
             RankingEntry("user-2", "Maria Silva", "Maria", 8, 1, 5)
         )
     val mockMatches = previewMockMatches(TimeSource.nowMillis())

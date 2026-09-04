@@ -19,7 +19,7 @@ class FakePredictionRepository(
 
     private val userNames =
         mapOf(
-            "pauloricha" to ("Paulo George Moreira Richa" to "Paulão")
+            "pauloricha" to ("Paulo Teste Silva" to "Paulão")
         )
 
     override fun getUserPredictions(userId: String, bolaoId: String): Flow<List<Prediction>> =

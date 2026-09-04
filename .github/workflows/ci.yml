@@ -224,6 +224,12 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
+      - name: Download release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release
+          path: composeApp/build/outputs/apk/release/
+
       - name: Upload to testers
         run: ./gradlew :composeApp:appDistributionUploadRelease
         env:
@@ -232,3 +238,4 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           FIREBASE_SERVICE_ACCOUNT_PATH: ${{ runner.temp }}/firebase-service-account.json
+          FIREBASE_APP_DISTRIBUTION_TESTERS: ${{ secrets.FIREBASE_APP_DISTRIBUTION_TESTERS }}

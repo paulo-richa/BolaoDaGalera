@@ -9,9 +9,9 @@ import kotlinx.coroutines.flow.asStateFlow
 val FAKE_USER =
     User(
         id = "pauloricha",
-        name = "Paulo George Moreira Richa",
-        email = "paulo.richa@hotmail.com",
-        phone = "11975148477",
+        name = "Paulo Teste Silva",
+        email = "pauloteste@email.com",
+        phone = "11911112222",
         nickname = "Paulão",
         username = "pauloricha"
     )
@@ -19,9 +19,9 @@ val FAKE_USER =
 val FAKE_FRIEND =
     User(
         id = "livialima",
-        name = "Lívia Cristina de Lima",
-        email = "liviac.lima@hotmail.com",
-        phone = "11943612890",
+        name = "Lívia Teste Souza",
+        email = "livialima@email.com",
+        phone = "11933334444",
         nickname = "Lívia",
         username = "livialima"
     )
