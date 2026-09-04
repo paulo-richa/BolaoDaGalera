@@ -1,40 +1,22 @@
-name: Release
+name: Release candidate
 
-# main only moves via a release/x.y.z -> main pull request (enforced by
-# branch protection + the require-release-source job below), opened by
-# promote-main.yml once a release branch has been validated on Firebase App
-# Distribution and published to the Play Store. This workflow covers both
-# sides of that: full validation while the PR is open (pull_request), and
-# the release-only steps (signed build + deploy) once it's merged (push).
+# A release/x.y.z branch is a release being stabilized: every push gets the
+# full validation (same as a PR into main) and, once green, a fresh signed
+# build on Firebase App Distribution for manual testing - this is the build
+# the user validates before running promote-play-store.yml and
+# promote-main.yml.
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: ["release/**"]
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-candidate-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  require-release-source:
-    name: Require PR from a release branch
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check source branch
-        run: |
-          case "${{ github.head_ref }}" in
-            release/*) ;;
-            *)
-              echo "::error::main only accepts pull requests from a release/x.y.z branch (got '${{ github.head_ref }}')."
-              exit 1
-              ;;
-          esac
-
   static-analysis:
     name: ktlint + detekt + Android Lint
     runs-on: ubuntu-latest
@@ -208,9 +190,6 @@ jobs:
           languages: java-kotlin
 
       - name: Build for analysis
-        # --rerun-tasks forces javac/kotlinc to actually run instead of reporting
-        # UP-TO-DATE from Gradle's build cache - CodeQL's tracer only sees code that
-        # gets compiled during this step, otherwise it fails with "no source code seen".
         run: ./gradlew :composeApp:assembleDebug --rerun-tasks
 
       - uses: github/codeql-action/analyze@v3
@@ -228,8 +207,6 @@ jobs:
 
   deploy-firebase:
     name: Deploy to Firebase App Distribution
-    # Only after a real merge to main - never while a PR is just being validated.
-    if: github.event_name == 'push'
     needs: [build-release, instrumented-tests, codeql, gitleaks]
     runs-on: ubuntu-latest
     steps:

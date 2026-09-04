@@ -51,27 +51,42 @@ output se algo falhar).
   **nenhuma string hardcoded visível ao usuário** — ver o skill
   `design-system`.
 - **A `main` é uma branch protegida** — o trabalho acontece na `develop`;
-  a `main` só se move via pull request `develop → main`, aberto só quando
-  pedido explicitamente. Ver o skill `git-workflow`.
+  releases são estabilizadas numa branch `release/x.y.z` (o nome vira o
+  `versionName` automaticamente); a `main` só se move via PR
+  `release/x.y.z → main`, aberto só quando pedido explicitamente. Ver o
+  skill `git-workflow`.
 - Não commite/dê push, e não mergeie/promova pra `main`, sem um pedido
   explícito no turno atual — uma aprovação anterior não vale pra sempre.
 - Nenhuma imagem de snapshot do Roborazzi é versionada neste repo.
 
-## CI (GitHub Actions)
+## CI (GitHub Actions) — GitFlow completo, ver skill `git-workflow`
 
 - `.github/workflows/develop.yml` — push na `develop`: ktlint, detekt,
   Android Lint, testes unitários + cobertura (Kover), build debug.
   Feedback rápido.
-- `.github/workflows/release.yml` — PR pra `main`: os mesmos checks mais
-  build de release assinado, testes instrumentados (emulador), CodeQL,
-  Gitleaks, controlado por um check `require-develop-source` que falha
-  qualquer PR que não venha da `develop`. Depois que o PR mergeia (`push`
-  na `main`), também faz deploy do build assinado no Firebase App
-  Distribution.
+- `.github/workflows/release-candidate.yml` — push numa `release/x.y.z`:
+  validação completa + deploy automático no Firebase App Distribution pro
+  usuário testar.
+- `.github/workflows/release.yml` — PR de `release/x.y.z` pra `main`: a
+  mesma validação completa, controlada por um check
+  `require-release-source` que falha qualquer PR que não venha de
+  `release/*`. Depois que o PR mergeia (`push` na `main`), também faz
+  deploy do build assinado no Firebase App Distribution.
+- `.github/workflows/promote-play-store.yml` — manual
+  (`workflow_dispatch`, rodado a partir de uma `release/x.y.z`): builda
+  AAB assinado, publica na track de teste fechado do Play Console.
+  `versionName` vem do nome da branch; `versionCode` é auto-incrementado
+  pelo Gradle Play Publisher a partir do que já está no Play Console.
+- `.github/workflows/promote-main.yml` — manual (`workflow_dispatch`,
+  rodado a partir de uma `release/x.y.z`): abre o PR pra `main` e liga
+  auto-merge.
+- `.github/workflows/sync-main-to-develop.yml` — reativo, push na `main`:
+  mergeia `main` de volta pra `develop` automaticamente.
 - `.github/workflows/dependency-review.yml` — só em PR, bloqueia
   dependência nova vulnerável.
-- Credenciais de assinatura de release e do Firebase App Distribution vêm
-  de secrets do GitHub Actions (`ANDROID_KEYSTORE_BASE64` etc.) — ver
+- Credenciais de assinatura de release, Firebase App Distribution e Play
+  Console vêm de secrets do GitHub Actions (`ANDROID_KEYSTORE_BASE64`,
+  `PLAY_SERVICE_ACCOUNT_BASE64`, `PLAY_TRACK` etc.) — ver
   `composeApp/build.gradle.kts` pros nomes exatos das env vars. Builds
   locais ficam sem assinatura/assinados com debug quando essas env vars
   não estão setadas.

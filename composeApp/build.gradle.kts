@@ -15,6 +15,7 @@ plugins {
     alias(libs.plugins.kover)
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.androidxBaselineProfile)
+    alias(libs.plugins.playPublisher)
     id("com.google.firebase.appdistribution")
     kotlin("native.cocoapods")
 }
@@ -132,7 +133,11 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 27
-        versionName = "3.2.3"
+        // Overridden by promote-play-store.yml via -PversionNameOverride, derived from the
+        // release/x.y.z branch name - the versionCode above only matters for APK builds
+        // (debug/Firebase App Distribution); the Play Store's versionCode is auto-assigned
+        // by the play { resolutionStrategy AUTO } block below at publish time.
+        versionName = (project.findProperty("versionNameOverride") as String?) ?: "3.2.3"
         testInstrumentationRunner = "com.lpstudio.bolaodagalera.CustomTestRunner"
     }
     packaging {
@@ -254,6 +259,20 @@ dependencies {
     testImplementation(libs.roborazzi.junit)
 
     detektPlugins(project(":detekt-rules"))
+}
+
+// Publishing to the Play Store's closed testing track ("Teste fechado - Alpha"),
+// driven by promote-play-store.yml on a release/x.y.z branch. Left unconfigured
+// (no credentials) for local/other builds - only that workflow sets these env vars.
+val playServiceAccountPath = System.getenv("PLAY_SERVICE_ACCOUNT_PATH")
+play {
+    serviceAccountCredentials.set(file(playServiceAccountPath ?: "play-service-account-not-set.json"))
+    track.set(System.getenv("PLAY_TRACK") ?: "alpha")
+    defaultToAppBundles.set(true)
+    resolutionStrategy.set(com.github.triplet.gradle.androidpublisher.ResolutionStrategy.AUTO)
+    // versionCode conflicts are resolved automatically (see resolutionStrategy above) by
+    // querying the Play Console for the current max and incrementing - the versionCode in
+    // defaultConfig above is irrelevant for this task, only for APK builds.
 }
 
 detekt {
