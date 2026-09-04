@@ -15,7 +15,7 @@ plugins {
     alias(libs.plugins.kover)
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.androidxBaselineProfile)
-    alias(libs.plugins.playPublisher)
+    alias(libs.plugins.playPublisher) apply false
     id("com.google.firebase.appdistribution")
     kotlin("native.cocoapods")
 }
@@ -262,17 +262,24 @@ dependencies {
 }
 
 // Publishing to the Play Store's closed testing track ("Teste fechado - Alpha"),
-// driven by promote-play-store.yml on a release/x.y.z branch. Left unconfigured
-// (no credentials) for local/other builds - only that workflow sets these env vars.
+// driven by promote-play-store.yml on a release/x.y.z branch. The plugin is only
+// applied when PLAY_SERVICE_ACCOUNT_PATH is set - Gradle Play Publisher wires a
+// versionCode-processing task into every release-variant build (not just publish
+// tasks) once applied, which would otherwise force assembleRelease (used by
+// release-candidate.yml/release.yml for Firebase App Distribution, unrelated to
+// the Play Store) to require Play Console credentials too.
 val playServiceAccountPath = System.getenv("PLAY_SERVICE_ACCOUNT_PATH")
-play {
-    serviceAccountCredentials.set(file(playServiceAccountPath ?: "play-service-account-not-set.json"))
-    track.set(System.getenv("PLAY_TRACK") ?: "alpha")
-    defaultToAppBundles.set(true)
-    resolutionStrategy.set(com.github.triplet.gradle.androidpublisher.ResolutionStrategy.AUTO)
-    // versionCode conflicts are resolved automatically (see resolutionStrategy above) by
-    // querying the Play Console for the current max and incrementing - the versionCode in
-    // defaultConfig above is irrelevant for this task, only for APK builds.
+if (playServiceAccountPath != null) {
+    apply(plugin = "com.github.triplet.play")
+    configure<com.github.triplet.gradle.play.PlayPublisherExtension> {
+        serviceAccountCredentials.set(file(playServiceAccountPath))
+        track.set(System.getenv("PLAY_TRACK") ?: "alpha")
+        defaultToAppBundles.set(true)
+        resolutionStrategy.set(com.github.triplet.gradle.androidpublisher.ResolutionStrategy.AUTO)
+        // versionCode conflicts are resolved automatically (see resolutionStrategy above) by
+        // querying the Play Console for the current max and incrementing - the versionCode in
+        // defaultConfig above is irrelevant for this task, only for APK builds.
+    }
 }
 
 detekt {

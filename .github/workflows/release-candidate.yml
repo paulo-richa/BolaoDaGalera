@@ -80,28 +80,6 @@ jobs:
           path: "**/build/reports/kover/"
           retention-days: 14
 
-  build-debug:
-    name: Build debug APK
-    needs: [static-analysis]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: gradle/actions/setup-gradle@v4
-
-      - name: Assemble debug
-        run: ./gradlew :composeApp:assembleDebug
-
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: composeApp/build/outputs/apk/debug/*.apk
-          retention-days: 14
-
   build-release:
     name: Build signed release APK
     needs: [static-analysis, unit-tests]
