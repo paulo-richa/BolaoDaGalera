@@ -9,7 +9,7 @@ const db = admin.firestore();
 // Internal modules
 const { syncBrasileirao } = require("./brasileirao");
 const { syncLibertadores } = require("./libertadores");
-const { syncLibertadoresQuarterfinals } = require("./libertadoresQuarterfinals");
+const { syncLibertadoresQuarterfinals, syncLibertadoresQuarterfinalsIfCheckpointDue } = require("./libertadoresQuarterfinals");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
 const { cleanupDeletedBoloes, cleanupExpiredInvitations } = require("./cleanup");
 const { makeNotificationTriggers } = require("./notificationTriggers");
@@ -202,15 +202,28 @@ exports.checkSyncFrequency = onRequest(async (req, res) => {
 
 /**
  * Fixed schedule (Firebase's native Cloud Scheduler, free within the free
- * tier): 4x/day (02h, 09h, 14h, 18h, Brasilia time), guarantees sync even
- * without a live match.
+ * tier): 1x/day (02h, Brasilia time), guarantees a full sync even without a
+ * live match - covers Brasileirão, Libertadores' group stage/Round of 16
+ * (football-data.org) and Libertadores' quarterfinals matchup/date check
+ * (external fallback, see libertadoresQuarterfinals.js). Folding all three
+ * into a single job keeps the Cloud Scheduler job count down - Scheduler
+ * bills per job that exists, not per tick, so this is the actual cost lever
+ * (unlike scheduledLiveCheck's tick frequency below, which costs nothing
+ * extra either way).
  */
 exports.scheduledFixedSync = onSchedule(
-    { schedule: "0 2,9,14,18 * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey], timeoutSeconds: 300, memory: "256MiB" },
+    {
+        schedule: "0 2 * * *",
+        timeZone: "America/Sao_Paulo",
+        secrets: [footballDataApiKey, libertadoresResultsSourceUrl],
+        timeoutSeconds: 300,
+        memory: "256MiB"
+    },
     async () => {
-        logger.info("📡 Sync agendado fixo (4x/dia)");
+        logger.info("📡 Sync agendado fixo (1x/dia)");
         await syncBrasileirao(db, admin, axios);
         await syncLibertadores(db, admin, axios);
+        await syncLibertadoresQuarterfinals(db, admin, axios);
     }
 );
 
@@ -232,26 +245,23 @@ exports.scheduledLiveCheck = onSchedule(
 );
 
 /**
- * Libertadores quarterfinals (Firebase's native Cloud Scheduler): 2x/day,
- * NOT tied to checkShouldSyncFrequently() on purpose - football-data.org's
- * free plan doesn't cover this competition's current season (see
- * functions/fallback-api.js), so this phase alone falls back to a
- * configurable external source (LIBERTADORES_RESULTS_SOURCE_URL) for bare
- * facts (matchup, date, final score) only.
- * Low frequency by design: we only need the final result, never a live
- * score. Group stage and Round of 16 keep coming from football-data.org,
- * untouched by this function.
+ * Libertadores quarterfinals - match-day result check (Firebase's native
+ * Cloud Scheduler): polls every 15 min, but the poll itself is Firestore-only
+ * (no request to the external source) - it only fetches the external source
+ * when a not-yet-finished quarterfinal has crossed 2h30 or 3h since kickoff
+ * (see libertadoresQuarterfinals.js's CHECKPOINT_MINUTES), so a normal day
+ * with no match in that window costs nothing beyond the Firestore read.
  */
-exports.scheduledLibertadoresQuartersSync = onSchedule(
+exports.scheduledLibertadoresQuartersMatchDayCheck = onSchedule(
     {
-        schedule: "0 8,20 * * *",
+        schedule: "*/15 * * * *",
         timeZone: "America/Sao_Paulo",
         secrets: [libertadoresResultsSourceUrl],
         timeoutSeconds: 120,
         memory: "256MiB"
     },
     async () => {
-        await syncLibertadoresQuarterfinals(db, admin, axios);
+        await syncLibertadoresQuarterfinalsIfCheckpointDue(db, admin, axios);
     }
 );
 

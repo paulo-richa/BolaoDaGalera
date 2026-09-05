@@ -108,6 +108,63 @@ async function findExistingDocsByTie(matchesRef) {
     return byTie.map((docs) => docs.sort((a, b) => (a.data.matchDateMillis || 0) - (b.data.matchDateMillis || 0)));
 }
 
+// Minutes after kickoff to re-check a still-unfinished quarterfinal match:
+// 2h30 covers normal time + stoppage for the vast majority of matches; the
+// +30min follow-up exists for the rare tie that needed extra time (a
+// two-legged aggregate tie only goes to penalties on the second leg, and
+// only when still level after extra time - see the module doc comment
+// about NOT recording a penalty-shootout score, only normal time + extra time).
+const CHECKPOINT_MINUTES = [150, 180];
+
+/**
+ * Prevents the same (match, checkpoint) pair from re-triggering a sync on
+ * every 15-min poll tick once it's due - same create()-is-atomic idiom as
+ * matchReminder.js's claimReminder.
+ */
+async function claimCheckpoint(db, matchId, checkpointMinutes) {
+    try {
+        await db.collection("libertadoresQuarterCheckpoints").doc(`${matchId}_${checkpointMinutes}`).create({ claimedAtMillis: Date.now() });
+        return true;
+    } catch (e) {
+        if (e.code === 6 || (e.message && e.message.includes("already exists"))) return false;
+        throw e;
+    }
+}
+
+/**
+ * Cheap check (Firestore only, no external request) for whether any
+ * not-yet-finished quarterfinal has just crossed a checkpoint - the
+ * external source is only actually fetched when this returns true, keeping
+ * the frequent poll itself free of any request to that source.
+ */
+async function hasQuarterfinalCheckpointDue(db) {
+    const snap = await db.collection("championships").doc("LIBERTADORES").collection("matches")
+        .where("phase", "==", "QUARTERFINALS")
+        .get();
+
+    const now = Date.now();
+    let anyDue = false;
+
+    for (const doc of snap.docs) {
+        const data = doc.data();
+        if (data.status === "FINISHED" || !data.matchDateMillis) continue;
+
+        for (const minutes of CHECKPOINT_MINUTES) {
+            if (now < data.matchDateMillis + minutes * 60_000) continue;
+            // eslint-disable-next-line no-await-in-loop
+            if (await claimCheckpoint(db, doc.id, minutes)) anyDue = true;
+        }
+    }
+
+    return anyDue;
+}
+
+async function syncLibertadoresQuarterfinalsIfCheckpointDue(db, admin, axios) {
+    if (!(await hasQuarterfinalCheckpointDue(db))) return;
+    logger.info("⏰ Checkpoint de quartas da Libertadores atingido, sincronizando...");
+    await syncLibertadoresQuarterfinals(db, admin, axios);
+}
+
 async function syncLibertadoresQuarterfinals(db, admin, axios) {
     let rawMatches;
     try {
@@ -182,4 +239,9 @@ async function syncLibertadoresQuarterfinals(db, admin, axios) {
     logger.info(`Quartas da Libertadores sincronizadas via fonte externa (${legs.length} jogo(s)).`);
 }
 
-module.exports = { syncLibertadoresQuarterfinals, groupIntoLegs, normalizeTeamName };
+module.exports = {
+    syncLibertadoresQuarterfinals,
+    syncLibertadoresQuarterfinalsIfCheckpointDue,
+    groupIntoLegs,
+    normalizeTeamName
+};
