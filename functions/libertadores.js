@@ -38,6 +38,14 @@ async function syncLibertadores(db, admin, axios) {
                 const isKO = knockoutStages.includes(m.stage);
                 const mappedPhase = mapPhase(m.stage);
 
+                // football-data.org's free plan doesn't cover this competition's
+                // current season, which leaves its Quarterfinals response
+                // permanently incomplete/inconsistent (see fallback-api.js).
+                // libertadoresQuarterfinals.js owns this phase exclusively now -
+                // writing it here too would just have the two syncs fight over
+                // the same documents on every run.
+                if (mappedPhase === "QUARTERFINALS") continue;
+
                 let matchId = `CLI-2026-M${m.id}`;
                 let knockoutOrder = 0;
 
@@ -67,41 +75,6 @@ async function syncLibertadores(db, admin, axios) {
 
                     const key = `${m.id}-${isVolta ? "L2" : "L1"}`;
                     matchId = productionIds[key] || `CLI-2026-R16-${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
-                } else if (mappedPhase === "QUARTERFINALS") {
-                    // Quarterfinals: the API returns pairs (leg 1/leg 2 for each tie)
-                    // We map them by order of appearance and alternation
-                    const qfMatches = resCLI.data.matches
-                        .filter(x => x.stage === "QUARTER_FINALS")
-                        .sort((a, b) => a.id - b.id);
-                    const idx = qfMatches.findIndex(x => x.id === m.id);
-
-                    if (idx !== -1) {
-                        knockoutOrder = Math.floor(idx / 2) + 1;
-                        const isVolta = idx % 2 === 1; // 0,1 -> QF1; 2,3 -> QF2; etc
-                        matchId = `CLI-2026-QF${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
-
-                        // IMPORTANT: in leg 2 (L2), teams must be SWAPPED.
-                        // If this is leg 2 and teams match leg 1, swap them
-                        // (swaps the variable REFERENCES only, never the fields
-                        // of the LIB_TEAMS objects themselves — those are
-                        // shared/mutable, and mutating their fields would
-                        // corrupt the team record for every other match
-                        // processed in this and future function runs)
-                        if (isVolta && idx > 0) {
-                            const idaMatch = qfMatches[idx - 1];
-                            if (hName === idaMatch.homeTeam?.name && aName === idaMatch.awayTeam?.name) {
-                                const tempName = hName;
-                                hName = aName;
-                                aName = tempName;
-                                const tempTeam = hTeam;
-                                hTeam = aTeam;
-                                aTeam = tempTeam;
-                            }
-                        }
-                    } else {
-                        // Fallback (should never happen)
-                        matchId = `CLI-2026-M${m.id}`;
-                    }
                 } else if (mappedPhase === "SEMIFINALS") {
                     // Semifinals: same pattern as quarterfinals
                     const sfMatches = resCLI.data.matches
@@ -116,7 +89,7 @@ async function syncLibertadores(db, admin, axios) {
 
                         // IMPORTANT: in leg 2 (L2), teams must be SWAPPED
                         // (swaps references only, not object fields — see the
-                        // equivalent comment in the QUARTERFINALS block above)
+                        // equivalent comment above)
                         if (isVolta && idx > 0) {
                             const idaMatch = sfMatches[idx - 1];
                             if (hName === idaMatch.homeTeam?.name && aName === idaMatch.awayTeam?.name) {
@@ -212,7 +185,7 @@ async function syncLibertadores(db, admin, axios) {
                 batch.set(matchesRef.doc(matchId), updates, { merge: true });
 
                 // Detect home/away swaps and migrate predictions if needed (QF/SF/Final)
-                if (existing && (mappedPhase === "QUARTERFINALS" || mappedPhase === "SEMIFINALS" || mappedPhase === "FINAL")) {
+                if (existing && (mappedPhase === "SEMIFINALS" || mappedPhase === "FINAL")) {
                     const oldHomeCode = existing.homeTeamCode;
                     const oldAwayCode = existing.awayTeamCode;
                     const newHomeCode = updates.homeTeamCode;

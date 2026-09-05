@@ -9,6 +9,7 @@ const db = admin.firestore();
 // Internal modules
 const { syncBrasileirao } = require("./brasileirao");
 const { syncLibertadores } = require("./libertadores");
+const { syncLibertadoresQuarterfinals } = require("./libertadoresQuarterfinals");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
 const { cleanupDeletedBoloes, cleanupExpiredInvitations } = require("./cleanup");
 const { makeNotificationTriggers } = require("./notificationTriggers");
@@ -28,6 +29,12 @@ const footballDataApiKey = defineSecret("FOOTBALL_DATA_API_KEY");
 // manual sync). Set with: firebase functions:secrets:set ADMIN_TOKEN
 // Call passing the header "x-admin-token: <value>".
 const adminToken = defineSecret("ADMIN_TOKEN");
+
+// Base URL of the external fallback source for the Libertadores quarterfinals
+// (see libertadoresResultsScraper.js) - kept out of code so the source can be
+// swapped later without a deploy touching any file that names it.
+// Set with: firebase functions:secrets:set LIBERTADORES_RESULTS_SOURCE_URL
+const libertadoresResultsSourceUrl = defineSecret("LIBERTADORES_RESULTS_SOURCE_URL");
 
 function requireAdminToken(req, res) {
     if (req.get("x-admin-token") !== process.env.ADMIN_TOKEN) {
@@ -107,6 +114,28 @@ exports.syncLibertadoresHTTP = onRequest({ secrets: [footballDataApiKey, adminTo
         return res.status(500).json({ status: "error", message: error.message });
     }
 });
+
+/**
+ * Manual Libertadores quarterfinals sync via HTTP (zero cost) - same purpose
+ * as syncLibertadoresHTTP above, but for the external-fallback sync (see
+ * libertadoresQuarterfinals.js), useful to trigger a run without waiting for
+ * scheduledLibertadoresQuartersSync's next scheduled tick.
+ */
+exports.syncLibertadoresQuartersHTTP = onRequest(
+    { secrets: [libertadoresResultsSourceUrl, adminToken] },
+    async (req, res) => {
+        if (!requireAdminToken(req, res)) return;
+        try {
+            logger.info("📡 Sincronizando quartas da Libertadores (HTTP)");
+            await syncLibertadoresQuarterfinals(db, admin, axios);
+            logger.info("✅ Sincronização concluída");
+            return res.json({ status: "success", message: "Quartas da Libertadores sincronizadas" });
+        } catch (error) {
+            logger.error("❌ Erro:", error.message);
+            return res.status(500).json({ status: "error", message: error.message });
+        }
+    }
+);
 
 /**
  * Manual Brasileirao sync via HTTP (zero cost).
@@ -199,6 +228,30 @@ exports.scheduledLiveCheck = onSchedule(
         logger.info(`📡 Sync agendado (jogo ao vivo/próximo - ${reason})`);
         await syncBrasileirao(db, admin, axios);
         await syncLibertadores(db, admin, axios);
+    }
+);
+
+/**
+ * Libertadores quarterfinals (Firebase's native Cloud Scheduler): 2x/day,
+ * NOT tied to checkShouldSyncFrequently() on purpose - football-data.org's
+ * free plan doesn't cover this competition's current season (see
+ * functions/fallback-api.js), so this phase alone falls back to a
+ * configurable external source (LIBERTADORES_RESULTS_SOURCE_URL) for bare
+ * facts (matchup, date, final score) only.
+ * Low frequency by design: we only need the final result, never a live
+ * score. Group stage and Round of 16 keep coming from football-data.org,
+ * untouched by this function.
+ */
+exports.scheduledLibertadoresQuartersSync = onSchedule(
+    {
+        schedule: "0 8,20 * * *",
+        timeZone: "America/Sao_Paulo",
+        secrets: [libertadoresResultsSourceUrl],
+        timeoutSeconds: 120,
+        memory: "256MiB"
+    },
+    async () => {
+        await syncLibertadoresQuarterfinals(db, admin, axios);
     }
 );
 
