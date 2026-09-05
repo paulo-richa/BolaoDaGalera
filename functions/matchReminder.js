@@ -79,7 +79,7 @@ async function sendMatchReminders(db, admin, now = Date.now()) {
                 await notifyUser(db, admin, userId, {
                     title: "Fechando em breve! ⏰",
                     message: `${match.homeTeam || "Time A"} x ${match.awayTeam || "Time B"} começa em menos de 1h ` +
-                        "e você ainda não palpitou.",
+                        `e você ainda não palpitou no bolão "${bolao.name || "seu bolão"}".`,
                     type: "MATCH_REMINDER",
                     bolaoId: bolaoDoc.id,
                     matchId: match.id,

@@ -15,7 +15,7 @@ function todayWindowMillis(now = new Date()) {
 
     const startMillis = Date.parse(`${y}-${m}-${d}T00:00:00-03:00`);
     const endMillis = startMillis + 24 * 3600 * 1000 - 1;
-    return { startMillis, endMillis };
+    return { startMillis, endMillis, dateKey: `${y}-${m}-${d}` };
 }
 
 /**
@@ -41,11 +41,12 @@ function relevantMatchesForBolao(bolao, matchesTodayByChampionship) {
 }
 
 /**
- * Builds { userId -> count of today's matches still without a prediction },
- * summed across every bolao the user participates in (each bolao counts
- * separately, even for the same real-world match - predictions are independent).
+ * Builds one entry per (bolao, user) with matches still missing a prediction
+ * today - kept per-bolao (never summed across bolões) since a user in
+ * several bolões covering the same real-world match would otherwise see an
+ * inflated count that doesn't match "today's games" from their point of view.
  */
-async function computeMissingPredictionsByUser(db) {
+async function computeMissingPredictionsByBolao(db) {
     const { startMillis, endMillis } = todayWindowMillis();
 
     const matchesSnap = await db.collectionGroup("matches")
@@ -53,7 +54,7 @@ async function computeMissingPredictionsByUser(db) {
         .where("matchDateMillis", "<=", endMillis)
         .get();
 
-    if (matchesSnap.empty) return {};
+    if (matchesSnap.empty) return [];
 
     const matchesTodayByChampionship = {};
     matchesSnap.forEach((doc) => {
@@ -64,10 +65,10 @@ async function computeMissingPredictionsByUser(db) {
         matchesTodayByChampionship[champId].push({ id: doc.id, phase: m.phase });
     });
 
-    if (Object.keys(matchesTodayByChampionship).length === 0) return {};
+    if (Object.keys(matchesTodayByChampionship).length === 0) return [];
 
     const boloesSnap = await db.collection("boloes").get();
-    const missingByUser = {};
+    const entries = [];
 
     for (const bolaoDoc of boloesSnap.docs) {
         const bolao = bolaoDoc.data();
@@ -92,34 +93,58 @@ async function computeMissingPredictionsByUser(db) {
         for (const userId of participants) {
             const missing = relevantIds.length - (predictedCountByUser[userId] || 0);
             if (missing > 0) {
-                missingByUser[userId] = (missingByUser[userId] || 0) + missing;
+                entries.push({
+                    bolaoId: bolaoDoc.id,
+                    bolaoName: bolao.name || "seu bolão",
+                    userId,
+                    missing
+                });
             }
         }
     }
 
-    return missingByUser;
+    return entries;
+}
+
+/**
+ * Prevents the same (day, bolao, user) reminder from being sent twice, e.g.
+ * on a Cloud Scheduler retry. create() fails if the marker already exists:
+ * whoever creates it first is the one who sends the notification.
+ */
+async function claimDailyDigest(db, dateKey, bolaoId, userId) {
+    try {
+        await db.collection("dailyDigestsSent").doc(`${dateKey}_${bolaoId}_${userId}`).create({ sentAtMillis: Date.now() });
+        return true;
+    } catch (e) {
+        if (e.code === 6 || (e.message && e.message.includes("already exists"))) return false;
+        throw e;
+    }
 }
 
 async function sendDailyDigest(db, admin) {
-    let missingByUser;
+    let entries;
     try {
-        missingByUser = await computeMissingPredictionsByUser(db);
+        entries = await computeMissingPredictionsByBolao(db);
     } catch (e) {
         logger.error("Erro ao calcular resumo diário:", e.message);
         return;
     }
 
-    const userIds = Object.keys(missingByUser);
-    logger.info(`Resumo diário: ${userIds.length} usuário(s) com jogos de hoje sem palpite.`);
+    const { dateKey } = todayWindowMillis();
+    logger.info(`Resumo diário: ${entries.length} lembrete(s) de bolão a enviar.`);
 
-    for (const userId of userIds) {
-        const count = missingByUser[userId];
-        await notifyUser(db, admin, userId, {
+    for (const entry of entries) {
+        const claimed = await claimDailyDigest(db, dateKey, entry.bolaoId, entry.userId);
+        if (!claimed) continue;
+
+        await notifyUser(db, admin, entry.userId, {
             title: "Jogos de Hoje! ⚽",
-            message: `Você tem ${count} jogo(s) hoje sem palpite. Não perca pontos!`,
-            type: "MATCH_REMINDER"
+            message: `Você tem ${entry.missing} jogo(s) sem palpite hoje no bolão "${entry.bolaoName}". Não perca pontos!`,
+            type: "MATCH_REMINDER",
+            bolaoId: entry.bolaoId,
+            deepLink: `bolaodagalera://bolao?bolaoId=${entry.bolaoId}`
         });
     }
 }
 
-module.exports = { todayWindowMillis, relevantMatchesForBolao, computeMissingPredictionsByUser, sendDailyDigest };
+module.exports = { todayWindowMillis, relevantMatchesForBolao, computeMissingPredictionsByBolao, sendDailyDigest };

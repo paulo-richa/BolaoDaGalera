@@ -218,8 +218,9 @@ exports.scheduledCleanup = onSchedule(
 
 /**
  * Daily digest (Firebase's native Cloud Scheduler): at 09h Brasilia time,
- * notifies each user how many of today's matches they still haven't
- * predicted, summed across every bolao they participate in.
+ * notifies each user, per bolao, how many of today's matches in THAT bolao
+ * they still haven't predicted - kept per-bolao (never summed) so the count
+ * always matches what the user sees as "today's games" for that bolao.
  */
 exports.scheduledDailyDigest = onSchedule(
     { schedule: "0 9 * * *", timeZone: "America/Sao_Paulo", timeoutSeconds: 300, memory: "256MiB" },
