@@ -48,21 +48,29 @@ class CreateBolaoViewModel(
     private val _uiState = MutableStateFlow(CreateBolaoUiState())
     val uiState: StateFlow<CreateBolaoUiState> = _uiState.asStateFlow()
 
-    init {
-        loadMatchesData()
-    }
+    private var loadMatchesJob: kotlinx.coroutines.Job? = null
 
-    private fun loadMatchesData() {
-        viewModelScope.launch {
-            matchRepository.getAllMatches()
-                .catch { e ->
-                    if (e is CancellationException) throw e
-                    errorReporter.report(e, "Erro ao carregar partidas para novo bolão")
-                }
-                .collect { matches ->
-                    _uiState.update { it.copy(allMatches = matches) }
-                }
-        }
+    /**
+     * Loads every match of the selected championship - no time window, unlike
+     * MatchRepository.getAllMatches() (meant for other, "matches around today"
+     * purposes). Phase availability must see the whole history/future of the
+     * championship to correctly tell whether a phase has already concluded,
+     * otherwise a single stray/miscategorized match with a wrong date can make
+     * a long-finished phase look like it hasn't started yet.
+     */
+    fun loadMatchesForChampionship(championshipId: String) {
+        loadMatchesJob?.cancel()
+        loadMatchesJob =
+            viewModelScope.launch {
+                matchRepository.getMatches(championshipId)
+                    .catch { e ->
+                        if (e is CancellationException) throw e
+                        errorReporter.report(e, "Erro ao carregar partidas para novo bolão")
+                    }
+                    .collect { matches ->
+                        _uiState.update { it.copy(allMatches = matches) }
+                    }
+            }
     }
 
     fun isPhaseAvailable(championshipId: String, phase: Phase): Boolean =

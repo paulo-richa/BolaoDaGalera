@@ -6,7 +6,6 @@ import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.appLogger
 import com.lpstudio.bolaodagalera.observability.reportAndRethrow
-import com.lpstudio.bolaodagalera.util.TimeSource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.CancellationException
@@ -185,25 +184,7 @@ class FirebaseMatchRepository(private val crashReporter: CrashReporter) : MatchR
         }
     }
 
-    // Used only to find "today's" matches (pending-prediction reminder on Home),
-    // so a window of a few days is enough instead of the entire history of all
-    // championships - this reduces reads and the size of the open listener.
-    override fun getAllMatches(): Flow<List<Match>> {
-        val now = TimeSource.nowMillis()
-        val window = TODAY_WINDOW_DAYS * HOURS_PER_DAY * MILLIS_PER_HOUR
-        return db.collectionGroup("matches")
-            .where { "matchDateMillis" greaterThanOrEqualTo (now - window) }
-            .where { "matchDateMillis" lessThanOrEqualTo (now + window) }
-            .snapshots.map { snap ->
-                snap.documents.map { it.data<MatchDto>().toDomain(it.id) }
-            }.reportAndRethrow(crashReporter, "Erro no getAllMatches")
-    }
-
     private companion object {
-        private const val TODAY_WINDOW_DAYS = 3L
-        private const val HOURS_PER_DAY = 24L
-        private const val MILLIS_PER_HOUR = 3_600_000L
-
         /** Used when a match id has no parseable order suffix, so it sorts after known-ordered matches. */
         private const val UNKNOWN_MATCH_ORDER_FALLBACK = 99
     }

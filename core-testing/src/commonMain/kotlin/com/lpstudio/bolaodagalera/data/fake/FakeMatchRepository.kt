@@ -13,8 +13,6 @@ class FakeMatchRepository : MatchRepository {
     override fun getMatches(championshipId: String): Flow<List<Match>> =
         matchesState.map { it.filter { m -> m.championshipId == championshipId } }
 
-    override fun getAllMatches(): Flow<List<Match>> = matchesState
-
     override suspend fun getMatch(championshipId: String, matchId: String): Match = matchesState.value.first { it.id == matchId }
 
     override suspend fun updateMatchScore(championshipId: String, matchId: String, homeScore: Int?, awayScore: Int?, isManual: Boolean) {

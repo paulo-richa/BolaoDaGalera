@@ -145,6 +145,9 @@ private fun rememberPhaseAvailability(
     allMatches: List<com.lpstudio.bolaodagalera.domain.model.Match>,
     championshipId: String
 ): PhaseAvailability {
+    LaunchedEffect(championshipId) {
+        if (championshipId != "UNKNOWN") viewModel.loadMatchesForChampionship(championshipId)
+    }
     val isGroupStageAvailable =
         remember(allMatches, championshipId) { viewModel.isPhaseAvailable(championshipId, Phase.GROUP_STAGE) }
     val isKnockoutAvailable = remember(allMatches, championshipId) { viewModel.isKnockoutAvailable(championshipId) }
