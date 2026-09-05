@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import com.lpstudio.bolaodagalera.data.fake.FAKE_FRIEND
 import com.lpstudio.bolaodagalera.data.fake.FAKE_USER
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.di.fakeAppModule
@@ -91,10 +92,25 @@ class AddParticipantsScreenTest {
     fun convidar_usuario_existente_por_email_mostra_sucesso() {
         setContent()
 
-        composeTestRule.onNodeWithText("E-mail, Telefone ou ID").performTextInput(FAKE_USER.email)
+        // FAKE_FRIEND exists but isn't a participant of bolao-1 yet - unlike FAKE_USER
+        // (the inviter) or the u3-u9 fakes, which are all already members.
+        composeTestRule.onNodeWithText("E-mail, Telefone ou ID").performTextInput(FAKE_FRIEND.email)
         composeTestRule.onNodeWithText("Enviar Convite").performScrollTo().performClick()
         composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText("Convite enviado com sucesso!").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun convidar_usuario_que_ja_e_participante_mostra_erro() {
+        setContent()
+
+        composeTestRule.onNodeWithText("E-mail, Telefone ou ID").performTextInput(FAKE_USER.email)
+        composeTestRule.onNodeWithText("Enviar Convite").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Esse usuário já participa deste bolão.")
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 }

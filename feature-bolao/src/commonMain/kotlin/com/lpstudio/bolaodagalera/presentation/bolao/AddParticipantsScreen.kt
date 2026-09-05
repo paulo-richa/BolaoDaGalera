@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import bolaodagalera.feature_bolao.generated.resources.Res
 import bolaodagalera.feature_bolao.generated.resources.add_participants_button_send_invite
 import bolaodagalera.feature_bolao.generated.resources.add_participants_button_share_link
+import bolaodagalera.feature_bolao.generated.resources.add_participants_error_already_member
 import bolaodagalera.feature_bolao.generated.resources.add_participants_error_send_failed
 import bolaodagalera.feature_bolao.generated.resources.add_participants_error_user_not_found
 import bolaodagalera.feature_bolao.generated.resources.add_participants_field_identifier_label
@@ -77,10 +78,12 @@ fun AddParticipantsScreen(bolaoId: String, onNavigateBack: () -> Unit) {
     val launcherProvider = rememberLauncherProvider()
 
     val userNotFoundError = stringResource(Res.string.add_participants_error_user_not_found)
+    val alreadyMemberError = stringResource(Res.string.add_participants_error_already_member)
     val sendFailedError = stringResource(Res.string.add_participants_error_send_failed)
     val error =
         when (uiState.error) {
             AddParticipantsError.USER_NOT_FOUND -> userNotFoundError
+            AddParticipantsError.ALREADY_MEMBER -> alreadyMemberError
             AddParticipantsError.SEND_FAILED -> sendFailedError
             null -> null
         }

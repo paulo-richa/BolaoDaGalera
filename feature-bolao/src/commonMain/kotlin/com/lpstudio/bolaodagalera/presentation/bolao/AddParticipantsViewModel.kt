@@ -23,7 +23,7 @@ import kotlinx.coroutines.withTimeout
 
 enum class ParticipantInputType { EMAIL, PHONE, USER }
 
-enum class AddParticipantsError { USER_NOT_FOUND, SEND_FAILED }
+enum class AddParticipantsError { USER_NOT_FOUND, ALREADY_MEMBER, SEND_FAILED }
 
 @Immutable
 data class AddParticipantsUiState(
@@ -74,34 +74,39 @@ class AddParticipantsViewModel(
         }
     }
 
+    private fun normalizeIdentifier(inputType: ParticipantInputType, raw: String): String = when (inputType) {
+        ParticipantInputType.PHONE -> raw.filter { it.isDigit() }
+        ParticipantInputType.EMAIL, ParticipantInputType.USER -> raw.lowercase()
+    }
+
+    private suspend fun identifierExists(inputType: ParticipantInputType, identifier: String): Boolean = when (inputType) {
+        ParticipantInputType.EMAIL -> authRepository.isEmailInUse(identifier)
+        ParticipantInputType.PHONE -> authRepository.isPhoneInUse(identifier)
+        ParticipantInputType.USER -> authRepository.isUsernameInUse(identifier)
+    }
+
+    private suspend fun isAlreadyParticipant(inviteeIdentifier: String): Boolean {
+        val targetUserId = authRepository.findUserIdByIdentifier(inviteeIdentifier) ?: return false
+        return targetUserId in bolaoRepository.getBolao(bolaoId).participants
+    }
+
     fun sendInvite(identifier: String) {
         val inputType = detectInputType(identifier)
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val trimmedId = identifier.trim()
+                val inviteeIdentifier = normalizeIdentifier(inputType, identifier.trim())
                 val inviterName = authRepository.currentUser?.name ?: "Alguém"
 
-                // 1. Check the user exists in the database before inviting
-                val userExists =
-                    when (inputType) {
-                        ParticipantInputType.EMAIL -> authRepository.isEmailInUse(trimmedId.lowercase())
-                        ParticipantInputType.PHONE -> authRepository.isPhoneInUse(trimmedId.filter { it.isDigit() })
-                        ParticipantInputType.USER -> authRepository.isUsernameInUse(trimmedId.lowercase())
-                    }
-
-                if (!userExists) {
+                if (!identifierExists(inputType, inviteeIdentifier)) {
                     _uiState.update { it.copy(isLoading = false, error = AddParticipantsError.USER_NOT_FOUND) }
                     return@launch
                 }
 
-                // 2. Send the in-app invitation
-                val inviteeIdentifier =
-                    when (inputType) {
-                        ParticipantInputType.EMAIL -> trimmedId.lowercase()
-                        ParticipantInputType.PHONE -> trimmedId.filter { it.isDigit() }
-                        ParticipantInputType.USER -> trimmedId.lowercase()
-                    }
+                if (isAlreadyParticipant(inviteeIdentifier)) {
+                    _uiState.update { it.copy(isLoading = false, error = AddParticipantsError.ALREADY_MEMBER) }
+                    return@launch
+                }
 
                 try {
                     performanceMonitor.trace(PerformanceTraces.INVITATION_SEND) {
