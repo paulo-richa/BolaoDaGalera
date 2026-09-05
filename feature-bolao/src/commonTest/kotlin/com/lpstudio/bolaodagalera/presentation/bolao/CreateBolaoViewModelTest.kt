@@ -109,11 +109,20 @@ class CreateBolaoViewModelTest {
     }
 
     @Test
-    fun `isKnockoutAvailable retorna false quando mata-mata ja comecou`() = runTest {
+    fun `isKnockoutAvailable retorna false quando todo o mata-mata ja aconteceu`() = runTest {
         matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.ROUND_OF_16, pastMillis))
         viewModel.loadMatchesForChampionship("LIBERTADORES")
 
         assertFalse(viewModel.isKnockoutAvailable("LIBERTADORES"))
+    }
+
+    @Test
+    fun `isKnockoutAvailable retorna true quando oitavas ja aconteceram mas quartas ainda nao`() = runTest {
+        matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.ROUND_OF_16, pastMillis))
+        matchRepository.upsertMatch(match("m2", "LIBERTADORES", Phase.QUARTERFINALS, futureMillis))
+        viewModel.loadMatchesForChampionship("LIBERTADORES")
+
+        assertTrue(viewModel.isKnockoutAvailable("LIBERTADORES"))
     }
 
     // ---------- POOL CREATION ----------
