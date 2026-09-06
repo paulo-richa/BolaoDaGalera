@@ -1,0 +1,8 @@
+# Project-wide code conventions ruleset (bolao-code-conventions, defined in
+# :detekt-rules) - layered on top of detekt.yml in every module except
+# :detekt-rules itself (which can't depend on its own plugin jar without a
+# self-referential classloader problem).
+bolao-code-conventions:
+  active: true
+  NoPortugueseIdentifiers:
+    active: true

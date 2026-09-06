@@ -1,1 +1,2 @@
 com.lpstudio.bolaodagalera.detekt.BolaoRuleSetProvider
+com.lpstudio.bolaodagalera.detekt.BolaoCodeConventionsRuleSetProvider

@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.ActivityCompat
@@ -75,9 +76,15 @@ class BolaoFirebaseMessagingService : FirebaseMessagingService() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
+        // The small (status bar) icon is always rendered as a flat white silhouette by the
+        // system on API 21+, regardless of its actual colors - setLargeIcon is what actually
+        // shows the app's real, colored logo in the notification body.
+        val largeIcon = BitmapFactory.decodeResource(resources, R.drawable.logo_oficial)
+
         val notification =
             NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
+                .setLargeIcon(largeIcon)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(body))

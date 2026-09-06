@@ -59,23 +59,14 @@ class FirebaseInvitationRepository(private val crashReporter: CrashReporter) : I
     }
 
     override suspend fun sendInvitation(bolaoId: String, bolaoName: String, inviterName: String, inviteeIdentifier: String) {
-        val existing =
-            collection
-                .where { "bolaoId" equalTo bolaoId }
-                .where { "inviteeIdentifier" equalTo inviteeIdentifier }
-                .where { "status" equalTo "PENDING" }
-                .get()
-
-        if (existing.documents.isNotEmpty()) {
-            // If a pending invitation already exists, just update the timestamp and inviter name (in case it changed)
-            val docId = existing.documents.first().id
-            collection.document(docId).update(
-                "createdAtMillis" to TimeSource.nowMillis(),
-                "inviterName" to inviterName
-            )
-            return
-        }
-
+        // No pre-check for an existing pending invitation here: the security rules only let a
+        // user read/query invitations addressed to themselves (isMyInvitation), so a query by
+        // the inviter for the invitee's identifier is always rejected with PERMISSION_DENIED,
+        // which used to abort sendInvitation before it ever created the document. Duplicates
+        // are handled on the read side instead: DedupeInvitationsByBolaoUseCase collapses
+        // multiple pending invitations for the same bolão into one for display, and
+        // RespondToInvitationUseCase resolves every pending invitation for that bolão at once
+        // when the invitee accepts or declines.
         val dto =
             InvitationDto(
                 bolaoId = bolaoId,

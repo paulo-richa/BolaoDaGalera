@@ -100,4 +100,10 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun getUser(userId: String): User? = allUsers.find { it.id == userId }
 
     override suspend fun getUsers(userIds: List<String>): List<User> = allUsers.filter { it.id in userIds }
+
+    override suspend fun findUserIdByIdentifier(identifier: String): String? = allUsers.find {
+        it.email.equals(identifier, ignoreCase = true) ||
+            it.username.equals(identifier, ignoreCase = true) ||
+            it.phone == identifier
+    }?.id
 }

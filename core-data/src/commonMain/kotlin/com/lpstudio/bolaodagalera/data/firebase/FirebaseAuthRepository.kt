@@ -201,6 +201,14 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
         return !snapshot.documents.isEmpty()
     }
 
+    override suspend fun findUserIdByIdentifier(identifier: String): String? {
+        for (field in listOf("email", "username", "phone")) {
+            val snapshot = usersCollection.where { field equalTo identifier }.get()
+            if (!snapshot.documents.isEmpty()) return snapshot.documents.first().id
+        }
+        return null
+    }
+
     override suspend fun sendPasswordResetEmail(email: String) {
         auth.sendPasswordResetEmail(email.trim())
     }

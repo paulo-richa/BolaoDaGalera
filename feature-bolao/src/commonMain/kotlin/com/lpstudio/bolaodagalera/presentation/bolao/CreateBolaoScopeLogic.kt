@@ -70,7 +70,10 @@ internal fun isScopeVisible(
     BolaoScope.ONLY_KNOCKOUT ->
         (championship.isGroupsAndKnockout || !championship.isPointsBased) && isKnockoutAvailable
     BolaoScope.FULL -> championship.isGroupsAndKnockout && isGroupStageAvailable && isKnockoutAvailable
-    else -> true
+    // Only a points-based championship (e.g. Brasileirão) offers this scope - a
+    // groups-and-knockout championship (e.g. Libertadores) only ever has the two
+    // phase-specific scopes above (plus FULL), never a flat "league table".
+    BolaoScope.PONTOS_CORRIDOS -> championship.isPointsBased
 }
 
 internal fun isScopeEnabled(scope: BolaoScope, isGroupStageAvailable: Boolean, isKnockoutAvailable: Boolean): Boolean = when (scope) {

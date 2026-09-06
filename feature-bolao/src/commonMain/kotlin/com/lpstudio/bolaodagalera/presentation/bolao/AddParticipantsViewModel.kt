@@ -13,7 +13,6 @@ import com.lpstudio.bolaodagalera.observability.ErrorReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
 import com.lpstudio.bolaodagalera.observability.PerformanceTraces
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +23,7 @@ import kotlinx.coroutines.withTimeout
 
 enum class ParticipantInputType { EMAIL, PHONE, USER }
 
-enum class AddParticipantsError { USER_NOT_FOUND, SEND_FAILED }
+enum class AddParticipantsError { USER_NOT_FOUND, ALREADY_MEMBER, SEND_FAILED }
 
 @Immutable
 data class AddParticipantsUiState(
@@ -75,34 +74,39 @@ class AddParticipantsViewModel(
         }
     }
 
+    private fun normalizeIdentifier(inputType: ParticipantInputType, raw: String): String = when (inputType) {
+        ParticipantInputType.PHONE -> raw.filter { it.isDigit() }
+        ParticipantInputType.EMAIL, ParticipantInputType.USER -> raw.lowercase()
+    }
+
+    private suspend fun identifierExists(inputType: ParticipantInputType, identifier: String): Boolean = when (inputType) {
+        ParticipantInputType.EMAIL -> authRepository.isEmailInUse(identifier)
+        ParticipantInputType.PHONE -> authRepository.isPhoneInUse(identifier)
+        ParticipantInputType.USER -> authRepository.isUsernameInUse(identifier)
+    }
+
+    private suspend fun isAlreadyParticipant(inviteeIdentifier: String): Boolean {
+        val targetUserId = authRepository.findUserIdByIdentifier(inviteeIdentifier) ?: return false
+        return targetUserId in bolaoRepository.getBolao(bolaoId).participants
+    }
+
     fun sendInvite(identifier: String) {
         val inputType = detectInputType(identifier)
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val trimmedId = identifier.trim()
+                val inviteeIdentifier = normalizeIdentifier(inputType, identifier.trim())
                 val inviterName = authRepository.currentUser?.name ?: "Alguém"
 
-                // 1. Check the user exists in the database before inviting
-                val userExists =
-                    when (inputType) {
-                        ParticipantInputType.EMAIL -> authRepository.isEmailInUse(trimmedId.lowercase())
-                        ParticipantInputType.PHONE -> authRepository.isPhoneInUse(trimmedId.filter { it.isDigit() })
-                        ParticipantInputType.USER -> authRepository.isUsernameInUse(trimmedId.lowercase())
-                    }
-
-                if (!userExists) {
+                if (!identifierExists(inputType, inviteeIdentifier)) {
                     _uiState.update { it.copy(isLoading = false, error = AddParticipantsError.USER_NOT_FOUND) }
                     return@launch
                 }
 
-                // 2. Send the in-app invitation
-                val inviteeIdentifier =
-                    when (inputType) {
-                        ParticipantInputType.EMAIL -> trimmedId.lowercase()
-                        ParticipantInputType.PHONE -> trimmedId.filter { it.isDigit() }
-                        ParticipantInputType.USER -> trimmedId.lowercase()
-                    }
+                if (isAlreadyParticipant(inviteeIdentifier)) {
+                    _uiState.update { it.copy(isLoading = false, error = AddParticipantsError.ALREADY_MEMBER) }
+                    return@launch
+                }
 
                 try {
                     performanceMonitor.trace(PerformanceTraces.INVITATION_SEND) {
@@ -116,15 +120,15 @@ class AddParticipantsViewModel(
                         }
                     }
                     analyticsTracker.logEvent(AnalyticsEvents.INVITATION_SEND, mapOf("bolao_id" to bolaoId))
-                } catch (e: TimeoutCancellationException) {
-                    // Best-effort: shown as success below regardless, since a Cloud Function
-                    // retry path exists - but still tracked in Crashlytics so a systematic
-                    // failure here (not just a slow one-off) is visible.
-                    errorReporter.report(e, "Envio de convite in-app expirou (queued for later delivery)")
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    errorReporter.report(e, "Falha ao enviar convite in-app (queued for later delivery)")
+                    // There is no server-side retry for a failed invitation write - if this
+                    // throws (timeout, permission error, network), the invitee never gets
+                    // one, so this must surface as a real failure, not a fake success.
+                    errorReporter.report(e, "Falha ao enviar convite in-app")
+                    _uiState.update { it.copy(isLoading = false, error = AddParticipantsError.SEND_FAILED) }
+                    return@launch
                 }
 
                 _uiState.update { it.copy(isLoading = false, showSuccessMessage = true) }
@@ -141,7 +145,7 @@ class AddParticipantsViewModel(
 
     private companion object {
         private const val MIN_PHONE_DIGITS = 8
-        private const val INVITATION_SEND_TIMEOUT_MILLIS = 3000L
+        private const val INVITATION_SEND_TIMEOUT_MILLIS = 10000L
         private const val SUCCESS_MESSAGE_DURATION_MILLIS = 3000L
     }
 }
