@@ -69,10 +69,29 @@ class MainActivity : ComponentActivity() {
     // onNewToken only fires when Firebase generates a NEW token - on an already
     // installed app the token may already exist from before the user logged in,
     // so we register the current token every time the login state changes.
+    // Also unregisters it from whoever was PREVIOUSLY logged in on sign-out -
+    // without this, a device shared by two accounts (e.g. testing) keeps
+    // receiving push for an account that already logged out.
     private fun registerFcmTokenOnLogin() {
         lifecycleScope.launch {
+            var previousUserId: String? = null
             authRepository.authStateFlow.collectLatest { user ->
-                if (user == null) return@collectLatest
+                if (user == null) {
+                    val signedOutUserId = previousUserId ?: return@collectLatest
+                    previousUserId = null
+                    try {
+                        val token = getFcmToken()
+                        notificationRepository.unregisterFcmToken(signedOutUserId, token)
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        crashReporter.recordException(e, "Erro ao remover fcmToken no logout")
+                        logger.e(e) { "Erro ao remover fcmToken no logout" }
+                    }
+                    return@collectLatest
+                }
+
+                previousUserId = user.id
                 try {
                     val token = getFcmToken()
                     notificationRepository.registerFcmToken(user.id, token)
