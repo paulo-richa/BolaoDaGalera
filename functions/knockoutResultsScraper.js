@@ -2,27 +2,25 @@ const cheerio = require("cheerio");
 const { logger } = require("firebase-functions");
 
 /**
- * Minimal, conservative fallback source for Libertadores knockout phases
+ * Minimal, conservative fallback source for knockout-phase competitions
  * football-data.org's free plan doesn't cover - see
- * functions/libertadoresQuarterfinals.js for why this exists and which
- * phases are actually configured today. We only ever read bare facts
- * (matchup, date, final score), at low frequency (a couple of times a day),
- * identifying ourselves honestly via User-Agent - never live/minute-by-minute
- * data.
+ * functions/knockoutFallbackSync.js for how this is used and which
+ * competitions/phases are actually configured today. We only ever read bare
+ * facts (matchup, date, final score), at low frequency (a couple of times a
+ * day), identifying ourselves honestly via User-Agent - never
+ * live/minute-by-minute data.
  *
- * The base URL is intentionally not hardcoded: it's configured via
- * LIBERTADORES_RESULTS_SOURCE_URL (Secret Manager, see index.js), so the
- * source can be swapped later without a code change. The page is expected
- * to expose two listings under this base - "" (upcoming) and "/resultados"
- * (finished) - each grouping match cards under a date heading, with a
- * phase label, kickoff time, team names and (once finished) final scores.
+ * The base URL is a parameter, never hardcoded here: each competition
+ * resolves its own from its own Secret Manager entry (see
+ * knockoutFallbackSync.js and index.js), so a source can be swapped later
+ * without a code change, and different competitions can point at different
+ * pages of the same site. The page is expected to expose two listings under
+ * this base - "" (upcoming) and "/resultados" (finished) - each grouping
+ * match cards under a date heading, with a phase label, kickoff time, team
+ * names and (once finished) final scores.
  */
 const USER_AGENT = "BolaoDaGaleraBot/1.0 (+https://bolaodagalera-bb002.web.app)";
 const SEASON_YEAR = 2026;
-
-function baseUrl() {
-    return (process.env.LIBERTADORES_RESULTS_SOURCE_URL || "").trim().replace(/\/+$/, "");
-}
 
 async function fetchHtml(axios, url) {
     const response = await axios.get(url, {
@@ -95,17 +93,11 @@ function parsePhaseCards(html, phaseLabel) {
     return matches;
 }
 
-/** Public entry point: fetches both listings and returns every match found for phaseLabel. */
-async function scrapeLibertadoresPhase(axios, phaseLabel) {
-    const base = baseUrl();
-    if (!base) {
-        logger.warn("⚠️ LIBERTADORES_RESULTS_SOURCE_URL não configurada - pulando fallback.");
-        return [];
-    }
-
+/** Public entry point: fetches both listings under baseUrl and returns every match found for phaseLabel. */
+async function scrapePhase(axios, baseUrl, phaseLabel) {
     const matches = [];
     for (const path of ["", "/resultados"]) {
-        const url = `${base}${path}`;
+        const url = `${baseUrl}${path}`;
         try {
             const html = await fetchHtml(axios, url);
             matches.push(...parsePhaseCards(html, phaseLabel));
@@ -118,4 +110,4 @@ async function scrapeLibertadoresPhase(axios, phaseLabel) {
     return matches;
 }
 
-module.exports = { scrapeLibertadoresPhase, parsePhaseCards, toMatchDateMillis };
+module.exports = { scrapePhase, parsePhaseCards, toMatchDateMillis };
