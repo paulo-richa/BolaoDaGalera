@@ -1,6 +1,5 @@
 const { LIB_TEAMS } = require("./teams_lib");
 const { mapPhase } = require("./utils");
-const { migratePredictionsIfMatchChanged } = require("./knockout");
 const { getLibertadoresData } = require("./fallback-api");
 const { logger } = require("firebase-functions");
 
@@ -15,7 +14,6 @@ async function syncLibertadores(db, admin, axios) {
         if (apiData && apiData.matches) {
             const resCLI = { data: apiData };
             const batch = db.batch();
-            const migrationsNeeded = [];
             const now = Date.now();
             const knockoutPairs = {};
 
@@ -39,12 +37,16 @@ async function syncLibertadores(db, admin, axios) {
                 const mappedPhase = mapPhase(m.stage);
 
                 // football-data.org's free plan doesn't cover this competition's
-                // current season, which leaves its Quarterfinals response
-                // permanently incomplete/inconsistent (see fallback-api.js).
-                // libertadoresQuarterfinals.js owns this phase exclusively now -
-                // writing it here too would just have the two syncs fight over
-                // the same documents on every run.
-                if (mappedPhase === "QUARTERFINALS") continue;
+                // current season, which leaves its knockout-phase response
+                // permanently incomplete/inconsistent from Quarterfinals onward
+                // (see fallback-api.js). libertadoresQuarterfinals.js owns these
+                // phases exclusively now - writing them here too would just have
+                // the two syncs fight over the same documents on every run.
+                // SEMIFINALS/FINAL currently have no ties configured there yet
+                // (unknown until the previous phase concludes), so until that's
+                // filled in, these phases simply won't appear in Firestore at
+                // all - preferred over writing football-data.org's known-wrong data.
+                if (mappedPhase === "QUARTERFINALS" || mappedPhase === "SEMIFINALS" || mappedPhase === "FINAL") continue;
 
                 let matchId = `CLI-2026-M${m.id}`;
                 let knockoutOrder = 0;
@@ -75,40 +77,10 @@ async function syncLibertadores(db, admin, axios) {
 
                     const key = `${m.id}-${isVolta ? "L2" : "L1"}`;
                     matchId = productionIds[key] || `CLI-2026-R16-${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
-                } else if (mappedPhase === "SEMIFINALS") {
-                    // Semifinals: same pattern as quarterfinals
-                    const sfMatches = resCLI.data.matches
-                        .filter(x => x.stage === "SEMI_FINALS")
-                        .sort((a, b) => a.id - b.id);
-                    const idx = sfMatches.findIndex(x => x.id === m.id);
-
-                    if (idx !== -1) {
-                        knockoutOrder = Math.floor(idx / 2) + 1;
-                        const isVolta = idx % 2 === 1; // 0,1 -> SF1; 2,3 -> SF2
-                        matchId = `CLI-2026-SF${knockoutOrder}-${isVolta ? "L2" : "L1"}`;
-
-                        // IMPORTANT: in leg 2 (L2), teams must be SWAPPED
-                        // (swaps references only, not object fields — see the
-                        // equivalent comment above)
-                        if (isVolta && idx > 0) {
-                            const idaMatch = sfMatches[idx - 1];
-                            if (hName === idaMatch.homeTeam?.name && aName === idaMatch.awayTeam?.name) {
-                                const tempName = hName;
-                                hName = aName;
-                                aName = tempName;
-                                const tempTeam = hTeam;
-                                hTeam = aTeam;
-                                aTeam = tempTeam;
-                            }
-                        }
-                    } else {
-                        matchId = `CLI-2026-M${m.id}`;
-                    }
-                } else if (mappedPhase === "FINAL") {
-                    // Final: always a single match (no leg 1/leg 2)
-                    matchId = `CLI-2026-FINAL`;
-                    knockoutOrder = 1;
                 }
+                // SEMIFINALS/FINAL used to be handled here too, but are now
+                // skipped above (see the QUARTERFINALS comment) - removed
+                // rather than left as dead code.
 
                 const matchTime = Date.parse(m.utcDate);
                 let targetStatus = m.status;
@@ -183,30 +155,8 @@ async function syncLibertadores(db, admin, axios) {
                 }
 
                 batch.set(matchesRef.doc(matchId), updates, { merge: true });
-
-                // Detect home/away swaps and migrate predictions if needed (QF/SF/Final)
-                if (existing && (mappedPhase === "SEMIFINALS" || mappedPhase === "FINAL")) {
-                    const oldHomeCode = existing.homeTeamCode;
-                    const oldAwayCode = existing.awayTeamCode;
-                    const newHomeCode = updates.homeTeamCode;
-                    const newAwayCode = updates.awayTeamCode;
-
-                    if (oldHomeCode && oldAwayCode && (oldHomeCode !== newHomeCode || oldAwayCode !== newAwayCode)) {
-                        // Teams changed - predictions will need migrating after the batch
-                        migrationsNeeded.push({
-                            matchId,
-                            oldMatch: existing,
-                            newMatch: updates
-                        });
-                    }
-                }
             }
             await batch.commit();
-
-            // Process prediction migrations (after the commit, to avoid locks)
-            for (const migration of migrationsNeeded) {
-                await migratePredictionsIfMatchChanged(db, migration.matchId, migration.oldMatch, migration.newMatch);
-            }
 
             logger.info(`Libertadores sincronizada.`);
         }
