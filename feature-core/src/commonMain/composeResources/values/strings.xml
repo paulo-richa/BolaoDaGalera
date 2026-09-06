@@ -74,6 +74,11 @@
     <string name="maintenance_screen_message">Nossa equipe entrou em campo para fazer alguns ajustes técnicos. Voltamos logo após o comercial!</string>
     <string name="maintenance_screen_button_logout">Sair da conta</string>
 
+    <!-- UpdateRequiredScreen -->
+    <string name="update_required_screen_title">Atualização Necessária</string>
+    <string name="update_required_screen_message">Uma nova versão do Bolão da Galera está disponível. Atualize para continuar usando o app.</string>
+    <string name="update_required_screen_button_update">Atualizar Agora</string>
+
     <!-- SplashScreen -->
     <string name="splash_screen_logo_emoji">⚽</string>
     <string name="splash_screen_app_title">BOLÃO DA GALERA</string>

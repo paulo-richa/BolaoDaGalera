@@ -23,6 +23,9 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
     private val _maintenanceExemptEmails = MutableStateFlow(emptySet<String>())
     val maintenanceExemptEmails: StateFlow<Set<String>> = _maintenanceExemptEmails.asStateFlow()
 
+    private val _minSupportedVersion = MutableStateFlow("")
+    val minSupportedVersion: StateFlow<String> = _minSupportedVersion.asStateFlow()
+
     suspend fun fetchAndActivate() {
         try {
             remoteConfig.settings {
@@ -31,7 +34,8 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
             remoteConfig.setDefaults(
                 "maintenance_mode" to false,
                 "show_ads" to true,
-                "maintenance_exempt_emails" to ""
+                "maintenance_exempt_emails" to "",
+                "min_supported_version" to ""
             )
             remoteConfig.fetchAndActivate()
             _isMaintenanceMode.value = remoteConfig.getValue("maintenance_mode").asBoolean()
@@ -44,6 +48,7 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
                     .map { it.trim() }
                     .filter { it.isNotEmpty() }
                     .toSet()
+            _minSupportedVersion.value = remoteConfig.getValue("min_supported_version").asString()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
