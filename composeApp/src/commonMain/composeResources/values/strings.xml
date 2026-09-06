@@ -3,7 +3,6 @@
     <!-- MainScreen -->
     <string name="main_screen_fab_join_with_code">Entrar com código</string>
     <string name="main_screen_fab_create_bolao">Criar novo bolão</string>
-    <string name="main_screen_fab_label">Novo Bolão</string>
     <string name="main_screen_tab_boloes">Bolões</string>
     <string name="main_screen_tab_conta">Conta</string>
 </resources>

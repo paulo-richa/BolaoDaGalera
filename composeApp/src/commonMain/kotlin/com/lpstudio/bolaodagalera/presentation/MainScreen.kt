@@ -48,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import bolaodagalera.composeapp.generated.resources.Res
 import bolaodagalera.composeapp.generated.resources.main_screen_fab_create_bolao
 import bolaodagalera.composeapp.generated.resources.main_screen_fab_join_with_code
-import bolaodagalera.composeapp.generated.resources.main_screen_fab_label
 import bolaodagalera.composeapp.generated.resources.main_screen_tab_boloes
 import bolaodagalera.composeapp.generated.resources.main_screen_tab_conta
 import com.lpstudio.bolaodagalera.CommonBackHandler
@@ -160,26 +159,11 @@ private fun MainFabButton(showMenu: Boolean, onToggleMenu: () -> Unit) {
         label = "fab_rotation"
     )
 
-    // Extended (icon + label) instead of icon-only - a plain circular "+" wasn't
-    // discoverable enough as the entry point for creating/joining a bolão.
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
-        modifier =
-        Modifier
-            .height(64.dp)
-            .clip(CircleShape)
-            .background(GradientPrimary)
-            .clickable(onClick = onToggleMenu)
-            .padding(horizontal = BolaoSpacing.lg)
+    Box(
+        modifier = Modifier.size(64.dp).clip(CircleShape).background(GradientPrimary).clickable(onClick = onToggleMenu),
+        contentAlignment = Alignment.Center
     ) {
-        BolaoIcon(Icons.Default.Add, contentDescription = null, tint = DeepNavy, modifier = Modifier.size(28.dp).rotate(rotation))
-        BolaoText(
-            stringResource(Res.string.main_screen_fab_label),
-            fontSize = BolaoTypography.bodyLarge.fontSize,
-            color = DeepNavy,
-            fontWeight = FontWeight.Bold
-        )
+        BolaoIcon(Icons.Default.Add, contentDescription = null, tint = DeepNavy, modifier = Modifier.size(32.dp).rotate(rotation))
     }
 }
 
