@@ -72,6 +72,8 @@ async function computeMissingPredictionsByBolao(db) {
 
     for (const bolaoDoc of boloesSnap.docs) {
         const bolao = bolaoDoc.data();
+        if (bolao.deletedAtMillis) continue;
+
         const relevant = relevantMatchesForBolao(bolao, matchesTodayByChampionship);
         if (relevant.length === 0) continue;
 

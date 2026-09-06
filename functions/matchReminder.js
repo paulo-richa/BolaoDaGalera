@@ -58,6 +58,8 @@ async function sendMatchReminders(db, admin, now = Date.now()) {
 
     for (const bolaoDoc of boloesSnap.docs) {
         const bolao = bolaoDoc.data();
+        if (bolao.deletedAtMillis) continue;
+
         const relevant = relevantMatchesForBolao(bolao, matchesByChampionship);
         if (relevant.length === 0) continue;
 
