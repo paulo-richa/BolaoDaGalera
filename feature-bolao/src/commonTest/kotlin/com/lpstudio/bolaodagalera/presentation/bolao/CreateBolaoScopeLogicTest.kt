@@ -9,6 +9,7 @@ import kotlin.test.assertTrue
 class CreateBolaoScopeLogicTest {
     private val libertadores = Championship(id = "LIBERTADORES", isGroupsAndKnockout = true, isPointsBased = false)
     private val brasileirao = Championship(id = "BRASILEIRAO", isGroupsAndKnockout = false, isPointsBased = true)
+    private val copaDoBrasil = Championship(id = "COPA_DO_BRASIL", isGroupsAndKnockout = false, isPointsBased = false)
 
     @Test
     fun `PONTOS_CORRIDOS nunca aparece para campeonato com grupos e mata-mata`() {
@@ -22,5 +23,20 @@ class CreateBolaoScopeLogicTest {
         assertTrue(
             isScopeVisible(BolaoScope.PONTOS_CORRIDOS, brasileirao, isGroupStageAvailable = false, isKnockoutAvailable = false)
         )
+    }
+
+    @Test
+    fun `adjustScopeForAvailability corrige PONTOS_CORRIDOS residual ao trocar pra campeonato so mata-mata`() {
+        // Reproduz o bug real: currentScope ainda é PONTOS_CORRIDOS (do
+        // campeonato anterior, baseado em pontos) no exato instante em que o
+        // efeito de disponibilidade roda pro campeonato recém-selecionado.
+        val corrected =
+            adjustScopeForAvailability(
+                currentScope = BolaoScope.PONTOS_CORRIDOS,
+                championship = copaDoBrasil,
+                isGroupStageAvailable = false,
+                isKnockoutAvailable = true
+            )
+        assertTrue(corrected == BolaoScope.ONLY_KNOCKOUT)
     }
 }

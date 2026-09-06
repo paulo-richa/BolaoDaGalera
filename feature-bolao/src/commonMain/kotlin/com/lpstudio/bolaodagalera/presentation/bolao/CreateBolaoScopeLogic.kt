@@ -46,7 +46,13 @@ internal fun adjustScopeForAvailability(
             } else {
                 resolveScopeFallback(isOnlyGroupsValid, BolaoScope.ONLY_GROUPS, BolaoScope.ONLY_KNOCKOUT)
             }
-        else -> currentScope
+        // Reached when currentScope is stale from a just-abandoned championship
+        // (e.g. still PONTOS_CORRIDOS right after switching away from a
+        // points-based championship, before initialScopeForChampionship's own
+        // effect has propagated) - recomputing from scratch instead of keeping
+        // the stale value is what actually fixes it for the new championship.
+        BolaoScope.PONTOS_CORRIDOS ->
+            if (championship.isPointsBased) currentScope else initialScopeForChampionship(championship, isGroupStageAvailable)
     }
 }
 
