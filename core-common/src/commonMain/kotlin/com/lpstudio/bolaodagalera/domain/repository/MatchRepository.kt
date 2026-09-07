@@ -25,7 +25,4 @@ interface MatchRepository {
     )
 
     suspend fun upsertMatch(match: Match)
-
-    // Para compatibilidade ou fluxos globais (opcional)
-    fun getAllMatches(): Flow<List<Match>> = kotlinx.coroutines.flow.flowOf(emptyList())
 }

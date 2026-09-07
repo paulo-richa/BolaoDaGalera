@@ -66,11 +66,12 @@ android {
 
 dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.18.0"))
+    detektPlugins(project(":detekt-rules"))
 }
 
 detekt {
     toolVersion = libs.versions.detekt.get()
-    config.setFrom(file("../config/detekt/detekt.yml"))
+    config.setFrom(file("../config/detekt/detekt.yml"), file("../config/detekt/detekt-code-conventions.yml"))
     baseline = file("detekt-baseline.xml")
     buildUponDefaultConfig = true
     allRules = false

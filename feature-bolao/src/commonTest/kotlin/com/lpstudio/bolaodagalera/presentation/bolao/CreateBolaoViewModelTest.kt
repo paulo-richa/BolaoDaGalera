@@ -84,6 +84,7 @@ class CreateBolaoViewModelTest {
     fun `isPhaseAvailable retorna true quando todos os jogos da fase sao futuros`() = runTest {
         matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.GROUP_STAGE, futureMillis))
         matchRepository.upsertMatch(match("m2", "LIBERTADORES", Phase.GROUP_STAGE, futureMillis))
+        viewModel.loadMatchesForChampionship("LIBERTADORES")
 
         assertTrue(viewModel.isPhaseAvailable("LIBERTADORES", Phase.GROUP_STAGE))
     }
@@ -92,6 +93,7 @@ class CreateBolaoViewModelTest {
     fun `isPhaseAvailable retorna false quando algum jogo da fase ja comecou`() = runTest {
         matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.GROUP_STAGE, futureMillis))
         matchRepository.upsertMatch(match("m2", "LIBERTADORES", Phase.GROUP_STAGE, pastMillis))
+        viewModel.loadMatchesForChampionship("LIBERTADORES")
 
         assertFalse(viewModel.isPhaseAvailable("LIBERTADORES", Phase.GROUP_STAGE))
     }
@@ -101,15 +103,26 @@ class CreateBolaoViewModelTest {
         // Group stage already started (past), but the knockout stage hasn't
         matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.GROUP_STAGE, pastMillis))
         matchRepository.upsertMatch(match("m2", "LIBERTADORES", Phase.ROUND_OF_16, futureMillis))
+        viewModel.loadMatchesForChampionship("LIBERTADORES")
 
         assertTrue(viewModel.isKnockoutAvailable("LIBERTADORES"))
     }
 
     @Test
-    fun `isKnockoutAvailable retorna false quando mata-mata ja comecou`() = runTest {
+    fun `isKnockoutAvailable retorna false quando todo o mata-mata ja aconteceu`() = runTest {
         matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.ROUND_OF_16, pastMillis))
+        viewModel.loadMatchesForChampionship("LIBERTADORES")
 
         assertFalse(viewModel.isKnockoutAvailable("LIBERTADORES"))
+    }
+
+    @Test
+    fun `isKnockoutAvailable retorna true quando oitavas ja aconteceram mas quartas ainda nao`() = runTest {
+        matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.ROUND_OF_16, pastMillis))
+        matchRepository.upsertMatch(match("m2", "LIBERTADORES", Phase.QUARTERFINALS, futureMillis))
+        viewModel.loadMatchesForChampionship("LIBERTADORES")
+
+        assertTrue(viewModel.isKnockoutAvailable("LIBERTADORES"))
     }
 
     // ---------- POOL CREATION ----------

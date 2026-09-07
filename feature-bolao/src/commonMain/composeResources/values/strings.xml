@@ -42,6 +42,7 @@
     <string name="add_participants_success_message">Convite enviado com sucesso!</string>
     <string name="add_participants_default_inviter_name">Alguém</string>
     <string name="add_participants_error_user_not_found">Usuário não encontrado. Peça para seu amigo criar uma conta primeiro ou compartilhe o link de convite abaixo.</string>
+    <string name="add_participants_error_already_member">Esse usuário já participa deste bolão.</string>
     <string name="add_participants_error_send_failed">Não foi possível enviar. Verifique sua conexão.</string>
     <string name="add_participants_button_send_invite">Enviar Convite</string>
     <string name="add_participants_share_message">Entre no meu bolão \'%1$s\'! 🏆\n\nLink: %2$s\n\nSe o link não abrir o app automaticamente, use este: %3$s\n\nCódigo: %4$s</string>
@@ -188,7 +189,7 @@
     <string name="join_bolao_button_join">Entrar no Bolão</string>
 
     <!-- KnockoutTab -->
-    <string name="knockout_tab_empty_message">Nenhum jogo de mata-mata hoje.</string>
+    <string name="knockout_tab_empty_message">Nenhum jogo de mata-mata ainda, em breve quando acabar a fase atual.</string>
 
     <!-- MatchCard -->
     <string name="match_card_social_badge_label">PALPITES DA GALERA</string>

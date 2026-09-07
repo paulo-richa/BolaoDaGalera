@@ -8,7 +8,8 @@
       "namespace": "android_app",
       "package_name": "com.lpstudio.bolaodagalera",
       "sha256_cert_fingerprints": [
-        "A7:30:ED:76:61:DA:06:DF:F0:74:49:A4:F2:67:E3:21:2F:55:CA:8F:5D:A9:79:09:24:E6:6D:2F:2D:89:F5:02"
+        "A7:30:ED:76:61:DA:06:DF:F0:74:49:A4:F2:67:E3:21:2F:55:CA:8F:5D:A9:79:09:24:E6:6D:2F:2D:89:F5:02",
+        "B8:9D:3B:7C:40:9D:9B:24:87:C7:3B:1F:E1:48:B7:7C:79:B5:49:37:6F:50:61:96:1C:9C:8A:86:53:6F:F0:FB"
       ]
     }
   }

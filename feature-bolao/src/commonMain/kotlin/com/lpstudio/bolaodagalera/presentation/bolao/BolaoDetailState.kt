@@ -29,6 +29,7 @@ import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.util.TimeSource
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
@@ -354,16 +355,23 @@ private fun computeDefaultRound(matches: List<Match>): Int {
     val hasMatchToday = matchesGroupStage.any {
         Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == todayDate
     }
-    return if (hasMatchToday) {
-        0
-    } else {
-        val upcoming = matchesGroupStage
-            .filter { !it.isFinished && it.matchDateMillis > now }
-            .minByOrNull { it.matchDateMillis }
-            ?.groupRound()
-        val lastR = matchesGroupStage.maxByOrNull { it.matchDateMillis }?.groupRound() ?: 1
-        upcoming ?: lastR
+    if (hasMatchToday) return 0
+
+    // Priority is Today > Tomorrow > next round - without this, a round with a
+    // match tomorrow would be skipped straight to whatever round is "next"
+    // by match count, even though the Tomorrow tab is the more useful default.
+    val tomorrowDate = LocalDate.fromEpochDays(todayDate.toEpochDays() + 1)
+    val hasMatchTomorrow = matchesGroupStage.any {
+        Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == tomorrowDate
     }
+    if (hasMatchTomorrow) return TOMORROW_ROUND
+
+    val upcoming = matchesGroupStage
+        .filter { !it.isFinished && it.matchDateMillis > now }
+        .minByOrNull { it.matchDateMillis }
+        ?.groupRound()
+    val lastR = matchesGroupStage.maxByOrNull { it.matchDateMillis }?.groupRound() ?: 1
+    return upcoming ?: lastR
 }
 
 private fun isTabInDefaultState(

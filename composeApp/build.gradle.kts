@@ -15,6 +15,7 @@ plugins {
     alias(libs.plugins.kover)
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.androidxBaselineProfile)
+    alias(libs.plugins.playPublisher) apply false
     id("com.google.firebase.appdistribution")
     kotlin("native.cocoapods")
 }
@@ -132,7 +133,11 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 27
-        versionName = "3.2.3"
+        // Overridden by promote-play-store.yml via -PversionNameOverride, derived from the
+        // release/x.y.z branch name - the versionCode above only matters for APK builds
+        // (debug/Firebase App Distribution); the Play Store's versionCode is auto-assigned
+        // by the play { resolutionStrategy AUTO } block below at publish time.
+        versionName = (project.findProperty("versionNameOverride") as String?) ?: "3.2.3"
         testInstrumentationRunner = "com.lpstudio.bolaodagalera.CustomTestRunner"
     }
     packaging {
@@ -256,9 +261,30 @@ dependencies {
     detektPlugins(project(":detekt-rules"))
 }
 
+// Publishing to the Play Store's closed testing track ("Teste fechado - Alpha"),
+// driven by promote-play-store.yml on a release/x.y.z branch. The plugin is only
+// applied when PLAY_SERVICE_ACCOUNT_PATH is set - Gradle Play Publisher wires a
+// versionCode-processing task into every release-variant build (not just publish
+// tasks) once applied, which would otherwise force assembleRelease (used by
+// release-candidate.yml/release.yml for Firebase App Distribution, unrelated to
+// the Play Store) to require Play Console credentials too.
+val playServiceAccountPath = System.getenv("PLAY_SERVICE_ACCOUNT_PATH")
+if (playServiceAccountPath != null) {
+    apply(plugin = "com.github.triplet.play")
+    configure<com.github.triplet.gradle.play.PlayPublisherExtension> {
+        serviceAccountCredentials.set(file(playServiceAccountPath))
+        track.set(System.getenv("PLAY_TRACK") ?: "alpha")
+        defaultToAppBundles.set(true)
+        resolutionStrategy.set(com.github.triplet.gradle.androidpublisher.ResolutionStrategy.AUTO)
+        // versionCode conflicts are resolved automatically (see resolutionStrategy above) by
+        // querying the Play Console for the current max and incrementing - the versionCode in
+        // defaultConfig above is irrelevant for this task, only for APK builds.
+    }
+}
+
 detekt {
     toolVersion = libs.versions.detekt.get()
-    config.setFrom(file("../config/detekt/detekt.yml"))
+    config.setFrom(file("../config/detekt/detekt.yml"), file("../config/detekt/detekt-code-conventions.yml"))
     baseline = file("detekt-baseline.xml")
     buildUponDefaultConfig = true
     allRules = false

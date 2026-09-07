@@ -1,5 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 8.11.2" type="baseline" client="gradle" dependencies="true" name="AGP (8.11.2)" variant="all" version="8.11.2">
+<issues format="6" by="lint 8.13.2" type="baseline" client="gradle" dependencies="true" name="AGP (8.13.2)" variant="all" version="8.13.2">
+
+    <issue
+        id="OldTargetApi"
+        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details."
+        errorLine1="        targetSdk = libs.versions.android.targetSdk.get().toInt()"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="134"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="OldTargetApi"
+        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details."
+        errorLine1="android-targetSdk = &quot;36&quot;"
+        errorLine2="                    ~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="5"
+            column="21"/>
+    </issue>
 
     <issue
         id="IntentFilterUniqueDataAttributes"
@@ -8,7 +30,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/androidMain/AndroidManifest.xml"
-            line="30"
+            line="32"
             column="17"/>
     </issue>
 
@@ -19,7 +41,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/androidMain/AndroidManifest.xml"
-            line="31"
+            line="33"
             column="17"/>
     </issue>
 
@@ -30,7 +52,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/androidMain/AndroidManifest.xml"
-            line="32"
+            line="34"
             column="17"/>
     </issue>
 
@@ -41,7 +63,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/androidMain/AndroidManifest.xml"
-            line="33"
+            line="35"
             column="17"/>
     </issue>
 
@@ -52,7 +74,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/androidMain/AndroidManifest.xml"
-            line="41"
+            line="43"
             column="17"/>
     </issue>
 
@@ -63,25 +85,36 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/androidMain/AndroidManifest.xml"
-            line="42"
+            line="44"
             column="17"/>
     </issue>
 
     <issue
-        id="AndroidGradlePluginVersion"
-        message="A newer version of Gradle than 8.14.3 is available: 8.14.5"
-        errorLine1="distributionUrl=https\://services.gradle.org/distributions/gradle-8.14.3-bin.zip"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="IntentFilterUniqueDataAttributes"
+        message="Consider splitting data tag into multiple tags with individual attributes to avoid confusion"
+        errorLine1="                &lt;data android:scheme=&quot;bolaodagalera&quot; android:host=&quot;bolao&quot; />"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="../gradle/wrapper/gradle-wrapper.properties"
-            line="3"
+            file="src/androidMain/AndroidManifest.xml"
+            line="60"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="IntentFilterUniqueDataAttributes"
+        message="Consider splitting data tag into multiple tags with individual attributes to avoid confusion"
+        errorLine1="                &lt;data android:scheme=&quot;bolaodagalera&quot; android:host=&quot;predict&quot; />"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/androidMain/AndroidManifest.xml"
+            line="61"
             column="17"/>
     </issue>
 
     <issue
         id="AndroidGradlePluginVersion"
-        message="A newer version of com.android.application than 8.11.2 is available: 9.3.2"
-        errorLine1="agp = &quot;8.11.2&quot;"
+        message="A newer version of com.android.application than 8.13.2 is available: 9.4.0"
+        errorLine1="agp = &quot;8.13.2&quot;"
         errorLine2="      ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
@@ -91,8 +124,19 @@
 
     <issue
         id="AndroidGradlePluginVersion"
-        message="A newer version of com.android.library than 8.11.2 is available: 9.3.2"
-        errorLine1="agp = &quot;8.11.2&quot;"
+        message="A newer version of com.android.library than 8.13.2 is available: 9.4.0"
+        errorLine1="agp = &quot;8.13.2&quot;"
+        errorLine2="      ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="2"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of com.android.test than 8.13.2 is available: 9.4.0"
+        errorLine1="agp = &quot;8.13.2&quot;"
         errorLine2="      ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
@@ -102,101 +146,13 @@
 
     <issue
         id="GradleDependency"
-        message="A newer version of com.android.tools:desugar_jdk_libs than 2.0.4 is available: 2.1.5"
-        errorLine1="    coreLibraryDesugaring(&quot;com.android.tools:desugar_jdk_libs:2.0.4&quot;)"
-        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="170"
-            column="27"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of com.google.firebase:firebase-bom than 32.2.0 is available: 34.18.0"
-        errorLine1="    implementation(platform(&quot;com.google.firebase:firebase-bom:32.2.0&quot;))"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="174"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.appcompat:appcompat than 1.7.1 is available: 1.8.0"
-        errorLine1="androidx-appcompat = &quot;1.7.1&quot;"
-        errorLine2="                     ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="7"
-            column="22"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.core:core-ktx than 1.18.0 is available: 1.19.0"
-        errorLine1="androidx-core = &quot;1.18.0&quot;"
-        errorLine2="                ~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="8"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.core:core-splashscreen than 1.0.1 is available: 1.2.0"
-        errorLine1="androidx-core-splashscreen = &quot;1.0.1&quot;"
-        errorLine2="                             ~~~~~~~">
+        message="A newer version of org.jetbrains.kotlin:kotlin-test than 2.3.20 is available: 2.4.10"
+        errorLine1="kotlin = &quot;2.3.20&quot;"
+        errorLine2="         ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
             line="9"
-            column="30"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of org.jetbrains.kotlin:kotlin-test than 2.3.20 is available: 2.3.21"
-        errorLine1="kotlin = &quot;2.3.20&quot;"
-        errorLine2="         ~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="15"
             column="10"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of org.jetbrains.kotlin:kotlin-test-junit than 2.3.20 is available: 2.3.21"
-        errorLine1="kotlin = &quot;2.3.20&quot;"
-        errorLine2="         ~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="15"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of com.google.gms.google-services than 4.4.2 is available: 4.5.0"
-        errorLine1="google-services-plugin = &quot;4.4.2&quot;"
-        errorLine2="                         ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="22"
-            column="26"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of com.google.android.gms:play-services-ads than 23.6.0 is available: 25.4.0"
-        errorLine1="play-services-ads = &quot;23.6.0&quot;"
-        errorLine2="                    ~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="26"
-            column="21"/>
     </issue>
 
     <issue
@@ -223,34 +179,12 @@
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose than 2.10.0 is available: 2.11.0"
-        errorLine1="androidx-lifecycle = &quot;2.10.0&quot;"
-        errorLine2="                     ~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="11"
-            column="22"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose than 2.10.0 is available: 2.11.0"
-        errorLine1="androidx-lifecycle = &quot;2.10.0&quot;"
-        errorLine2="                     ~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="11"
-            column="22"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
         message="A newer version of org.jetbrains.compose than 1.10.3 is available: 1.12.0"
         errorLine1="composeMultiplatform = &quot;1.10.3&quot;"
         errorLine2="                       ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="13"
+            line="8"
             column="24"/>
     </issue>
 
@@ -261,7 +195,7 @@
         errorLine2="                       ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="13"
+            line="8"
             column="24"/>
     </issue>
 
@@ -272,7 +206,7 @@
         errorLine2="                       ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="13"
+            line="8"
             column="24"/>
     </issue>
 
@@ -283,7 +217,7 @@
         errorLine2="                       ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="13"
+            line="8"
             column="24"/>
     </issue>
 
@@ -294,7 +228,7 @@
         errorLine2="                       ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="13"
+            line="8"
             column="24"/>
     </issue>
 
@@ -305,7 +239,7 @@
         errorLine2="                       ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="13"
+            line="8"
             column="24"/>
     </issue>
 
@@ -316,8 +250,30 @@
         errorLine2="                       ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="13"
+            line="8"
             column="24"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlin.android than 2.3.20 is available: 2.4.10"
+        errorLine1="kotlin = &quot;2.3.20&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="9"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlin.jvm than 2.3.20 is available: 2.4.10"
+        errorLine1="kotlin = &quot;2.3.20&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="9"
+            column="10"/>
     </issue>
 
     <issue
@@ -327,7 +283,7 @@
         errorLine2="         ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="15"
+            line="9"
             column="10"/>
     </issue>
 
@@ -338,7 +294,7 @@
         errorLine2="         ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="15"
+            line="9"
             column="10"/>
     </issue>
 
@@ -349,239 +305,96 @@
         errorLine2="         ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="15"
+            line="9"
             column="10"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of dev.gitlive:firebase-auth than 2.0.0 is available: 2.6.0"
-        errorLine1="firebase-kotlin-sdk = &quot;2.0.0&quot;"
+        message="A newer version of dev.gitlive:firebase-auth than 2.6.0 is available: 2.7.0"
+        errorLine1="firebase-kotlin-sdk = &quot;2.6.0&quot;"
         errorLine2="                      ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="17"
+            line="11"
             column="23"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of dev.gitlive:firebase-config than 2.0.0 is available: 2.6.0"
-        errorLine1="firebase-kotlin-sdk = &quot;2.0.0&quot;"
+        message="A newer version of dev.gitlive:firebase-config than 2.6.0 is available: 2.7.0"
+        errorLine1="firebase-kotlin-sdk = &quot;2.6.0&quot;"
         errorLine2="                      ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="17"
+            line="11"
             column="23"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of dev.gitlive:firebase-firestore than 2.0.0 is available: 2.6.0"
-        errorLine1="firebase-kotlin-sdk = &quot;2.0.0&quot;"
+        message="A newer version of dev.gitlive:firebase-firestore than 2.6.0 is available: 2.7.0"
+        errorLine1="firebase-kotlin-sdk = &quot;2.6.0&quot;"
         errorLine2="                      ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="17"
+            line="11"
             column="23"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of io.insert-koin:koin-android than 4.0.0 is available: 4.2.2"
-        errorLine1="koin = &quot;4.0.0&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="18"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.insert-koin:koin-compose than 4.0.0 is available: 4.2.2"
-        errorLine1="koin = &quot;4.0.0&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="18"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.insert-koin:koin-compose-viewmodel than 4.0.0 is available: 4.2.2"
-        errorLine1="koin = &quot;4.0.0&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="18"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.insert-koin:koin-core than 4.0.0 is available: 4.2.2"
-        errorLine1="koin = &quot;4.0.0&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="18"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-core than 1.10.2 is available: 1.11.0"
-        errorLine1="kotlinx-coroutines = &quot;1.10.2&quot;"
-        errorLine2="                     ~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="19"
-            column="22"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-test than 1.10.2 is available: 1.11.0"
-        errorLine1="kotlinx-coroutines = &quot;1.10.2&quot;"
-        errorLine2="                     ~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="19"
-            column="22"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlinx:kotlinx-serialization-json than 1.8.0 is available: 1.11.0"
-        errorLine1="kotlinx-serialization = &quot;1.8.0&quot;"
-        errorLine2="                        ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="20"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlinx:kotlinx-datetime than 0.6.1 is available: 0.8.0"
-        errorLine1="kotlinx-datetime = &quot;0.6.1&quot;"
-        errorLine2="                   ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="23"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.ktor:ktor-client-content-negotiation than 3.1.3 is available: 3.5.2"
-        errorLine1="ktor = &quot;3.1.3&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="24"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.ktor:ktor-client-core than 3.1.3 is available: 3.5.2"
-        errorLine1="ktor = &quot;3.1.3&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="24"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.ktor:ktor-client-darwin than 3.1.3 is available: 3.5.2"
-        errorLine1="ktor = &quot;3.1.3&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="24"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.ktor:ktor-client-okhttp than 3.1.3 is available: 3.5.2"
-        errorLine1="ktor = &quot;3.1.3&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="24"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.ktor:ktor-serialization-kotlinx-json than 3.1.3 is available: 3.5.2"
-        errorLine1="ktor = &quot;3.1.3&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="24"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.coil-kt.coil3:coil-compose than 3.0.4 is available: 3.6.0"
+        message="A newer version of io.coil-kt.coil3:coil-compose than 3.0.4 is available: 3.6.1"
         errorLine1="coil = &quot;3.0.4&quot;"
         errorLine2="       ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="25"
+            line="22"
             column="8"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of io.coil-kt.coil3:coil-network-ktor3 than 3.0.4 is available: 3.6.0"
+        message="A newer version of io.coil-kt.coil3:coil-network-ktor3 than 3.0.4 is available: 3.6.1"
         errorLine1="coil = &quot;3.0.4&quot;"
         errorLine2="       ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="25"
+            line="22"
             column="8"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of io.coil-kt.coil3:coil-svg than 3.0.4 is available: 3.6.0"
+        message="A newer version of io.coil-kt.coil3:coil-svg than 3.0.4 is available: 3.6.1"
         errorLine1="coil = &quot;3.0.4&quot;"
         errorLine2="       ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="25"
+            line="22"
             column="8"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of io.gitlab.arturbosch.detekt than 1.23.7 is available: 1.23.8"
-        errorLine1="detekt = &quot;1.23.7&quot;"
-        errorLine2="         ~~~~~~~~">
+        message="A newer version of org.jetbrains.kotlinx.kover than 0.9.1 is available: 0.9.9"
+        errorLine1="kover = &quot;0.9.1&quot;"
+        errorLine2="        ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="27"
-            column="10"/>
+            line="26"
+            column="9"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of org.jlleitschuh.gradle.ktlint than 12.1.2 is available: 14.2.0"
-        errorLine1="ktlint = &quot;12.1.2&quot;"
-        errorLine2="         ~~~~~~~~">
+        message="A newer version of com.github.triplet.play than 3.13.0 is available: 4.1.1"
+        errorLine1="playPublisher = &quot;3.13.0&quot;"
+        errorLine2="                ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="28"
-            column="10"/>
+            line="30"
+            column="17"/>
     </issue>
 
     <issue
@@ -591,7 +404,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="137"
+            line="181"
             column="13"/>
     </issue>
 
@@ -602,7 +415,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="145"
+            line="192"
             column="13"/>
     </issue>
 
@@ -652,88 +465,99 @@
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                    data = android.net.Uri.parse(&quot;mailto:&quot;)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="                if (!deepLink.isNullOrBlank()) data = Uri.parse(deepLink)"
+        errorLine2="                                                      ~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/androidMain/kotlin/com/lpstudio/bolaodagalera/Platform.android.kt"
-            line="31"
-            column="28"/>
+            file="src/androidMain/kotlin/com/lpstudio/bolaodagalera/notification/BolaoFirebaseMessagingService.kt"
+            line="67"
+            column="55"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                    data = android.net.Uri.parse(&quot;mailto:&quot;)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="                if (!deepLink.isNullOrBlank()) data = Uri.parse(deepLink)"
+        errorLine2="                                                      ~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/androidMain/kotlin/com/lpstudio/bolaodagalera/Platform.android.kt"
-            line="31"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                    data = android.net.Uri.parse(&quot;https://wa.me/$phone?text=${android.net.Uri.encode(text)}&quot;)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/androidMain/kotlin/com/lpstudio/bolaodagalera/Platform.android.kt"
-            line="41"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                    data = android.net.Uri.parse(&quot;https://wa.me/$phone?text=${android.net.Uri.encode(text)}&quot;)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/androidMain/kotlin/com/lpstudio/bolaodagalera/Platform.android.kt"
-            line="41"
-            column="28"/>
+            file="src/androidMain/kotlin/com/lpstudio/bolaodagalera/notification/BolaoFirebaseMessagingService.kt"
+            line="67"
+            column="55"/>
     </issue>
 
     <issue
         id="UseTomlInstead"
         message="Use version catalog instead"
-        errorLine1="            implementation(&quot;org.jetbrains.compose.material:material-icons-core:1.7.3&quot;)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="            implementation(&quot;com.google.firebase:firebase-crashlytics&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="103"
+            line="38"
             column="28"/>
     </issue>
 
     <issue
         id="UseTomlInstead"
         message="Use version catalog instead"
-        errorLine1="            implementation(&quot;org.jetbrains.compose.material:material-icons-extended:1.7.3&quot;)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="            implementation(&quot;com.google.firebase:firebase-perf&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="104"
+            line="39"
             column="28"/>
     </issue>
 
     <issue
         id="UseTomlInstead"
         message="Use version catalog instead"
-        errorLine1="    coreLibraryDesugaring(&quot;com.android.tools:desugar_jdk_libs:2.0.4&quot;)"
+        errorLine1="            implementation(&quot;com.google.firebase:firebase-analytics&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="40"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(platform(&quot;com.google.firebase:firebase-bom:34.18.0&quot;))"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="68"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="            implementation(&quot;com.google.firebase:firebase-messaging&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="74"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    coreLibraryDesugaring(&quot;com.android.tools:desugar_jdk_libs:2.1.5&quot;)"
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="170"
+            line="235"
             column="27"/>
     </issue>
 
     <issue
         id="UseTomlInstead"
         message="Use version catalog instead"
-        errorLine1="    implementation(platform(&quot;com.google.firebase:firebase-bom:32.2.0&quot;))"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="    implementation(platform(&quot;com.google.firebase:firebase-bom:34.18.0&quot;))"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="174"
+            line="239"
             column="20"/>
     </issue>
 

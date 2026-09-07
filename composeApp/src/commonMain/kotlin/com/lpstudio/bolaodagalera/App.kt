@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import com.lpstudio.bolaodagalera.APP_VERSION
 import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
 import com.lpstudio.bolaodagalera.di.appModule
 import com.lpstudio.bolaodagalera.domain.model.User
@@ -29,6 +30,7 @@ import com.lpstudio.bolaodagalera.presentation.maintenance.MaintenanceScreen
 import com.lpstudio.bolaodagalera.presentation.navigation.NavGraph
 import com.lpstudio.bolaodagalera.presentation.theme.AppTheme
 import com.lpstudio.bolaodagalera.presentation.theme.DeepNavy
+import com.lpstudio.bolaodagalera.presentation.update.UpdateRequiredScreen
 import com.lpstudio.bolaodagalera.util.AdManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -37,6 +39,24 @@ import org.koin.compose.koinInject
 
 private fun computeShouldShowMaintenance(currentUserEmail: String?, isMaintenanceMode: Boolean, exemptEmails: Set<String>): Boolean =
     currentUserEmail != null && isMaintenanceMode && currentUserEmail !in exemptEmails
+
+/**
+ * Compares two "x.y.z" version strings component by component (missing
+ * components default to 0). An empty minSupportedVersion means no
+ * restriction is configured, so nothing is ever blocked.
+ */
+private fun isUpdateRequired(currentVersion: String, minSupportedVersion: String): Boolean {
+    if (minSupportedVersion.isBlank()) return false
+    val current = currentVersion.split(".").mapNotNull { it.toIntOrNull() }
+    val minimum = minSupportedVersion.split(".").mapNotNull { it.toIntOrNull() }
+    val maxLength = maxOf(current.size, minimum.size)
+    for (i in 0 until maxLength) {
+        val c = current.getOrElse(i) { 0 }
+        val m = minimum.getOrElse(i) { 0 }
+        if (c != m) return c < m
+    }
+    return false
+}
 
 @Composable
 private fun AppSideEffects(
@@ -97,6 +117,8 @@ fun App() {
         val currentUser by authRepository.authStateFlow.collectAsState(initial = authRepository.currentUser)
         val shouldShowMaintenance =
             computeShouldShowMaintenance(currentUser?.email, isMaintenanceMode, maintenanceExemptEmails)
+        val minSupportedVersion by remoteConfigManager.minSupportedVersion.collectAsState()
+        val shouldShowUpdateRequired = isUpdateRequired(APP_VERSION, minSupportedVersion)
 
         AppSideEffects(
             showAds = showAds,
@@ -124,7 +146,9 @@ fun App() {
                             .background(DeepNavy)
                     )
                     Box(Modifier.weight(1f)) {
-                        if (shouldShowMaintenance) {
+                        if (shouldShowUpdateRequired) {
+                            UpdateRequiredScreen()
+                        } else if (shouldShowMaintenance) {
                             MaintenanceScreen(
                                 onLogout = {
                                     scope.launch { authRepository.signOut() }

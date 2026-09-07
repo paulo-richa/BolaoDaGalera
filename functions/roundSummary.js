@@ -117,6 +117,7 @@ async function checkRoundCompletionAndNotify(db, admin, championshipId, match) {
 
         for (const bolaoDoc of boloesSnap.docs) {
             const bolao = bolaoDoc.data();
+            if (bolao.deletedAtMillis) continue;
             if (!roundAppliesToBolao(bolao, roundKey, roundMatchIds)) continue;
 
             const participants = bolao.participants || [];
@@ -144,7 +145,8 @@ async function checkRoundCompletionAndNotify(db, admin, championshipId, match) {
 
                 await notifyUser(db, admin, userId, {
                     title: `Fim da ${label}! 🏁`,
-                    message: `Você fez ${stats.points} ponto(s): ${stats.hits} acerto(s) e ${stats.misses} erro(s).`,
+                    message: `Você fez ${stats.points} ponto(s) no bolão "${bolao.name || "seu bolão"}": ` +
+                        `${stats.hits} acerto(s) e ${stats.misses} erro(s).`,
                     type: "ROUND_SUMMARY",
                     bolaoId: bolaoDoc.id,
                     deepLink: `bolaodagalera://bolao?bolaoId=${bolaoDoc.id}`

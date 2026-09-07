@@ -58,6 +58,8 @@ async function sendMatchReminders(db, admin, now = Date.now()) {
 
     for (const bolaoDoc of boloesSnap.docs) {
         const bolao = bolaoDoc.data();
+        if (bolao.deletedAtMillis) continue;
+
         const relevant = relevantMatchesForBolao(bolao, matchesByChampionship);
         if (relevant.length === 0) continue;
 
@@ -79,7 +81,7 @@ async function sendMatchReminders(db, admin, now = Date.now()) {
                 await notifyUser(db, admin, userId, {
                     title: "Fechando em breve! ⏰",
                     message: `${match.homeTeam || "Time A"} x ${match.awayTeam || "Time B"} começa em menos de 1h ` +
-                        "e você ainda não palpitou.",
+                        `e você ainda não palpitou no bolão "${bolao.name || "seu bolão"}".`,
                     type: "MATCH_REMINDER",
                     bolaoId: bolaoDoc.id,
                     matchId: match.id,

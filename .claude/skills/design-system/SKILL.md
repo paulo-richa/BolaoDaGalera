@@ -1,135 +1,141 @@
 ---
 name: design-system
-description: Use whenever touching UI/Compose code in BolaoDaGalera — creating, editing, or reviewing any screen, component, theme token, or string. Enforces the app's design-system rules (:designsystem module encapsulation, zero material3 imports in screens, zero hardcoded strings).
+description: Use sempre que mexer em código UI/Compose no BolaoDaGalera — criando, editando ou revisando qualquer tela, componente, token de tema ou string. Aplica as regras de design system do app (encapsulamento do módulo :designsystem, zero import de material3 em telas, zero string hardcoded).
 ---
 
-# BolaoDaGalera Design System
+# Design System do BolaoDaGalera
 
-This app is being modularized into a dedicated `:designsystem` Gradle module
-(KMP: `commonMain`/`androidMain`/`iosMain`). The rules below are not
-optional style preferences — they are the actual architecture contract for
-this codebase. Apply them any time you write or touch a `.kt` file under
-`presentation/` (or the design-system module itself), whether adding a new
-screen, editing an existing one, extracting a component, or reviewing a
-diff.
+Este app está sendo modularizado num módulo Gradle dedicado `:designsystem`
+(KMP: `commonMain`/`androidMain`/`iosMain`). As regras abaixo não são
+preferências de estilo opcionais — são o contrato de arquitetura real
+desta base de código. Aplique-as sempre que escrever ou tocar um arquivo
+`.kt` dentro de `presentation/` (ou o próprio módulo design-system), seja
+adicionando uma tela nova, editando uma existente, extraindo um
+componente, ou revisando um diff.
 
-## The two hard rules
+## As duas regras rígidas
 
-1. **No screen imports `androidx.compose.material3` directly. Not even
-   `Text`.** Every visual element — text, icons, buttons, dialogs, app
-   bars, scaffolds, snackbars, dividers, dropdowns, progress indicators,
-   text fields, switches, radio buttons, surfaces — goes through a
-   `:designsystem` wrapper composable (`BolaoText`, `BolaoIcon`,
-   `BolaoButton`, `BolaoScaffold`, etc). If a screen needs a Material 3
-   primitive that has no wrapper yet, the fix is to **add the wrapper to
-   `:designsystem`**, never to import material3 into the screen.
-2. **No hardcoded user-facing string literals anywhere.** Every string a
-   user reads (labels, button text, dialog titles/messages, placeholders,
-   error messages, snackbar text, content descriptions) comes from
-   `stringResource(Res.string.xxx)`, backed by
-   `composeApp/src/commonMain/composeResources/values/strings.xml`.
+1. **Nenhuma tela importa `androidx.compose.material3` diretamente. Nem
+   mesmo `Text`.** Todo elemento visual — texto, ícones, botões, diálogos,
+   app bars, scaffolds, snackbars, dividers, dropdowns, indicadores de
+   progresso, campos de texto, switches, radio buttons, surfaces — passa
+   por um composable wrapper do `:designsystem` (`BolaoText`, `BolaoIcon`,
+   `BolaoButton`, `BolaoScaffold`, etc). Se uma tela precisa de um
+   primitivo do Material 3 que ainda não tem wrapper, o certo é
+   **adicionar o wrapper ao `:designsystem`**, nunca importar material3
+   direto na tela.
+2. **Nenhuma string literal hardcoded visível ao usuário em lugar nenhum.**
+   Toda string que o usuário lê (labels, texto de botão, título/mensagem
+   de diálogo, placeholders, mensagens de erro, texto de snackbar,
+   content descriptions) vem de `stringResource(Res.string.xxx)`, com
+   backing em `composeApp/src/commonMain/composeResources/values/strings.xml`.
 
-Both rules apply retroactively — when you touch a screen for an unrelated
-reason and notice it still imports material3 directly or has literal
-strings, that is in scope to fix as part of the change, not a separate
-task to defer.
+As duas regras valem retroativamente — quando você mexe numa tela por um
+motivo não relacionado e percebe que ela ainda importa material3 direto ou
+tem strings literais, isso entra no escopo da mudança atual pra corrigir,
+não é uma tarefa separada pra depois.
 
-## Module layout
+## Estrutura do módulo
 
 ```
 designsystem/src/commonMain/kotlin/com/lpstudio/bolaodagalera/designsystem/
   theme/
-    Color.kt       — all named Color vals + gradients (single source of truth)
-    Typography.kt  — BolaoTypography (Material 3 type scale)
-    Shape.kt       — BolaoShapes (Material 3 shape scale)
+    Color.kt       — todos os Color vals nomeados + gradientes (fonte única da verdade)
+    Typography.kt  — BolaoTypography (escala de tipografia do Material 3)
+    Shape.kt       — BolaoShapes (escala de shape do Material 3)
     Theme.kt       — BolaoTheme(content) = MaterialTheme(colorScheme, typography, shapes)
   components/
     Text.kt, Icon.kt, Button.kt, TextField.kt, Card.kt, Chip.kt,
     Dialog.kt, AppBar.kt, Scaffold.kt, Snackbar.kt, Surface.kt,
     RadioButton.kt, Switch.kt, Divider.kt, DropdownMenu.kt,
     LoadingIndicator.kt, EmptyState.kt, Avatar.kt
-    — one file per component family, each composable prefixed `Bolao`
+    — um arquivo por família de componente, cada composable prefixado com `Bolao`
 ```
 
-`composeApp`'s own `presentation/theme/AppTheme.kt` is a thin wrapper: it
-re-exports the design-system's colors/gradients (so legacy imports don't
-break during migration) and combines `BolaoTheme` with app-specific
-concerns that don't belong in a design system (e.g. `SystemAppearance` /
-status-bar behavior).
+O próprio `presentation/theme/AppTheme.kt` do `composeApp` é um wrapper
+fino: ele re-exporta as cores/gradientes do design-system (pra imports
+legados não quebrarem durante a migração) e combina `BolaoTheme` com
+preocupações específicas do app que não pertencem a um design system
+(ex: `SystemAppearance` / comportamento da status bar).
 
-## What "component, not primitive" looks like
+## Como é "componente, não primitivo"
 
-Naming convention: `Bolao<Material3Name>`, e.g. `Text` → `BolaoText`,
-`IconButton` → `BolaoIconButton`, `AlertDialog` → `BolaoConfirmDialog` (for
-the confirm/cancel shape) or `BolaoDialog` (generic, for custom content
-that doesn't fit confirm/cancel). Wrapper signatures mirror the underlying
-Material 3 composable's parameters as closely as possible — the point is
-encapsulation of the *import*, not restricting the API surface.
+Convenção de nome: `Bolao<NomeDoMaterial3>`, ex: `Text` → `BolaoText`,
+`IconButton` → `BolaoIconButton`, `AlertDialog` → `BolaoConfirmDialog`
+(pro formato confirmar/cancelar) ou `BolaoDialog` (genérico, pra conteúdo
+customizado que não se encaixa em confirmar/cancelar). As assinaturas dos
+wrappers espelham os parâmetros do composable Material 3 correspondente o
+mais próximo possível — o ponto é encapsular o *import*, não restringir a
+superfície da API.
 
-Structural/layout primitives from `androidx.compose.foundation.layout`
-(`Box`, `Column`, `Row`, `Spacer`, `Modifier.padding`, etc.) are **not**
-part of this rule — they carry no Material 3 theming and don't need
-wrapping. Only `androidx.compose.material3.*` imports are banned from
-screens.
+Primitivos estruturais/de layout de `androidx.compose.foundation.layout`
+(`Box`, `Column`, `Row`, `Spacer`, `Modifier.padding`, etc.) **não** fazem
+parte dessa regra — não carregam theming do Material 3 e não precisam de
+wrapper. Só imports de `androidx.compose.material3.*` são proibidos em
+telas.
 
-`SnackbarHostState` is a state holder, not a themed visual — screens use
-`rememberBolaoSnackbarHostState()` (returns a
-`typealias BolaoSnackbarHostState = SnackbarHostState`) instead of
-`remember { SnackbarHostState() }`, so the `androidx.compose.material3`
-import still never appears in the screen.
+`SnackbarHostState` é um state holder, não um visual temático — telas usam
+`rememberBolaoSnackbarHostState()` (retorna um
+`typealias BolaoSnackbarHostState = SnackbarHostState`) em vez de
+`remember { SnackbarHostState() }`, pra que o import de
+`androidx.compose.material3` nunca apareça na tela.
 
-`@OptIn(ExperimentalMaterial3Api::class)` annotations should disappear
-from screens once they no longer call material3 composables directly —
-opt-in requirements don't propagate through a stable wrapper that isn't
-itself marked experimental. If a screen still needs the annotation after
-migration, that's a sign something wasn't fully wrapped.
+Anotações `@OptIn(ExperimentalMaterial3Api::class)` devem desaparecer das
+telas assim que elas pararem de chamar composables do material3
+diretamente — requisitos de opt-in não se propagam através de um wrapper
+estável que não é ele mesmo marcado como experimental. Se uma tela ainda
+precisa da anotação depois da migração, isso é sinal de que algo não foi
+totalmente encapsulado.
 
-When a genuinely new visual pattern shows up in 2+ places (not just a
-one-off), that's a signal to extract it as a new `:designsystem`
-component rather than duplicate it — this already happened with
-`BolaoGlassCard` (found identical in Login, Register, and Join screens)
-and `BolaoCard` (the 16dp/`NavyCard` pattern repeated across many
-screens). Don't force-fit a component onto a visually different instance
-just to reduce file count — e.g. a card with a different corner radius or
-color is a legitimate variant, not automatically "the same" component;
-check for exact parameter parity before reusing vs. extending vs. leaving
-alone.
+Quando um padrão visual genuinamente novo aparece em 2+ lugares (não só
+uma ocorrência isolada), isso é sinal pra extrair como um novo componente
+do `:designsystem` em vez de duplicar — isso já aconteceu com
+`BolaoGlassCard` (encontrado idêntico nas telas de Login, Register e
+Join) e `BolaoCard` (o padrão de 16dp/`NavyCard` repetido em várias
+telas). Não force um componente numa instância visualmente diferente só
+pra reduzir a contagem de arquivos — ex: um card com raio de canto ou cor
+diferente é uma variante legítima, não automaticamente "o mesmo"
+componente; verifique paridade exata de parâmetros antes de decidir entre
+reusar, estender ou deixar como está.
 
 ## String resources
 
-Add entries to `composeApp/src/commonMain/composeResources/values/strings.xml`
-(Android string-resource XML format). Compose Multiplatform's resource
-plugin generates `Res.string.xxx` accessors automatically — never hand-edit
-generated code.
+Adicione entradas em
+`composeApp/src/commonMain/composeResources/values/strings.xml` (formato
+XML de string-resource do Android). O plugin de resources do Compose
+Multiplatform gera os acessores `Res.string.xxx` automaticamente — nunca
+edite código gerado manualmente.
 
-- Key convention: `<screen>_<description>`, e.g. `login_title`,
+- Convenção de chave: `<tela>_<descrição>`, ex: `login_title`,
   `login_field_email_label`, `profile_sign_out_dialog_title`.
-- Interpolated strings use positional format args:
-  `<string name="key">Remover %1$s deste bolão?</string>` called as
+- Strings interpoladas usam argumentos de formato posicionais:
+  `<string name="key">Remover %1$s deste bolão?</string>` chamada como
   `stringResource(Res.string.key, user.name)`.
-- **Do extract**: anything rendered on screen, including emoji used as
-  standalone UI content (e.g. "🔑", "🎉") and content descriptions.
-- **Do not extract**: internal-only strings that a user never sees —
-  analytics event names/keys (`analyticsTracker.logEvent("bolao_created",
-  ...)`), crash-reporter context messages
-  (`crashReporter.recordException(e, "Erro ao...")`), logger messages
-  (`logger.d { "..." }`), Firestore field names, enum-like internal
-  identifiers. These are plumbing, not UI text — leave them as plain
-  Kotlin string literals.
+- **Extrair sim**: qualquer coisa renderizada na tela, incluindo emoji
+  usado como conteúdo de UI autônomo (ex: "🔑", "🎉") e content
+  descriptions.
+- **Não extrair**: strings internas que o usuário nunca vê — nomes/chaves
+  de evento de analytics (`analyticsTracker.logEvent("bolao_created",
+  ...)`), mensagens de contexto do crash-reporter
+  (`crashReporter.recordException(e, "Erro ao...")`), mensagens de logger
+  (`logger.d { "..." }`), nomes de campo do Firestore, identificadores
+  internos tipo-enum. Isso é encanamento interno, não texto de UI — deixe
+  como literal Kotlin comum.
 
-## Workflow when migrating or building a screen
+## Fluxo ao migrar ou construir uma tela
 
-1. Read the target file(s) fully before editing — note every
-   `androidx.compose.material3.*` import and every string literal.
-2. Swap each material3 import for its `:designsystem` equivalent from the
-   table of existing components (check `designsystem/.../components/`
-   first — most primitives already have a wrapper). Extract each
-   user-facing string into `strings.xml` and call site to
-   `stringResource(...)`.
-3. If a needed wrapper doesn't exist yet, add it to `:designsystem` first
-   (with a `@Preview`, matching the existing component style), then use it
-   — don't improvise a local workaround in the screen.
-4. Validate before considering the change done:
+1. Leia o(s) arquivo(s) alvo por completo antes de editar — anote todo
+   import `androidx.compose.material3.*` e toda string literal.
+2. Troque cada import material3 pelo equivalente do `:designsystem` na
+   tabela de componentes existentes (confira
+   `designsystem/.../components/` primeiro — a maioria dos primitivos já
+   tem wrapper). Extraia cada string visível ao usuário pra `strings.xml`
+   e o call site pra `stringResource(...)`.
+3. Se um wrapper necessário ainda não existe, adicione-o ao
+   `:designsystem` primeiro (com um `@Preview`, seguindo o estilo dos
+   componentes existentes), depois use-o — não improvise uma solução
+   local na tela.
+4. Valide antes de considerar a mudança pronta:
    ```
    ./gradlew :designsystem:ktlintFormat :composeApp:ktlintFormat -q
    ./gradlew :designsystem:compileDebugKotlinAndroid :designsystem:compileKotlinIosSimulatorArm64 \
@@ -138,17 +144,18 @@ generated code.
              :designsystem:ktlintCheck :composeApp:ktlintCheck \
              :designsystem:detekt :composeApp:detekt -q
    ```
-   Then confirm zero material3 imports remain in the touched files:
-   `grep -n "androidx.compose.material3" <files>` should return nothing.
-5. Watch for window-inset regressions when swapping `TopAppBar` →
-   `BolaoTopBar`: `BolaoTopBar` always zeroes its own top inset (assumes
-   the screen's outer container already applies `.systemBarsPadding()`).
-   If the original `TopAppBar` had no `windowInsets` override (relying on
-   the default), add `.systemBarsPadding()` to the screen's outer `Box`/
-   `Scaffold` when migrating, or the content will render under the status
-   bar.
+   Depois confirme que zero imports de material3 restam nos arquivos
+   tocados: `grep -n "androidx.compose.material3" <arquivos>` deve
+   retornar vazio.
+5. Fique atento a regressões de window-inset ao trocar `TopAppBar` →
+   `BolaoTopBar`: `BolaoTopBar` sempre zera seu próprio inset de topo
+   (assume que o container externo da tela já aplica
+   `.systemBarsPadding()`). Se o `TopAppBar` original não tinha override
+   de `windowInsets` (usando o padrão), adicione `.systemBarsPadding()` ao
+   `Box`/`Scaffold` externo da tela ao migrar, ou o conteúdo vai renderizar
+   por baixo da status bar.
 
-## Precedent: components built so far
+## Precedente: componentes já construídos
 
 `BolaoText`, `BolaoIcon`/`BolaoIconButton`, `BolaoButton`/
 `BolaoOutlinedButton`/`BolaoTextButton`, `BolaoTextField`, `BolaoCard`/
@@ -158,5 +165,6 @@ generated code.
 `BolaoSwitch`, `BolaoLoadingIndicator`/`BolaoFullScreenLoading`/
 `BolaoLinearProgressIndicator`, `BolaoHorizontalDivider`/
 `BolaoVerticalDivider`, `BolaoDropdownMenu`/`BolaoDropdownMenuItem`,
-`BolaoEmptyState`, `UserAvatar`. Check this list (and the actual files in
-`designsystem/.../components/`) before assuming a wrapper doesn't exist.
+`BolaoEmptyState`, `UserAvatar`. Confira essa lista (e os arquivos reais
+em `designsystem/.../components/`) antes de assumir que um wrapper não
+existe.

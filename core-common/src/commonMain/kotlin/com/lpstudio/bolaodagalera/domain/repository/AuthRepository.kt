@@ -35,4 +35,7 @@ interface AuthRepository {
     suspend fun getUser(userId: String): User?
 
     suspend fun getUsers(userIds: List<String>): List<User>
+
+    /** Resolves an email/username/phone identifier to the matching user's id, or null if none matches. */
+    suspend fun findUserIdByIdentifier(identifier: String): String?
 }

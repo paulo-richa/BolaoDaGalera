@@ -9,6 +9,9 @@ const db = admin.firestore();
 // Internal modules
 const { syncBrasileirao } = require("./brasileirao");
 const { syncLibertadores } = require("./libertadores");
+const { syncChampionsLeague } = require("./championsLeague");
+const { syncLibertadoresQuarterfinals, syncLibertadoresQuarterfinalsIfCheckpointDue } = require("./libertadoresQuarterfinals");
+const { syncCopaDoBrasil, syncCopaDoBrasilIfCheckpointDue } = require("./copaDoBrasil");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
 const { cleanupDeletedBoloes, cleanupExpiredInvitations } = require("./cleanup");
 const { makeNotificationTriggers } = require("./notificationTriggers");
@@ -28,6 +31,18 @@ const footballDataApiKey = defineSecret("FOOTBALL_DATA_API_KEY");
 // manual sync). Set with: firebase functions:secrets:set ADMIN_TOKEN
 // Call passing the header "x-admin-token: <value>".
 const adminToken = defineSecret("ADMIN_TOKEN");
+
+// Base URL of the external fallback source for the Libertadores quarterfinals
+// (see knockoutResultsScraper.js) - kept out of code so the source can be
+// swapped later without a deploy touching any file that names it.
+// Set with: firebase functions:secrets:set LIBERTADORES_RESULTS_SOURCE_URL
+const libertadoresResultsSourceUrl = defineSecret("LIBERTADORES_RESULTS_SOURCE_URL");
+
+// Same idea as above, for Copa do Brasil (semifinals onward) - a separate
+// secret because it points at a different page of the same site, and
+// football-data.org doesn't cover this competition at all (confirmed 403).
+// Set with: firebase functions:secrets:set COPA_DO_BRASIL_RESULTS_SOURCE_URL
+const copaDoBrasilResultsSourceUrl = defineSecret("COPA_DO_BRASIL_RESULTS_SOURCE_URL");
 
 function requireAdminToken(req, res) {
     if (req.get("x-admin-token") !== process.env.ADMIN_TOKEN) {
@@ -109,6 +124,68 @@ exports.syncLibertadoresHTTP = onRequest({ secrets: [footballDataApiKey, adminTo
 });
 
 /**
+ * Manual Libertadores quarterfinals sync via HTTP (zero cost) - same purpose
+ * as syncLibertadoresHTTP above, but for the external-fallback sync (see
+ * libertadoresQuarterfinals.js), useful to trigger a run without waiting for
+ * scheduledLibertadoresQuartersSync's next scheduled tick.
+ */
+exports.syncLibertadoresQuartersHTTP = onRequest(
+    { secrets: [libertadoresResultsSourceUrl, adminToken] },
+    async (req, res) => {
+        if (!requireAdminToken(req, res)) return;
+        try {
+            logger.info("📡 Sincronizando quartas da Libertadores (HTTP)");
+            await syncLibertadoresQuarterfinals(db, admin, axios);
+            logger.info("✅ Sincronização concluída");
+            return res.json({ status: "success", message: "Quartas da Libertadores sincronizadas" });
+        } catch (error) {
+            logger.error("❌ Erro:", error.message);
+            return res.status(500).json({ status: "error", message: error.message });
+        }
+    }
+);
+
+/**
+ * Manual Copa do Brasil sync via HTTP (zero cost) - same purpose as
+ * syncLibertadoresQuartersHTTP above, but for Copa do Brasil (see
+ * copaDoBrasil.js). football-data.org doesn't cover this competition at
+ * all, so it has no equivalent "old sync" the way Libertadores does.
+ */
+exports.syncCopaDoBrasilHTTP = onRequest(
+    { secrets: [copaDoBrasilResultsSourceUrl, adminToken] },
+    async (req, res) => {
+        if (!requireAdminToken(req, res)) return;
+        try {
+            logger.info("📡 Sincronizando Copa do Brasil (HTTP)");
+            await syncCopaDoBrasil(db, admin, axios);
+            logger.info("✅ Sincronização concluída");
+            return res.json({ status: "success", message: "Copa do Brasil sincronizada" });
+        } catch (error) {
+            logger.error("❌ Erro:", error.message);
+            return res.status(500).json({ status: "error", message: error.message });
+        }
+    }
+);
+
+/**
+ * Manual Champions League sync via HTTP (zero cost) - same purpose as
+ * syncLibertadoresHTTP above, for the Champions League (see
+ * championsLeague.js).
+ */
+exports.syncChampionsLeagueHTTP = onRequest({ secrets: [footballDataApiKey, adminToken] }, async (req, res) => {
+    if (!requireAdminToken(req, res)) return;
+    try {
+        logger.info("📡 Sincronizando Champions League (HTTP)");
+        await syncChampionsLeague(db, admin, axios);
+        logger.info("✅ Sincronização concluída");
+        return res.json({ status: "success", message: "Champions League sincronizada" });
+    } catch (error) {
+        logger.error("❌ Erro:", error.message);
+        return res.status(500).json({ status: "error", message: error.message });
+    }
+});
+
+/**
  * Manual Brasileirao sync via HTTP (zero cost).
  * Called by GitHub Actions (external, free scheduling).
  */
@@ -173,15 +250,30 @@ exports.checkSyncFrequency = onRequest(async (req, res) => {
 
 /**
  * Fixed schedule (Firebase's native Cloud Scheduler, free within the free
- * tier): 4x/day (02h, 09h, 14h, 18h, Brasilia time), guarantees sync even
- * without a live match.
+ * tier): 1x/day (02h, Brasilia time), guarantees a full sync even without a
+ * live match - covers Brasileirão, Libertadores' group stage/Round of 16
+ * (football-data.org), Libertadores' quarterfinals+ and Copa do Brasil's
+ * semifinals+ matchup/date check (external fallback, see
+ * libertadoresQuarterfinals.js/copaDoBrasil.js). Folding all four into a
+ * single job keeps the Cloud Scheduler job count down - Scheduler bills per
+ * job that exists, not per tick, so this is the actual cost lever (unlike
+ * scheduledLiveCheck's tick frequency below, which costs nothing extra either way).
  */
 exports.scheduledFixedSync = onSchedule(
-    { schedule: "0 2,9,14,18 * * *", timeZone: "America/Sao_Paulo", secrets: [footballDataApiKey], timeoutSeconds: 300, memory: "256MiB" },
+    {
+        schedule: "0 2 * * *",
+        timeZone: "America/Sao_Paulo",
+        secrets: [footballDataApiKey, libertadoresResultsSourceUrl, copaDoBrasilResultsSourceUrl],
+        timeoutSeconds: 300,
+        memory: "256MiB"
+    },
     async () => {
-        logger.info("📡 Sync agendado fixo (4x/dia)");
+        logger.info("📡 Sync agendado fixo (1x/dia)");
         await syncBrasileirao(db, admin, axios);
         await syncLibertadores(db, admin, axios);
+        await syncLibertadoresQuarterfinals(db, admin, axios);
+        await syncCopaDoBrasil(db, admin, axios);
+        await syncChampionsLeague(db, admin, axios);
     }
 );
 
@@ -199,6 +291,32 @@ exports.scheduledLiveCheck = onSchedule(
         logger.info(`📡 Sync agendado (jogo ao vivo/próximo - ${reason})`);
         await syncBrasileirao(db, admin, axios);
         await syncLibertadores(db, admin, axios);
+        await syncChampionsLeague(db, admin, axios);
+    }
+);
+
+/**
+ * External-fallback match-day result check (Firebase's native Cloud
+ * Scheduler): polls every 15 min for EVERY competition using the fallback
+ * (Libertadores quarterfinals+, Copa do Brasil semifinals+), but the poll
+ * itself is Firestore-only (no request to the external source) - it only
+ * fetches the external source when a not-yet-finished match has crossed
+ * 2h30 or 3h since kickoff (see knockoutFallbackSync.js's
+ * CHECKPOINT_MINUTES), so a normal day with no match in that window costs
+ * nothing beyond the Firestore reads. One job covers every competition on
+ * this fallback, rather than one job per competition.
+ */
+exports.scheduledKnockoutFallbackMatchDayCheck = onSchedule(
+    {
+        schedule: "*/15 * * * *",
+        timeZone: "America/Sao_Paulo",
+        secrets: [libertadoresResultsSourceUrl, copaDoBrasilResultsSourceUrl],
+        timeoutSeconds: 120,
+        memory: "256MiB"
+    },
+    async () => {
+        await syncLibertadoresQuarterfinalsIfCheckpointDue(db, admin, axios);
+        await syncCopaDoBrasilIfCheckpointDue(db, admin, axios);
     }
 );
 
@@ -218,8 +336,9 @@ exports.scheduledCleanup = onSchedule(
 
 /**
  * Daily digest (Firebase's native Cloud Scheduler): at 09h Brasilia time,
- * notifies each user how many of today's matches they still haven't
- * predicted, summed across every bolao they participate in.
+ * notifies each user, per bolao, how many of today's matches in THAT bolao
+ * they still haven't predicted - kept per-bolao (never summed) so the count
+ * always matches what the user sees as "today's games" for that bolao.
  */
 exports.scheduledDailyDigest = onSchedule(
     { schedule: "0 9 * * *", timeZone: "America/Sao_Paulo", timeoutSeconds: 300, memory: "256MiB" },
