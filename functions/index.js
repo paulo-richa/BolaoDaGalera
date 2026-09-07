@@ -9,6 +9,7 @@ const db = admin.firestore();
 // Internal modules
 const { syncBrasileirao } = require("./brasileirao");
 const { syncLibertadores } = require("./libertadores");
+const { syncChampionsLeague } = require("./championsLeague");
 const { syncLibertadoresQuarterfinals, syncLibertadoresQuarterfinalsIfCheckpointDue } = require("./libertadoresQuarterfinals");
 const { syncCopaDoBrasil, syncCopaDoBrasilIfCheckpointDue } = require("./copaDoBrasil");
 const { updateMatchRankings, fullRecalculateRanking } = require("./rankings");
@@ -167,6 +168,24 @@ exports.syncCopaDoBrasilHTTP = onRequest(
 );
 
 /**
+ * Manual Champions League sync via HTTP (zero cost) - same purpose as
+ * syncLibertadoresHTTP above, for the Champions League (see
+ * championsLeague.js).
+ */
+exports.syncChampionsLeagueHTTP = onRequest({ secrets: [footballDataApiKey, adminToken] }, async (req, res) => {
+    if (!requireAdminToken(req, res)) return;
+    try {
+        logger.info("📡 Sincronizando Champions League (HTTP)");
+        await syncChampionsLeague(db, admin, axios);
+        logger.info("✅ Sincronização concluída");
+        return res.json({ status: "success", message: "Champions League sincronizada" });
+    } catch (error) {
+        logger.error("❌ Erro:", error.message);
+        return res.status(500).json({ status: "error", message: error.message });
+    }
+});
+
+/**
  * Manual Brasileirao sync via HTTP (zero cost).
  * Called by GitHub Actions (external, free scheduling).
  */
@@ -254,6 +273,7 @@ exports.scheduledFixedSync = onSchedule(
         await syncLibertadores(db, admin, axios);
         await syncLibertadoresQuarterfinals(db, admin, axios);
         await syncCopaDoBrasil(db, admin, axios);
+        await syncChampionsLeague(db, admin, axios);
     }
 );
 
@@ -271,6 +291,7 @@ exports.scheduledLiveCheck = onSchedule(
         logger.info(`📡 Sync agendado (jogo ao vivo/próximo - ${reason})`);
         await syncBrasileirao(db, admin, axios);
         await syncLibertadores(db, admin, axios);
+        await syncChampionsLeague(db, admin, axios);
     }
 );
 

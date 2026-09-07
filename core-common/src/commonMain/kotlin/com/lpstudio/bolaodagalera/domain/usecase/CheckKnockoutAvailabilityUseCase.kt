@@ -19,7 +19,16 @@ class CheckKnockoutAvailabilityUseCase {
                     it.phase != Phase.GROUP_STAGE &&
                     it.phase != Phase.FRIENDLIES
             }
-        if (matches.isEmpty()) return false
+        // No knockout matches synced yet doesn't mean this championship has no
+        // knockout stage - callers already gate this on
+        // championship.isGroupsAndKnockout before asking, so an empty list here
+        // just means the bracket isn't known yet (e.g. the Champions League's
+        // league phase is still in progress). It will be filled in later by
+        // the championship's own sync once the bracket is drawn, so it still
+        // counts as "available" - otherwise a pool couldn't be scoped to the
+        // knockout stage in advance, forcing whoever wants one to create a new
+        // pool (or re-add participants) once matches finally appear.
+        if (matches.isEmpty()) return true
 
         val now = TimeSource.nowMillis()
         return matches.any { it.matchDateMillis > now }

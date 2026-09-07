@@ -189,7 +189,7 @@
     <string name="join_bolao_button_join">Entrar no Bolão</string>
 
     <!-- KnockoutTab -->
-    <string name="knockout_tab_empty_message">Nenhum jogo de mata-mata hoje.</string>
+    <string name="knockout_tab_empty_message">Nenhum jogo de mata-mata ainda, em breve quando acabar a fase atual.</string>
 
     <!-- MatchCard -->
     <string name="match_card_social_badge_label">PALPITES DA GALERA</string>

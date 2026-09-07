@@ -12,6 +12,7 @@ const { logger } = require("firebase-functions");
  */
 
 let lastSuccessfulData = null;
+let lastSuccessfulChampionsLeagueData = null;
 
 async function getLibertadoresData(axios) {
     const API_KEY = process.env.FOOTBALL_DATA_KEY || require("./config").API_KEY;
@@ -60,4 +61,41 @@ async function getLibertadoresData(axios) {
     }
 }
 
-module.exports = { getLibertadoresData };
+async function getChampionsLeagueData(axios) {
+    const API_KEY = process.env.FOOTBALL_DATA_KEY || require("./config").API_KEY;
+
+    try {
+        // Same reasoning as getLibertadoresData: always fetch fresh, cache is
+        // fallback-only.
+        logger.info("📡 Sincronizando com football-data.org (Champions League)...");
+
+        const response = await axios.get(
+            "https://api.football-data.org/v4/competitions/CL/matches",
+            {
+                headers: { 'X-Auth-Token': API_KEY },
+                timeout: 15000
+            }
+        );
+
+        if (response?.data?.matches && response.data.matches.length > 0) {
+            lastSuccessfulChampionsLeagueData = response.data;
+            logger.info(`✅ Champions League sincronizada: ${response.data.matches.length} jogos`);
+            return response.data;
+        }
+
+        throw new Error("Resposta vazia da API");
+
+    } catch (error) {
+        logger.warn(`⚠️  Erro ao sincronizar Champions League (${error.message})`);
+
+        if (lastSuccessfulChampionsLeagueData) {
+            logger.info("📦 Usando cache anterior como fallback");
+            return lastSuccessfulChampionsLeagueData;
+        }
+
+        logger.error("❌ football-data.org indisponível e sem cache disponível (Champions League)");
+        return null;
+    }
+}
+
+module.exports = { getLibertadoresData, getChampionsLeagueData };
