@@ -34,6 +34,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +74,9 @@ import bolaodagalera.feature_core.generated.resources.home_screen_notification_d
 import bolaodagalera.feature_core.generated.resources.home_screen_notification_dialog_title
 import bolaodagalera.feature_core.generated.resources.home_screen_notification_empty
 import bolaodagalera.feature_core.generated.resources.home_screen_notifications_cd
+import bolaodagalera.feature_core.generated.resources.home_screen_notifications_disabled_button
+import bolaodagalera.feature_core.generated.resources.home_screen_notifications_disabled_message
+import bolaodagalera.feature_core.generated.resources.home_screen_notifications_disabled_title
 import bolaodagalera.feature_core.generated.resources.home_screen_section_admin_boloes
 import bolaodagalera.feature_core.generated.resources.home_screen_section_participant_boloes
 import bolaodagalera.feature_core.generated.resources.home_screen_section_pending_invitations
@@ -105,6 +109,11 @@ import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Invitation
 import com.lpstudio.bolaodagalera.domain.model.Notification
 import com.lpstudio.bolaodagalera.domain.model.NotificationType
+import com.lpstudio.bolaodagalera.featureflags.FeatureFlagsProvider
+import com.lpstudio.bolaodagalera.rememberAreNotificationsEnabled
+import com.lpstudio.bolaodagalera.rememberLauncherProvider
+import com.lpstudio.bolaodagalera.rememberNotificationBannerPrefs
+import com.lpstudio.bolaodagalera.util.TimeSource
 import com.lpstudio.bolaodagalera.util.getInitials
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -120,23 +129,18 @@ fun HomeScreen(
     val viewModel: HomeViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val adBannerProvider = koinInject<AdBannerProvider>()
+    val featureFlagsProvider = koinInject<FeatureFlagsProvider>()
+    val forceShowNotificationBanner by featureFlagsProvider.forceShowNotificationBanner.collectAsState()
+    val showBannerCarousel by featureFlagsProvider.showBannerCarousel.collectAsState()
     var showNotifications by remember { mutableStateOf(false) }
 
-    if (showNotifications) {
-        NotificationDialog(
-            notifications = uiState.notifications,
-            onDismiss = { showNotifications = false },
-            onAcceptInvitation = { invId, bolaoId ->
-                viewModel.respondToInvitation(invId, true) {
-                    showNotifications = false
-                    onNavigateToBolao(bolaoId)
-                }
-            },
-            onDeclineInvitation = { invId ->
-                viewModel.respondToInvitation(invId, false)
-            }
-        )
-    }
+    HomeNotificationsDialogHost(
+        show = showNotifications,
+        viewModel = viewModel,
+        uiState = uiState,
+        onDismiss = { showNotifications = false },
+        onNavigateToBolao = onNavigateToBolao
+    )
 
     Box(
         modifier =
@@ -156,6 +160,18 @@ fun HomeScreen(
                 onNavigateToAccount = onNavigateToAccount
             )
 
+            if (showBannerCarousel && uiState.banners.isNotEmpty()) {
+                BannerCarousel(
+                    banners = uiState.banners,
+                    onBannerClick = { banner ->
+                        viewModel.onBannerClick(banner)
+                        onNavigateToCreateBolao()
+                    }
+                )
+            }
+
+            HomeNotificationsDisabledSection(forceShowNotificationBanner)
+
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 HomeContent(
                     uiState = uiState,
@@ -173,6 +189,54 @@ fun HomeScreen(
 }
 
 @Composable
+private fun HomeNotificationsDialogHost(
+    show: Boolean,
+    viewModel: HomeViewModel,
+    uiState: HomeUiState,
+    onDismiss: () -> Unit,
+    onNavigateToBolao: (String) -> Unit
+) {
+    if (!show) return
+    NotificationDialog(
+        notifications = uiState.notifications,
+        onDismiss = onDismiss,
+        onAcceptInvitation = { invId, bolaoId ->
+            viewModel.respondToInvitation(invId, true) {
+                onDismiss()
+                onNavigateToBolao(bolaoId)
+            }
+        },
+        onDeclineInvitation = { invId -> viewModel.respondToInvitation(invId, false) }
+    )
+}
+
+/** Shows the notifications-disabled nudge, throttled to once a week - see [shouldShowNotificationBanner]. */
+@Composable
+private fun HomeNotificationsDisabledSection(forceShowNotificationBanner: Boolean) {
+    val notificationsEnabled = rememberAreNotificationsEnabled()
+    val bannerPrefs = rememberNotificationBannerPrefs()
+    val showNotificationBanner =
+        remember(notificationsEnabled, forceShowNotificationBanner, bannerPrefs.lastShownMillis) {
+            shouldShowNotificationBanner(
+                notificationsEnabled = notificationsEnabled,
+                forceShow = forceShowNotificationBanner,
+                lastShownMillis = bannerPrefs.lastShownMillis,
+                nowMillis = TimeSource.nowMillis()
+            )
+        }
+
+    if (showNotificationBanner) {
+        // Only the organic (permission-off) reason consumes the weekly
+        // throttle - the QA override must stay repeatable on demand.
+        if (!notificationsEnabled) {
+            LaunchedEffect(Unit) { bannerPrefs.markShown() }
+        }
+        val launcherProvider = rememberLauncherProvider()
+        NotificationsDisabledBanner(onEnableClick = { launcherProvider.openNotificationSettings() })
+    }
+}
+
+@Composable
 private fun androidx.compose.foundation.layout.BoxScope.HomeErrorBanner(message: String, onDismiss: () -> Unit) {
     BolaoSurface(
         modifier =
@@ -184,6 +248,41 @@ private fun androidx.compose.foundation.layout.BoxScope.HomeErrorBanner(message:
             BolaoText(message, color = Color.White, modifier = Modifier.weight(1f))
             BolaoTextButton(onClick = onDismiss) {
                 BolaoText(stringResource(Res.string.home_screen_error_snackbar_dismiss), color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotificationsDisabledBanner(onEnableClick: () -> Unit) {
+    BolaoSurface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.sm),
+        color = Gold.copy(alpha = 0.12f),
+        shape = BolaoRadiusShape.md
+    ) {
+        Row(modifier = Modifier.padding(BolaoSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                BolaoText(
+                    stringResource(Res.string.home_screen_notifications_disabled_title),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = BolaoTypography.bodyLarge.fontSize
+                )
+                Spacer(Modifier.height(2.dp))
+                BolaoText(
+                    stringResource(Res.string.home_screen_notifications_disabled_message),
+                    color = TextMuted,
+                    fontSize = BolaoTypography.bodyMedium.fontSize,
+                    lineHeight = 16.sp
+                )
+            }
+            Spacer(Modifier.width(BolaoSpacing.md))
+            BolaoTextButton(onClick = onEnableClick) {
+                BolaoText(
+                    stringResource(Res.string.home_screen_notifications_disabled_button),
+                    color = Gold,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

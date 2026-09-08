@@ -12,9 +12,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import bolaodagalera.feature_bolao.generated.resources.Res
-import bolaodagalera.feature_bolao.generated.resources.bolao_common_phase_first_leg
-import bolaodagalera.feature_bolao.generated.resources.bolao_common_phase_second_leg
-import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_grupos
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_jogos
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_tab_mata_mata
@@ -67,17 +64,13 @@ internal fun rememberBolaoDetailDerivedState(uiState: BolaoUiState): BolaoDetail
             jogos = stringResource(Res.string.bolao_detail_tab_jogos),
             rodadas = stringResource(Res.string.bolao_detail_tab_rodadas)
         )
-    val todayLabel = stringResource(Res.string.bolao_common_today_chip)
-    val firstLegFormat = stringResource(Res.string.bolao_common_phase_first_leg, "%1\$s")
-    val secondLegFormat = stringResource(Res.string.bolao_common_phase_second_leg, "%1\$s")
-
     val tabs =
         remember(uiState.bolao?.scope, uiState.bolao?.championshipId, championship, labels) {
             computeTabs(uiState.bolao?.scope, championship, labels)
         }
     val knockoutDefaults =
-        remember(uiState.matches, championship.isTwoLegged, firstLegFormat, secondLegFormat, todayLabel) {
-            computeKnockoutDefaults(uiState.matches, championship.isTwoLegged, firstLegFormat, secondLegFormat, todayLabel)
+        remember(uiState.matches, championship.isTwoLegged) {
+            computeKnockoutDefaultSelection(uiState.matches, championship.isTwoLegged)
         }
     val defaultRound = remember(uiState.matches) { computeDefaultRound(uiState.matches) }
     return BolaoDetailDerivedState(
@@ -272,76 +265,6 @@ private fun computeTabs(scope: BolaoScope?, championship: Championship, labels: 
             listOf(labels.grupos, labels.mataMata, labels.ranking)
         } else {
             listOf(labels.mataMata, labels.ranking)
-        }
-    }
-}
-
-/** A knockout match still counts as "today" this long after kickoff, in case it's running long. */
-private const val TODAY_KNOCKOUT_GRACE_MILLIS = 3 * 3_600_000L
-
-/** Matches after midnight before this hour still count as "today" (late-night kickoffs). */
-private const val EARLY_MORNING_CUTOFF_HOUR = 4
-
-private fun computeKnockoutDefaults(
-    matches: List<Match>,
-    isTwoLegged: Boolean,
-    firstLegFormat: String,
-    secondLegFormat: String,
-    todayLabel: String
-): Pair<Phase?, String> {
-    val phases = listOf(
-        Phase.ROUND_OF_32,
-        Phase.ROUND_OF_16,
-        Phase.QUARTERFINALS,
-        Phase.SEMIFINALS,
-        Phase.THIRD_PLACE,
-        Phase.FINAL
-    )
-    val phaseOrder = phases.filter { p -> matches.any { it.phase == p } }
-    val phaseLabels =
-        if (isTwoLegged) {
-            phaseOrder.flatMap { p ->
-                if (p == Phase.FINAL || p == Phase.THIRD_PLACE) {
-                    listOf(p.label)
-                } else {
-                    listOf(
-                        firstLegFormat.replace("%1\$s", p.label),
-                        secondLegFormat.replace("%1\$s", p.label)
-                    )
-                }
-            }
-        } else {
-            phaseOrder.map { it.label }
-        }
-
-    val tz = TimeZone.currentSystemDefault()
-    val now = TimeSource.nowMillis()
-    val today = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
-
-    val hasTodayKo = matches.filter { it.phase != Phase.GROUP_STAGE }.any {
-        val mTime = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz)
-        val mDate = mTime.date
-        val isRecentlyFinished = now in it.matchDateMillis..(it.matchDateMillis + TODAY_KNOCKOUT_GRACE_MILLIS)
-        val isTomorrowEarly = mDate.toEpochDays() == today.toEpochDays() + 1 && mTime.hour < EARLY_MORNING_CUTOFF_HOUR
-        mDate == today || isTomorrowEarly || isRecentlyFinished
-    }
-
-    return if (hasTodayKo) {
-        Phase.FRIENDLIES to todayLabel
-    } else {
-        val next = phaseLabels.find { l ->
-            val base = l.substringBefore(" - ")
-            val isV = l.contains("Volta")
-            matches.any { m ->
-                m.phase.label == base && (if (isV) m.id.contains("-L2") else !m.id.contains("-L2")) && !m.isFinished
-            }
-        } ?: phaseLabels.lastOrNull()
-
-        if (next != null) {
-            val p = Phase.entries.find { it.label == next.substringBefore(" - ") }
-            p to next
-        } else {
-            Phase.FRIENDLIES to todayLabel
         }
     }
 }

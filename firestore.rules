@@ -165,6 +165,12 @@ service cloud.firestore {
       }
     }
 
+    // 4b. BANNERS DE MARKETING (carrossel da Home): leitura para todos, escrita apenas para o Admin
+    match /banners/{bannerId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     // Collection group: consultas globais de jogos (usadas pelo App/Functions)
     match /{path=**}/matches/{id} {
       allow read: if isSignedIn();

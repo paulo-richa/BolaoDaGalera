@@ -26,6 +26,12 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
     private val _minSupportedVersion = MutableStateFlow("")
     val minSupportedVersion: StateFlow<String> = _minSupportedVersion.asStateFlow()
 
+    private val _forceShowNotificationBanner = MutableStateFlow(false)
+    val forceShowNotificationBanner: StateFlow<Boolean> = _forceShowNotificationBanner.asStateFlow()
+
+    private val _showBannerCarousel = MutableStateFlow(true)
+    val showBannerCarousel: StateFlow<Boolean> = _showBannerCarousel.asStateFlow()
+
     suspend fun fetchAndActivate() {
         try {
             remoteConfig.settings {
@@ -35,7 +41,9 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
                 "maintenance_mode" to false,
                 "show_ads" to true,
                 "maintenance_exempt_emails" to "",
-                "min_supported_version" to ""
+                "min_supported_version" to "",
+                "force_show_notification_banner" to false,
+                "show_banner_carousel" to true
             )
             remoteConfig.fetchAndActivate()
             _isMaintenanceMode.value = remoteConfig.getValue("maintenance_mode").asBoolean()
@@ -49,6 +57,8 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
                     .filter { it.isNotEmpty() }
                     .toSet()
             _minSupportedVersion.value = remoteConfig.getValue("min_supported_version").asString()
+            _forceShowNotificationBanner.value = remoteConfig.getValue("force_show_notification_banner").asBoolean()
+            _showBannerCarousel.value = remoteConfig.getValue("show_banner_carousel").asBoolean()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

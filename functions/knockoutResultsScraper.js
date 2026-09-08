@@ -43,6 +43,27 @@ function toMatchDateMillis(dayMonth, time) {
 }
 
 /**
+ * The source's date headers carry an explicit "DD/MM" only for matches more
+ * than a day out - matches happening today/tomorrow are headed just "Hoje"/
+ * "Amanhã", with no date at all. Resolves those two relative to the current
+ * date in Brasília time (fixed -03:00 offset - Brazil has had no DST since
+ * 2019, same assumption toMatchDateMillis above already makes). Returns null
+ * for anything else, so the caller falls back to the normal comma-split
+ * extraction unchanged.
+ */
+function resolveRelativeDayMonth(headerText) {
+    const normalized = headerText.trim().toLowerCase();
+    const daysAhead = { "hoje": 0, "amanhã": 1, "amanha": 1 }[normalized];
+    if (daysAhead === undefined) return null;
+
+    const brasiliaNow = new Date(Date.now() - 3 * 3_600_000);
+    brasiliaNow.setUTCDate(brasiliaNow.getUTCDate() + daysAhead);
+    const day = String(brasiliaNow.getUTCDate()).padStart(2, "0");
+    const month = String(brasiliaNow.getUTCMonth() + 1).padStart(2, "0");
+    return `${day}/${month}`;
+}
+
+/**
  * Extracts every card matching phaseLabel (e.g. "Quartas de Final",
  * "Semifinal", "Final") from one page (either the "próximos jogos" or
  * "resultados" listing) - each date header groups the matches
@@ -53,7 +74,8 @@ function parsePhaseCards(html, phaseLabel) {
     const matches = [];
 
     $(".flex.flex-col.gap-8 > .min-w-0").each((_, dateBlock) => {
-        const dayMonth = $(dateBlock).find("h3").first().text().trim().split(",").pop().trim();
+        const headerText = $(dateBlock).find("h3").first().text().trim();
+        const dayMonth = resolveRelativeDayMonth(headerText) || headerText.split(",").pop().trim();
         if (!dayMonth) return;
 
         $(dateBlock)

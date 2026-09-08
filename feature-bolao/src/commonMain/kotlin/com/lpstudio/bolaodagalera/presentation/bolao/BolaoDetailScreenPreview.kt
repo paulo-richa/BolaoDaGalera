@@ -112,6 +112,8 @@ fun BolaoDetailScreenPreview() {
                 override fun sendEmail(address: String, subject: String, body: String) {}
 
                 override fun sendWhatsApp(phone: String, text: String) {}
+
+                override fun openNotificationSettings() {}
             },
             callbacks =
             BolaoDetailCallbacks(

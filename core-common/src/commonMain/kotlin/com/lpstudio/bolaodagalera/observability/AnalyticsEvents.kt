@@ -31,4 +31,6 @@ object AnalyticsEvents {
     const val INVITATION_RESPOND = "invitation_respond"
 
     const val SUPPORT_SEND = "support_send"
+
+    const val BANNER_CLICK = "banner_click"
 }
