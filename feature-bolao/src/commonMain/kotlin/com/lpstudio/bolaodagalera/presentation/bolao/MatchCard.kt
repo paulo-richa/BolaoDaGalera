@@ -386,8 +386,22 @@ fun computeMatchCardStatus(
 ): MatchCardStatus {
     val (isFin, isLive) = computeFinishedAndLiveFlags(match, now, start)
     val isGhost = start < bolaoCreatedAt
-    val isTbd = (match.homeTeamCode == "TBD" || match.awayTeamCode == "TBD") || hFlag.contains("ou") || aFlag.contains("ou")
-    val canPred = !isFinished && now < (match.matchDateMillis - PREDICTION_LOCK_LEAD_MILLIS) && !forceLocked && !isTbd
+    // A missing/unconfirmed matchDateMillis (external source hasn't published
+    // the real kickoff time yet, e.g. an unresolved knockout tie) can surface
+    // as either Match.NO_DATE_MILLIS (the documented sentinel) or a
+    // null/zeroed field read back as epoch 0 - either way, without this
+    // check it's indistinguishable from "already started", so the card
+    // would show a live "JOGO EM ANDAMENTO" status for a match that hasn't
+    // even been scheduled. Treated the same as an unresolved team.
+    val isDateUnknown = isMatchDateUnknown(match)
+    val isTeamUnknown = isMatchTeamUnknown(match, hFlag, aFlag)
+    val isTbd = isTeamUnknown || isDateUnknown
+    // A match with real, known teams but an unconfirmed kickoff time can still
+    // be predicted - there's just no real deadline to enforce yet, so it's
+    // deliberately not locked the way an unresolved-team match is (predicting
+    // a "Vencedor Oitavas x Vencedor Oitavas" makes no sense; predicting a
+    // real "Fluminense x Platense" whose exact kickoff isn't confirmed does).
+    val canPred = computeCanPredict(match, isFinished, forceLocked, isTeamUnknown, isDateUnknown, now)
     val borderColor = computeMatchBorderColor(match, prediction, isFin)
     val isExp = now >= (match.matchDateMillis - PREDICTION_LOCK_LEAD_MILLIS) || isFinished
     val isLock = isExp || forceLocked || isGhost || isTbd

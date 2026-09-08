@@ -3,6 +3,7 @@ package com.lpstudio.bolaodagalera.di
 import com.lpstudio.bolaodagalera.ads.AdBannerProvider
 import com.lpstudio.bolaodagalera.ads.InterstitialAdCounter
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseAuthRepository
+import com.lpstudio.bolaodagalera.data.firebase.FirebaseBannerRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseBolaoRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseChampionshipRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseInvitationRepository
@@ -12,6 +13,7 @@ import com.lpstudio.bolaodagalera.data.firebase.FirebasePredictionRepository
 import com.lpstudio.bolaodagalera.data.firebase.FirebaseSupportRepository
 import com.lpstudio.bolaodagalera.data.remote.RemoteConfigManager
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.domain.repository.BannerRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
@@ -20,6 +22,7 @@ import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
+import com.lpstudio.bolaodagalera.featureflags.FeatureFlagsProvider
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.ErrorReporter
@@ -35,6 +38,7 @@ import com.lpstudio.bolaodagalera.presentation.bolao.CreateBolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.EditBolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.bolao.JoinBolaoViewModel
 import com.lpstudio.bolaodagalera.presentation.components.BolaoAdBannerProvider
+import com.lpstudio.bolaodagalera.presentation.components.RemoteConfigFeatureFlagsProvider
 import com.lpstudio.bolaodagalera.presentation.help.HelpViewModel
 import com.lpstudio.bolaodagalera.presentation.home.HomeViewModel
 import com.lpstudio.bolaodagalera.presentation.match.PredictionViewModel
@@ -52,6 +56,7 @@ val appModule =
         single<InvitationRepository> { FirebaseInvitationRepository(get()) }
         single<PredictionRepository> { FirebasePredictionRepository(get()) }
         single<ChampionshipRepository> { FirebaseChampionshipRepository(get()) }
+        single<BannerRepository> { FirebaseBannerRepository(get()) }
         single<SupportRepository> { FirebaseSupportRepository() }
         single<NotificationRepository> { FirebaseNotificationRepository(get()) }
         single<CrashReporter> { createCrashReporter() }
@@ -64,6 +69,7 @@ val appModule =
 
         // Remote Config
         single { RemoteConfigManager(get()) }
+        single<FeatureFlagsProvider> { RemoteConfigFeatureFlagsProvider(get()) }
 
         // UseCases
         single { CalculatePointsUseCase() }
@@ -76,6 +82,7 @@ val appModule =
                 bolaoRepository = get(),
                 invitationRepository = get(),
                 notificationRepository = get(),
+                bannerRepository = get(),
                 crashReporter = get(),
                 performanceMonitor = get(),
                 analyticsTracker = get()

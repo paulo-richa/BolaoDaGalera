@@ -2,12 +2,14 @@ package com.lpstudio.bolaodagalera.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lpstudio.bolaodagalera.domain.model.Banner
 import com.lpstudio.bolaodagalera.domain.model.Bolao
 import com.lpstudio.bolaodagalera.domain.model.ErrorCategory
 import com.lpstudio.bolaodagalera.domain.model.Invitation
 import com.lpstudio.bolaodagalera.domain.model.Notification
 import com.lpstudio.bolaodagalera.domain.model.User
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.domain.repository.BannerRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
 import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
@@ -37,6 +39,7 @@ data class HomeUiState(
     val boloes: List<Bolao> = emptyList(),
     val invitations: List<Invitation> = emptyList(),
     val notifications: List<Notification> = emptyList(),
+    val banners: List<Banner> = emptyList(),
     val hasUnreadNotifications: Boolean = false,
     val isLoading: Boolean = true,
     val error: String? = null
@@ -47,6 +50,7 @@ class HomeViewModel(
     private val bolaoRepository: BolaoRepository,
     private val invitationRepository: InvitationRepository,
     private val notificationRepository: NotificationRepository,
+    private val bannerRepository: BannerRepository,
     private val crashReporter: CrashReporter,
     private val performanceMonitor: PerformanceMonitor,
     private val analyticsTracker: AnalyticsTracker
@@ -80,6 +84,11 @@ class HomeViewModel(
         }.launchIn(viewModelScope)
     }
 
+    private fun reportBannersError(e: Throwable) {
+        if (e is CancellationException) throw e
+        errorReporter.report(e, "Erro ao observar banners")
+    }
+
     private fun loadUserData(user: User) {
         val homeLoadTrace = performanceMonitor.startScreenTrace(PerformanceTraces.HOME_LOAD)
         var homeLoadTraceStopped = false
@@ -102,12 +111,19 @@ class HomeViewModel(
         // All notification types (invitation, join/leave request, daily digest) are
         // already persisted by the Cloud Functions under notifications/{id}. The bell
         // icon only reflects what the server wrote — nothing is recomputed client-side.
+        val bannersFlow =
+            bannerRepository.getBanners().catch { e ->
+                reportBannersError(e)
+                emit(emptyList())
+            }
+
         dataCollectionJob =
             combine(
                 bolaoRepository.getUserBoloes(user.id),
                 invitationsFlow,
-                notificationRepository.getNotifications(user.id)
-            ) { boloes, invitations, notifications ->
+                notificationRepository.getNotifications(user.id),
+                bannersFlow
+            ) { boloes, invitations, notifications, banners ->
                 val sortedNotifications = notifications.sortedByDescending { it.timestamp }
                 val hasUnread = sortedNotifications.any { !it.isRead }
 
@@ -121,6 +137,7 @@ class HomeViewModel(
                         boloes = boloes,
                         invitations = invitations,
                         notifications = sortedNotifications,
+                        banners = banners,
                         hasUnreadNotifications = hasUnread,
                         isLoading = false
                     )
@@ -244,6 +261,13 @@ class HomeViewModel(
                 _uiState.update { it.copy(error = message) }
             }
         }
+    }
+
+    fun onBannerClick(banner: Banner) {
+        analyticsTracker.logEvent(
+            AnalyticsEvents.BANNER_CLICK,
+            mapOf("banner_id" to banner.id, "championship_id" to (banner.championshipId ?: ""))
+        )
     }
 
     fun signOut() {

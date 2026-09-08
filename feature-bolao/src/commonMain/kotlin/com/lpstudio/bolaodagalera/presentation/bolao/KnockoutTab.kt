@@ -28,7 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import bolaodagalera.feature_bolao.generated.resources.Res
+import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
 import bolaodagalera.feature_bolao.generated.resources.knockout_tab_empty_message
+import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_tomorrow
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoFullScreenLoading
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoLinearProgressIndicator
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
@@ -47,7 +49,16 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
-private const val TODAY_LABEL = "⚽️ HOJE"
+// Internal sentinel only, never shown as-is - the visible chip text comes
+// from the shared Res.string.bolao_common_today_chip (same "HOJE" label used
+// by RodadaSelector for the group-stage/points-based tabs, kept in sync in
+// one place instead of duplicating the string here).
+private const val TODAY_LABEL = "__TODAY__"
+
+// Same reasoning as TODAY_LABEL - internal sentinel only, visible text comes
+// from Res.string.rodada_selector_chip_tomorrow (same "AMANHÃ" label used by
+// RodadaSelector).
+private const val TOMORROW_LABEL = "__TOMORROW__"
 private const val LIVE_WINDOW_MILLIS = 3 * 3600_000L
 
 private class KnockoutComputedState(
@@ -56,6 +67,7 @@ private class KnockoutComputedState(
     val now: Long,
     val todayDate: LocalDate,
     val hasMatchToday: Boolean,
+    val hasMatchTomorrow: Boolean,
     val labels: List<String>
 )
 
@@ -66,8 +78,9 @@ private fun rememberKnockoutComputedState(matches: List<Match>, isTwoLegged: Boo
     val now = TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
     val hasMatchToday = remember(matches, todayDate) { hasKnockoutMatchToday(matches, todayDate, tz, now) }
+    val hasMatchTomorrow = remember(matches, todayDate) { hasKnockoutMatchTomorrow(matches, todayDate, tz) }
     val labels = remember(phaseOrder, isTwoLegged) { computeKnockoutLabels(phaseOrder, isTwoLegged) }
-    return KnockoutComputedState(phaseOrder, tz, now, todayDate, hasMatchToday, labels)
+    return KnockoutComputedState(phaseOrder, tz, now, todayDate, hasMatchToday, hasMatchTomorrow, labels)
 }
 
 @Composable
@@ -93,6 +106,7 @@ private fun KnockoutAutoSelectionEffect(
                 selectedPhase = selectedPhase,
                 selectedLabel = selectedLabel,
                 hasMatchToday = computed.hasMatchToday,
+                hasMatchTomorrow = computed.hasMatchTomorrow,
                 onLabelChange = onLabelChange,
                 onPhaseChange = onPhaseChange
             )
@@ -123,9 +137,11 @@ fun KnockoutTab(
     Column(Modifier.fillMaxSize()) {
         if (computed.labels.isNotEmpty()) {
             KnockoutPhaseSelectorBar(
+                matches = matches,
                 labels = computed.labels,
                 selectedLabel = selectedLabel,
                 hasMatchToday = computed.hasMatchToday,
+                hasMatchTomorrow = computed.hasMatchTomorrow,
                 onLabelChange = onLabelChange,
                 onPhaseChange = onPhaseChange
             )
@@ -234,6 +250,15 @@ private fun hasKnockoutMatchToday(matches: List<Match>, todayDate: LocalDate, tz
             (now in it.matchDateMillis..(it.matchDateMillis + LIVE_WINDOW_MILLIS))
     }
 
+/** Tomorrow's calendar date, excluding early-morning kickoffs already claimed by [hasKnockoutMatchToday]'s cutoff. */
+private fun hasKnockoutMatchTomorrow(matches: List<Match>, todayDate: LocalDate, tz: TimeZone): Boolean {
+    val tomorrowDate = LocalDate.fromEpochDays(todayDate.toEpochDays() + 1)
+    return matches.filter { it.phase != Phase.GROUP_STAGE }.any {
+        val mTime = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz)
+        mTime.date == tomorrowDate && mTime.hour >= EARLY_MORNING_CUTOFF_HOUR
+    }
+}
+
 private fun computeKnockoutLabels(phaseOrder: List<Phase>, isTwoLegged: Boolean): List<String> = if (isTwoLegged) {
     phaseOrder.flatMap { phase ->
         if (phase == Phase.FINAL || phase == Phase.THIRD_PLACE) {
@@ -246,13 +271,30 @@ private fun computeKnockoutLabels(phaseOrder: List<Phase>, isTwoLegged: Boolean)
     phaseOrder.map { it.label }
 }
 
-/** Auto-selects the "today"/live phase tab on first load, or the next relevant unfinished phase otherwise. */
+/**
+ * The first label with an unfinished match ("next relevant" phase), or the
+ * last label once everything's finished. Shared by the auto-selection
+ * effect (which phase tab opens by default) and the chip bar (which phase
+ * chip is styled as "current" vs "past") so both agree on the same phase.
+ */
+private fun computeCurrentKnockoutLabel(matches: List<Match>, labels: List<String>): String? = labels.find { label ->
+    val base = label.substringBefore(" - ")
+    val isVolta = label.contains("Volta")
+    matches.any { m ->
+        m.phase.label == base &&
+            (if (isVolta) m.id.contains("-L2") else !m.id.contains("-L2")) &&
+            !m.isFinished
+    }
+} ?: labels.lastOrNull()
+
+/** Auto-selects, in priority order, Hoje > Amanhã > the next relevant unfinished phase - on first load only. */
 private fun handleKnockoutAutoSelection(
     matches: List<Match>,
     labels: List<String>,
     selectedPhase: Phase?,
     selectedLabel: String?,
     hasMatchToday: Boolean,
+    hasMatchTomorrow: Boolean,
     onLabelChange: (String?) -> Unit,
     onPhaseChange: (Phase?) -> Unit
 ) {
@@ -265,16 +307,12 @@ private fun handleKnockoutAutoSelection(
         onPhaseChange(Phase.FRIENDLIES)
         return
     }
-    val nextRelevantLabel =
-        labels.find { label ->
-            val base = label.substringBefore(" - ")
-            val isVolta = label.contains("Volta")
-            matches.any { m ->
-                m.phase.label == base &&
-                    (if (isVolta) m.id.contains("-L2") else !m.id.contains("-L2")) &&
-                    !m.isFinished
-            }
-        } ?: labels.lastOrNull()
+    if (hasMatchTomorrow) {
+        onLabelChange(TOMORROW_LABEL)
+        onPhaseChange(Phase.FRIENDLIES)
+        return
+    }
+    val nextRelevantLabel = computeCurrentKnockoutLabel(matches, labels)
 
     if (nextRelevantLabel != null) {
         onLabelChange(nextRelevantLabel)
@@ -292,8 +330,10 @@ private fun computeKnockoutPhaseMatches(
     tz: TimeZone,
     now: Long
 ): List<Match> = when {
+    selectedPhase == Phase.FRIENDLIES && selectedLabel == TOMORROW_LABEL ->
+        computeTomorrowKnockoutMatches(matches, todayDate, tz)
     selectedPhase == Phase.FRIENDLIES -> computeTodayKnockoutMatches(matches, todayDate, tz, now)
-    isTwoLegged && selectedLabel != null && selectedLabel != TODAY_LABEL ->
+    isTwoLegged && selectedLabel != null && selectedLabel != TODAY_LABEL && selectedLabel != TOMORROW_LABEL ->
         computeTwoLeggedPhaseMatches(matches, selectedLabel)
     else -> matches.filter { it.phase == selectedPhase }.sortedBy { it.matchDateMillis }
 }
@@ -308,6 +348,15 @@ private fun computeTodayKnockoutMatches(matches: List<Match>, todayDate: LocalDa
     }.sortedWith(
         compareByDescending<Match> { matchUrgency(it, now) }.thenBy { it.matchDateMillis }
     )
+
+/** Same "tomorrow" definition as [hasKnockoutMatchTomorrow] - no live/urgency sorting needed, nothing in it could be live yet. */
+private fun computeTomorrowKnockoutMatches(matches: List<Match>, todayDate: LocalDate, tz: TimeZone): List<Match> {
+    val tomorrowDate = LocalDate.fromEpochDays(todayDate.toEpochDays() + 1)
+    return matches.filter { it.phase != Phase.GROUP_STAGE }.filter { m ->
+        val mTime = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz)
+        mTime.date == tomorrowDate && mTime.hour >= EARLY_MORNING_CUTOFF_HOUR
+    }.sortedBy { it.matchDateMillis }
+}
 
 private val LIVE_STATUSES = listOf("IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTIES", "LIVE")
 
@@ -365,21 +414,26 @@ private fun computeTwoLeggedPhaseMatches(matches: List<Match>, selectedLabel: St
 
 @Composable
 private fun KnockoutPhaseSelectorBar(
+    matches: List<Match>,
     labels: List<String>,
     selectedLabel: String?,
     hasMatchToday: Boolean,
+    hasMatchTomorrow: Boolean,
     onLabelChange: (String?) -> Unit,
     onPhaseChange: (Phase?) -> Unit
 ) {
+    val currentLabel = remember(matches, labels) { computeCurrentKnockoutLabel(matches, labels) }
     Box(modifier = Modifier.fillMaxWidth().background(DeepNavy).padding(vertical = BolaoSpacing.sm)) {
         KnockoutPhaseSelector(
             labels = labels,
             selectedLabel = selectedLabel,
+            currentLabel = currentLabel,
             isUnlocked = true,
             showHoje = hasMatchToday,
+            showAmanha = hasMatchTomorrow,
             onSelect = { label ->
                 onLabelChange(label)
-                if (label == TODAY_LABEL) {
+                if (label == TODAY_LABEL || label == TOMORROW_LABEL) {
                     onPhaseChange(Phase.FRIENDLIES)
                 } else {
                     val phaseName = label?.substringBefore(" - ")
@@ -432,12 +486,57 @@ private fun LazyListScope.knockoutMatchesList(
     }
 }
 
+/** The Hoje/Amanhã chips (if applicable) followed by one chip per phase label, past/current-styled relative to [currentLabel]. */
+private fun LazyListScope.knockoutPhaseChips(
+    labels: List<String>,
+    selectedLabel: String?,
+    currentLabel: String?,
+    isUnlocked: Boolean,
+    showHoje: Boolean,
+    showAmanha: Boolean,
+    onSelect: (String?) -> Unit
+) {
+    val currentIndex = currentLabel?.let { labels.indexOf(it) } ?: -1
+    if (showHoje) {
+        item {
+            FilterChip(
+                label = stringResource(Res.string.bolao_common_today_chip),
+                isSelected = selectedLabel == TODAY_LABEL,
+                isUnlocked = true,
+                onClick = { onSelect(TODAY_LABEL) }
+            )
+        }
+    }
+    if (showAmanha) {
+        item {
+            FilterChip(
+                label = stringResource(Res.string.rodada_selector_chip_tomorrow),
+                isSelected = selectedLabel == TOMORROW_LABEL,
+                isUnlocked = true,
+                onClick = { onSelect(TOMORROW_LABEL) }
+            )
+        }
+    }
+    items(labels) { l ->
+        FilterChip(
+            label = l,
+            isSelected = selectedLabel == l,
+            isUnlocked = isUnlocked,
+            isPast = currentIndex != -1 && labels.indexOf(l) < currentIndex,
+            isCurrent = l == currentLabel,
+            onClick = { onSelect(l) }
+        )
+    }
+}
+
 @Composable
 private fun KnockoutPhaseSelector(
     labels: List<String>,
     selectedLabel: String?,
+    currentLabel: String?,
     isUnlocked: Boolean,
     showHoje: Boolean,
+    showAmanha: Boolean,
     onSelect: (String?) -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -459,19 +558,7 @@ private fun KnockoutPhaseSelector(
             horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            if (showHoje) {
-                item {
-                    FilterChip(
-                        label = TODAY_LABEL,
-                        isSelected = selectedLabel == TODAY_LABEL,
-                        isUnlocked = true,
-                        onClick = { onSelect(TODAY_LABEL) }
-                    )
-                }
-            }
-            items(
-                labels
-            ) { l -> FilterChip(label = l, isSelected = selectedLabel == l, isUnlocked = isUnlocked, onClick = { onSelect(l) }) }
+            knockoutPhaseChips(labels, selectedLabel, currentLabel, isUnlocked, showHoje, showAmanha, onSelect)
         }
         if (canScrollB) {
             Box(
