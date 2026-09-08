@@ -33,7 +33,7 @@ jobs:
         run: ./gradlew detekt detektDesignSystem
 
       - name: Android Lint
-        run: ./gradlew :composeApp:lintDebug
+        run: ./gradlew :androidApp:lintDebug
 
       - name: Upload static analysis reports
         if: always()
@@ -43,7 +43,7 @@ jobs:
           path: |
             **/build/reports/detekt/
             **/build/reports/ktlint/
-            composeApp/build/reports/lint-results-debug.html
+            androidApp/build/reports/lint-results-debug.html
           retention-days: 14
 
   unit-tests:
@@ -91,11 +91,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Assemble debug
-        run: ./gradlew :composeApp:assembleDebug
+        run: ./gradlew :androidApp:assembleDebug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: composeApp/build/outputs/apk/debug/*.apk
+          path: androidApp/build/outputs/apk/debug/*.apk
           retention-days: 14

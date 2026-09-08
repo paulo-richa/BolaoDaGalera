@@ -39,7 +39,7 @@ jobs:
           PLAY_SERVICE_ACCOUNT_BASE64: ${{ secrets.PLAY_SERVICE_ACCOUNT_BASE64 }}
 
       - name: Publish bundle to Play Store (closed testing - Alpha)
-        run: ./gradlew :composeApp:publishReleaseBundle -PversionNameOverride=${{ steps.version.outputs.name }}
+        run: ./gradlew :androidApp:publishReleaseBundle -PversionNameOverride=${{ steps.version.outputs.name }}
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
