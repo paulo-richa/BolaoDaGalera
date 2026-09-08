@@ -287,6 +287,30 @@ private fun computeCurrentKnockoutLabel(matches: List<Match>, labels: List<Strin
     }
 } ?: labels.lastOrNull()
 
+/**
+ * Same Hoje > Amanhã > next-relevant-phase priority as [handleKnockoutAutoSelection],
+ * exposed so BolaoDetailState.kt's back-navigation/reset logic agrees on what
+ * "default" means for this tab - it used to duplicate this decision with its own
+ * (drifted) copy, comparing against the localized "HOJE" string instead of the
+ * TODAY_LABEL/TOMORROW_LABEL sentinels actually stored in selectedLabel, which
+ * broke system-back on the Hoje/Amanhã chips (it looked like the user was never
+ * in the "default" state, so back kept resetting the tab instead of leaving it).
+ */
+internal fun computeKnockoutDefaultSelection(matches: List<Match>, isTwoLegged: Boolean): Pair<Phase?, String> {
+    val phaseOrder = computeKnockoutPhaseOrder(matches)
+    val labels = computeKnockoutLabels(phaseOrder, isTwoLegged)
+    val tz = TimeZone.currentSystemDefault()
+    val now = TimeSource.nowMillis()
+    val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+
+    if (hasKnockoutMatchToday(matches, todayDate, tz, now)) return Phase.FRIENDLIES to TODAY_LABEL
+    if (hasKnockoutMatchTomorrow(matches, todayDate, tz)) return Phase.FRIENDLIES to TOMORROW_LABEL
+
+    val nextRelevantLabel = computeCurrentKnockoutLabel(matches, labels) ?: return Phase.FRIENDLIES to TODAY_LABEL
+    val base = nextRelevantLabel.substringBefore(" - ")
+    return Phase.entries.find { it.label == base } to nextRelevantLabel
+}
+
 /** Auto-selects, in priority order, Hoje > Amanhã > the next relevant unfinished phase - on first load only. */
 private fun handleKnockoutAutoSelection(
     matches: List<Match>,
