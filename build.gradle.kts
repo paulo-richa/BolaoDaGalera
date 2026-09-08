@@ -17,7 +17,7 @@ plugins {
     alias(libs.plugins.androidxBaselineProfile) apply false
     alias(libs.plugins.playPublisher) apply false
     alias(libs.plugins.kover)
-    id("com.google.firebase.appdistribution") version "5.1.1" apply false
+    alias(libs.plugins.firebaseAppDistribution) apply false
 }
 
 // Each module (all applying the Kover plugin themselves) produces its own coverage

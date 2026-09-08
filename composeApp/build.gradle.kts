@@ -16,7 +16,7 @@ plugins {
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.androidxBaselineProfile)
     alias(libs.plugins.playPublisher) apply false
-    id("com.google.firebase.appdistribution")
+    alias(libs.plugins.firebaseAppDistribution)
     kotlin("native.cocoapods")
 }
 
@@ -232,11 +232,11 @@ dependencies {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    coreLibraryDesugaring(libs.android.desugar.jdk.libs)
     // Provide Firebase BOM at module level so platform versions are available
     // to the GitLive KMP artifacts which rely on platform-specific Android
     // Firebase artifacts without explicit versions.
-    implementation(platform("com.google.firebase:firebase-bom:34.18.0"))
+    implementation(platform(libs.firebase.bom))
 
     debugImplementation(libs.compose.uiTooling)
     debugImplementation(libs.compose.ui.test.manifest)

@@ -65,7 +65,7 @@ android {
 }
 
 dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:34.18.0"))
+    implementation(platform(libs.firebase.bom))
     detektPlugins(project(":detekt-rules"))
 }
 
