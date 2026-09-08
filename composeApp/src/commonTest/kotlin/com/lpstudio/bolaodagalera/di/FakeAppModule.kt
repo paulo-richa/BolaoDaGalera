@@ -5,6 +5,7 @@ import com.lpstudio.bolaodagalera.ads.InterstitialAdCounter
 import com.lpstudio.bolaodagalera.data.fake.FakeAdBannerProvider
 import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
+import com.lpstudio.bolaodagalera.data.fake.FakeBannerRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeChampionshipRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
@@ -16,6 +17,7 @@ import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.data.fake.FakePredictionRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeSupportRepository
 import com.lpstudio.bolaodagalera.domain.repository.AuthRepository
+import com.lpstudio.bolaodagalera.domain.repository.BannerRepository
 import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.ChampionshipRepository
 import com.lpstudio.bolaodagalera.domain.repository.InvitationRepository
@@ -51,6 +53,7 @@ val fakeAppModule =
         single<InvitationRepository> { FakeInvitationRepository() }
         single<PredictionRepository> { FakePredictionRepository(matchRepo) }
         single<ChampionshipRepository> { FakeChampionshipRepository() }
+        single<BannerRepository> { FakeBannerRepository() }
         single<SupportRepository> { FakeSupportRepository() }
         single<NotificationRepository> { FakeNotificationRepository() }
         single<CrashReporter> { FakeCrashReporter() }
@@ -71,6 +74,7 @@ val fakeAppModule =
                 bolaoRepository = get(),
                 invitationRepository = get(),
                 notificationRepository = get(),
+                bannerRepository = get(),
                 crashReporter = get(),
                 performanceMonitor = get(),
                 analyticsTracker = get()
