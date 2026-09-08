@@ -19,6 +19,21 @@ function todayWindowMillis(now = new Date()) {
 }
 
 /**
+ * Mirrors the placeholder detection in matchReminder.js/MatchUtils.kt
+ * (resolveDisplayName) - a knockout match whose teams aren't decided yet
+ * (e.g. "Vencedor QF2 (Ida)") can't be predicted, so counting it as a
+ * missing prediction is nonsensical.
+ */
+function isPlaceholderTeam(teamName) {
+    return !teamName ||
+        teamName === "TBD" ||
+        teamName.startsWith("Vencedor") ||
+        teamName.startsWith("Perdedor") ||
+        teamName.includes("/") ||
+        teamName.includes(" ou ");
+}
+
+/**
  * Today's matches relevant to THIS bolao, respecting its scope
  * (ONLY_GROUPS/ONLY_KNOCKOUT/specificMatchId) - without this, a
  * knockout-only bolao would remind users about group-stage matches they
@@ -61,6 +76,7 @@ async function computeMissingPredictionsByBolao(db) {
         const m = doc.data();
         const champId = m.championshipId;
         if (!champId) return;
+        if (isPlaceholderTeam(m.homeTeam) || isPlaceholderTeam(m.awayTeam)) return;
         if (!matchesTodayByChampionship[champId]) matchesTodayByChampionship[champId] = [];
         matchesTodayByChampionship[champId].push({ id: doc.id, phase: m.phase });
     });
