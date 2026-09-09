@@ -89,6 +89,60 @@ const notificationTriggers = makeNotificationTriggers(db, admin);
 exports.onInvitationCreated = notificationTriggers.onInvitationCreated;
 exports.onBolaoUpdated = notificationTriggers.onBolaoUpdated;
 
+// Fields the pre-signup availability check is allowed to query - anything else is rejected so
+// this endpoint can't be used to probe arbitrary fields (e.g. email) on the users collection.
+const AVAILABILITY_CHECK_FIELDS = ["username", "phone", "nickname"];
+
+/**
+ * Public (no auth) endpoint: checks whether a username/phone/nickname is already taken.
+ * Needed because these checks run during signup, before the client has a Firebase Auth
+ * session - the users collection's Firestore rule requires isSignedIn(), so a direct
+ * client-side query fails with permission-denied at that point (see isEmailInUse, which
+ * sidesteps the same problem by checking Firebase Auth directly instead of Firestore -
+ * there's no Auth-side equivalent for username/phone/nickname, so this runs server-side
+ * with the Admin SDK instead, which isn't subject to security rules).
+ */
+exports.checkIdentifierAvailability = onRequest(async (req, res) => {
+    const field = req.query.field;
+    const value = (req.query.value || "").toString().trim();
+    if (!AVAILABILITY_CHECK_FIELDS.includes(field) || !value) {
+        return res.status(400).json({ status: "error", message: "Parâmetros 'field'/'value' inválidos." });
+    }
+    try {
+        const snapshot = await db.collection("users").where(field, "==", value).limit(1).get();
+        return res.json({ status: "success", inUse: !snapshot.empty });
+    } catch (error) {
+        return res.status(500).json({ status: "error", message: error.message });
+    }
+});
+
+/** TEMPORARY read-only debug endpoint - engagement numbers as an ad-volume/funnel proxy. Remove after use. */
+exports.debugEngagementStats = onRequest({ secrets: [adminToken] }, async (req, res) => {
+    if (!requireAdminToken(req, res)) return;
+    try {
+        const usersSnap = await db.collection("users").get();
+        const boloesSnap = await db.collection("boloes").get();
+        const activeBoloes = boloesSnap.docs.filter((d) => !d.data().deletedAtMillis);
+        const predictionsSnap = await db.collectionGroup("predictions").get();
+
+        const participantCounts = activeBoloes.map((d) => (d.data().participants || []).length);
+        const totalParticipations = participantCounts.reduce((a, b) => a + b, 0);
+
+        return res.json({
+            status: "success",
+            checkedAt: new Date().toISOString(),
+            totalUsers: usersSnap.size,
+            totalBoloes: boloesSnap.size,
+            activeBoloes: activeBoloes.length,
+            totalParticipations,
+            avgParticipantsPerActiveBolao: activeBoloes.length ? +(totalParticipations / activeBoloes.length).toFixed(2) : 0,
+            totalPredictionsAllTime: predictionsSnap.size
+        });
+    } catch (error) {
+        return res.status(500).json({ status: "error", message: error.message });
+    }
+});
+
 /**
  * Endpoint to force recalculation of all rankings (useful after migrations).
  */

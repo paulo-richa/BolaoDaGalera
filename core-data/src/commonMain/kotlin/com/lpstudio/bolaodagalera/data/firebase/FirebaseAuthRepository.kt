@@ -7,6 +7,10 @@ import com.lpstudio.bolaodagalera.observability.appLogger
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -18,9 +22,21 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 private const val SAVE_PROFILE_MAX_ATTEMPTS = 3
 private const val SAVE_PROFILE_RETRY_DELAY_MILLIS = 800L
+
+// Public (no auth) Cloud Function - see the comment on checkIdentifierAvailability
+// in functions/index.js for why this exists instead of a direct Firestore query.
+private const val CHECK_IDENTIFIER_AVAILABILITY_URL =
+    "https://us-central1-bolaodagalera-bb002.cloudfunctions.net/checkIdentifierAvailability"
+
+@Serializable
+private data class AvailabilityResponse(val inUse: Boolean = false)
+
+// The response also carries a "status" field this repository doesn't need.
+private val lenientJson = Json { ignoreUnknownKeys = true }
 
 @Serializable
 private data class UserDto(
@@ -37,6 +53,7 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
     private val auth = Firebase.auth
     private val db = Firebase.firestore
     private val usersCollection = db.collection("users")
+    private val httpClient = HttpClient()
 
     private var cachedUser: User? = null
 
@@ -213,20 +230,31 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
 
     override suspend fun isPhoneInUse(phone: String): Boolean {
         if (phone.isBlank()) return false
-        val snapshot = usersCollection.where { "phone" equalTo phone }.get()
-        return !snapshot.documents.isEmpty()
+        return checkIdentifierAvailability("phone", phone)
     }
 
     override suspend fun isNicknameInUse(nickname: String): Boolean {
         if (nickname.isBlank()) return false
-        val snapshot = usersCollection.where { "nickname" equalTo nickname }.get()
-        return !snapshot.documents.isEmpty()
+        return checkIdentifierAvailability("nickname", nickname)
     }
 
     override suspend fun isUsernameInUse(username: String): Boolean {
         if (username.isBlank()) return false
-        val snapshot = usersCollection.where { "username" equalTo username.lowercase() }.get()
-        return !snapshot.documents.isEmpty()
+        return checkIdentifierAvailability("username", username.lowercase())
+    }
+
+    /**
+     * Runs server-side (Admin SDK), bypassing the users collection's isSignedIn() rule - a
+     * direct Firestore query here would fail with permission-denied while the caller is
+     * still signed out, which is exactly when register() needs these checks the most.
+     */
+    private suspend fun checkIdentifierAvailability(field: String, value: String): Boolean {
+        val response =
+            httpClient.get(CHECK_IDENTIFIER_AVAILABILITY_URL) {
+                parameter("field", field)
+                parameter("value", value)
+            }
+        return lenientJson.decodeFromString<AvailabilityResponse>(response.bodyAsText()).inUse
     }
 
     override suspend fun findUserIdByIdentifier(identifier: String): String? {
