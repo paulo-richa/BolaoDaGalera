@@ -53,7 +53,11 @@ function toMatchDateMillis(dayMonth, time) {
  */
 function resolveRelativeDayMonth(headerText) {
     const normalized = headerText.trim().toLowerCase();
-    const daysAhead = { "hoje": 0, "amanhã": 1, "amanha": 1 }[normalized];
+    // "Ontem" (yesterday) shows up on the /resultados listing for a match that finished within
+    // the last day - missing it here isn't just a missing "today" label, it silently produces
+    // NaN via the comma-split fallback below, which then sorts unpredictably against real
+    // timestamps in knockoutFallbackSync.js's groupIntoLegs (see the comment there).
+    const daysAhead = { "ontem": -1, "hoje": 0, "amanhã": 1, "amanha": 1 }[normalized];
     if (daysAhead === undefined) return null;
 
     const brasiliaNow = new Date(Date.now() - 3 * 3_600_000);
@@ -95,8 +99,11 @@ function parsePhaseCards(html, phaseLabel) {
                 let teamAScore = null;
                 let teamBScore = null;
                 if (finished) {
-                    const scoreARaw = $anchor.find('[id^="jogo-card-team-a-"]').parent().find("span.font-black").first().text().trim();
-                    const scoreBRaw = $anchor.find('[id^="jogo-card-team-b-"]').parent().find("span.font-black").first().text().trim();
+                    // The score <span> is a sibling of the icon's *name-wrapper* div, not of the icon
+                    // itself - one .parent() only reaches that wrapper (icon + name), missing the score
+                    // entirely. Needs the wrapper's parent (the full row) to find it.
+                    const scoreARaw = $anchor.find('[id^="jogo-card-team-a-"]').parent().parent().find("span.font-black").first().text().trim();
+                    const scoreBRaw = $anchor.find('[id^="jogo-card-team-b-"]').parent().parent().find("span.font-black").first().text().trim();
                     teamAScore = scoreARaw ? parseInt(scoreARaw, 10) : null;
                     teamBScore = scoreBRaw ? parseInt(scoreBRaw, 10) : null;
                 }
