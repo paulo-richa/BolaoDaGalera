@@ -35,6 +35,7 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
+import com.lpstudio.bolaodagalera.designsystem.theme.OrangeNeon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Match
@@ -561,6 +562,7 @@ private fun KnockoutPhaseSelector(
                         label = yesterdayLabelText,
                         isSelected = selectedLabel == YESTERDAY_LABEL,
                         isUnlocked = true,
+                        selectedAccent = OrangeNeon,
                         onClick = { onSelect(YESTERDAY_LABEL) }
                     )
                 )

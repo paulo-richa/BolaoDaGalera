@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -102,24 +103,42 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
-private fun filterChipBorderColor(isSelected: Boolean, isUnlocked: Boolean, isPast: Boolean, isCurrent: Boolean): Color = when {
-    isSelected && isUnlocked -> Neon
+private fun filterChipBorderColor(
+    isSelected: Boolean,
+    isUnlocked: Boolean,
+    isPast: Boolean,
+    isCurrent: Boolean,
+    selectedAccent: Color
+): Color = when {
+    isSelected && isUnlocked -> selectedAccent
     isCurrent -> Gold
     isPast -> Color.Transparent
     isUnlocked -> GlassBorder
     else -> Color.Transparent
 }
 
-private fun filterChipBackgroundColor(isSelected: Boolean, isUnlocked: Boolean, isPast: Boolean, isCurrent: Boolean): Color = when {
-    isSelected && isUnlocked -> Neon.copy(alpha = 0.12f)
+private fun filterChipBackgroundColor(
+    isSelected: Boolean,
+    isUnlocked: Boolean,
+    isPast: Boolean,
+    isCurrent: Boolean,
+    selectedAccent: Color
+): Color = when {
+    isSelected && isUnlocked -> selectedAccent.copy(alpha = 0.12f)
     isCurrent -> Gold.copy(alpha = 0.12f)
     isPast -> DeepNavy
     isUnlocked -> NavyElevated
     else -> NavyCard.copy(alpha = 0.5f)
 }
 
-private fun filterChipTextColor(isSelected: Boolean, isUnlocked: Boolean, isPast: Boolean, isCurrent: Boolean): Color = when {
-    isSelected && isUnlocked -> Neon
+private fun filterChipTextColor(
+    isSelected: Boolean,
+    isUnlocked: Boolean,
+    isPast: Boolean,
+    isCurrent: Boolean,
+    selectedAccent: Color
+): Color = when {
+    isSelected && isUnlocked -> selectedAccent
     isCurrent -> Gold
     isPast -> TextMuted.copy(alpha = 0.55f)
     isUnlocked -> Color.White
@@ -134,18 +153,19 @@ fun FilterChip(
     modifier: Modifier = Modifier,
     isPast: Boolean = false,
     isCurrent: Boolean = false,
+    selectedAccent: Color = Neon,
     onClick: () -> Unit
 ) {
     val bColor by animateColorAsState(
-        filterChipBorderColor(isSelected, isUnlocked, isPast, isCurrent),
+        filterChipBorderColor(isSelected, isUnlocked, isPast, isCurrent, selectedAccent),
         label = "border_$label"
     )
     val cColor by animateColorAsState(
-        filterChipBackgroundColor(isSelected, isUnlocked, isPast, isCurrent),
+        filterChipBackgroundColor(isSelected, isUnlocked, isPast, isCurrent, selectedAccent),
         label = "bg_$label"
     )
     val tColor by animateColorAsState(
-        filterChipTextColor(isSelected, isUnlocked, isPast, isCurrent),
+        filterChipTextColor(isSelected, isUnlocked, isPast, isCurrent, selectedAccent),
         label = "text_$label"
     )
     Box(
@@ -183,14 +203,22 @@ data class TabChipSpec(
     val isUnlocked: Boolean,
     val isPast: Boolean = false,
     val isCurrent: Boolean = false,
+    val selectedAccent: Color = Neon,
     val onClick: () -> Unit
 )
 
+/** Whether the chip at [index] is comfortably visible - not clipped at either edge, and not off-screen entirely. */
+private fun LazyListState.isChipFullyVisible(index: Int): Boolean {
+    val item = layoutInfo.visibleItemsInfo.find { it.index == index } ?: return false
+    return item.offset >= layoutInfo.viewportStartOffset && (item.offset + item.size) <= layoutInfo.viewportEndOffset
+}
+
 /**
  * Shared horizontal chip row for tab/round/phase selection (used by both [RodadaSelector] for
- * round-robin/group-stage rounds and [KnockoutTab]'s phase/leg tabs) - scrolls the selected chip
- * into view whenever the selection changes, so tapping a chip near either edge that's only
- * partially visible brings it (and its neighbors) fully into frame instead of leaving it clipped.
+ * round-robin/group-stage rounds and [KnockoutTab]'s phase/leg tabs). Only auto-scrolls when the
+ * newly selected chip isn't already comfortably visible - i.e. tapping the last chip shown on
+ * screen (partially clipped) or a chip fully hidden off-screen brings it (and its neighbors) into
+ * frame; tapping a chip already fully visible elsewhere in the row doesn't cause any jump.
  * Also fades whichever edge still has more chips to scroll toward.
  */
 @Composable
@@ -198,7 +226,9 @@ fun TabSelectorRow(chips: List<TabChipSpec>, modifier: Modifier = Modifier) {
     val listState = rememberLazyListState()
     val selectedIndex = remember(chips) { chips.indexOfFirst { it.isSelected } }
     LaunchedEffect(selectedIndex, chips.size) {
-        if (selectedIndex != -1) listState.animateScrollToItem(selectedIndex)
+        if (selectedIndex != -1 && !listState.isChipFullyVisible(selectedIndex)) {
+            listState.animateScrollToItem(selectedIndex)
+        }
     }
     val canScrollBack by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
     val canScrollForward by remember {
@@ -225,6 +255,7 @@ fun TabSelectorRow(chips: List<TabChipSpec>, modifier: Modifier = Modifier) {
                     isUnlocked = chip.isUnlocked,
                     isPast = chip.isPast,
                     isCurrent = chip.isCurrent,
+                    selectedAccent = chip.selectedAccent,
                     onClick = chip.onClick
                 )
             }
