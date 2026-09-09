@@ -282,7 +282,7 @@ private fun computeCurrentKnockoutLabel(matches: List<Match>, labels: List<Strin
     val isVolta = label.contains("Volta")
     matches.any { m ->
         m.phase.label == base &&
-            (if (isVolta) m.id.contains("-L2") else !m.id.contains("-L2")) &&
+            (if (isVolta) m.isSecondLeg else !m.isSecondLeg) &&
             !m.isFinished
     }
 } ?: labels.lastOrNull()
@@ -431,7 +431,7 @@ private fun computeTwoLeggedPhaseMatches(matches: List<Match>, selectedLabel: St
             it.id.substringBefore("-L")
         }
     }.values.mapNotNull { pair ->
-        val leg = if (isVolta) pair.filter { it.id.contains("-L2") } else pair.filter { !it.id.contains("-L2") }
+        val leg = if (isVolta) pair.filter { it.isSecondLeg } else pair.filter { !it.isSecondLeg }
         leg.maxByOrNull(::twoLeggedRepresentativePriority)
     }.sortedBy { it.matchOrder.takeIf { o -> o > 0 } ?: NO_EXPLICIT_ORDER_SENTINEL }
 }

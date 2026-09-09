@@ -50,7 +50,7 @@ class FilterBolaoMatchesUseCase {
                 } else {
                     "order-${it.matchOrder}"
                 }
-                val leg = if (it.id.contains("-L2")) "L2" else "L1"
+                val leg = if (it.isSecondLeg) "L2" else "L1"
                 "${it.phase}-$teams-$leg"
             }
         }

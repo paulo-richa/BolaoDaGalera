@@ -312,7 +312,7 @@ fun buildFlagAnnotatedString(flag: String): AnnotatedString {
  */
 @Composable
 fun rememberFirstLegScore(match: Match, allMatches: List<Match>, isTwoLegged: Boolean): String? {
-    val isVolta = match.id.contains("-L2")
+    val isVolta = match.isSecondLeg
     return remember(match.id, allMatches, isTwoLegged, isVolta) {
         if (isTwoLegged && isVolta) {
             val firstLeg =
@@ -320,7 +320,7 @@ fun rememberFirstLegScore(match: Match, allMatches: List<Match>, isTwoLegged: Bo
                     m.championshipId == match.championshipId &&
                         m.phase == match.phase &&
                         m.id != match.id &&
-                        !m.id.contains("-L2") &&
+                        !m.isSecondLeg &&
                         (
                             (match.matchOrder > 0 && m.matchOrder == match.matchOrder) ||
                                 m.id.replace("-L1", "") == match.id.replace("-L2", "") ||

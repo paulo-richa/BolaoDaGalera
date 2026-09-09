@@ -31,6 +31,7 @@ private data class MatchDto(
     val status: String? = null,
     val championshipId: String = "UNKNOWN",
     val matchOrder: Int = 0,
+    val leg: Int? = null,
     val isManual: Boolean = false
 )
 
@@ -48,7 +49,7 @@ private fun MatchDto.toDomain(id: String) = Match(
     },
     group = group, homeScore = homeScore, awayScore = awayScore,
     status = status, championshipId = championshipId,
-    matchOrder = matchOrder, isManual = isManual
+    matchOrder = matchOrder, leg = leg, isManual = isManual
 )
 
 private fun Match.toDto() = MatchDto(
@@ -59,7 +60,7 @@ private fun Match.toDto() = MatchDto(
     matchDateMillis = matchDateMillis, phase = phase.name,
     group = group, homeScore = homeScore, awayScore = awayScore,
     status = status, championshipId = championshipId,
-    matchOrder = matchOrder, isManual = isManual
+    matchOrder = matchOrder, leg = leg, isManual = isManual
 )
 
 /**

@@ -245,6 +245,7 @@ async function syncPhase(db, admin, axios, competition, phaseConfigs, phaseKey) 
             championshipId: competition.championshipId,
             phase: phaseKey,
             matchOrder: legMatch.tieIndex + 1,
+            leg: legMatch.leg,
             group: config.displayGroup,
             matchDateMillis: legMatch.matchDateMillis,
             homeTeam: homeTeam.name,

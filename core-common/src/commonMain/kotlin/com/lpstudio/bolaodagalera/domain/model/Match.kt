@@ -21,10 +21,20 @@ data class Match(
     val status: String? = null,
     val championshipId: String = "UNKNOWN",
     val matchOrder: Int = 0,
+    val leg: Int? = null,
     val isManual: Boolean = false
 ) {
     val isFinished: Boolean get() = status == "FINISHED"
     val isUpcoming: Boolean get() = status == "TIMED" || status == "SCHEDULED" || status == null
+
+    /**
+     * Whether this is the second leg ("Volta") of a two-legged knockout tie. Prefers the
+     * explicit [leg] field (which sync code computes from real match data, e.g. home-team
+     * identity) over parsing the doc id - the id's "-L1"/"-L2" suffix is just a naming
+     * convention and isn't guaranteed to stay aligned with which leg's data actually lives
+     * there. Falls back to the id suffix only for matches synced before [leg] existed.
+     */
+    val isSecondLeg: Boolean get() = leg?.let { it == 2 } ?: id.contains("-L2")
 
     /**
      * A match is considered "stuck" if it isn't finished but its date is more than 48h in the past.
