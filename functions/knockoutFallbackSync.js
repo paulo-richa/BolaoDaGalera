@@ -260,7 +260,17 @@ async function syncPhase(db, admin, axios, competition, phaseConfigs, phaseKey) 
             source: "external-fallback"
         };
 
-        if (existing && existing.homeTeamCode && existing.awayTeamCode &&
+        // migratePredictionsIfMatchChanged assumes a team-code change means the SAME real match had
+        // its home/away sides corrected, and "fixes" predictions by swapping homeScore/awayScore in
+        // place. That assumption is actively wrong for a two-legged tie: Ida and Volta always
+        // involve the same two teams with home/away reversed, so a leg-assignment mistake (data
+        // written into the wrong leg's document) produces an IDENTICAL team-code-swap signature to a
+        // genuine mandos correction - the function can't tell them apart, and blindly "fixing"
+        // predictions in the wrong case actively corrupts them (as happened to CLI-2026-QF3 on
+        // 2026-09-09, manually reverted). groupIntoLegs/findExistingDocsByTie now assign legs
+        // deterministically by home-team identity, so this shouldn't normally fire again for a
+        // two-legged tie - but skip the migration trigger here too, as a second line of defense.
+        if (config.singleMatch && existing && existing.homeTeamCode && existing.awayTeamCode &&
             (existing.homeTeamCode !== updates.homeTeamCode || existing.awayTeamCode !== updates.awayTeamCode)) {
             migrationsNeeded.push({ matchId, oldMatch: existing, newMatch: updates });
         }
