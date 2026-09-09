@@ -522,9 +522,11 @@ private fun EmptyState(modifier: Modifier, onCreateClick: () -> Unit, onJoinClic
         Spacer(Modifier.height(8.dp))
         BolaoText(
             stringResource(Res.string.home_screen_empty_subtitle),
+            modifier = Modifier.fillMaxWidth(),
             fontSize = BolaoTypography.bodyLarge.fontSize,
             color = TextMuted,
-            lineHeight = 20.sp
+            lineHeight = 20.sp,
+            textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(32.dp))
         BolaoButton(text = stringResource(Res.string.home_screen_button_create_bolao), onClick = onCreateClick)
