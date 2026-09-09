@@ -86,6 +86,7 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoDialog
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoLoadingIndicator
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoOutlinedButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSecondaryButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
@@ -528,19 +529,7 @@ private fun EmptyState(modifier: Modifier, onCreateClick: () -> Unit, onJoinClic
         Spacer(Modifier.height(32.dp))
         BolaoButton(text = stringResource(Res.string.home_screen_button_create_bolao), onClick = onCreateClick)
         Spacer(Modifier.height(12.dp))
-        BolaoOutlinedButton(
-            onClick = onJoinClick,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape = BolaoRadiusShape.lg,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
-            contentColor = Neon
-        ) {
-            BolaoText(
-                stringResource(Res.string.home_screen_button_join_with_code),
-                fontWeight = FontWeight.SemiBold,
-                fontSize = BolaoTypography.titleLarge.fontSize
-            )
-        }
+        BolaoSecondaryButton(text = stringResource(Res.string.home_screen_button_join_with_code), onClick = onJoinClick)
     }
 }
 
