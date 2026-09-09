@@ -6,7 +6,7 @@ import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
 import bolaodagalera.feature_bolao.generated.resources.bolao_common_yesterday_chip
 import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_round
 import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_tomorrow
-import com.lpstudio.bolaodagalera.designsystem.theme.OrangeNeon
+import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -34,7 +34,7 @@ fun RodadaSelector(
                         label = yesterdayLabel,
                         isSelected = selected == YESTERDAY_ROUND,
                         isUnlocked = true,
-                        selectedAccent = OrangeNeon,
+                        selectedAccent = ErrorRed,
                         onClick = { onSelect(YESTERDAY_ROUND) }
                     )
                 )
