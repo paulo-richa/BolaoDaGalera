@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,12 +18,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -166,6 +172,77 @@ fun FilterChip(
             textAlign = TextAlign.Center,
             softWrap = false
         )
+    }
+}
+
+/** One chip's state/behavior in a [TabSelectorRow], decoupled from what it represents (a day, a round, a phase leg...). */
+data class TabChipSpec(
+    val key: String,
+    val label: String,
+    val isSelected: Boolean,
+    val isUnlocked: Boolean,
+    val isPast: Boolean = false,
+    val isCurrent: Boolean = false,
+    val onClick: () -> Unit
+)
+
+/**
+ * Shared horizontal chip row for tab/round/phase selection (used by both [RodadaSelector] for
+ * round-robin/group-stage rounds and [KnockoutTab]'s phase/leg tabs) - scrolls the selected chip
+ * into view whenever the selection changes, so tapping a chip near either edge that's only
+ * partially visible brings it (and its neighbors) fully into frame instead of leaving it clipped.
+ * Also fades whichever edge still has more chips to scroll toward.
+ */
+@Composable
+fun TabSelectorRow(chips: List<TabChipSpec>, modifier: Modifier = Modifier) {
+    val listState = rememberLazyListState()
+    val selectedIndex = remember(chips) { chips.indexOfFirst { it.isSelected } }
+    LaunchedEffect(selectedIndex, chips.size) {
+        if (selectedIndex != -1) listState.animateScrollToItem(selectedIndex)
+    }
+    val canScrollBack by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
+    val canScrollForward by remember {
+        derivedStateOf {
+            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            if (last == null) {
+                false
+            } else {
+                last.index < listState.layoutInfo.totalItemsCount - 1 || (last.offset + last.size) > listState.layoutInfo.viewportEndOffset
+            }
+        }
+    }
+    Box(modifier = modifier.fillMaxWidth()) {
+        LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth().padding(vertical = BolaoSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) {
+            items(chips, key = { it.key }) { chip ->
+                FilterChip(
+                    label = chip.label,
+                    isSelected = chip.isSelected,
+                    isUnlocked = chip.isUnlocked,
+                    isPast = chip.isPast,
+                    isCurrent = chip.isCurrent,
+                    onClick = chip.onClick
+                )
+            }
+        }
+        if (canScrollBack) {
+            Box(
+                modifier =
+                Modifier.align(Alignment.CenterStart).width(40.dp).matchParentSize()
+                    .background(Brush.horizontalGradient(listOf(DeepNavy, Color.Transparent)))
+            )
+        }
+        if (canScrollForward) {
+            Box(
+                modifier =
+                Modifier.align(Alignment.CenterEnd).width(40.dp).matchParentSize()
+                    .background(Brush.horizontalGradient(listOf(Color.Transparent, DeepNavy)))
+            )
+        }
     }
 }
 

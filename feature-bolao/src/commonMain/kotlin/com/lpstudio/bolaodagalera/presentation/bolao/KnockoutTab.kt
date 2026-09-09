@@ -8,12 +8,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -21,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -29,6 +26,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import bolaodagalera.feature_bolao.generated.resources.Res
 import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
+import bolaodagalera.feature_bolao.generated.resources.bolao_common_yesterday_chip
 import bolaodagalera.feature_bolao.generated.resources.knockout_tab_empty_message
 import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_tomorrow
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoFullScreenLoading
@@ -59,6 +57,11 @@ private const val TODAY_LABEL = "__TODAY__"
 // from Res.string.rodada_selector_chip_tomorrow (same "AMANHÃ" label used by
 // RodadaSelector).
 private const val TOMORROW_LABEL = "__TOMORROW__"
+
+// Same reasoning as TODAY_LABEL/TOMORROW_LABEL - visible text comes from
+// Res.string.bolao_common_yesterday_chip (same "ONTEM" label used by
+// RodadaSelector for the group-stage/points-based tabs).
+private const val YESTERDAY_LABEL = "__YESTERDAY__"
 private const val LIVE_WINDOW_MILLIS = 3 * 3600_000L
 
 private class KnockoutComputedState(
@@ -66,6 +69,7 @@ private class KnockoutComputedState(
     val tz: TimeZone,
     val now: Long,
     val todayDate: LocalDate,
+    val hasMatchYesterday: Boolean,
     val hasMatchToday: Boolean,
     val hasMatchTomorrow: Boolean,
     val labels: List<String>
@@ -77,10 +81,11 @@ private fun rememberKnockoutComputedState(matches: List<Match>, isTwoLegged: Boo
     val tz = TimeZone.currentSystemDefault()
     val now = TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+    val hasMatchYesterday = remember(matches, todayDate) { hasKnockoutMatchYesterday(matches, todayDate, tz) }
     val hasMatchToday = remember(matches, todayDate) { hasKnockoutMatchToday(matches, todayDate, tz, now) }
     val hasMatchTomorrow = remember(matches, todayDate) { hasKnockoutMatchTomorrow(matches, todayDate, tz) }
     val labels = remember(phaseOrder, isTwoLegged) { computeKnockoutLabels(phaseOrder, isTwoLegged) }
-    return KnockoutComputedState(phaseOrder, tz, now, todayDate, hasMatchToday, hasMatchTomorrow, labels)
+    return KnockoutComputedState(phaseOrder, tz, now, todayDate, hasMatchYesterday, hasMatchToday, hasMatchTomorrow, labels)
 }
 
 @Composable
@@ -140,6 +145,7 @@ fun KnockoutTab(
                 matches = matches,
                 labels = computed.labels,
                 selectedLabel = selectedLabel,
+                hasMatchYesterday = computed.hasMatchYesterday,
                 hasMatchToday = computed.hasMatchToday,
                 hasMatchTomorrow = computed.hasMatchTomorrow,
                 onLabelChange = onLabelChange,
@@ -259,6 +265,14 @@ private fun hasKnockoutMatchTomorrow(matches: List<Match>, todayDate: LocalDate,
     }
 }
 
+/** Yesterday's calendar date - plain calendar-day check, no live-window/early-morning special-casing (that only matters "right now"). */
+private fun hasKnockoutMatchYesterday(matches: List<Match>, todayDate: LocalDate, tz: TimeZone): Boolean {
+    val yesterdayDate = LocalDate.fromEpochDays(todayDate.toEpochDays() - 1)
+    return matches.filter { it.phase != Phase.GROUP_STAGE }.any {
+        Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz).date == yesterdayDate
+    }
+}
+
 private fun computeKnockoutLabels(phaseOrder: List<Phase>, isTwoLegged: Boolean): List<String> = if (isTwoLegged) {
     phaseOrder.flatMap { phase ->
         if (phase == Phase.FINAL || phase == Phase.THIRD_PLACE) {
@@ -356,6 +370,8 @@ private fun computeKnockoutPhaseMatches(
 ): List<Match> = when {
     selectedPhase == Phase.FRIENDLIES && selectedLabel == TOMORROW_LABEL ->
         computeTomorrowKnockoutMatches(matches, todayDate, tz)
+    selectedPhase == Phase.FRIENDLIES && selectedLabel == YESTERDAY_LABEL ->
+        computeYesterdayKnockoutMatches(matches, todayDate, tz)
     selectedPhase == Phase.FRIENDLIES -> computeTodayKnockoutMatches(matches, todayDate, tz, now)
     isTwoLegged && selectedLabel != null && selectedLabel != TODAY_LABEL && selectedLabel != TOMORROW_LABEL ->
         computeTwoLeggedPhaseMatches(matches, selectedLabel)
@@ -379,6 +395,14 @@ private fun computeTomorrowKnockoutMatches(matches: List<Match>, todayDate: Loca
     return matches.filter { it.phase != Phase.GROUP_STAGE }.filter { m ->
         val mTime = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz)
         mTime.date == tomorrowDate && mTime.hour >= EARLY_MORNING_CUTOFF_HOUR
+    }.sortedBy { it.matchDateMillis }
+}
+
+/** Same "yesterday" definition as [hasKnockoutMatchYesterday] - already happened, so plain chronological order is enough. */
+private fun computeYesterdayKnockoutMatches(matches: List<Match>, todayDate: LocalDate, tz: TimeZone): List<Match> {
+    val yesterdayDate = LocalDate.fromEpochDays(todayDate.toEpochDays() - 1)
+    return matches.filter { it.phase != Phase.GROUP_STAGE }.filter { m ->
+        Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz).date == yesterdayDate
     }.sortedBy { it.matchDateMillis }
 }
 
@@ -441,6 +465,7 @@ private fun KnockoutPhaseSelectorBar(
     matches: List<Match>,
     labels: List<String>,
     selectedLabel: String?,
+    hasMatchYesterday: Boolean,
     hasMatchToday: Boolean,
     hasMatchTomorrow: Boolean,
     onLabelChange: (String?) -> Unit,
@@ -453,11 +478,12 @@ private fun KnockoutPhaseSelectorBar(
             selectedLabel = selectedLabel,
             currentLabel = currentLabel,
             isUnlocked = true,
+            showOntem = hasMatchYesterday,
             showHoje = hasMatchToday,
             showAmanha = hasMatchTomorrow,
             onSelect = { label ->
                 onLabelChange(label)
-                if (label == TODAY_LABEL || label == TOMORROW_LABEL) {
+                if (label == TODAY_LABEL || label == TOMORROW_LABEL || label == YESTERDAY_LABEL) {
                     onPhaseChange(Phase.FRIENDLIES)
                 } else {
                     val phaseName = label?.substringBefore(" - ")
@@ -510,95 +536,70 @@ private fun LazyListScope.knockoutMatchesList(
     }
 }
 
-/** The Hoje/Amanhã chips (if applicable) followed by one chip per phase label, past/current-styled relative to [currentLabel]. */
-private fun LazyListScope.knockoutPhaseChips(
-    labels: List<String>,
-    selectedLabel: String?,
-    currentLabel: String?,
-    isUnlocked: Boolean,
-    showHoje: Boolean,
-    showAmanha: Boolean,
-    onSelect: (String?) -> Unit
-) {
-    val currentIndex = currentLabel?.let { labels.indexOf(it) } ?: -1
-    if (showHoje) {
-        item {
-            FilterChip(
-                label = stringResource(Res.string.bolao_common_today_chip),
-                isSelected = selectedLabel == TODAY_LABEL,
-                isUnlocked = true,
-                onClick = { onSelect(TODAY_LABEL) }
-            )
-        }
-    }
-    if (showAmanha) {
-        item {
-            FilterChip(
-                label = stringResource(Res.string.rodada_selector_chip_tomorrow),
-                isSelected = selectedLabel == TOMORROW_LABEL,
-                isUnlocked = true,
-                onClick = { onSelect(TOMORROW_LABEL) }
-            )
-        }
-    }
-    items(labels) { l ->
-        FilterChip(
-            label = l,
-            isSelected = selectedLabel == l,
-            isUnlocked = isUnlocked,
-            isPast = currentIndex != -1 && labels.indexOf(l) < currentIndex,
-            isCurrent = l == currentLabel,
-            onClick = { onSelect(l) }
-        )
-    }
-}
-
+/** The Ontem/Hoje/Amanhã chips (if applicable) followed by one chip per phase label, past/current-styled relative to [currentLabel]. */
 @Composable
 private fun KnockoutPhaseSelector(
     labels: List<String>,
     selectedLabel: String?,
     currentLabel: String?,
     isUnlocked: Boolean,
+    showOntem: Boolean,
     showHoje: Boolean,
     showAmanha: Boolean,
     onSelect: (String?) -> Unit
 ) {
-    val listState = rememberLazyListState()
-    val canScrollB by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
-    val canScrollF by remember {
-        derivedStateOf {
-            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            if (last == null) {
-                false
-            } else {
-                last.index < listState.layoutInfo.totalItemsCount - 1 || (last.offset + last.size) > listState.layoutInfo.viewportEndOffset
+    val currentIndex = currentLabel?.let { labels.indexOf(it) } ?: -1
+    val yesterdayLabelText = stringResource(Res.string.bolao_common_yesterday_chip)
+    val todayLabelText = stringResource(Res.string.bolao_common_today_chip)
+    val tomorrowLabelText = stringResource(Res.string.rodada_selector_chip_tomorrow)
+    val chips =
+        buildList {
+            if (showOntem) {
+                add(
+                    TabChipSpec(
+                        key = YESTERDAY_LABEL,
+                        label = yesterdayLabelText,
+                        isSelected = selectedLabel == YESTERDAY_LABEL,
+                        isUnlocked = true,
+                        onClick = { onSelect(YESTERDAY_LABEL) }
+                    )
+                )
+            }
+            if (showHoje) {
+                add(
+                    TabChipSpec(
+                        key = TODAY_LABEL,
+                        label = todayLabelText,
+                        isSelected = selectedLabel == TODAY_LABEL,
+                        isUnlocked = true,
+                        onClick = { onSelect(TODAY_LABEL) }
+                    )
+                )
+            }
+            if (showAmanha) {
+                add(
+                    TabChipSpec(
+                        key = TOMORROW_LABEL,
+                        label = tomorrowLabelText,
+                        isSelected = selectedLabel == TOMORROW_LABEL,
+                        isUnlocked = true,
+                        onClick = { onSelect(TOMORROW_LABEL) }
+                    )
+                )
+            }
+            labels.forEach { l ->
+                add(
+                    TabChipSpec(
+                        key = l,
+                        label = l,
+                        isSelected = selectedLabel == l,
+                        isUnlocked = isUnlocked,
+                        isPast = currentIndex != -1 && labels.indexOf(l) < currentIndex,
+                        isCurrent = l == currentLabel,
+                        onClick = { onSelect(l) }
+                    )
+                )
             }
         }
-    }
-    Box(modifier = Modifier.fillMaxWidth()) {
-        androidx.compose.foundation.lazy.LazyRow(
-            state = listState,
-            modifier = Modifier.fillMaxWidth().padding(vertical = BolaoSpacing.xs),
-            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
-            knockoutPhaseChips(labels, selectedLabel, currentLabel, isUnlocked, showHoje, showAmanha, onSelect)
-        }
-        if (canScrollB) {
-            Box(
-                modifier =
-                Modifier.align(
-                    Alignment.CenterStart
-                ).width(40.dp).matchParentSize().background(Brush.horizontalGradient(listOf(DeepNavy, Color.Transparent)))
-            )
-        }
-        if (canScrollF) {
-            Box(
-                modifier =
-                Modifier.align(
-                    Alignment.CenterEnd
-                ).width(40.dp).matchParentSize().background(Brush.horizontalGradient(listOf(Color.Transparent, DeepNavy)))
-            )
-        }
-    }
+    TabSelectorRow(chips)
 }

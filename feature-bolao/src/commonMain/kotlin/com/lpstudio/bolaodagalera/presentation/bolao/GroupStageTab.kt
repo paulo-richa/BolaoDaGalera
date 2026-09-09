@@ -57,6 +57,9 @@ import org.jetbrains.compose.resources.stringResource
 /** Sentinel value of [selectedRound] for the "Tomorrow" tab (0 is already used by "Today"). */
 const val TOMORROW_ROUND = -1
 
+/** Sentinel value of [selectedRound] for the "Yesterday" tab. */
+const val YESTERDAY_ROUND = -2
+
 /** Common data shared by [GroupStageTab] and [KnockoutTab] - the same underlying match/prediction state, viewed differently. */
 data class MatchTabData(
     val matches: List<Match>,
@@ -73,6 +76,9 @@ data class MatchTabActions(
     val onOpenAdminScoreDialog: (Match) -> Unit
 )
 
+/** Whether there's a match on each day-relative special tab - grouped to shorten [GroupStageComputedState]'s constructor. */
+private class DayTabAvailability(val yesterday: Boolean, val today: Boolean, val tomorrow: Boolean)
+
 private class GroupStageComputedState(
     val unlocked: Set<Int>,
     val tz: TimeZone,
@@ -81,8 +87,7 @@ private class GroupStageComputedState(
     val currentRound: Int,
     val roundMatches: List<Match>,
     val byGroup: Map<String, List<Match>>,
-    val hasMatchToday: Boolean,
-    val hasMatchTomorrow: Boolean
+    val dayTabAvailability: DayTabAvailability
 )
 
 @Composable
@@ -91,13 +96,20 @@ private fun rememberGroupStageComputedState(matches: List<Match>, selectedRound:
     val tz = TimeZone.currentSystemDefault()
     val now = TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+    val yesterdayDate = remember(todayDate) { LocalDate.fromEpochDays(todayDate.toEpochDays() - 1) }
     val tomorrowDate = remember(todayDate) { LocalDate.fromEpochDays(todayDate.toEpochDays() + 1) }
-    val hasMatchToday = remember(matches, todayDate) { matches.any { it.isOnDate(todayDate, tz) } }
-    val hasMatchTomorrow = remember(matches, tomorrowDate) { matches.any { it.isOnDate(tomorrowDate, tz) } }
+    val dayTabAvailability =
+        remember(matches, yesterdayDate, todayDate, tomorrowDate) {
+            DayTabAvailability(
+                yesterday = matches.any { it.isOnDate(yesterdayDate, tz) },
+                today = matches.any { it.isOnDate(todayDate, tz) },
+                tomorrow = matches.any { it.isOnDate(tomorrowDate, tz) }
+            )
+        }
     val currentRound = remember(matches, now) { computeCurrentGroupRound(matches, now) }
     val roundMatches =
-        remember(matches, selectedRound, todayDate, tomorrowDate, now) {
-            computeGroupRoundMatches(matches, selectedRound, todayDate, tomorrowDate, tz, now)
+        remember(matches, selectedRound, todayDate, tomorrowDate, yesterdayDate, now) {
+            computeGroupRoundMatches(matches, selectedRound, todayDate, tomorrowDate, yesterdayDate, tz, now)
         }
     val byGroup = remember(roundMatches) { roundMatches.groupBy { it.group ?: "" } }
     return GroupStageComputedState(
@@ -108,8 +120,7 @@ private fun rememberGroupStageComputedState(matches: List<Match>, selectedRound:
         currentRound = currentRound,
         roundMatches = roundMatches,
         byGroup = byGroup,
-        hasMatchToday = hasMatchToday,
-        hasMatchTomorrow = hasMatchTomorrow
+        dayTabAvailability = dayTabAvailability
     )
 }
 
@@ -165,8 +176,9 @@ fun GroupStageTab(
         GroupStageRoundSelectorBar(
             selectedRound = selectedRound,
             unlocked = computed.unlocked,
-            hasMatchToday = computed.hasMatchToday,
-            hasMatchTomorrow = computed.hasMatchTomorrow,
+            hasMatchYesterday = computed.dayTabAvailability.yesterday,
+            hasMatchToday = computed.dayTabAvailability.today,
+            hasMatchTomorrow = computed.dayTabAvailability.tomorrow,
             currentRound = computed.currentRound,
             onRoundChange = onRoundChange
         )
@@ -177,7 +189,7 @@ fun GroupStageTab(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(BolaoSpacing.xs)
             ) {
-                val isDayTab = selectedRound == 0 || selectedRound == TOMORROW_ROUND
+                val isDayTab = selectedRound == 0 || selectedRound == TOMORROW_ROUND || selectedRound == YESTERDAY_ROUND
                 if (computed.roundMatches.isEmpty() && isDayTab) {
                     groupStageEmptyState(selectedRound)
                 }
@@ -224,6 +236,7 @@ private fun computeGroupRoundMatches(
     selectedRound: Int,
     todayDate: LocalDate,
     tomorrowDate: LocalDate,
+    yesterdayDate: LocalDate,
     tz: TimeZone,
     now: Long
 ): List<Match> = when (selectedRound) {
@@ -233,6 +246,8 @@ private fun computeGroupRoundMatches(
         }.sortedBy { it.matchDateMillis }
     TOMORROW_ROUND ->
         matches.filter { it.isOnDate(tomorrowDate, tz) }.sortedBy { it.matchDateMillis }
+    YESTERDAY_ROUND ->
+        matches.filter { it.isOnDate(yesterdayDate, tz) }.sortedBy { it.matchDateMillis }
     else ->
         matches.filter { it.groupRound() == selectedRound }.sortedBy { it.matchDateMillis }
 }
@@ -329,6 +344,7 @@ private fun groupStageScrollIndex(sorted: List<Map.Entry<String, List<Match>>>, 
 private fun GroupStageRoundSelectorBar(
     selectedRound: Int,
     unlocked: Set<Int>,
+    hasMatchYesterday: Boolean,
     hasMatchToday: Boolean,
     hasMatchTomorrow: Boolean,
     currentRound: Int,
@@ -338,11 +354,13 @@ private fun GroupStageRoundSelectorBar(
         RodadaSelector(
             selected = selectedRound,
             unlocked = unlocked,
+            showOntem = hasMatchYesterday,
             showHoje = hasMatchToday,
             showAmanha = hasMatchTomorrow,
             currentRound = currentRound,
             onSelect = {
-                if (it == 0 || it == TOMORROW_ROUND || it in unlocked) onRoundChange(it)
+                val isDaySentinel = it == 0 || it == TOMORROW_ROUND || it == YESTERDAY_ROUND
+                if (isDaySentinel || it in unlocked) onRoundChange(it)
             }
         )
     }

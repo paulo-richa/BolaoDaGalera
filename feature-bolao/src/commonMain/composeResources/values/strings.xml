@@ -2,6 +2,7 @@
 <resources>
     <!-- Shared (bolao feature: date formatting, "hoje" chip, two-legged phase suffixes) -->
     <string name="bolao_common_today_chip">HOJE</string>
+    <string name="bolao_common_yesterday_chip">ONTEM</string>
     <string name="bolao_common_phase_first_leg">%1$s - Ida</string>
     <string name="bolao_common_phase_second_leg">%1$s - Volta</string>
     <string name="bolao_common_date_tbd">Data a definir</string>
