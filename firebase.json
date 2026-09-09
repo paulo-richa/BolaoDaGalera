@@ -27,7 +27,7 @@
     "trailingSlash": false,
     "rewrites": [
       {
-        "source": "/invite/**",
+        "source": "/invite",
         "destination": "/index.html"
       }
     ],
