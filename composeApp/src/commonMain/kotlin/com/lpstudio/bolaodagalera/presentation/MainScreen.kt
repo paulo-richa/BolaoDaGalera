@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
@@ -144,6 +143,7 @@ private fun CreateBolaoMenuOverlay(visible: Boolean, onCreateBolao: () -> Unit, 
 private fun CreateBolaoMenuOptions(onCreateBolao: () -> Unit, onJoinBolao: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = BolaoSpacing.xxl, vertical = BolaoSpacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
     ) {
         CreateMenuOption(
@@ -166,12 +166,11 @@ private fun CreateMenuOption(icon: ImageVector, label: String, onClick: () -> Un
         horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md),
         modifier =
         Modifier
-            .fillMaxWidth()
             .clip(BolaoRadiusShape.md)
             .background(NavyElevated)
             .border(1.dp, GlassBorder, BolaoRadiusShape.md)
             .clickable(onClick = onClick)
-            .padding(horizontal = BolaoSpacing.lg, vertical = BolaoSpacing.md)
+            .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.md)
     ) {
         BolaoIcon(icon, null, modifier = Modifier.size(18.dp), tint = Neon)
         BolaoText(label, fontSize = BolaoTypography.bodyLarge.fontSize, color = Color.White, fontWeight = FontWeight.Bold)
@@ -221,9 +220,12 @@ private fun TabItem(icon: ImageVector, label: String, isSelected: Boolean, onCli
     val color by animateColorAsState(if (isSelected) Neon else TextMuted)
 
     Column(
+        // Same shape as every other clickable row in the app (BolaoRadiusShape.md) - a
+        // CircleShape here stretches into an oval instead of a circle, since it's clipping a
+        // taller-than-wide icon+label column rather than a square touch target.
         modifier =
         Modifier
-            .clip(CircleShape)
+            .clip(BolaoRadiusShape.md)
             .clickable(onClick = onClick)
             .padding(BolaoSpacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
