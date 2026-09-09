@@ -11,12 +11,16 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
+
+private const val SAVE_PROFILE_MAX_ATTEMPTS = 3
+private const val SAVE_PROFILE_RETRY_DELAY_MILLIS = 800L
 
 @Serializable
 private data class UserDto(
@@ -116,15 +120,39 @@ class FirebaseAuthRepository(private val crashReporter: CrashReporter) : AuthRep
             logger.w(e) { "Falha ao atualizar displayName no Auth (não bloqueia o cadastro)" }
         }
 
-        // Save or update the profile in Firestore
-        usersCollection.document(user.uid).set(
-            UserDto(name = name, email = user.email ?: "", phone = phone, nickname = nickname, username = username),
-            merge = true
+        // Save or update the profile in Firestore. Right after createUserWithEmailAndPassword,
+        // the ID token backing this write hasn't always propagated to the Firestore client yet -
+        // security rules require request.auth.uid == userId, and that check can transiently see
+        // no/stale auth on the first attempt, failing with a permission-denied that resolves on
+        // its own a moment later. Retrying a couple of times covers that race instead of forcing
+        // the new user to tap "criar conta" again themselves.
+        saveUserProfileWithRetry(
+            user.uid,
+            UserDto(name = name, email = user.email ?: "", phone = phone, nickname = nickname, username = username)
         )
 
         val finalUser = User(user.uid, name, user.email ?: "", phone, nickname, username)
         cachedUser = finalUser
         return finalUser
+    }
+
+    /** See the comment at the register() call site for why this retries on permission-denied. */
+    private suspend fun saveUserProfileWithRetry(uid: String, dto: UserDto) {
+        var attempt = 0
+        while (true) {
+            try {
+                usersCollection.document(uid).set(dto, merge = true)
+                return
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                attempt++
+                val isPermissionError = e.message?.lowercase()?.contains("permission") == true
+                if (!isPermissionError || attempt >= SAVE_PROFILE_MAX_ATTEMPTS) throw e
+                logger.w(e) { "Permissão negada ao salvar perfil (tentativa $attempt), tentando de novo" }
+                delay(SAVE_PROFILE_RETRY_DELAY_MILLIS)
+            }
+        }
     }
 
     override suspend fun signOut() {
