@@ -67,6 +67,30 @@
         .links a:hover {
             color: #00FFB2;
         }
+        .code-box {
+            display: none;
+            margin: 30px auto 0;
+            padding: 16px 24px;
+            border: 1px solid #2A3542;
+            border-radius: 16px;
+            max-width: 320px;
+        }
+        .code-box p {
+            margin: 0 0 8px;
+            font-size: 0.95em;
+        }
+        .code-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            color: #00FFB2;
+        }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid #00D1FF;
+            color: #00D1FF;
+            margin-left: 12px;
+        }
     </style>
 </head>
 <body>
@@ -76,12 +100,38 @@
         <h1>Bolão da Galera</h1>
         <p>A forma mais épica de organizar seus palpites para a Copa 2026 com seus amigos.</p>
 
-        <a href="#" class="btn">Em breve na Google Play</a>
+        <div>
+            <a id="playStoreBtn" href="https://play.google.com/store/apps/details?id=com.lpstudio.bolaodagalera" class="btn">Baixar na Google Play</a>
+            <a id="openAppBtn" href="#" class="btn btn-secondary" style="display: none;">Abrir no app</a>
+        </div>
+
+        <!-- Se o navegador não conseguir abrir o app direto pelo link (App Link não
+             verificado, ou clique veio de dentro de um webview do WhatsApp/Instagram
+             que ignora App Links), o código do convite fica visível aqui como rede de
+             segurança - sem isso, quem instala o app depois de clicar no link perdia o
+             código, já que não há deep link diferido (Play Install Referrer/Dynamic
+             Links) implementado neste projeto. -->
+        <div id="codeBox" class="code-box">
+            <p>Depois de instalar, abra o app e entre com o código:</p>
+            <div class="code-value" id="codeValue"></div>
+        </div>
 
         <div class="links">
             <a href="privacy-policy">Política de Privacidade</a>
             <a href="mailto:richa.lpstudio@gmail.com">Suporte</a>
         </div>
     </div>
+
+    <script>
+        const code = new URLSearchParams(window.location.search).get("code");
+        if (code) {
+            document.getElementById("codeValue").textContent = code;
+            document.getElementById("codeBox").style.display = "block";
+
+            const openAppBtn = document.getElementById("openAppBtn");
+            openAppBtn.href = "bolaodagalera://invite?code=" + encodeURIComponent(code);
+            openAppBtn.style.display = "inline-block";
+        }
+    </script>
 </body>
 </html>

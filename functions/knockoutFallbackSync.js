@@ -37,7 +37,19 @@ function tieIndexFor(config, teamAKey, teamBKey) {
     );
 }
 
-/** Groups the scraped cards by tie and assigns leg 1/2 by date order (earlier = leg 1); a single-match phase keeps only the earliest card. */
+/**
+ * Groups the scraped cards by tie and assigns leg 1/2. For a single-match phase, keeps only the
+ * earliest card. For a two-legged tie, leg is decided by which side is home, matching this tie's
+ * fixed [leg-1-home, leg-2-home] orientation from config.ties - NOT by date order among whatever
+ * happens to be on the source page during this run. A leg that's already been played can drop
+ * off the "upcoming" listing entirely before the other leg is even scraped (it only remains
+ * visible via a separate /resultados page - see knockoutResultsScraper.js's scrapePhase); picking
+ * leg 1 as "whichever match is earliest of what's listed right now" then silently overwrites the
+ * already-played leg's document with the still-upcoming leg's data instead. This actually
+ * happened for CLI-2026-QF3 (Fluminense x Platense): once the Fluminense-home leg finished and
+ * fell off the fixtures page, the still-upcoming Platense-home leg became "the only/earliest"
+ * card found and got written into the Fluminense-home (leg 1) document.
+ */
 function groupIntoLegs(competition, config, rawMatches) {
     const normalize = (rawName) => competition.nameAliases[rawName] || rawName;
     const byTie = config.ties.map(() => []);
@@ -53,15 +65,20 @@ function groupIntoLegs(competition, config, rawMatches) {
         byTie[tieIndex].push({ ...raw, teamAKey, teamBKey });
     }
 
-    const legsPerTie = config.singleMatch ? 1 : 2;
     const legs = [];
     byTie.forEach((matches, tieIndex) => {
-        matches
-            .sort((a, b) => a.matchDateMillis - b.matchDateMillis)
-            .slice(0, legsPerTie)
-            .forEach((match, legIdx) => {
-                legs.push({ ...match, tieIndex, leg: legIdx + 1 });
-            });
+        if (config.singleMatch) {
+            const earliest = matches.sort((a, b) => a.matchDateMillis - b.matchDateMillis)[0];
+            if (earliest) legs.push({ ...earliest, tieIndex, leg: 1 });
+            return;
+        }
+
+        const legByNumber = new Map();
+        matches.forEach((match) => {
+            const leg = match.teamAKey === config.ties[tieIndex][0] ? 1 : 2;
+            legByNumber.set(leg, match);
+        });
+        legByNumber.forEach((match, leg) => legs.push({ ...match, tieIndex, leg }));
     });
     return legs;
 }
@@ -96,20 +113,29 @@ function matchesRefFor(db, competition) {
  * which numbers ties by API response order, not the fixed order used here) -
  * without this, we'd create a second, empty document for a match a user
  * already predicted against under a different ID.
+ *
+ * Leg is resolved by home-team identity against tieCodes[tieIndex][0]/[1],
+ * the same fixed orientation groupIntoLegs uses - NOT by sorting the existing
+ * docs by their stored matchDateMillis and matching by position. That
+ * position-based matching is exactly what caused CLI-2026-QF3's fix above to
+ * still land in the wrong document: once L1 held a corrupted (wrong-leg)
+ * date, sorting by date put L2 first, so the newly-fixed leg-1 data got
+ * written into the L2 document instead of L1.
  */
 async function findExistingDocsByTie(matchesRef, phaseKey, competition, config) {
     const tieCodes = tieCodesFor(competition, config);
     const snap = await matchesRef.where("phase", "==", phaseKey).get();
-    const byTie = config.ties.map(() => []);
+    const byTie = config.ties.map(() => ({}));
 
     snap.forEach((doc) => {
         const data = doc.data();
         const tieIndex = tieIndexForCodes(tieCodes, data.homeTeamCode, data.awayTeamCode);
         if (tieIndex === -1) return;
-        byTie[tieIndex].push({ id: doc.id, data });
+        const leg = data.homeTeamCode === tieCodes[tieIndex][0] ? 1 : 2;
+        byTie[tieIndex][leg] = { id: doc.id, data };
     });
 
-    return byTie.map((docs) => docs.sort((a, b) => (a.data.matchDateMillis || 0) - (b.data.matchDateMillis || 0)));
+    return byTie;
 }
 
 // Minutes after kickoff to re-check a still-unfinished match: 2h30 covers
@@ -194,8 +220,8 @@ async function syncPhase(db, admin, axios, competition, phaseConfigs, phaseKey) 
     const migrationsNeeded = [];
 
     for (const legMatch of legs) {
-        const existingForTie = existingDocsByTie[legMatch.tieIndex] || [];
-        const matchedExisting = existingForTie[legMatch.leg - 1];
+        const existingForTie = existingDocsByTie[legMatch.tieIndex] || {};
+        const matchedExisting = existingForTie[legMatch.leg];
         const matchId = matchedExisting ? matchedExisting.id : matchIdFor(competition, config, legMatch.tieIndex, legMatch.leg);
         const homeTeam = teamFieldsFor(competition, legMatch.teamAKey);
         const awayTeam = teamFieldsFor(competition, legMatch.teamBKey);
@@ -219,6 +245,7 @@ async function syncPhase(db, admin, axios, competition, phaseConfigs, phaseKey) 
             championshipId: competition.championshipId,
             phase: phaseKey,
             matchOrder: legMatch.tieIndex + 1,
+            leg: legMatch.leg,
             group: config.displayGroup,
             matchDateMillis: legMatch.matchDateMillis,
             homeTeam: homeTeam.name,
@@ -233,7 +260,17 @@ async function syncPhase(db, admin, axios, competition, phaseConfigs, phaseKey) 
             source: "external-fallback"
         };
 
-        if (existing && existing.homeTeamCode && existing.awayTeamCode &&
+        // migratePredictionsIfMatchChanged assumes a team-code change means the SAME real match had
+        // its home/away sides corrected, and "fixes" predictions by swapping homeScore/awayScore in
+        // place. That assumption is actively wrong for a two-legged tie: Ida and Volta always
+        // involve the same two teams with home/away reversed, so a leg-assignment mistake (data
+        // written into the wrong leg's document) produces an IDENTICAL team-code-swap signature to a
+        // genuine mandos correction - the function can't tell them apart, and blindly "fixing"
+        // predictions in the wrong case actively corrupts them (as happened to CLI-2026-QF3 on
+        // 2026-09-09, manually reverted). groupIntoLegs/findExistingDocsByTie now assign legs
+        // deterministically by home-team identity, so this shouldn't normally fire again for a
+        // two-legged tie - but skip the migration trigger here too, as a second line of defense.
+        if (config.singleMatch && existing && existing.homeTeamCode && existing.awayTeamCode &&
             (existing.homeTeamCode !== updates.homeTeamCode || existing.awayTeamCode !== updates.awayTeamCode)) {
             migrationsNeeded.push({ matchId, oldMatch: existing, newMatch: updates });
         }

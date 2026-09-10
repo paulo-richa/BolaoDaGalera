@@ -89,9 +89,9 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoDialog
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoHorizontalDivider
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
-import com.lpstudio.bolaodagalera.designsystem.components.BolaoOutlinedButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoRadioButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoScaffold
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSecondaryButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
@@ -522,19 +522,7 @@ private fun CreateBolaoSuccessDialogActions(onAddParticipants: () -> Unit, onSha
             text = stringResource(Res.string.create_bolao_button_add_participants),
             onClick = onAddParticipants
         )
-        BolaoOutlinedButton(
-            onClick = onShare,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape = BolaoRadiusShape.lg,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
-            contentColor = Neon
-        ) {
-            BolaoText(
-                stringResource(Res.string.create_bolao_button_share_code),
-                fontWeight = FontWeight.SemiBold,
-                fontSize = BolaoTypography.titleLarge.fontSize
-            )
-        }
+        BolaoSecondaryButton(text = stringResource(Res.string.create_bolao_button_share_code), onClick = onShare)
         BolaoTextButton(
             modifier = Modifier.fillMaxWidth(),
             onClick = onGoToBolao

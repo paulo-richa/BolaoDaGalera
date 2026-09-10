@@ -25,6 +25,9 @@
     <string name="home_screen_notification_empty">Tudo em dia! Sem alertas por enquanto.</string>
     <string name="home_screen_button_accept">Aceitar</string>
     <string name="home_screen_notification_dialog_close">FECHAR</string>
+    <string name="home_screen_notifications_disabled_title">Notificações desativadas</string>
+    <string name="home_screen_notifications_disabled_message">Você não vai receber avisos de convites, resultados e novidades. Ative nas configurações do aparelho.</string>
+    <string name="home_screen_notifications_disabled_button">ATIVAR</string>
 
     <!-- HelpScreen -->
     <string name="help_screen_button_send_request">ENVIAR SOLICITAÇÃO</string>

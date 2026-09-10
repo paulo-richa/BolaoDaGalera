@@ -22,7 +22,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    targetProjectPath = ":composeApp"
+    targetProjectPath = ":androidApp"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -31,7 +31,7 @@ android {
 }
 
 // This module only generates baseline profiles - it's never released, so the standard
-// AGP "release" build type it inherits from :composeApp is all it needs (no debug variant
+// AGP "release" build type it inherits from :androidApp is all it needs (no debug variant
 // noise to opt out of).
 baselineProfile {
     useConnectedDevices = true

@@ -51,13 +51,13 @@ private fun qfSourceMatchId(matchId: String, allMatches: List<Match>, isHome: Bo
 private fun sfSourceMatchId(matchId: String, allMatches: List<Match>, isHome: Boolean): String? {
     val num = bracketMatchNumber(matchId, "SF")
     val originQfOrder = if (isHome) (num * 2 - 1) else (num * 2)
-    return allMatches.find { it.phase == Phase.QUARTERFINALS && it.matchOrder == originQfOrder && !it.id.contains("-L2") }?.id
+    return allMatches.find { it.phase == Phase.QUARTERFINALS && it.matchOrder == originQfOrder && !it.isSecondLeg }?.id
 }
 
 /** The semifinal match feeding the final's home/away slot. */
 private fun finalSourceMatchId(allMatches: List<Match>, isHome: Boolean): String? {
     val originSfOrder = if (isHome) 1 else 2
-    return allMatches.find { it.phase == Phase.SEMIFINALS && it.matchOrder == originSfOrder && !it.id.contains("-L2") }?.id
+    return allMatches.find { it.phase == Phase.SEMIFINALS && it.matchOrder == originSfOrder && !it.isSecondLeg }?.id
 }
 
 /** Determines the source match ID feeding into [matchId]'s home/away slot, based on the sequential bracket logic. */

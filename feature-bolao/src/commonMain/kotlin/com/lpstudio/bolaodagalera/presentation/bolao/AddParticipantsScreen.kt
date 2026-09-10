@@ -1,6 +1,5 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -52,7 +50,7 @@ import bolaodagalera.feature_bolao.generated.resources.add_participants_success_
 import bolaodagalera.feature_bolao.generated.resources.add_participants_top_bar_title
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
-import com.lpstudio.bolaodagalera.designsystem.components.BolaoOutlinedButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSecondaryButton
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextField
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTopBar
@@ -62,7 +60,6 @@ import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
-import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.SuccessGreen
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
@@ -241,21 +238,11 @@ private fun AddParticipantsActions(isLoading: Boolean, canSend: Boolean, onSendI
 
     Spacer(Modifier.height(16.dp))
 
-    BolaoOutlinedButton(
+    BolaoSecondaryButton(
+        text = stringResource(Res.string.add_participants_button_share_link),
         onClick = onShareClick,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-        shape = BolaoRadiusShape.lg,
-        border = BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
-        contentColor = Neon
-    ) {
-        BolaoIcon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        BolaoText(
-            stringResource(Res.string.add_participants_button_share_link),
-            fontWeight = FontWeight.SemiBold,
-            fontSize = BolaoTypography.titleLarge.fontSize
-        )
-    }
+        icon = { BolaoIcon(Icons.Default.Share, null, modifier = Modifier.size(18.dp)) }
+    )
 }
 
 @Composable

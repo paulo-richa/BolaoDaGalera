@@ -50,6 +50,7 @@ async function syncLibertadores(db, admin, axios) {
 
                 let matchId = `CLI-2026-M${m.id}`;
                 let knockoutOrder = 0;
+                let leg = null;
 
                 let hName = m.homeTeam?.name || "A definir";
                 let aName = m.awayTeam?.name || "A definir";
@@ -59,6 +60,7 @@ async function syncLibertadores(db, admin, axios) {
                 if (mappedPhase === "ROUND_OF_16") {
                     knockoutOrder = r16Mapping[m.id] || 0;
                     const isVolta = m.matchday === 2 || m.id > 564462;
+                    leg = isVolta ? 2 : 1;
 
                     // PRODUCTION ID MAP (based on users' real existing predictions)
                     const productionIds = {
@@ -133,6 +135,7 @@ async function syncLibertadores(db, admin, axios) {
                     championshipId: "LIBERTADORES",
                     phase: mappedPhase,
                     matchOrder: knockoutOrder,
+                    leg,
                     group: m.group || (m.matchday ? `Rodada ${m.matchday}` : m.stage),
                     matchDateMillis: matchTime,
                     lastSync: admin.firestore.FieldValue.serverTimestamp(),

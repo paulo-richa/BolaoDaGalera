@@ -41,6 +41,9 @@ kotlin {
             api(libs.compose.material.icons.core)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.components.resources)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
+            implementation(libs.coil.svg)
         }
     }
 }

@@ -25,9 +25,19 @@ actual fun rememberLauncherProvider(): LauncherProvider = object : LauncherProvi
     override fun sendWhatsApp(phone: String, text: String) {
         // WhatsApp logic for iOS
     }
+
+    override fun openNotificationSettings() {
+        // Notification settings logic for iOS
+    }
 }
 
 @Composable
 actual fun CommonBackHandler(enabled: Boolean, onBack: () -> Unit) {
     // No back button on iOS
 }
+
+@Composable
+actual fun rememberAreNotificationsEnabled(): Boolean = true
+
+@Composable
+actual fun rememberNotificationBannerPrefs(): NotificationBannerPrefs = NotificationBannerPrefs(lastShownMillis = 0L, markShown = {})

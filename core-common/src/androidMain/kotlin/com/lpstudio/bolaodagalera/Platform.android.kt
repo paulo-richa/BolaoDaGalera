@@ -1,12 +1,22 @@
 package com.lpstudio.bolaodagalera
 
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 actual fun getPlatform(): Platform = object : Platform {
     override val name: String = "Android ${android.os.Build.VERSION.SDK_INT}"
@@ -61,6 +71,18 @@ actual fun rememberLauncherProvider(): LauncherProvider {
                     }
                 context.startActivity(intent)
             }
+
+            override fun openNotificationSettings() {
+                val intent =
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        android.content.Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    } else {
+                        android.content.Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            .setData("package:${context.packageName}".toUri())
+                    }
+                context.startActivity(intent)
+            }
         }
     }
 }
@@ -68,4 +90,45 @@ actual fun rememberLauncherProvider(): LauncherProvider {
 @Composable
 actual fun CommonBackHandler(enabled: Boolean, onBack: () -> Unit) {
     BackHandler(enabled, onBack)
+}
+
+@Composable
+actual fun rememberAreNotificationsEnabled(): Boolean {
+    val context = LocalContext.current
+    var enabled by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    enabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    return enabled
+}
+
+private const val PREFS_NAME = "bolao_local_prefs"
+private const val KEY_NOTIFICATION_BANNER_LAST_SHOWN_MILLIS = "notification_banner_last_shown_millis"
+
+@Composable
+actual fun rememberNotificationBannerPrefs(): NotificationBannerPrefs {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE) }
+    var lastShownMillis by remember { mutableStateOf(prefs.getLong(KEY_NOTIFICATION_BANNER_LAST_SHOWN_MILLIS, 0L)) }
+
+    return remember(lastShownMillis) {
+        NotificationBannerPrefs(
+            lastShownMillis = lastShownMillis,
+            markShown = {
+                val now = System.currentTimeMillis()
+                prefs.edit().putLong(KEY_NOTIFICATION_BANNER_LAST_SHOWN_MILLIS, now).apply()
+                lastShownMillis = now
+            }
+        )
+    }
 }

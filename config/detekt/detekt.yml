@@ -131,6 +131,8 @@ exceptions:
       - '**/domain/usecase/GenerateAvailableUsernameUseCase.kt'
       - '**/presentation/auth/RegisterScreen.kt'
       - '**/App.kt'
+      - '**/MainActivity.kt'
+      - '**/notification/BolaoFirebaseMessagingService.kt'
   # The Firebase repositories deliberately fail open on read/cleanup calls (return
   # a fallback value or silently skip a best-effort side effect) rather than
   # propagating a network/permission error up into the UI - the same boundary

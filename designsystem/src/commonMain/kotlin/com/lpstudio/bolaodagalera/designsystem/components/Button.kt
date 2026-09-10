@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +32,7 @@ import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientPrimary
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
+import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 
 @Composable
@@ -102,6 +104,36 @@ fun BolaoOutlinedButton(
     )
 }
 
+/**
+ * The outlined counterpart to [BolaoButton] - same height/shape/text style, Neon border
+ * instead of a filled gradient. Use for a screen's secondary action alongside a primary
+ * [BolaoButton] (e.g. "Entrar com código" under "Criar bolão"). [icon], when given, renders
+ * before the text with the same 8dp gap every call site was already using by hand.
+ */
+@Composable
+fun BolaoSecondaryButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: (@Composable () -> Unit)? = null,
+    onClick: () -> Unit
+) {
+    BolaoOutlinedButton(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().height(52.dp),
+        enabled = enabled,
+        shape = BolaoRadiusShape.lg,
+        border = BorderStroke(1.dp, Neon.copy(alpha = 0.5f)),
+        contentColor = Neon
+    ) {
+        if (icon != null) {
+            icon()
+            Spacer(Modifier.size(8.dp))
+        }
+        Text(text, style = BolaoTypography.labelLarge, color = if (enabled) Neon else TextMuted)
+    }
+}
+
 @Composable
 fun BolaoTextButton(
     onClick: () -> Unit,
@@ -142,5 +174,13 @@ private fun BolaoButtonLoadingPreview() {
 private fun BolaoButtonDisabledPreview() {
     BolaoTheme {
         BolaoButton(text = "Entrar", enabled = false, onClick = {})
+    }
+}
+
+@Preview
+@Composable
+private fun BolaoSecondaryButtonPreview() {
+    BolaoTheme {
+        BolaoSecondaryButton(text = "Entrar com código", onClick = {})
     }
 }

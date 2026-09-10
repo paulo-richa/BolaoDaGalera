@@ -6,6 +6,20 @@ const { relevantMatchesForBolao } = require("./dailyDigest");
 const REMINDER_WINDOW_MILLIS = 60 * 60 * 1000;
 
 /**
+ * Mirrors the placeholder detection in MatchUtils.kt (resolveDisplayName) -
+ * a knockout match whose teams aren't decided yet (e.g. "Vencedor Oitavas")
+ * can't be predicted, so reminding a user to predict it is nonsensical.
+ */
+function isPlaceholderTeam(teamName) {
+    return !teamName ||
+        teamName === "TBD" ||
+        teamName.startsWith("Vencedor") ||
+        teamName.startsWith("Perdedor") ||
+        teamName.includes("/") ||
+        teamName.includes(" ou ");
+}
+
+/**
  * Marks matchReminders/{bolaoId}_{matchId}_{userId} to never send the same
  * reminder twice, even when running every few minutes and covering the
  * same 1h window across successive runs. create() fails if the document
@@ -33,6 +47,7 @@ async function findMatchesStartingSoon(db, now) {
     snap.forEach((doc) => {
         const m = doc.data();
         if (!m.championshipId) return;
+        if (isPlaceholderTeam(m.homeTeam) || isPlaceholderTeam(m.awayTeam)) return;
         if (!matchesByChampionship[m.championshipId]) matchesByChampionship[m.championshipId] = [];
         matchesByChampionship[m.championshipId].push({
             id: doc.id,

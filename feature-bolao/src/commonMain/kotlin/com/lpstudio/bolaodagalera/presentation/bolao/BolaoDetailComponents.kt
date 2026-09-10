@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,12 +18,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -96,24 +103,42 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
-private fun filterChipBorderColor(isSelected: Boolean, isUnlocked: Boolean, isPast: Boolean, isCurrent: Boolean): Color = when {
-    isSelected && isUnlocked -> Neon
+private fun filterChipBorderColor(
+    isSelected: Boolean,
+    isUnlocked: Boolean,
+    isPast: Boolean,
+    isCurrent: Boolean,
+    selectedAccent: Color
+): Color = when {
+    isSelected && isUnlocked -> selectedAccent
     isCurrent -> Gold
     isPast -> Color.Transparent
     isUnlocked -> GlassBorder
     else -> Color.Transparent
 }
 
-private fun filterChipBackgroundColor(isSelected: Boolean, isUnlocked: Boolean, isPast: Boolean, isCurrent: Boolean): Color = when {
-    isSelected && isUnlocked -> Neon.copy(alpha = 0.12f)
+private fun filterChipBackgroundColor(
+    isSelected: Boolean,
+    isUnlocked: Boolean,
+    isPast: Boolean,
+    isCurrent: Boolean,
+    selectedAccent: Color
+): Color = when {
+    isSelected && isUnlocked -> selectedAccent.copy(alpha = 0.12f)
     isCurrent -> Gold.copy(alpha = 0.12f)
     isPast -> DeepNavy
     isUnlocked -> NavyElevated
     else -> NavyCard.copy(alpha = 0.5f)
 }
 
-private fun filterChipTextColor(isSelected: Boolean, isUnlocked: Boolean, isPast: Boolean, isCurrent: Boolean): Color = when {
-    isSelected && isUnlocked -> Neon
+private fun filterChipTextColor(
+    isSelected: Boolean,
+    isUnlocked: Boolean,
+    isPast: Boolean,
+    isCurrent: Boolean,
+    selectedAccent: Color
+): Color = when {
+    isSelected && isUnlocked -> selectedAccent
     isCurrent -> Gold
     isPast -> TextMuted.copy(alpha = 0.55f)
     isUnlocked -> Color.White
@@ -128,18 +153,19 @@ fun FilterChip(
     modifier: Modifier = Modifier,
     isPast: Boolean = false,
     isCurrent: Boolean = false,
+    selectedAccent: Color = Neon,
     onClick: () -> Unit
 ) {
     val bColor by animateColorAsState(
-        filterChipBorderColor(isSelected, isUnlocked, isPast, isCurrent),
+        filterChipBorderColor(isSelected, isUnlocked, isPast, isCurrent, selectedAccent),
         label = "border_$label"
     )
     val cColor by animateColorAsState(
-        filterChipBackgroundColor(isSelected, isUnlocked, isPast, isCurrent),
+        filterChipBackgroundColor(isSelected, isUnlocked, isPast, isCurrent, selectedAccent),
         label = "bg_$label"
     )
     val tColor by animateColorAsState(
-        filterChipTextColor(isSelected, isUnlocked, isPast, isCurrent),
+        filterChipTextColor(isSelected, isUnlocked, isPast, isCurrent, selectedAccent),
         label = "text_$label"
     )
     Box(
@@ -166,6 +192,88 @@ fun FilterChip(
             textAlign = TextAlign.Center,
             softWrap = false
         )
+    }
+}
+
+/** One chip's state/behavior in a [TabSelectorRow], decoupled from what it represents (a day, a round, a phase leg...). */
+data class TabChipSpec(
+    val key: String,
+    val label: String,
+    val isSelected: Boolean,
+    val isUnlocked: Boolean,
+    val isPast: Boolean = false,
+    val isCurrent: Boolean = false,
+    val selectedAccent: Color = Neon,
+    val onClick: () -> Unit
+)
+
+/** Whether the chip at [index] is comfortably visible - not clipped at either edge, and not off-screen entirely. */
+private fun LazyListState.isChipFullyVisible(index: Int): Boolean {
+    val item = layoutInfo.visibleItemsInfo.find { it.index == index } ?: return false
+    return item.offset >= layoutInfo.viewportStartOffset && (item.offset + item.size) <= layoutInfo.viewportEndOffset
+}
+
+/**
+ * Shared horizontal chip row for tab/round/phase selection (used by both [RodadaSelector] for
+ * round-robin/group-stage rounds and [KnockoutTab]'s phase/leg tabs). Only auto-scrolls when the
+ * newly selected chip isn't already comfortably visible - i.e. tapping the last chip shown on
+ * screen (partially clipped) or a chip fully hidden off-screen brings it (and its neighbors) into
+ * frame; tapping a chip already fully visible elsewhere in the row doesn't cause any jump.
+ * Also fades whichever edge still has more chips to scroll toward.
+ */
+@Composable
+fun TabSelectorRow(chips: List<TabChipSpec>, modifier: Modifier = Modifier) {
+    val listState = rememberLazyListState()
+    val selectedIndex = remember(chips) { chips.indexOfFirst { it.isSelected } }
+    LaunchedEffect(selectedIndex, chips.size) {
+        if (selectedIndex != -1 && !listState.isChipFullyVisible(selectedIndex)) {
+            listState.animateScrollToItem(selectedIndex)
+        }
+    }
+    val canScrollBack by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 } }
+    val canScrollForward by remember {
+        derivedStateOf {
+            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            if (last == null) {
+                false
+            } else {
+                last.index < listState.layoutInfo.totalItemsCount - 1 || (last.offset + last.size) > listState.layoutInfo.viewportEndOffset
+            }
+        }
+    }
+    Box(modifier = modifier.fillMaxWidth()) {
+        LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth().padding(vertical = BolaoSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm),
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) {
+            items(chips, key = { it.key }) { chip ->
+                FilterChip(
+                    label = chip.label,
+                    isSelected = chip.isSelected,
+                    isUnlocked = chip.isUnlocked,
+                    isPast = chip.isPast,
+                    isCurrent = chip.isCurrent,
+                    selectedAccent = chip.selectedAccent,
+                    onClick = chip.onClick
+                )
+            }
+        }
+        if (canScrollBack) {
+            Box(
+                modifier =
+                Modifier.align(Alignment.CenterStart).width(40.dp).matchParentSize()
+                    .background(Brush.horizontalGradient(listOf(DeepNavy, Color.Transparent)))
+            )
+        }
+        if (canScrollForward) {
+            Box(
+                modifier =
+                Modifier.align(Alignment.CenterEnd).width(40.dp).matchParentSize()
+                    .background(Brush.horizontalGradient(listOf(Color.Transparent, DeepNavy)))
+            )
+        }
     }
 }
 
