@@ -196,7 +196,7 @@
     <string name="knockout_tab_empty_message">Nenhum jogo de mata-mata ainda, em breve quando acabar a fase atual.</string>
 
     <!-- MatchCard -->
-    <string name="match_card_social_badge_label">PALPITES DA GALERA</string>
+    <string name="match_card_social_badge_label">VER PALPITES DA GALERA</string>
     <string name="match_card_first_leg_score">IDA: %1$s</string>
     <string name="match_card_points_singular">+1 PONTO</string>
     <string name="match_card_points_plural">+%1$d PONTOS</string>

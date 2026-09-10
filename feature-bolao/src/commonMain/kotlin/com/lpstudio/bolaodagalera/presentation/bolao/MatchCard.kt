@@ -25,8 +25,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -264,8 +264,8 @@ fun MatchCardBody(
 fun matchCardClickEnabled(status: MatchCardStatus, isAdmin: Boolean, showSocialBadge: Boolean): Boolean = when {
     status.isGhost -> isAdmin
     status.canPred -> true
-    status.isFin -> isAdmin
-    status.isExp -> (!isAdmin && showSocialBadge) || isAdmin
+    isAdmin -> true
+    status.isExp -> showSocialBadge
     else -> false
 }
 
@@ -472,7 +472,7 @@ fun BoxScope.MatchCardOverlayBadges(showGalera: Boolean, ida: String?, onShowAll
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.sm)
             ) {
-                BolaoIcon(Icons.Default.Check, null, tint = OrangeNeon, modifier = Modifier.size(12.dp))
+                BolaoIcon(Icons.Default.Visibility, null, tint = OrangeNeon, modifier = Modifier.size(12.dp))
                 BolaoText(
                     stringResource(Res.string.match_card_social_badge_label),
                     color = OrangeNeon,
