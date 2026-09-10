@@ -262,7 +262,9 @@ private fun computeTabs(scope: BolaoScope?, championship: Championship, labels: 
             if (championship.hasStandings) list.add(labels.tabela)
             list
         } else if (championship.isGroupsAndKnockout) {
-            listOf(labels.grupos, labels.mataMata, labels.ranking)
+            val list = mutableListOf(labels.grupos, labels.mataMata, labels.ranking)
+            if (championship.hasStandings) list.add(labels.tabela)
+            list
         } else {
             listOf(labels.mataMata, labels.ranking)
         }
