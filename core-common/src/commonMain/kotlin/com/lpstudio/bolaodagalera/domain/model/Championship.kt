@@ -22,7 +22,15 @@ data class Championship(
     // Whether the knockout stage has two-legged ties
     val isTwoLegged: Boolean = false,
     // Whether new pools can be created for it
-    val isAvailable: Boolean = true
+    val isAvailable: Boolean = true,
+    // Standings table position zones (top-down: green then yellow; red counts from the bottom
+    // instead, since a relegation zone is naturally bottom-relative) - e.g. Champions League's
+    // current format: top 8 (green) go straight to the round of 16, 9th-24th (yellow) play a
+    // knockout playoff. 0 means that zone isn't highlighted. Purely cosmetic/informational -
+    // doesn't affect any sync or bracket logic, only StandingsTab's row coloring.
+    val standingsGreenZoneCount: Int = 0,
+    val standingsYellowZoneCount: Int = 0,
+    val standingsRedZoneCount: Int = 0
 ) {
     companion object {
         // Generic fallback for when data hasn't loaded yet

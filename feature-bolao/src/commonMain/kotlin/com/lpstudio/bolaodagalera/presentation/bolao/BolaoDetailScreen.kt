@@ -1091,7 +1091,7 @@ private fun BolaoDetailTabContent(
             selection.labels.ranking -> RankingScreen(bolaoId = bolaoId)
             selection.labels.tabela -> {
                 val champId = uiState.bolao?.championshipId ?: "UNKNOWN"
-                StandingsTab(matches = uiState.allMatches.filter { it.championshipId == champId })
+                StandingsTab(matches = uiState.allMatches.filter { it.championshipId == champId }, championship = championship)
             }
         }
     }

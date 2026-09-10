@@ -41,6 +41,7 @@ import com.lpstudio.bolaodagalera.designsystem.theme.Gold
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyCard
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
+import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Match
 import com.lpstudio.bolaodagalera.domain.model.StandingsCalculator
 import com.lpstudio.bolaodagalera.domain.model.TeamStanding
@@ -48,7 +49,7 @@ import com.lpstudio.bolaodagalera.util.resolveDisplayName
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun StandingsTab(matches: List<Match>) {
+fun StandingsTab(matches: List<Match>, championship: Championship) {
     val standings = remember(matches) { StandingsCalculator.calculate(matches) }
     if (standings.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -73,7 +74,7 @@ fun StandingsTab(matches: List<Match>) {
                 )
             }
             items(standings.size) { index ->
-                StandingsRow(index = index, standings = standings, matches = matches)
+                StandingsRow(index = index, standings = standings, matches = matches, championship = championship)
             }
         }
     }
@@ -114,45 +115,45 @@ private fun StandingsHeaderRow(headerPoints: String, headerPlayed: String, heade
     }
 }
 
-/** Accent color for a standings position: top group, promotion spot, or relegation zone. */
-private fun standingsAccentColor(isG4: Boolean, isG5: Boolean, isZ4: Boolean): Color? = when {
-    isG4 -> Neon
-    isG5 -> Gold
-    isZ4 -> ErrorRed
-    else -> null
+/** Which colored zone (if any) a table position falls into, per the championship's configured zone sizes. */
+private data class StandingsZone(val isGreen: Boolean, val isYellow: Boolean, val isRed: Boolean) {
+    val accentColor: Color?
+        get() = when {
+            isGreen -> Neon
+            isYellow -> Gold
+            isRed -> ErrorRed
+            else -> null
+        }
+    val backgroundColor: Color
+        get() = accentColor?.copy(alpha = 0.05f) ?: NavyCard
+    val borderColor: Color
+        get() = accentColor?.copy(alpha = 0.2f) ?: GlassBorder
+}
+
+private fun standingsZoneFor(position: Int, tableSize: Int, championship: Championship): StandingsZone {
+    val isGreen = championship.standingsGreenZoneCount > 0 && position <= championship.standingsGreenZoneCount
+    val isYellow =
+        championship.standingsYellowZoneCount > 0 &&
+            position > championship.standingsGreenZoneCount &&
+            position <= championship.standingsGreenZoneCount + championship.standingsYellowZoneCount
+    val isRed = championship.standingsRedZoneCount > 0 && position > tableSize - championship.standingsRedZoneCount
+    return StandingsZone(isGreen, isYellow, isRed)
 }
 
 @Composable
-private fun StandingsRow(index: Int, standings: List<TeamStanding>, matches: List<Match>) {
+private fun StandingsRow(index: Int, standings: List<TeamStanding>, matches: List<Match>, championship: Championship) {
     val team = standings[index]
     val (name, flag, crest) =
         remember(team.teamName, team.teamFlag, team.teamCrest, matches) {
             resolveDisplayName("", team.teamName, team.teamFlag, matches, true)
         }
-    val isG4 = index < 4
-    val isG5 = index == 4
-    val isZ4 = index >= standings.size - 4 && standings.size > 5
-    val accentColor = standingsAccentColor(isG4, isG5, isZ4)
+    val zone = standingsZoneFor(index + 1, standings.size, championship)
+    val accentColor = zone.accentColor
 
     BolaoSurface(
-        color =
-        when {
-            isG4 -> Neon.copy(alpha = 0.05f)
-            isG5 -> Gold.copy(alpha = 0.05f)
-            isZ4 -> ErrorRed.copy(alpha = 0.05f)
-            else -> NavyCard
-        },
+        color = zone.backgroundColor,
         shape = BolaoRadiusShape.md,
-        border =
-        androidx.compose.foundation.BorderStroke(
-            1.dp,
-            when {
-                isG4 -> Neon.copy(alpha = 0.2f)
-                isG5 -> Gold.copy(alpha = 0.2f)
-                isZ4 -> ErrorRed.copy(alpha = 0.2f)
-                else -> GlassBorder
-            }
-        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, zone.borderColor),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
