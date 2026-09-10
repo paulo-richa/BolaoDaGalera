@@ -68,6 +68,7 @@
     <string name="bolao_detail_leave_dialog_confirm_owner">Sair</string>
     <string name="bolao_detail_leave_dialog_confirm_member">Pedir para sair</string>
     <string name="bolao_detail_share_message">Entre no meu bolão \'%1$s\'! 🏆\n\nLink: %2$s\n\nSe o link não abrir o app automaticamente, use este: %3$s\n\nCódigo: %4$s</string>
+    <string name="bolao_detail_copy_code_message">Compartilhe esse código para os amigos entrarem nesse bolão</string>
     <string name="bolao_detail_pending_requests_title">Solicitações Pendentes</string>
     <string name="bolao_detail_participants_title">Participantes</string>
     <string name="bolao_detail_participants_count">%1$d pessoas no bolão</string>

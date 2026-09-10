@@ -41,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -48,6 +49,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -55,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import bolaodagalera.feature_bolao.generated.resources.Res
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_add_participant_cd
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_close_button
+import bolaodagalera.feature_bolao.generated.resources.bolao_detail_copy_code_message
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_default_name
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_edit_cd
 import bolaodagalera.feature_bolao.generated.resources.bolao_detail_help_cd
@@ -89,10 +93,13 @@ import com.lpstudio.bolaodagalera.designsystem.components.BolaoDropdownMenuItem
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoFullScreenLoading
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoIcon
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoIconButton
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSnackbarHost
+import com.lpstudio.bolaodagalera.designsystem.components.BolaoSnackbarHostState
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoSurface
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoText
 import com.lpstudio.bolaodagalera.designsystem.components.BolaoTextButton
 import com.lpstudio.bolaodagalera.designsystem.components.UserAvatar
+import com.lpstudio.bolaodagalera.designsystem.components.rememberBolaoSnackbarHostState
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoRadiusShape
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
@@ -112,6 +119,7 @@ import com.lpstudio.bolaodagalera.domain.model.Phase
 import com.lpstudio.bolaodagalera.presentation.ranking.RankingScreen
 import com.lpstudio.bolaodagalera.rememberLauncherProvider
 import com.lpstudio.bolaodagalera.util.getInitials
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -235,9 +243,17 @@ internal fun BolaoDetailContent(
         val app = "bolaodagalera://invite?code=${b.code}"
         stringResource(Res.string.bolao_detail_share_message, b.name, web, app, b.code)
     }
+    val headerExtras = HeaderExtras(shareMessage, rememberBolaoSnackbarHostState())
 
-    BolaoDetailScreenBody(bolaoId, uiState, isOwner, isAppOwner, derived, runtime, shareMessage, launcherProvider, callbacks)
+    BolaoDetailScreenBody(bolaoId, uiState, isOwner, isAppOwner, derived, runtime, headerExtras, launcherProvider, callbacks)
 }
+
+/**
+ * [shareMessage]/[snackbarHostState] bundled - both are produced once in [BolaoDetailContent]
+ * and threaded down together, keeping the header call chain's parameter count under the lint
+ * threshold.
+ */
+private data class HeaderExtras(val shareMessage: String?, val snackbarHostState: BolaoSnackbarHostState)
 
 @Composable
 private fun BolaoDetailScreenBody(
@@ -247,7 +263,7 @@ private fun BolaoDetailScreenBody(
     isAppOwner: Boolean,
     derived: BolaoDetailDerivedState,
     runtime: BolaoDetailRuntimeState,
-    shareMessage: String?,
+    headerExtras: HeaderExtras,
     launcherProvider: LauncherProvider,
     callbacks: BolaoDetailCallbacks
 ) {
@@ -264,7 +280,7 @@ private fun BolaoDetailScreenBody(
                         isAppOwner,
                         derived,
                         runtime,
-                        shareMessage,
+                        headerExtras,
                         launcherProvider,
                         callbacks
                     )
@@ -273,6 +289,7 @@ private fun BolaoDetailScreenBody(
             val adBannerProvider = koinInject<AdBannerProvider>()
             adBannerProvider.Banner(modifier = Modifier.fillMaxWidth().height(50.dp).background(DeepNavy))
         }
+        BolaoSnackbarHost(headerExtras.snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
 
@@ -283,7 +300,7 @@ private fun BolaoDetailMainHeader(
     isOwner: Boolean,
     derived: BolaoDetailDerivedState,
     runtime: BolaoDetailRuntimeState,
-    shareMessage: String?,
+    headerExtras: HeaderExtras,
     launcherProvider: LauncherProvider,
     callbacks: BolaoDetailCallbacks
 ) {
@@ -303,12 +320,13 @@ private fun BolaoDetailMainHeader(
         TopBarActions(
             onNavigateBack = callbacks.onNavigateBack,
             onNavigateToHelp = callbacks.onNavigateToHelp,
-            onShare = { shareMessage?.let { launcherProvider.shareText(it) } },
+            onShare = { headerExtras.shareMessage?.let { launcherProvider.shareText(it) } },
             onAddParticipants = { callbacks.onNavigateToAddParticipants(bolaoId) },
             onEdit = { callbacks.onNavigateToEdit(bolaoId) },
             onLeaveClick = { runtime.dialogs.showLeaveDialog.value = true }
         ),
-        onShowParticipants = { runtime.dialogs.showParticipantsSheet.value = true }
+        onShowParticipants = { runtime.dialogs.showParticipantsSheet.value = true },
+        snackbarHostState = headerExtras.snackbarHostState
     )
 }
 
@@ -320,12 +338,12 @@ private fun BolaoDetailMainColumn(
     isAppOwner: Boolean,
     derived: BolaoDetailDerivedState,
     runtime: BolaoDetailRuntimeState,
-    shareMessage: String?,
+    headerExtras: HeaderExtras,
     launcherProvider: LauncherProvider,
     callbacks: BolaoDetailCallbacks
 ) {
     Column(Modifier.fillMaxSize()) {
-        BolaoDetailMainHeader(bolaoId, uiState, isOwner, derived, runtime, shareMessage, launcherProvider, callbacks)
+        BolaoDetailMainHeader(bolaoId, uiState, isOwner, derived, runtime, headerExtras, launcherProvider, callbacks)
         val filtered = remember(uiState.matches) {
             uiState.matches.filter { it.phase != Phase.FRIENDLIES }
         }
@@ -614,7 +632,8 @@ private fun BolaoDetailHeaderSection(
     onShowMenuChange: (Boolean) -> Unit,
     tabBarState: HeaderTabBarState,
     topBarActions: TopBarActions,
-    onShowParticipants: () -> Unit
+    onShowParticipants: () -> Unit,
+    snackbarHostState: BolaoSnackbarHostState
 ) {
     Box(
         modifier = Modifier.fillMaxWidth().background(
@@ -631,7 +650,12 @@ private fun BolaoDetailHeaderSection(
             )
             bolao?.let {
                 BolaoDetailDescriptionAndPending(bolao = it, isOwner = isOwner, onShowParticipants = onShowParticipants)
-                BolaoDetailInfoChips(bolao = it, championship = championship, onShowParticipants = onShowParticipants)
+                BolaoDetailInfoChips(
+                    bolao = it,
+                    championship = championship,
+                    onShowParticipants = onShowParticipants,
+                    snackbarHostState = snackbarHostState
+                )
                 Spacer(Modifier.height(12.dp))
                 BolaoDetailTabRow(tabBarState = tabBarState)
             }
@@ -822,13 +846,30 @@ private fun BolaoDetailPendingBanner(pCount: Int, onShowParticipants: () -> Unit
 }
 
 @Composable
-private fun BolaoDetailInfoChips(bolao: Bolao, championship: Championship, onShowParticipants: () -> Unit) {
+private fun BolaoDetailInfoChips(
+    bolao: Bolao,
+    championship: Championship,
+    onShowParticipants: () -> Unit,
+    snackbarHostState: BolaoSnackbarHostState
+) {
+    val clipboardManager = LocalClipboardManager.current
+    val scope = rememberCoroutineScope()
+    val copyCodeMessage = stringResource(Res.string.bolao_detail_copy_code_message)
+
     Row(
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md, Alignment.Start),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        InfoChip(backgroundColor = Gold.copy(alpha = 0.15f), borderColor = Gold.copy(alpha = 0.4f), spacing = BolaoSpacing.sm) {
+        InfoChip(
+            backgroundColor = Gold.copy(alpha = 0.15f),
+            borderColor = Gold.copy(alpha = 0.4f),
+            spacing = BolaoSpacing.sm,
+            onClick = {
+                clipboardManager.setText(AnnotatedString(bolao.code))
+                scope.launch { snackbarHostState.showSnackbar(copyCodeMessage) }
+            }
+        ) {
             BolaoText(stringResource(Res.string.bolao_detail_key_emoji), fontSize = BolaoTypography.bodyMedium.fontSize)
             BolaoText(
                 bolao.code,
@@ -857,9 +898,14 @@ private fun BolaoDetailInfoChips(bolao: Bolao, championship: Championship, onSho
                 championship.displayName,
                 fontSize = BolaoTypography.bodyMedium.fontSize,
                 color = TextMuted,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                softWrap = false
             )
         }
+        // Trailing breathing room so the last chip doesn't look flush-clipped against the
+        // screen edge - the row still starts flush left (Arrangement.Start, no leading spacer),
+        // it just no longer looks visually "cut" when it needs to scroll to show everything.
+        Spacer(Modifier.width(BolaoSpacing.lg))
     }
 }
 
