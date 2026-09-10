@@ -2,7 +2,13 @@ const config = require("./config");
 const { BR_TEAMS } = require("./teams_br");
 const { logger } = require("firebase-functions");
 
-async function syncBrasileirao(db, admin, axios) {
+/**
+ * @param {number[]|null} roundsOverride - when provided, syncs exactly these rounds instead of
+ * the normal [currentMatchday+1, currentMatchday, -1, -2] window. Used for a one-off full-season
+ * resync (see syncBrasileiraoAllRoundsHTTP in index.js) to backfill any round - not just the ones
+ * near "current" - that's still sitting on stale/placeholder kickoff times.
+ */
+async function syncBrasileirao(db, admin, axios, roundsOverride = null) {
     logger.info("Iniciando sincronização inteligente do Brasileirão...");
     const matchesRef = db.collection("championships").doc("BRASILEIRAO").collection("matches");
 
@@ -17,7 +23,12 @@ async function syncBrasileirao(db, admin, axios) {
         }
 
         const currentMatchday = compRes.data.currentSeason.currentMatchday;
-        const roundsToSync = [currentMatchday, currentMatchday - 1, currentMatchday - 2].filter(r => r > 0);
+        // +1 included so the next round's kickoff times get picked up as soon as the API confirms
+        // them (broadcasters/CBF finalize these progressively, often after the round was first
+        // seeded here with placeholder times) - without it, a round only starts syncing once it
+        // becomes "current", by which point matches happening in just a few days could still be
+        // sitting on stale placeholder dates from whenever the round was first created.
+        const roundsToSync = roundsOverride || [currentMatchday + 1, currentMatchday, currentMatchday - 1, currentMatchday - 2].filter(r => r > 0);
         const now = Date.now();
 
         // Safety net for cases where the API's currentMatchday lags behind
@@ -105,7 +116,8 @@ async function syncBrasileirao(db, admin, axios) {
                         continue;
                     }
 
-                    if (!existing || existing.status !== targetStatus || existing.homeScore !== newHScore || existing.awayScore !== newAScore) {
+                    if (!existing || existing.status !== targetStatus || existing.homeScore !== newHScore ||
+                        existing.awayScore !== newAScore || existing.matchDateMillis !== matchTime) {
                         const hTeam = BR_TEAMS[m.homeTeam.name] || { name: m.homeTeam.name, flag: "", code: m.homeTeam.tla || "TBD", crest: null };
                         const aTeam = BR_TEAMS[m.awayTeam.name] || { name: m.awayTeam.name, flag: "", code: m.awayTeam.tla || "TBD", crest: null };
 
