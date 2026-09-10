@@ -277,6 +277,33 @@ fun TabSelectorRow(chips: List<TabChipSpec>, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Two stacked [TabSelectorRow]s - finished phases/rounds up top (behind a small [finishedLabel]
+ * like "Fases finalizadas:"), current/upcoming ones below - so a long-running knockout or
+ * round-robin doesn't force scrolling past every already-decided phase/round just to reach
+ * today's tab. The top row (and its label) is entirely omitted when nothing's finished yet.
+ */
+@Composable
+fun TwoTierTabSelector(
+    pastChips: List<TabChipSpec>,
+    presentFutureChips: List<TabChipSpec>,
+    finishedLabel: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (pastChips.isNotEmpty()) {
+            BolaoText(
+                finishedLabel,
+                color = TextMuted,
+                fontSize = BolaoTypography.bodySmall.fontSize,
+                modifier = Modifier.padding(start = BolaoSpacing.md, top = BolaoSpacing.xs)
+            )
+            TabSelectorRow(pastChips)
+        }
+        TabSelectorRow(presentFutureChips)
+    }
+}
+
 private fun groupHeaderBorderColor(enabled: Boolean, isExpanded: Boolean): Color = when {
     !enabled -> Color.Transparent
     isExpanded -> Neon.copy(alpha = 0.3f)

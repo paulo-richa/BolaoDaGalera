@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import bolaodagalera.feature_bolao.generated.resources.Res
+import bolaodagalera.feature_bolao.generated.resources.bolao_common_finished_phases_label
 import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
 import bolaodagalera.feature_bolao.generated.resources.bolao_common_yesterday_chip
 import bolaodagalera.feature_bolao.generated.resources.knockout_tab_empty_message
@@ -551,7 +552,22 @@ private fun KnockoutPhaseSelector(
     val yesterdayLabelText = stringResource(Res.string.bolao_common_yesterday_chip)
     val todayLabelText = stringResource(Res.string.bolao_common_today_chip)
     val tomorrowLabelText = stringResource(Res.string.rodada_selector_chip_tomorrow)
-    val chips =
+    val finishedPhasesLabel = stringResource(Res.string.bolao_common_finished_phases_label)
+
+    val phaseChips =
+        labels.map { l ->
+            TabChipSpec(
+                key = l,
+                label = l,
+                isSelected = selectedLabel == l,
+                isUnlocked = isUnlocked,
+                isPast = currentIndex != -1 && labels.indexOf(l) < currentIndex,
+                isCurrent = l == currentLabel,
+                onClick = { onSelect(l) }
+            )
+        }
+    val pastChips = phaseChips.filter { it.isPast }
+    val presentFutureChips =
         buildList {
             if (showOntem) {
                 add(
@@ -587,19 +603,7 @@ private fun KnockoutPhaseSelector(
                     )
                 )
             }
-            labels.forEach { l ->
-                add(
-                    TabChipSpec(
-                        key = l,
-                        label = l,
-                        isSelected = selectedLabel == l,
-                        isUnlocked = isUnlocked,
-                        isPast = currentIndex != -1 && labels.indexOf(l) < currentIndex,
-                        isCurrent = l == currentLabel,
-                        onClick = { onSelect(l) }
-                    )
-                )
-            }
+            addAll(phaseChips.filterNot { it.isPast })
         }
-    TabSelectorRow(chips)
+    TwoTierTabSelector(pastChips, presentFutureChips, finishedPhasesLabel)
 }
