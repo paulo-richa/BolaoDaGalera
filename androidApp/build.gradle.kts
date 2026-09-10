@@ -158,6 +158,10 @@ dependencies {
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(project(":core-testing"))
+    // BolaoDetailUiTest/TestApp reference BolaoDetailScreen/BolaoViewModel directly - composeApp
+    // only exposes feature-bolao as `implementation` (not transitively), so androidApp's own
+    // dependency on composeApp above doesn't make these visible to its test sources.
+    androidTestImplementation(project(":feature-bolao"))
 
     detektPlugins(project(":detekt-rules"))
 }
