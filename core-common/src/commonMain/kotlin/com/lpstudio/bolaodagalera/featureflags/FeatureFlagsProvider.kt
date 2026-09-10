@@ -21,4 +21,12 @@ interface FeatureFlagsProvider {
      * content (images, order) lives in Firestore, not here.
      */
     val showBannerCarousel: StateFlow<Boolean>
+
+    /**
+     * Remote kill-switch for CheckPhaseAvailabilityUseCase/CheckKnockoutAvailabilityUseCase's
+     * rule for offering a phase when creating a bolão: false (default) = available as long as
+     * at least one match in the phase hasn't kicked off yet; true = revert to the stricter
+     * "every match must still be in the future" rule.
+     */
+    val phaseAvailabilityStrictMode: StateFlow<Boolean>
 }

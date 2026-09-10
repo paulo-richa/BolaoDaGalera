@@ -9,6 +9,7 @@ import com.lpstudio.bolaodagalera.data.fake.FakeBannerRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeChampionshipRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
+import com.lpstudio.bolaodagalera.data.fake.FakeFeatureFlagsProvider
 import com.lpstudio.bolaodagalera.data.fake.FakeInterstitialAdCounter
 import com.lpstudio.bolaodagalera.data.fake.FakeInvitationRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
@@ -26,6 +27,7 @@ import com.lpstudio.bolaodagalera.domain.repository.NotificationRepository
 import com.lpstudio.bolaodagalera.domain.repository.PredictionRepository
 import com.lpstudio.bolaodagalera.domain.repository.SupportRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CalculatePointsUseCase
+import com.lpstudio.bolaodagalera.featureflags.FeatureFlagsProvider
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
 import com.lpstudio.bolaodagalera.observability.PerformanceMonitor
@@ -62,6 +64,7 @@ val fakeAppModule =
         single { Telemetry(get(), get()) }
         single<InterstitialAdCounter> { FakeInterstitialAdCounter() }
         single<AdBannerProvider> { FakeAdBannerProvider() }
+        single<FeatureFlagsProvider> { FakeFeatureFlagsProvider() }
 
         // UseCases
         single { CalculatePointsUseCase() }
@@ -106,7 +109,7 @@ val fakeAppModule =
                 bolaoId = bolaoId
             )
         }
-        viewModel { CreateBolaoViewModel(get(), get(), get(), get(), get(), get()) }
+        viewModel { CreateBolaoViewModel(get(), get(), get(), get(), get(), get(), get()) }
         viewModel { (bolaoId: String) ->
             EditBolaoViewModel(
                 bolaoRepository = get(),

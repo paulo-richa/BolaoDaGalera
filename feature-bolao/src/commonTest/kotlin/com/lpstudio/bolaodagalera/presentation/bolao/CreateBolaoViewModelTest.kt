@@ -5,6 +5,7 @@ import com.lpstudio.bolaodagalera.data.fake.FakeAnalyticsTracker
 import com.lpstudio.bolaodagalera.data.fake.FakeAuthRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeBolaoRepository
 import com.lpstudio.bolaodagalera.data.fake.FakeCrashReporter
+import com.lpstudio.bolaodagalera.data.fake.FakeFeatureFlagsProvider
 import com.lpstudio.bolaodagalera.data.fake.FakeMatchRepository
 import com.lpstudio.bolaodagalera.data.fake.FakePerformanceMonitor
 import com.lpstudio.bolaodagalera.domain.model.BolaoScope
@@ -64,7 +65,8 @@ class CreateBolaoViewModelTest {
                 matchRepository,
                 FakeCrashReporter(),
                 FakePerformanceMonitor(),
-                FakeAnalyticsTracker()
+                FakeAnalyticsTracker(),
+                FakeFeatureFlagsProvider()
             )
     }
 

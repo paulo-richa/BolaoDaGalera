@@ -12,6 +12,7 @@ import com.lpstudio.bolaodagalera.domain.repository.BolaoRepository
 import com.lpstudio.bolaodagalera.domain.repository.MatchRepository
 import com.lpstudio.bolaodagalera.domain.usecase.CheckKnockoutAvailabilityUseCase
 import com.lpstudio.bolaodagalera.domain.usecase.CheckPhaseAvailabilityUseCase
+import com.lpstudio.bolaodagalera.featureflags.FeatureFlagsProvider
 import com.lpstudio.bolaodagalera.observability.AnalyticsEvents
 import com.lpstudio.bolaodagalera.observability.AnalyticsTracker
 import com.lpstudio.bolaodagalera.observability.CrashReporter
@@ -41,10 +42,14 @@ class CreateBolaoViewModel(
     private val crashReporter: CrashReporter,
     private val performanceMonitor: PerformanceMonitor,
     private val analyticsTracker: AnalyticsTracker,
-    private val checkPhaseAvailability: CheckPhaseAvailabilityUseCase = CheckPhaseAvailabilityUseCase(),
-    private val checkKnockoutAvailability: CheckKnockoutAvailabilityUseCase = CheckKnockoutAvailabilityUseCase(),
+    private val featureFlagsProvider: FeatureFlagsProvider,
     private val errorReporter: ErrorReporter = ErrorReporter(crashReporter)
 ) : ViewModel() {
+    // Stateless, never overridden by a caller (including tests) - kept as plain fields instead
+    // of constructor params to leave room under the parameter-count lint threshold.
+    private val checkPhaseAvailability = CheckPhaseAvailabilityUseCase()
+    private val checkKnockoutAvailability = CheckKnockoutAvailabilityUseCase()
+
     private val _uiState = MutableStateFlow(CreateBolaoUiState())
     val uiState: StateFlow<CreateBolaoUiState> = _uiState.asStateFlow()
 
@@ -74,9 +79,10 @@ class CreateBolaoViewModel(
     }
 
     fun isPhaseAvailable(championshipId: String, phase: Phase): Boolean =
-        checkPhaseAvailability(_uiState.value.allMatches, championshipId, phase)
+        checkPhaseAvailability(_uiState.value.allMatches, championshipId, phase, featureFlagsProvider.phaseAvailabilityStrictMode.value)
 
-    fun isKnockoutAvailable(championshipId: String): Boolean = checkKnockoutAvailability(_uiState.value.allMatches, championshipId)
+    fun isKnockoutAvailable(championshipId: String): Boolean =
+        checkKnockoutAvailability(_uiState.value.allMatches, championshipId, featureFlagsProvider.phaseAvailabilityStrictMode.value)
 
     fun create(
         name: String,

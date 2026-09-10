@@ -32,6 +32,16 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
     private val _showBannerCarousel = MutableStateFlow(true)
     val showBannerCarousel: StateFlow<Boolean> = _showBannerCarousel.asStateFlow()
 
+    // Controls CheckPhaseAvailabilityUseCase/CheckKnockoutAvailabilityUseCase's rule for
+    // offering a phase when creating a bolão: false (default) = available as long as at least
+    // one match in the phase hasn't kicked off yet (correct for a rounds-based phase like
+    // Champions League's 36-team league format or Brasileirão, where later rounds stay
+    // meaningful after earlier ones are done); true = revert to the stricter "every match must
+    // still be in the future" rule. A remote kill-switch so this business rule can be tuned or
+    // rolled back without shipping a new app version.
+    private val _phaseAvailabilityStrictMode = MutableStateFlow(false)
+    val phaseAvailabilityStrictMode: StateFlow<Boolean> = _phaseAvailabilityStrictMode.asStateFlow()
+
     suspend fun fetchAndActivate() {
         try {
             remoteConfig.settings {
@@ -43,7 +53,8 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
                 "maintenance_exempt_emails" to "",
                 "min_supported_version" to "",
                 "force_show_notification_banner" to false,
-                "show_banner_carousel" to true
+                "show_banner_carousel" to true,
+                "phase_availability_strict_mode" to false
             )
             remoteConfig.fetchAndActivate()
             _isMaintenanceMode.value = remoteConfig.getValue("maintenance_mode").asBoolean()
@@ -59,6 +70,7 @@ class RemoteConfigManager(private val crashReporter: CrashReporter) {
             _minSupportedVersion.value = remoteConfig.getValue("min_supported_version").asString()
             _forceShowNotificationBanner.value = remoteConfig.getValue("force_show_notification_banner").asBoolean()
             _showBannerCarousel.value = remoteConfig.getValue("show_banner_carousel").asBoolean()
+            _phaseAvailabilityStrictMode.value = remoteConfig.getValue("phase_availability_strict_mode").asBoolean()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

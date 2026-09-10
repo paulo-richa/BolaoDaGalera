@@ -10,9 +10,13 @@ import com.lpstudio.bolaodagalera.util.TimeSource
  * pool only makes sense before any of them start), the knockout stage is a sequence of
  * rounds (round of 16, quarterfinals, semifinals, final): once the earlier rounds are
  * done, a pool covering the still-upcoming rounds remains meaningful.
+ *
+ * [strictMode] (see [CheckPhaseAvailabilityUseCase]'s matching parameter) reverts to requiring
+ * every match to still be in the future - kept in sync with the group/league-phase rule so the
+ * Remote Config kill-switch reverts both consistently.
  */
 class CheckKnockoutAvailabilityUseCase {
-    operator fun invoke(allMatches: List<Match>, championshipId: String): Boolean {
+    operator fun invoke(allMatches: List<Match>, championshipId: String, strictMode: Boolean = false): Boolean {
         val matches =
             allMatches.filter {
                 it.championshipId == championshipId &&
@@ -31,6 +35,6 @@ class CheckKnockoutAvailabilityUseCase {
         if (matches.isEmpty()) return true
 
         val now = TimeSource.nowMillis()
-        return matches.any { it.matchDateMillis > now }
+        return if (strictMode) matches.all { it.matchDateMillis > now } else matches.any { it.matchDateMillis > now }
     }
 }

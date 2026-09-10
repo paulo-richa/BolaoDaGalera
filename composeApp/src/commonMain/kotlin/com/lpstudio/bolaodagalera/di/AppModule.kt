@@ -114,7 +114,7 @@ val appModule =
                 bolaoId = bolaoId
             )
         }
-        viewModel { CreateBolaoViewModel(get(), get(), get(), get(), get(), get()) }
+        viewModel { CreateBolaoViewModel(get(), get(), get(), get(), get(), get(), get()) }
         viewModel { (bolaoId: String) ->
             EditBolaoViewModel(
                 bolaoRepository = get(),

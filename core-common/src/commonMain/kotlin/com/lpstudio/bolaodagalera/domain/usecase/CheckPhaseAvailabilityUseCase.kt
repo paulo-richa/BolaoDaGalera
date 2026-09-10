@@ -12,13 +12,18 @@ import com.lpstudio.bolaodagalera.util.TimeSource
  * months, same shape as Brasileirão's rounds) stays meaningful for the rounds still ahead even
  * after earlier ones are done - matching [CheckKnockoutAvailabilityUseCase]'s same reasoning for
  * the knockout stage.
+ *
+ * [strictMode] (from [com.lpstudio.bolaodagalera.featureflags.FeatureFlagsProvider.phaseAvailabilityStrictMode],
+ * a Remote Config flag) reverts to the older, stricter "every match must still be in the future"
+ * rule when true - a kill-switch so this business rule can be rolled back without shipping a new
+ * app version.
  */
 class CheckPhaseAvailabilityUseCase {
-    operator fun invoke(allMatches: List<Match>, championshipId: String, phase: Phase): Boolean {
+    operator fun invoke(allMatches: List<Match>, championshipId: String, phase: Phase, strictMode: Boolean = false): Boolean {
         val matches = allMatches.filter { it.championshipId == championshipId && it.phase == phase }
         if (matches.isEmpty()) return false
 
         val now = TimeSource.nowMillis()
-        return matches.any { it.matchDateMillis > now }
+        return if (strictMode) matches.all { it.matchDateMillis > now } else matches.any { it.matchDateMillis > now }
     }
 }
