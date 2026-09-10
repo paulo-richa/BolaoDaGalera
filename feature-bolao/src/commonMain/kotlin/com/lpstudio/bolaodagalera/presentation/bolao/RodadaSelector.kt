@@ -2,12 +2,12 @@ package com.lpstudio.bolaodagalera.presentation.bolao
 
 import androidx.compose.runtime.Composable
 import bolaodagalera.feature_bolao.generated.resources.Res
-import bolaodagalera.feature_bolao.generated.resources.bolao_common_finished_rounds_label
 import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
 import bolaodagalera.feature_bolao.generated.resources.bolao_common_yesterday_chip
 import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_round
 import bolaodagalera.feature_bolao.generated.resources.rodada_selector_chip_tomorrow
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
+import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -25,17 +25,18 @@ fun RodadaSelector(
     val yesterdayLabel = stringResource(Res.string.bolao_common_yesterday_chip)
     val todayLabel = stringResource(Res.string.bolao_common_today_chip)
     val tomorrowLabel = stringResource(Res.string.rodada_selector_chip_tomorrow)
-    val finishedRoundsLabel = stringResource(Res.string.bolao_common_finished_rounds_label)
 
     val roundChips =
         sorted.mapIndexed { i, r ->
+            val isPastRound = r < currentRound
             TabChipSpec(
                 key = "round-$r",
                 label = roundLabels[i],
                 isSelected = selected == r,
                 isUnlocked = true,
-                isPast = r < currentRound,
+                isPast = isPastRound,
                 isCurrent = r == currentRound,
+                selectedAccent = if (isPastRound) ErrorRed else Neon,
                 onClick = { onSelect(r) }
             )
         }
@@ -71,5 +72,5 @@ fun RodadaSelector(
             addAll(roundChips.filterNot { it.isPast })
         }
 
-    TwoTierTabSelector(pastChips, presentFutureChips, finishedRoundsLabel)
+    TwoTierTabSelector(pastChips, presentFutureChips)
 }

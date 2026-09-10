@@ -108,7 +108,7 @@ private fun filterChipBorderColor(
 ): Color = when {
     isSelected && isUnlocked -> selectedAccent
     isCurrent -> Gold
-    isPast -> Color.Transparent
+    isPast -> TextMuted.copy(alpha = 0.55f)
     isUnlocked -> GlassBorder
     else -> Color.Transparent
 }
@@ -274,26 +274,15 @@ fun TabSelectorRow(chips: List<TabChipSpec>, modifier: Modifier = Modifier) {
 }
 
 /**
- * Two stacked [TabSelectorRow]s - finished phases/rounds up top (behind a small [finishedLabel]
- * like "Fases finalizadas:"), current/upcoming ones below - so a long-running knockout or
- * round-robin doesn't force scrolling past every already-decided phase/round just to reach
- * today's tab. The top row (and its label) is entirely omitted when nothing's finished yet.
+ * Two stacked [TabSelectorRow]s - finished phases/rounds up top (marked in red, with a subtle
+ * border so they still read as tabs even unselected), current/upcoming ones below - so a
+ * long-running knockout or round-robin doesn't force scrolling past every already-decided
+ * phase/round just to reach today's tab. The top row is entirely omitted when nothing's finished yet.
  */
 @Composable
-fun TwoTierTabSelector(
-    pastChips: List<TabChipSpec>,
-    presentFutureChips: List<TabChipSpec>,
-    finishedLabel: String,
-    modifier: Modifier = Modifier
-) {
+fun TwoTierTabSelector(pastChips: List<TabChipSpec>, presentFutureChips: List<TabChipSpec>, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
         if (pastChips.isNotEmpty()) {
-            BolaoText(
-                finishedLabel,
-                color = TextMuted,
-                fontSize = BolaoTypography.bodySmall.fontSize,
-                modifier = Modifier.padding(start = BolaoSpacing.md, top = BolaoSpacing.xs)
-            )
             TabSelectorRow(pastChips)
         }
         TabSelectorRow(presentFutureChips)

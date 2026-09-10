@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import bolaodagalera.feature_bolao.generated.resources.Res
-import bolaodagalera.feature_bolao.generated.resources.bolao_common_finished_phases_label
 import bolaodagalera.feature_bolao.generated.resources.bolao_common_today_chip
 import bolaodagalera.feature_bolao.generated.resources.bolao_common_yesterday_chip
 import bolaodagalera.feature_bolao.generated.resources.knockout_tab_empty_message
@@ -37,6 +36,7 @@ import com.lpstudio.bolaodagalera.designsystem.theme.BolaoSpacing
 import com.lpstudio.bolaodagalera.designsystem.theme.BolaoTypography
 import com.lpstudio.bolaodagalera.designsystem.theme.DeepNavy
 import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
+import com.lpstudio.bolaodagalera.designsystem.theme.Neon
 import com.lpstudio.bolaodagalera.designsystem.theme.TextMuted
 import com.lpstudio.bolaodagalera.domain.model.Championship
 import com.lpstudio.bolaodagalera.domain.model.Match
@@ -549,20 +549,17 @@ private fun KnockoutPhaseSelector(
     onSelect: (String?) -> Unit
 ) {
     val currentIndex = currentLabel?.let { labels.indexOf(it) } ?: -1
-    val yesterdayLabelText = stringResource(Res.string.bolao_common_yesterday_chip)
-    val todayLabelText = stringResource(Res.string.bolao_common_today_chip)
-    val tomorrowLabelText = stringResource(Res.string.rodada_selector_chip_tomorrow)
-    val finishedPhasesLabel = stringResource(Res.string.bolao_common_finished_phases_label)
-
     val phaseChips =
         labels.map { l ->
+            val isPastPhase = currentIndex != -1 && labels.indexOf(l) < currentIndex
             TabChipSpec(
                 key = l,
                 label = l,
                 isSelected = selectedLabel == l,
                 isUnlocked = isUnlocked,
-                isPast = currentIndex != -1 && labels.indexOf(l) < currentIndex,
+                isPast = isPastPhase,
                 isCurrent = l == currentLabel,
+                selectedAccent = if (isPastPhase) ErrorRed else Neon,
                 onClick = { onSelect(l) }
             )
         }
@@ -573,7 +570,7 @@ private fun KnockoutPhaseSelector(
                 add(
                     TabChipSpec(
                         key = YESTERDAY_LABEL,
-                        label = yesterdayLabelText,
+                        label = stringResource(Res.string.bolao_common_yesterday_chip),
                         isSelected = selectedLabel == YESTERDAY_LABEL,
                         isUnlocked = true,
                         selectedAccent = ErrorRed,
@@ -585,7 +582,7 @@ private fun KnockoutPhaseSelector(
                 add(
                     TabChipSpec(
                         key = TODAY_LABEL,
-                        label = todayLabelText,
+                        label = stringResource(Res.string.bolao_common_today_chip),
                         isSelected = selectedLabel == TODAY_LABEL,
                         isUnlocked = true,
                         onClick = { onSelect(TODAY_LABEL) }
@@ -596,7 +593,7 @@ private fun KnockoutPhaseSelector(
                 add(
                     TabChipSpec(
                         key = TOMORROW_LABEL,
-                        label = tomorrowLabelText,
+                        label = stringResource(Res.string.rodada_selector_chip_tomorrow),
                         isSelected = selectedLabel == TOMORROW_LABEL,
                         isUnlocked = true,
                         onClick = { onSelect(TOMORROW_LABEL) }
@@ -605,5 +602,5 @@ private fun KnockoutPhaseSelector(
             }
             addAll(phaseChips.filterNot { it.isPast })
         }
-    TwoTierTabSelector(pastChips, presentFutureChips, finishedPhasesLabel)
+    TwoTierTabSelector(pastChips, presentFutureChips)
 }
