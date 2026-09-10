@@ -3,12 +3,14 @@ package com.lpstudio.bolaodagalera.presentation.bolao
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,6 +41,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -108,6 +111,7 @@ import com.lpstudio.bolaodagalera.designsystem.theme.ErrorRed
 import com.lpstudio.bolaodagalera.designsystem.theme.GlassBorder
 import com.lpstudio.bolaodagalera.designsystem.theme.Gold
 import com.lpstudio.bolaodagalera.designsystem.theme.GradientHero
+import com.lpstudio.bolaodagalera.designsystem.theme.GradientHeroMidTone
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyCard
 import com.lpstudio.bolaodagalera.designsystem.theme.NavyElevated
 import com.lpstudio.bolaodagalera.designsystem.theme.Neon
@@ -640,24 +644,33 @@ private fun BolaoDetailHeaderSection(
             GradientHero
         ).padding(top = BolaoSpacing.lg, bottom = BolaoSpacing.lg)
     ) {
-        Column(Modifier.padding(horizontal = BolaoSpacing.xl)) {
-            BolaoDetailTopBar(
-                name = bolao?.name ?: stringResource(Res.string.bolao_detail_default_name),
-                isOwner = isOwner,
-                showMenu = showMenu,
-                onShowMenuChange = onShowMenuChange,
-                actions = topBarActions
-            )
+        Column {
+            Column(Modifier.padding(horizontal = BolaoSpacing.xl)) {
+                BolaoDetailTopBar(
+                    name = bolao?.name ?: stringResource(Res.string.bolao_detail_default_name),
+                    isOwner = isOwner,
+                    showMenu = showMenu,
+                    onShowMenuChange = onShowMenuChange,
+                    actions = topBarActions
+                )
+                bolao?.let { BolaoDetailDescriptionAndPending(bolao = it, isOwner = isOwner, onShowParticipants = onShowParticipants) }
+            }
+            // Deliberately full-width, outside the Column above's horizontal padding - so the
+            // scrollable chip row can fade its own edges (see BolaoDetailInfoChips) instead of
+            // ending abruptly at the padding boundary, which read as the row being "cut off".
             bolao?.let {
-                BolaoDetailDescriptionAndPending(bolao = it, isOwner = isOwner, onShowParticipants = onShowParticipants)
                 BolaoDetailInfoChips(
                     bolao = it,
                     championship = championship,
                     onShowParticipants = onShowParticipants,
                     snackbarHostState = snackbarHostState
                 )
-                Spacer(Modifier.height(12.dp))
-                BolaoDetailTabRow(tabBarState = tabBarState)
+            }
+            Column(Modifier.padding(horizontal = BolaoSpacing.xl)) {
+                bolao?.let {
+                    Spacer(Modifier.height(12.dp))
+                    BolaoDetailTabRow(tabBarState = tabBarState)
+                }
             }
         }
     }
@@ -852,15 +865,38 @@ private fun BolaoDetailInfoChips(
     onShowParticipants: () -> Unit,
     snackbarHostState: BolaoSnackbarHostState
 ) {
+    val scrollState = rememberScrollState()
+    val canScrollBack by remember { derivedStateOf { scrollState.value > 0 } }
+    val canScrollForward by remember { derivedStateOf { scrollState.value < scrollState.maxValue } }
+
+    Box(Modifier.fillMaxWidth()) {
+        InfoChipsRow(bolao, championship, onShowParticipants, snackbarHostState, scrollState)
+        if (canScrollBack) ScrollEdgeFade(Alignment.CenterStart, startTransparent = false)
+        if (canScrollForward) ScrollEdgeFade(Alignment.CenterEnd, startTransparent = true)
+    }
+}
+
+@Composable
+private fun InfoChipsRow(
+    bolao: Bolao,
+    championship: Championship,
+    onShowParticipants: () -> Unit,
+    snackbarHostState: BolaoSnackbarHostState,
+    scrollState: ScrollState
+) {
     val clipboardManager = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val copyCodeMessage = stringResource(Res.string.bolao_detail_copy_code_message)
 
     Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxWidth().horizontalScroll(scrollState),
         horizontalArrangement = Arrangement.spacedBy(BolaoSpacing.md, Alignment.Start),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Leading/trailing spacers (instead of Modifier.padding) so the scroll region itself
+        // extends the full screen width and can fade its own edges (see ScrollEdgeFade), while
+        // the chips still visually line up with the padded content above/below (BolaoSpacing.xl).
+        Spacer(Modifier.width(BolaoSpacing.xl))
         InfoChip(
             backgroundColor = Gold.copy(alpha = 0.15f),
             borderColor = Gold.copy(alpha = 0.4f),
@@ -902,11 +938,29 @@ private fun BolaoDetailInfoChips(
                 softWrap = false
             )
         }
-        // Trailing breathing room so the last chip doesn't look flush-clipped against the
-        // screen edge - the row still starts flush left (Arrangement.Start, no leading spacer),
-        // it just no longer looks visually "cut" when it needs to scroll to show everything.
-        Spacer(Modifier.width(BolaoSpacing.lg))
+        Spacer(Modifier.width(BolaoSpacing.xl))
     }
+}
+
+private const val SCROLL_EDGE_FADE_WIDTH_DP = 24
+
+/**
+ * One edge-fade overlay, blending into [GradientHeroMidTone] on the solid side and fading to
+ * transparent - [startTransparent] picks which side is which.
+ */
+@Composable
+private fun BoxScope.ScrollEdgeFade(alignment: Alignment, startTransparent: Boolean) {
+    val colors =
+        if (startTransparent) {
+            listOf(Color.Transparent, GradientHeroMidTone)
+        } else {
+            listOf(GradientHeroMidTone, Color.Transparent)
+        }
+    Box(
+        modifier =
+        Modifier.align(alignment).width(SCROLL_EDGE_FADE_WIDTH_DP.dp).matchParentSize()
+            .background(Brush.horizontalGradient(colors))
+    )
 }
 
 @Composable

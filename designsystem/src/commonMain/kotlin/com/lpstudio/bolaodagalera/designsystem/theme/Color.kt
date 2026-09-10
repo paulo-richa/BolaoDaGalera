@@ -21,6 +21,12 @@ val TextSubtle = Color(0xFF4A6080)
 val ErrorRed = Color(0xFFFF5370)
 val SuccessGreen = Color(0xFF00E676)
 
+// A flat approximation of GradientHero's color partway down its gradient - for edge-fade
+// overlays on scrollable content sitting on top of that gradient, where a solid color blends in
+// close enough (fading to transparent hides the small mismatch) but a true gradient-of-a-gradient
+// isn't worth the complexity.
+val GradientHeroMidTone = Color(0xFF0B1B33)
+
 // ── Gradient presets ─────────────────────────────────────────────────────────
 val GradientBg = Brush.verticalGradient(listOf(Color(0xFF0A1628), Color(0xFF070C18)))
 val GradientPrimary = Brush.horizontalGradient(listOf(Neon, Color(0xFF00B0FF)))
