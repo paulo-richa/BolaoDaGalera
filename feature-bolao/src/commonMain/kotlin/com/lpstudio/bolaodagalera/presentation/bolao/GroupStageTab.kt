@@ -1,9 +1,7 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -198,7 +196,6 @@ fun GroupStageTab(
                 } else {
                     groupedMatchesList(
                         computed.byGroup,
-                        expandedGroups,
                         data.predictions,
                         data.isAdmin,
                         data.bolaoCreatedAt,
@@ -403,10 +400,9 @@ private fun LazyListScope.dayMatchesList(
     }
 }
 
-/** Match list grouped by [Match.group] with collapsible group headers, used by the round tabs. */
+/** Match list grouped by [Match.group], used by the round tabs - group headers are always expanded. */
 private fun LazyListScope.groupedMatchesList(
     byGroup: Map<String, List<Match>>,
-    expandedGroups: SnapshotStateList<String>,
     predictions: Map<String, Prediction>,
     isAdmin: Boolean,
     bolaoCreatedAt: Long,
@@ -414,36 +410,27 @@ private fun LazyListScope.groupedMatchesList(
     actions: MatchTabActions
 ) {
     byGroup.entries.sortedBy { it.key }.forEach { (g, ms) ->
-        val isExpanded = expandedGroups.contains(g)
         val isCompleted = ms.all { it.isFinished || predictions.containsKey(it.id) }
         item(key = "header-$g") {
-            GroupHeader(group = g, isExpanded = isExpanded, isCompleted = isCompleted, enabled = true, onToggle = {
-                if (isExpanded) expandedGroups.remove(g) else expandedGroups.add(g)
-            })
+            GroupHeader(group = g, isCompleted = isCompleted, enabled = true)
         }
         items(ms, key = { it.id }) { m ->
-            androidx.compose.animation.AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
-                Column(modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.sm)) {
-                    MatchCard(
-                        match = m,
-                        prediction = predictions[m.id],
-                        // Group stage is never two-legged for labels here
-                        options =
-                        MatchCardOptions(
-                            isAdmin = isAdmin,
-                            bolaoCreatedAt = bolaoCreatedAt,
-                            allMatches = allMatches
-                        ),
-                        onClick = { actions.onMatchClick(m.id) },
-                        onShowAllPredictions = { actions.onShowAllPredictions(m) },
-                        onOpenAdminScoreDialog = { actions.onOpenAdminScoreDialog(m) }
-                    )
-                    Spacer(Modifier.height(8.dp))
-                }
+            Column(modifier = Modifier.fillMaxWidth().padding(bottom = BolaoSpacing.sm)) {
+                MatchCard(
+                    match = m,
+                    prediction = predictions[m.id],
+                    // Group stage is never two-legged for labels here
+                    options =
+                    MatchCardOptions(
+                        isAdmin = isAdmin,
+                        bolaoCreatedAt = bolaoCreatedAt,
+                        allMatches = allMatches
+                    ),
+                    onClick = { actions.onMatchClick(m.id) },
+                    onShowAllPredictions = { actions.onShowAllPredictions(m) },
+                    onOpenAdminScoreDialog = { actions.onOpenAdminScoreDialog(m) }
+                )
+                Spacer(Modifier.height(8.dp))
             }
         }
         item(key = "spacer-$g") { Spacer(Modifier.height(4.dp)) }

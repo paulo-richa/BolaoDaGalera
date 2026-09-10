@@ -1,8 +1,6 @@
 package com.lpstudio.bolaodagalera.presentation.bolao
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
@@ -39,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
@@ -304,16 +300,14 @@ fun TwoTierTabSelector(
     }
 }
 
-private fun groupHeaderBorderColor(enabled: Boolean, isExpanded: Boolean): Color = when {
+private fun groupHeaderBorderColor(enabled: Boolean): Color = when {
     !enabled -> Color.Transparent
-    isExpanded -> Neon.copy(alpha = 0.3f)
-    else -> GlassBorder
+    else -> Neon.copy(alpha = 0.3f)
 }
 
-private fun groupHeaderBackground(enabled: Boolean, isExpanded: Boolean): Brush = when {
+private fun groupHeaderBackground(enabled: Boolean): Brush = when {
     !enabled -> Brush.linearGradient(listOf(NavyCard.copy(alpha = 0.5f), NavyCard.copy(alpha = 0.5f)))
-    isExpanded -> Brush.linearGradient(listOf(Neon.copy(alpha = 0.08f), Neon.copy(alpha = 0.02f)))
-    else -> Brush.linearGradient(listOf(NavyElevated, NavyCard))
+    else -> Brush.linearGradient(listOf(Neon.copy(alpha = 0.08f), Neon.copy(alpha = 0.02f)))
 }
 
 /** ARGB for the amber used to flag a group header as "in progress" (not completed, not disabled). */
@@ -368,13 +362,12 @@ private fun GroupHeaderLabel(group: String, isCompleted: Boolean, enabled: Boole
 }
 
 @Composable
-fun GroupHeader(group: String, isExpanded: Boolean, isCompleted: Boolean, enabled: Boolean = true, onToggle: () -> Unit) {
-    val rot by animateFloatAsState(if (isExpanded) 90f else 0f, tween(200), label = "chevron_$group")
+fun GroupHeader(group: String, isCompleted: Boolean, enabled: Boolean = true) {
     val bColor by animateColorAsState(
-        groupHeaderBorderColor(enabled, isExpanded),
+        groupHeaderBorderColor(enabled),
         label = "header_border_$group"
     )
-    val bg = groupHeaderBackground(enabled, isExpanded)
+    val bg = groupHeaderBackground(enabled)
     Column {
         Row(
             modifier =
@@ -383,20 +376,11 @@ fun GroupHeader(group: String, isExpanded: Boolean, isCompleted: Boolean, enable
                 .clip(BolaoRadiusShape.lg)
                 .background(bg)
                 .border(1.dp, bColor, BolaoRadiusShape.lg)
-                .then(if (enabled) Modifier.clickable(onClick = onToggle) else Modifier)
                 .padding(horizontal = BolaoSpacing.xl, vertical = BolaoSpacing.lg),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             GroupHeaderLabel(group, isCompleted, enabled)
-            if (enabled) {
-                BolaoIcon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    null,
-                    tint = TextMuted,
-                    modifier = Modifier.size(20.dp).rotate(rot)
-                )
-            }
         }
         Spacer(Modifier.height(8.dp))
     }
