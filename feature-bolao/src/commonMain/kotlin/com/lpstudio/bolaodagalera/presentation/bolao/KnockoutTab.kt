@@ -108,7 +108,6 @@ private fun KnockoutAutoSelectionEffect(
             handleKnockoutAutoSelection(
                 matches = matches,
                 labels = computed.labels,
-                selectedPhase = selectedPhase,
                 selectedLabel = selectedLabel,
                 hasMatchToday = computed.hasMatchToday,
                 hasMatchTomorrow = computed.hasMatchTomorrow,
@@ -328,16 +327,18 @@ internal fun computeKnockoutDefaultSelection(matches: List<Match>, isTwoLegged: 
 private fun handleKnockoutAutoSelection(
     matches: List<Match>,
     labels: List<String>,
-    selectedPhase: Phase?,
     selectedLabel: String?,
     hasMatchToday: Boolean,
     hasMatchTomorrow: Boolean,
     onLabelChange: (String?) -> Unit,
     onPhaseChange: (Phase?) -> Unit
 ) {
+    // Only on first load - selectedPhase alone can't tell "just reset to the FRIENDLIES sentinel"
+    // apart from "user manually tapped Ontem/Hoje/Amanhã" (both set selectedPhase to FRIENDLIES),
+    // so re-running on every FRIENDLIES entry used to hijack a manual Ontem/Amanhã tap right back
+    // to Hoje the moment this effect re-fired.
     val isFirstLoad = selectedLabel == null
-    val isOnStartMarker = selectedPhase == Phase.FRIENDLIES
-    if (!isOnStartMarker && !isFirstLoad) return
+    if (!isFirstLoad) return
 
     if (hasMatchToday) {
         onLabelChange(TODAY_LABEL)
