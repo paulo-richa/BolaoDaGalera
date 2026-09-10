@@ -108,8 +108,8 @@ private fun rememberGroupStageComputedState(matches: List<Match>, selectedRound:
         }
     val currentRound = remember(matches, now) { computeCurrentGroupRound(matches, now) }
     val roundMatches =
-        remember(matches, selectedRound, todayDate, tomorrowDate, yesterdayDate, now) {
-            computeGroupRoundMatches(matches, selectedRound, todayDate, tomorrowDate, yesterdayDate, tz, now)
+        remember(matches, selectedRound, todayDate, tomorrowDate, yesterdayDate) {
+            computeGroupRoundMatches(matches, selectedRound, todayDate, tomorrowDate, yesterdayDate, tz)
         }
     val byGroup = remember(roundMatches) { roundMatches.groupBy { it.group ?: "" } }
     return GroupStageComputedState(
@@ -228,22 +228,16 @@ private fun computeCurrentGroupRound(matches: List<Match>, now: Long): Int {
     return upcoming ?: matches.maxByOrNull { it.matchDateMillis }?.groupRound() ?: 0
 }
 
-/** A match still shows in the "today" list this long after kickoff, in case it's running long. */
-private const val TODAY_LIST_GRACE_MILLIS = 3 * 3_600_000L
-
 private fun computeGroupRoundMatches(
     matches: List<Match>,
     selectedRound: Int,
     todayDate: LocalDate,
     tomorrowDate: LocalDate,
     yesterdayDate: LocalDate,
-    tz: TimeZone,
-    now: Long
+    tz: TimeZone
 ): List<Match> = when (selectedRound) {
     0 ->
-        matches.filter {
-            it.isOnDate(todayDate, tz) || (now in it.matchDateMillis..(it.matchDateMillis + TODAY_LIST_GRACE_MILLIS))
-        }.sortedBy { it.matchDateMillis }
+        matches.filter { it.isOnDate(todayDate, tz) }.sortedBy { it.matchDateMillis }
     TOMORROW_ROUND ->
         matches.filter { it.isOnDate(tomorrowDate, tz) }.sortedBy { it.matchDateMillis }
     YESTERDAY_ROUND ->

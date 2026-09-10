@@ -63,7 +63,6 @@ private const val TOMORROW_LABEL = "__TOMORROW__"
 // Res.string.bolao_common_yesterday_chip (same "ONTEM" label used by
 // RodadaSelector for the group-stage/points-based tabs).
 private const val YESTERDAY_LABEL = "__YESTERDAY__"
-private const val LIVE_WINDOW_MILLIS = 3 * 3600_000L
 
 private class KnockoutComputedState(
     val phaseOrder: List<Phase>,
@@ -83,7 +82,7 @@ private fun rememberKnockoutComputedState(matches: List<Match>, isTwoLegged: Boo
     val now = TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
     val hasMatchYesterday = remember(matches, todayDate) { hasKnockoutMatchYesterday(matches, todayDate, tz) }
-    val hasMatchToday = remember(matches, todayDate) { hasKnockoutMatchToday(matches, todayDate, tz, now) }
+    val hasMatchToday = remember(matches, todayDate) { hasKnockoutMatchToday(matches, todayDate, tz) }
     val hasMatchTomorrow = remember(matches, todayDate) { hasKnockoutMatchTomorrow(matches, todayDate, tz) }
     val labels = remember(phaseOrder, isTwoLegged) { computeKnockoutLabels(phaseOrder, isTwoLegged) }
     return KnockoutComputedState(phaseOrder, tz, now, todayDate, hasMatchYesterday, hasMatchToday, hasMatchTomorrow, labels)
@@ -248,13 +247,12 @@ private fun computeKnockoutPhaseOrder(matches: List<Match>): List<Phase> {
 /** Matches after midnight before this hour still count as "today" (late-night kickoffs). */
 private const val EARLY_MORNING_CUTOFF_HOUR = 4
 
-private fun hasKnockoutMatchToday(matches: List<Match>, todayDate: LocalDate, tz: TimeZone, now: Long): Boolean =
+private fun hasKnockoutMatchToday(matches: List<Match>, todayDate: LocalDate, tz: TimeZone): Boolean =
     matches.filter { it.phase != Phase.GROUP_STAGE }.any {
         val mTime = Instant.fromEpochMilliseconds(it.matchDateMillis).toLocalDateTime(tz)
         val mDate = mTime.date
         mDate == todayDate ||
-            (mDate.toEpochDays() == todayDate.toEpochDays() + 1 && mTime.hour < EARLY_MORNING_CUTOFF_HOUR) ||
-            (now in it.matchDateMillis..(it.matchDateMillis + LIVE_WINDOW_MILLIS))
+            (mDate.toEpochDays() == todayDate.toEpochDays() + 1 && mTime.hour < EARLY_MORNING_CUTOFF_HOUR)
     }
 
 /** Tomorrow's calendar date, excluding early-morning kickoffs already claimed by [hasKnockoutMatchToday]'s cutoff. */
@@ -318,7 +316,7 @@ internal fun computeKnockoutDefaultSelection(matches: List<Match>, isTwoLegged: 
     val now = TimeSource.nowMillis()
     val todayDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
 
-    if (hasKnockoutMatchToday(matches, todayDate, tz, now)) return Phase.FRIENDLIES to TODAY_LABEL
+    if (hasKnockoutMatchToday(matches, todayDate, tz)) return Phase.FRIENDLIES to TODAY_LABEL
     if (hasKnockoutMatchTomorrow(matches, todayDate, tz)) return Phase.FRIENDLIES to TOMORROW_LABEL
 
     val nextRelevantLabel = computeCurrentKnockoutLabel(matches, labels) ?: return Phase.FRIENDLIES to TODAY_LABEL
@@ -384,8 +382,7 @@ private fun computeTodayKnockoutMatches(matches: List<Match>, todayDate: LocalDa
         val mTime = Instant.fromEpochMilliseconds(m.matchDateMillis).toLocalDateTime(tz)
         val mDate = mTime.date
         val isTomorrowEarly = mDate.toEpochDays() == todayDate.toEpochDays() + 1 && mTime.hour < EARLY_MORNING_CUTOFF_HOUR
-        val isRecentlyFinished = now in m.matchDateMillis..(m.matchDateMillis + LIVE_WINDOW_MILLIS)
-        mDate == todayDate || isTomorrowEarly || isRecentlyFinished
+        mDate == todayDate || isTomorrowEarly
     }.sortedWith(
         compareByDescending<Match> { matchUrgency(it, now) }.thenBy { it.matchDateMillis }
     )
