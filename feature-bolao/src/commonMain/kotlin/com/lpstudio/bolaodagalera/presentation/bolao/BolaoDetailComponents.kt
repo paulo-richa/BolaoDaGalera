@@ -108,7 +108,7 @@ private fun filterChipBorderColor(
 ): Color = when {
     isSelected && isUnlocked -> selectedAccent
     isCurrent -> Gold
-    isPast -> TextMuted.copy(alpha = 0.55f)
+    isPast -> Color.Transparent
     isUnlocked -> GlassBorder
     else -> Color.Transparent
 }
