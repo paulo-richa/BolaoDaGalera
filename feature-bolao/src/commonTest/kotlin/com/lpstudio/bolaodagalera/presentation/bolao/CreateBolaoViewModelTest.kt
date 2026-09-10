@@ -90,8 +90,20 @@ class CreateBolaoViewModelTest {
     }
 
     @Test
-    fun `isPhaseAvailable retorna false quando algum jogo da fase ja comecou`() = runTest {
+    fun `isPhaseAvailable retorna true quando algum jogo da fase ainda e futuro`() = runTest {
+        // A league-style phase (e.g. Champions League's 36-team format, same shape as
+        // Brasileirão's rounds) stays meaningful for the rounds still ahead even after
+        // earlier ones are done - so one already-started match shouldn't hide it.
         matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.GROUP_STAGE, futureMillis))
+        matchRepository.upsertMatch(match("m2", "LIBERTADORES", Phase.GROUP_STAGE, pastMillis))
+        viewModel.loadMatchesForChampionship("LIBERTADORES")
+
+        assertTrue(viewModel.isPhaseAvailable("LIBERTADORES", Phase.GROUP_STAGE))
+    }
+
+    @Test
+    fun `isPhaseAvailable retorna false quando todos os jogos da fase ja comecaram`() = runTest {
+        matchRepository.upsertMatch(match("m1", "LIBERTADORES", Phase.GROUP_STAGE, pastMillis))
         matchRepository.upsertMatch(match("m2", "LIBERTADORES", Phase.GROUP_STAGE, pastMillis))
         viewModel.loadMatchesForChampionship("LIBERTADORES")
 
